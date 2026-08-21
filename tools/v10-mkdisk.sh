@@ -104,6 +104,14 @@ if [[ ! -s "$DIST/jerq/bin/3cc" || ! -s "$DIST/blit/.v8extract" ]]; then
     rm -rf "$DIST"
     python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /jerq "$DIST/jerq" || exit 1
     python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /blit "$DIST/blit" || exit 1
+    # /usr/net is vismon's and face's data -- `friends', `people', the face
+    # database -- and both of those programs are in the 5620 distribution just
+    # installed, so it travels with them.  /usr/dict is the spelling word list,
+    # which V10's tape does not carry in any form (searched for words, hlist*
+    # and hstop across all 25,682 files) and which is pure data: no edition owns
+    # a dictionary.
+    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /net  "$DIST/net"  || exit 1
+    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /dict "$DIST/dict" || exit 1
 fi
 # `3cc' IS THE CHECK, and its SIZE is the check within the check: on
 # case-insensitive APFS `3CC' overwrites `3cc' and leaves a 2,322-byte shell
@@ -244,7 +252,9 @@ def hostcost(root_dir):
     return blocks, files
 
 netadd = netfiles = 0
-for d in ("work/v8dist/jerq", "work/v8dist/blit", "work/v10/src/man"):
+for d in ("work/v8dist/jerq", "work/v8dist/blit", "work/v8dist/net",
+          "work/v8dist/dict", "work/v10/src/man", "work/v10/src/lsys",
+          "work/v10/include"):
     b, f = hostcost(d)
     netadd += b; netfiles += f
     print("   over netfs: %-24s %6d blocks, %5d files" % (d, b, f))
@@ -437,6 +447,26 @@ want(usr, "/blit/lib", "the Blit tree")
 # V10's own manual.
 want(usr, "/man/man8/fsck.8", "V10's own manual pages")
 want(usr, "/man/man1", "the section-1 manual directory")
+# V10's own kernel source, the rest of r70's headers, vismon's data and a
+# dictionary.
+want(usr, "/sys/md/machdep.c", "V10's kernel source at V8's path")
+want(usr, "/include/sys/inode.h", "r70's header tree")
+want(usr, "/dict/words", "the spelling word list")
+want(usr, "/net/friends", "vismon's data")
+want(usr, "/spool/mail", "where mail is delivered")
+want(usr, "/spool/uucp", "where uucp queues")
+# AND THE HEADERS STAGE 2 CHOSE MUST NOT HAVE BEEN OVERWRITTEN.  r70 carries
+# four variants of each of these and stage 2 measured which one pcc2 can parse;
+# the copy runs without cpio's -u so an existing file wins, and this is the
+# check that it did.  CC/stdlib.h is a three-line shim onto <libc.h>, so a
+# top-level stdlib.h larger than a few hundred bytes means the wrong one landed.
+try:
+    ino = usr.lookup("/include/stdlib.h")
+    if ino is not None and ino["size"] > 400:
+        bad.append("/usr/include/stdlib.h is %d bytes -- the r70 copy overwrote"
+                   " the variant stage 2 chose" % ino["size"])
+except SystemExit:
+    pass
 # Operational.
 want(root, "/lost+found", "fsck has nowhere to reconnect an orphan")
 want(usr, "/lost+found", "fsck has nowhere to reconnect an orphan on /usr")

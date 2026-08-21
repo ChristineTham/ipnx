@@ -192,6 +192,10 @@ if {!$shares} {
     note "the 5620 userland installs into /usr/jerq" 0
     note "the Blit tree installs into /usr/blit" 0
     note "the manual pages install into /usr/man" 0
+    note "the kernel source installs into /usr/sys" 0
+    note "r70's remaining headers install" 0
+    note "vismon's data and the word list install" 0
+    note "the spool directories exist" 0
     note "lost+found exists on both filesystems" 0
     note "/etc/whoami names the machine" 0
     note "/etc/rc checks the filesystems on autoboot" 0
@@ -280,7 +284,7 @@ if {$mounted} {
     # `mkdir' MAKES ONE LEVEL and cpio -pd does NOT create its destination
     # (CLAUDE.md, twice over), so every directory is made here, parent first,
     # before any copy names it.
-    foreach d {bin lib include games jerq blit adm tmp man} {
+    foreach d {bin lib include games jerq blit adm tmp man sys doc net dict spool} {
         v10_sh "mkdir $MP/usr/$d" 120
     }
     # /unix FIRST, and lsys/boot/README is why: "/unix must be in the filesystem
@@ -358,6 +362,44 @@ if {$mounted} {
     v10_sh "cd /n/tree/src/man; find . -print | cpio -pd $MP/usr/man > /dev/null 2>&1" 3600
     note "the manual pages install into /usr/man" \
         [v10_try "test -s $MP/usr/man/man8/fsck.8 && echo MN\$OK" "MN-ok" 900]
+
+    # ---------------- the kernel's own source, at V8's path ----------------
+    # V8 keeps the source of the kernel it is running in /usr/sys; V10's kernel
+    # source is `src/lsys' (the OTHER of the tape's two trees, `sys/', is the
+    # one we do not build -- see CLAUDE.md).  So this is the exact analogue
+    # rather than a copy of V8's, which would be another edition's kernel.
+    v10_sh "cd /n/tree/src/lsys; find . -print | cpio -pd $MP/usr/sys > /dev/null 2>&1" 3600
+    note "the kernel source installs into /usr/sys" \
+        [v10_try "test -s $MP/usr/sys/md/machdep.c && echo SY\$OK" "SY-ok" 900]
+
+    # ---------------- the rest of r70's headers ---------------------------
+    # 336 files against the 93 the build installed.  `cpio -pd' WITHOUT `-u',
+    # deliberately: stage 2 CHOSE which of r70's four variants of stdlib.h,
+    # float.h and stdarg.h pcc2 can parse, and an unconditional copy would
+    # overwrite those decisions with whatever the tree happens to hold.  Without
+    # -u an existing file is left alone, so the chosen ones win and only what is
+    # missing arrives.
+    v10_sh "cd /n/tree/include; find . -print | cpio -pd $MP/usr/include > /dev/null 2>&1" 3600
+    note "r70's remaining headers install" \
+        [v10_try "test -d $MP/usr/include/sys && echo IH\$OK" "IH-ok" 900]
+
+    # ---------------- vismon's data, and a dictionary ---------------------
+    foreach d {net dict} {
+        v10_sh "cd /n/dist/$d; find . -print | cpio -pd $MP/usr/$d > /dev/null 2>&1" 3600
+    }
+    note "vismon's data and the word list install" \
+        [v10_try "test -s $MP/usr/dict/words && echo DW\$OK" "DW-ok" 900]
+
+    # ---------------- the spool directories -------------------------------
+    # Directories, not content: /usr/spool/{at,locks,mail,uucp,uucppublic} are
+    # where at(1), mail and uucp put things, and they have to exist before
+    # anything can.  V8's golden has them and V10's had no /usr/spool at all.
+    foreach d {at locks mail uucp uucppublic} {
+        v10_sh "mkdir $MP/usr/spool/$d" 120
+    }
+    note "the spool directories exist" \
+        [v10_try "test -d $MP/usr/spool/mail && test -d $MP/usr/spool/uucp && echo SP\$OK" \
+            "SP-ok" 600]
     # THE 203 COMMANDS V10 BUILT, OVER THE TAPE'S OWN BINARIES, AND THAT IS THE
     # AUTHENTIC CHOICE RATHER THAN THE CONVENIENT ONE.  The instinct is the
     # reverse -- keep Bell Labs' binary wherever one exists -- and CLAUDE.md
