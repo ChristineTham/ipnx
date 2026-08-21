@@ -491,8 +491,32 @@ Full spec: [docs/architecture.md](docs/architecture.md) · Phases:
   carried as data. **V11** is where there is one language and one compiler, so the
   per-file question is ended rather than managed. Which compiler is V11's decision,
   not V10's.
-- **THE 5620's COMPILER IS NOT ON THE TAPE, SO A FULLY-AUTHENTIC `muxterm`
-  CANNOT BE BUILT — and the tape says so in four places.** This settles rung 8,
+- **RETRACTED 2026-08-22: "THE 5620's COMPILER IS NOT ON THE TAPE" WAS TRUE OF
+  V10's TARBALL AND FALSE OF THIS PROJECT, WHICH HAS HAD BOTH THE TOOLCHAIN AND
+  THE SOURCE ALL ALONG.** The search below was run across `work/v10` — 25,682
+  files — and its conclusion was then written down as a fact about *the tape*,
+  singular. **There are two tapes.** V8's has the lot:
+  - **`v8/jerq/sgs/` is the Software Generation System, in source**: `comp`
+    (a pcc — `cgram.y`, `pftn.c`, `reader.c`, `trees.c`, `match.c`, `local2.c`,
+    `macdefs.h`), `as` (`gencode.c`), `ld`, `nm`, `ar`, `size`, `strip`, `dis`,
+    `optim`, `inc`, `libld`, `libsdp`, plus the driver `3cc.c` and `32reloc.c`.
+    `macdefs.h` and `local2.c` name the MAC-32 outright.
+  - **and the V8 golden ships them BUILT**, in `/usr/jerq/bin`: `3cc` 14,336,
+    `3as` 67,584, `3ld` 77,824, `3nm` 24,576, `3ar` 24,576, `3size` 15,360,
+    `3strip` 26,624, `32ld` 17,408, `32reloc`, and `3CC` (a 2,322-byte script).
+  - **`v8/jerq/src/` is the 5620 userland in source** — 1,677 files including
+    `mux`, `jim`, `32ld`, `term`, `proof`, `pen`, `ped`, `paint`, `vismon` — and
+    `v8/blit/` is the 68000 Blit's, 1,015 files including `src/68ld`.
+  So `muxterm` **can** be built, twice over: with Bell Labs' own `3cc` binaries,
+  or from `sgs/` source compiled by V8's `cc`. What was never done is *building*
+  it: V8's `/usr/jerq` is **carried** (365 files, 5.6 MB, in
+  `v8/mk/gen/carry.txt`), never compiled, which is why the toolchain source has
+  never been exercised and why its absence from V10 read as absolute.
+  **The lesson is the general one: a negative established by searching ONE tree
+  is a fact about that tree.** The original reasoning is kept below because it is
+  correct about V10 and it is what makes the two-tape distinction visible.
+- **(V10-only, and still true.) THE 5620's COMPILER IS NOT IN THE V10 TARBALL —
+  and V10's tape says so in four places.** This settled rung 8,
   which was carried for weeks as "an authenticity decision" when it is a
   measurement. `src/history/ix/src/jerq/mux/term/makefile` — `muxterm`'s own
   build — names `CC = 3cc`, `AS = 3as`, `3ld`, `3nm`; and

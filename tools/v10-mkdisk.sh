@@ -23,6 +23,7 @@ done
 GOLD="${1:-ipnx-v10-ra81.img.stage1.k102.k7.k13}"
 BLANK="$ROOT/work/v10gold/ipnx-v10-made.img"
 TPORT="${TPORT:-9290}"; OPORT="${OPORT:-9291}"; MPORT="${MPORT:-9292}"
+DPORT="${DPORT:-9293}"
 
 # THE LAYOUT, IN THE UNITS ra_sizes[] ACTUALLY USES, CONVERTED ONCE HERE.
 #
@@ -87,11 +88,40 @@ echo "== creating a blank RA81 =="
 rm -f "$BLANK" "$BLANK.id"
 dd if=/dev/zero of="$BLANK" bs=512 count=891072 2>/dev/null
 
+# THE 5620 DISTRIBUTION, EXTRACTED FROM V8's GOLDEN.  A real V10 site installed
+# the DMD 5620 software from its OWN tape into /usr/jerq -- the terminal software
+# is edition-independent, which is why V8's golden carries it and V10's tarball
+# has no jerq tree at all.  So this is not a cross-edition transplant of
+# somebody's build products; it is the 5620 tape being installed on a second
+# machine, exactly as it was in 1985.
+#
+# It comes off the V8 golden because that is where the BUILT files are: V8
+# carries /usr/jerq (365 files in carry.txt, 1,248 more in fromgold.txt --
+# 1,613, which is what v8extract reads) and has never compiled it.
+DIST="$ROOT/work/v8dist"
+if [[ ! -s "$DIST/jerq/bin/3cc" || ! -s "$DIST/blit/.v8extract" ]]; then
+    echo "== extracting the 5620 + Blit distribution from the V8 golden =="
+    rm -rf "$DIST"
+    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /jerq "$DIST/jerq" || exit 1
+    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /blit "$DIST/blit" || exit 1
+fi
+# `3cc' IS THE CHECK, and its SIZE is the check within the check: on
+# case-insensitive APFS `3CC' overwrites `3cc' and leaves a 2,322-byte shell
+# script wearing the compiler's name.  v8extract escapes the collision now, but
+# a stale tree from before it did would pass a mere `test -s'.
+sz=$(stat -f%z "$DIST/jerq/bin/3cc" 2>/dev/null || echo 0)
+[[ "$sz" == "14336" ]] || {
+    echo "v10-mkdisk: $DIST/jerq/bin/3cc is $sz bytes, expected 14336 --"
+    echo "v10-mkdisk: a case-collided extraction.  rm -rf $DIST and re-run."
+    exit 1
+}
+
 PIDS=()
 serve() { "$NETFSD" -p "$1" -v "$2" > "$ROOT/work/netfs-$3.log" 2>&1 & PIDS+=($!); }
 serve "$TPORT" "$ROOT/work/v10"      mktree
 serve "$OPORT" "$ROOT/v10/src"       mkours
 serve "$MPORT" "$ROOT/v10/mk/gen"    mkmk
+serve "$DPORT" "$DIST"               mkdist
 sleep 1
 for pid in "${PIDS[@]}"; do
     kill -0 "$pid" 2>/dev/null || { echo "netfsd died"; tail -5 "$ROOT"/work/netfs-mk*.log; exit 1; }
@@ -191,9 +221,38 @@ for top, dest in (("/bin", "root"), ("/etc", "root"), ("/lib", "root"),
         else:
             uadd += cost(ino["size"])
 
+# WHAT ARRIVES OVER netfs, WHICH THE BUILDER'S OWN FILESYSTEMS DO NOT CONTAIN.
+# Leaving this out made the estimate too SMALL, which is the dangerous
+# direction: a fit check that over-estimates refuses a run that would have
+# worked, one that under-estimates hangs the guest in alloc()'s sleep.  Measured
+# from the host directories that are about to be served.
+import os
+def hostcost(root_dir):
+    blocks = files = 0
+    if not os.path.isdir(root_dir):
+        return 0, 0
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        blocks += 1                                     # the directory itself
+        for fn in filenames:
+            if fn in (".v8extract", "CASEMAP"):
+                continue                                # not copied to the guest
+            try:
+                blocks += cost(os.path.getsize(os.path.join(dirpath, fn)))
+            except OSError:
+                pass
+            files += 1
+    return blocks, files
+
+netadd = netfiles = 0
+for d in ("work/v8dist/jerq", "work/v8dist/blit", "work/v10/src/man"):
+    b, f = hostcost(d)
+    netadd += b; netfiles += f
+    print("   over netfs: %-24s %6d blocks, %5d files" % (d, b, f))
+LOSTFOUND = 1                              # one block of preallocated slots
+
 OVER = 2                                   # block 0 and the superblock
-rneed = OVER + root.isize + base + radd
-uneed = OVER + usr.isize + ucost + uadd
+rneed = OVER + root.isize + base + radd + LOSTFOUND
+uneed = OVER + usr.isize + ucost + uadd + netadd + LOSTFOUND
 bad = False
 for label, need, have_blocks in (("root", rneed, rootblks), ("/usr", uneed, usrblks)):
     pct = 100.0 * need / have_blocks
@@ -204,7 +263,7 @@ for label, need, have_blocks in (("root", rneed, rootblks), ("/usr", uneed, usrb
         flag = "   <-- under 5% spare"
     print("   %-5s needs %6d of %6d blocks (%.0f%% full, %d spare)%s"
           % (label, need, have_blocks, pct, have_blocks - need, flag))
-print("   (%d staged files counted)" % staged)
+print("   (%d staged files counted, %d arriving over netfs)" % (staged, netfiles))
 if bad:
     print("\n== NO RUN: the copy does not fit, and V10 would HANG rather than")
     print("   say so.  Trim what ships, or grow the partition.")
@@ -217,7 +276,7 @@ dd if="$ROOT/work/v10/src/lsys/boot/bb/4kb" of="$BLANK" \
 
 echo "== V10 builds a disk on $(basename "$BLANK") =="
 expect "$ROOT/tools/v10-mkdisk.exp" "$IMG" "$BLANK" "$TPORT" "$OPORT" "$MPORT" \
-    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" 2>&1 | tee "$LOG"
+    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" "$DPORT" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # THE HOST READS WHAT THE GUEST WROTE, because a full V10 filesystem SLEEPS rather
@@ -338,6 +397,57 @@ for d in ("/w10", "/s1", "/obj", "/k13obj", "/k14obj", "/k10lib"):
     except SystemExit:
         continue
     bad.append("/usr%s shipped -- build scratch wearing a system path" % d)
+
+# ------- THE GAPS THIS RUN EXISTS TO CLOSE, CHECKED BY THE HOST -------------
+#
+# Each of these is asserted in the guest too, but a guest-side `test -s' proves
+# a name exists and nothing more; the SIZE of 3cc is what proves the extraction
+# did not lose the compiler to a case collision, and only the host has the
+# number to compare against.
+def want(fs, path, why, minsize=1, exact=None, exe=False):
+    try:
+        ino = fs.lookup(path)
+    except SystemExit:
+        ino = None
+    if ino is None:
+        bad.append("%s is MISSING -- %s" % (path, why))
+        return
+    k = ino["mode"] & m.IFMT
+    if exact is not None:
+        if k != m.IFREG or ino["size"] != exact:
+            bad.append("%s is %d bytes, expected %d -- %s"
+                       % (path, ino["size"], exact, why))
+        return
+    if k == m.IFDIR:
+        return
+    if k != m.IFREG or ino["size"] < minsize:
+        bad.append("%s is empty or not a file -- %s" % (path, why))
+    elif exe and not (ino["mode"] & 0o111):
+        bad.append("%s is not executable -- %s" % (path, why))
+
+# The 5620 distribution.  3cc's size is the case-collision canary: `3CC' is
+# 2,322 bytes of shell and would sit here silently wearing the compiler's name.
+want(usr, "/jerq/bin/3cc", "the 5620 C compiler", exact=14336)
+want(usr, "/jerq/bin/3as", "the 5620 assembler", exe=True)
+want(usr, "/jerq/bin/3ld", "the 5620 loader", exe=True)
+want(usr, "/jerq/lib/libc.a", "the 5620 C library", exact=11170)
+want(usr, "/jerq/bin/mux", "the layer multiplexer", exe=True)
+want(usr, "/jerq/bin/32ld", "the 5620 downloader", exe=True)
+want(usr, "/blit/lib", "the Blit tree")
+# V10's own manual.
+want(usr, "/man/man8/fsck.8", "V10's own manual pages")
+want(usr, "/man/man1", "the section-1 manual directory")
+# Operational.
+want(root, "/lost+found", "fsck has nowhere to reconnect an orphan")
+want(usr, "/lost+found", "fsck has nowhere to reconnect an orphan on /usr")
+want(root, "/etc/whoami", "the machine has no name")
+rc = root.read(root.lookup("/etc/rc")).decode("ascii", "replace")
+if "fsck -p" not in rc:
+    bad.append("/etc/rc does not check the filesystems on autoboot")
+if "/etc/mount /dev/ra0c /usr" not in rc:
+    bad.append("/etc/rc no longer mounts /usr -- the prepend clobbered it")
+if "tcpconfig" not in rc:
+    bad.append("/etc/rc no longer configures the network -- the prepend clobbered it")
 
 # EVERY EXECUTABLE THAT EXISTS TWICE, REPORTED RATHER THAN REMOVED.
 #

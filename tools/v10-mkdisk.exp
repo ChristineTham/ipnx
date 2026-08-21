@@ -102,6 +102,9 @@ set RBLKS [lindex $argv 5]
 set RPART [lindex $argv 6]
 set UBLKS [lindex $argv 7]
 set UPART [lindex $argv 8]
+# APPENDED, NOT INSERTED: the five positional arguments above are indexed by
+# number in this file and in tools/v10-mkdisk.sh, so a new one goes on the end.
+set dport [lindex $argv 9]
 
 # THE MINOR, COMPUTED.  BITFS|unit|part, and the disk is attached as rq1 because
 # `ipnx780.m' configures `ra 0' and `ra 1' and stops -- its own comment says "ra
@@ -154,14 +157,16 @@ v10_sh "OK=-ok" 120
 
 # The three shares, on three device numbers -- neta.h's `server may be using
 # several', and nadomount() gives EBUSY for a repeat.
-v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk" 120
+v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk; mkdir /n/dist" 120
 set sh1 [v10_try "/etc/nafsmnt 10.0.2.2 $tport /n/tree 0" "mounted on" 900]
 set sh2 [v10_try "/etc/nafsmnt 10.0.2.2 $oport /n/ours 1" "mounted on" 900]
 set sh3 [v10_try "/etc/nafsmnt 10.0.2.2 $mport /n/mk   2" "mounted on" 900]
+set sh4 [v10_try "/etc/nafsmnt 10.0.2.2 $dport /n/dist 3" "mounted on" 900]
 note "the tape mounts over TCP (no courier disk in this run)" $sh1
 note "our overlay mounts"                                    $sh2
 note "and the generated makefiles mount"                     $sh3
-set shares [expr {$sh1 && $sh2 && $sh3}]
+note "and the 5620 distribution mounts"                      $sh4
+set shares [expr {$sh1 && $sh2 && $sh3 && $sh4}]
 
 if {!$shares} {
     note "mkbitfs builds from the share" 0
@@ -184,6 +189,12 @@ if {!$shares} {
     note "the gettys are enabled on all eight ttys" 0
     note "the motd describes this disk, not the golden" 0
     note "the copy's /etc/rc still mounts /usr, as the golden's does" 0
+    note "the 5620 userland installs into /usr/jerq" 0
+    note "the Blit tree installs into /usr/blit" 0
+    note "the manual pages install into /usr/man" 0
+    note "lost+found exists on both filesystems" 0
+    note "/etc/whoami names the machine" 0
+    note "/etc/rc checks the filesystems on autoboot" 0
     note "boot 2: THE DISK V10 BUILT reaches a login prompt" 0
     set failed [report]
     v10_halt
@@ -269,7 +280,7 @@ if {$mounted} {
     # `mkdir' MAKES ONE LEVEL and cpio -pd does NOT create its destination
     # (CLAUDE.md, twice over), so every directory is made here, parent first,
     # before any copy names it.
-    foreach d {bin lib include games jerq blit adm tmp} {
+    foreach d {bin lib include games jerq blit adm tmp man} {
         v10_sh "mkdir $MP/usr/$d" 120
     }
     # /unix FIRST, and lsys/boot/README is why: "/unix must be in the filesystem
@@ -311,6 +322,42 @@ if {$mounted} {
     foreach d {bin lib include jerq blit} {
         v10_sh "cd /usr/$d; find . -print | cpio -pd $MP/usr/$d > /dev/null 2>&1" 3600
     }
+
+    # ---------------- the DMD 5620 distribution, and the Blit's -------------
+    #
+    # V10's tarball has NO jerq tree -- no mux, no jim, no muxterm, no 5620
+    # userland at all -- and that is not tape rot: on a real V10 the 5620
+    # software arrived on its OWN distribution tape and was installed into
+    # /usr/jerq, which is exactly why V8's golden carries 1,613 of these files
+    # and V10's has an empty directory.  `blit/Road.map' says it in as many
+    # words: "/usr/jerq has the DMD-5620 code".
+    #
+    # So this is the 5620 tape being installed on a second machine, not a
+    # transplant of somebody's build products, and it is the one route that
+    # gives V10 the terminal this whole project is built around.  The files come
+    # off V8's golden because that is where the BUILT ones are; V8 has never
+    # compiled them either (v8/mk/gen/carry.txt + fromgold.txt).
+    #
+    # `-u' so the distribution wins over the empty include tree copied above,
+    # and the destinations already exist from the mkdir loop -- cpio -pd does
+    # NOT create its destination.
+    foreach d {jerq blit} {
+        v10_sh "cd /n/dist/$d; find . -print | cpio -pdu $MP/usr/$d > /dev/null 2>&1" 3600
+    }
+    note "the 5620 userland installs into /usr/jerq" \
+        [v10_try "test -s $MP/usr/jerq/bin/3cc && test -s $MP/usr/jerq/bin/mux && echo JQ\$OK" \
+            "JQ-ok" 900]
+    note "the Blit tree installs into /usr/blit" \
+        [v10_try "test -d $MP/usr/blit/lib && echo BL\$OK" "BL-ok" 900]
+
+    # ---------------- the manual, from V10's OWN tape ----------------------
+    # 1,521 pages under src/man, which is V10's own documentation and so needs
+    # no decision at all -- it is the tape's content installed where the tape's
+    # own man(1) looks for it.  V8's golden has 552 of these paths and V10's had
+    # none.
+    v10_sh "cd /n/tree/src/man; find . -print | cpio -pd $MP/usr/man > /dev/null 2>&1" 3600
+    note "the manual pages install into /usr/man" \
+        [v10_try "test -s $MP/usr/man/man8/fsck.8 && echo MN\$OK" "MN-ok" 900]
     # THE 203 COMMANDS V10 BUILT, OVER THE TAPE'S OWN BINARIES, AND THAT IS THE
     # AUTHENTIC CHOICE RATHER THAN THE CONVENIENT ONE.  The instinct is the
     # reverse -- keep Bell Labs' binary wherever one exists -- and CLAUDE.md
@@ -419,6 +466,80 @@ if {$mounted} {
     }
     note "the motd describes this disk, not the golden" \
         [v10_try "grep ipnx780 $MP/etc/motd > /dev/null && echo MD\$OK" "MD-ok" 600]
+
+    # ---------------- lost+found, on BOTH filesystems ----------------------
+    #
+    # V8's golden shipped without one and it cost a rebuild: an autoboot `fsck'
+    # that needs to reconnect an orphaned inode has nowhere to put it and aborts
+    # to single user with "Automatic reboot failed... help!".  V10's disk had the
+    # same hole AND no /etc/mklost+found to make one with, so this does what that
+    # script does -- create the directory and grow it with entries that are then
+    # removed, so fsck can add names later without having to ALLOCATE a block in
+    # a filesystem it is in the middle of repairing.  Pure configuration: no
+    # tape says anything about it either way.
+    #
+    # 200 slots at 16 bytes a `struct direct' is 3,200 bytes, which is one 4 KB
+    # block -- V8's own is 4,128.  `expr' is at /usr/bin on this machine, which
+    # is on the PATH set above.
+    foreach fsroot [list $MP $MP/usr] {
+        v10_sh "mkdir $fsroot/lost+found" 300
+        v10_sh "cd $fsroot/lost+found; i=0; while test \$i -lt 200; do echo > f\$i; i=`expr \$i + 1`; done" 900
+        v10_sh "cd $fsroot/lost+found; rm -f f*" 600
+    }
+    note "lost+found exists on both filesystems" \
+        [v10_try "test -d $MP/lost+found && test -d $MP/usr/lost+found && echo LF\$OK" \
+            "LF-ok" 600]
+
+    # ---------------- the machine's name -----------------------------------
+    # CLAUDE.md: "The machine's name is /etc/whoami and nowhere else" -- V8 has
+    # no hostname(1), no uname(1) and /etc/rc never sets one, and V10 is the
+    # same.  The V10 disk had no /etc/whoami at all, so the machine had no name.
+    v10_sh "echo ipnx-v10 > $MP/etc/whoami" 300
+    note "/etc/whoami names the machine" \
+        [v10_try "grep ipnx-v10 $MP/etc/whoami > /dev/null && echo WI\$OK" "WI-ok" 600]
+
+    # ---------------- fsck on autoboot -------------------------------------
+    #
+    # V10's /etc/rc never checked anything, and V10's kernel does not sync on
+    # halt (lsys/md/machdep.c's boot() is two lines), so an unclean stop left a
+    # dirty disk that nothing would ever repair -- including the s_valid case
+    # that cost this project a whole session: `mount /dev/ra0c on /usr type 0:
+    # In use', which only fsck/fsoff clears.
+    #
+    # V10's own init ALREADY passes the argument: cmd/init.c:160 is
+    # `execl(shell, shell, runc, "autoboot", 0)' against :158 without it for
+    # RB_SINGLE.  So V8's idiom is V10's idiom and this is not an invention.
+    # fsck reads /etc/fstab (`checklist = FSTAB'), which this disk has correct,
+    # and V10's fsck exits only 0 or 8 -- there is no status 4, so unlike V8
+    # there is no reboot-after-repair branch to write.
+    #
+    # PREPENDED to the rc that was copied, never a rewrite of it: reproducing
+    # nine lines by hand is how the mount or the network config gets silently
+    # dropped.  sh supplies a default PATH of :/bin:/usr/bin when none is set,
+    # which is why `echo' and `test' work above the PATH= line -- V8's own rc
+    # relies on exactly that.
+    set rchead {
+        {case ${1-xx} in}
+        {autoboot)}
+        {  echo Autoboot:}
+        {  /etc/fsck -p}
+        {  if test $? != 0}
+        {  then}
+        {    echo "Automatic reboot failed... help!"}
+        {    exit 1}
+        {  fi}
+        {  ;;}
+        {esac}
+    }
+    set redir ">"
+    foreach line $rchead {
+        v10_sh "echo '$line' $redir $OBJ/rc.new" 300
+        set redir ">>"
+    }
+    v10_sh "cat $MP/etc/rc >> $OBJ/rc.new" 300
+    v10_sh "cp $OBJ/rc.new $MP/etc/rc" 300
+    note "/etc/rc checks the filesystems on autoboot" \
+        [v10_try "grep 'fsck -p' $MP/etc/rc > /dev/null && echo FS\$OK" "FS-ok" 600]
     note "the system copies onto it" \
         [v10_try "test -s $MP/bin/sh && test -s $MP/etc/init && echo CP\$OK" "CP-ok" 600]
     note "/unix is on the new disk" \
