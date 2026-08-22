@@ -190,7 +190,17 @@ do
 			sed -e 8q -e 's/^/P! /' mk.log
 			echo . >> ../no.cnt ; cd .. ; continue
 		fi
-		${BP}../bin/as -o $M.l.o $M.s.s > as.log 2>&1
+		# THREE FILES, NOT ONE, and lib/mk.star says so:
+		#	LOW=../ml/param.s ../ml/logen.s
+		#	%.l.o: $LOW %.s.s
+		#		as -o $target $prereq
+		# logen.s is where dumptime, dumplen and dumpmagic live, so
+		# assembling only the generated .s.s left them undefined at the
+		# link -- which reads as a dump driver that was never
+		# configured, and is a rule with three prerequisites read as
+		# having one.
+		${BP}../bin/as -o $M.l.o $LQ/ml/param.s $LQ/ml/logen.s $M.s.s \
+			> as.log 2>&1
 		# THE KERNEL'S OWN FLAGS.  conf.c is kernel source: it needs
 		# -DKERNEL and the kernel tree on the include path, or it dies
 		# on `unknown size' at a struct whose definition it cannot see.
