@@ -1,0 +1,26 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.bar:
+.sp 1i
+.nf
+.EQ
+gfont I
+{{{{{ A bar B bar } bar } bar } bar ~
+{ A bar B bar }} bar ~
+{{A bar B bar} bar ~
+{{ A bar B bar} bar } bar } bar } bar
+.EN
+.sp 2
+.EQ
+sqrt { { phi  sup 1 } bar }
+~~~
+sqrt { { phi sub m sup 1 } bar }
+.EN
+.sp 2
+.EQ
+{v sub i v sub i+1 } bar  ~~ {v sub i} bar  ~~~
+{v sub i v sub i+1 } highbar  ~~ {v sub i} highbar  ~~~~
+{v sub i v sub i+1 } lowbar  ~~ {v sub i} lowbar   ~~~
+.EN

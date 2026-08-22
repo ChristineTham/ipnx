@@ -1,0 +1,17 @@
+.sp
+HELLO:
+.PS
+define b /
+[ right
+  box ht .7 wid 1.5 "hello" "world" "$1" fill $1
+  circle rad .3 "hi" fill $1
+  ellipse ht .3 wid .4 "bye" fill $1 ]; move .25
+/
+down
+b(1)
+b(.9)
+b(.8)
+b(.7)
+b(.6)
+b(.5)
+.PE

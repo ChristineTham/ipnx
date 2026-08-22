@@ -1,0 +1,4 @@
+M=/usr/scj/mip
+grep -n "$1" macdefs local2.c local.c stin
+cd $M
+grep -n "$1" trees.c mfile2 reader.c allo.c match.c manifest mfile1 cgram.y comm1.c scan.c xdefs.c pftn.c common optim.c cgen.c cost.c sty.y

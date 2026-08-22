@@ -1,0 +1,21 @@
+case ${1-xx} in
+autoboot)
+  echo Autoboot:
+  /etc/fsck -p
+  if test $? != 0
+  then
+    echo "Automatic reboot failed... help!"
+    exit 1
+  fi
+  ;;
+esac
+PATH=/bin:/etc:/usr/bin
+export PATH
+/etc/mount /dev/ra0c /usr
+cat /etc/motd
+if test -c /dev/il0
+then
+/etc/dipconfig /dev/il0 10.0.2.15 10.0.0.0 /dev/il1 > /dev/null 2>&1 &
+/etc/tcpconfig /dev/ip6 > /dev/null 2>&1 &
+echo "network: il0 10.0.2.15, gateway 10.0.2.2"
+fi

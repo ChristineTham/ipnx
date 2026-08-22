@@ -1,0 +1,10 @@
+if $1x = x goto find
+if $1x = allx goto find
+: start
+if $1x = x exit
+nroff /usr/u1/eaw/$1-docs
+shift
+goto start
+: find
+find /usr/u1/eaw -name "*-docs" -a -exec nroff {} ";"
+exit

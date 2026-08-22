@@ -1,0 +1,10 @@
+if ls | awk 'END { exit NR > 100 }'
+then
+	echo extracting from test.a
+	ar x test.a
+fi
+
+Compare t.*
+Compare.1 p.? p.??*
+Compare.T
+Compare.tt tt.*

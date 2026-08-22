@@ -1,0 +1,49 @@
+.EQ
+delim $$
+.EN
+.PS
+[
+	lineht = .2; ellipseht = .25; ellipsewid = .45;
+	arrowht = .08; arrowwid = .04;
+	A : [
+		down;
+		E1 :	ellipse "1,2"
+			arrow
+		E2 :	ellipse "3"
+			arrow
+		E3 : 	ellipse "4,5,6"
+			arrow
+		E4 :	ellipse wid .7 "7,8,9,10"
+
+		arc cw -> from E4.w to E1.w
+		arc cw -> from E3.nw to E2.sw
+		arc    -> from E4.ne to E3.e
+		arc    -> rad  from E4.e to E2.e
+print arcrad
+	]
+	B : [
+		down;
+		E1 :	ellipse "1,2"
+			arrow
+		E2 :	ellipse "3"
+			arrow
+		E3 : 	ellipse wid .7 "$4 ,..., 10$"
+
+		arc cw -> rad 1 from E3.w to E1.w
+		arc cw -> from E3.nw to E2.w
+	] with .nw at A.ne + .25,0
+	C : [
+		down;
+		E1 :	ellipse "1,2"
+			arrow
+		E2 :	ellipse wid .7 "$3 ,..., 10$"
+
+		arc cw -> from E2.nw to E1.w
+	] with .nw at B.ne + .25,0
+	D : [
+		down;
+		E1 :	ellipse wid .7 "$1 ,..., 10$"
+
+	] with .nw at C.ne + .25,0
+]
+.PE

@@ -1,0 +1,430 @@
+cc -I.. -DKERNEL -S acct.c
+/lib/c2 <acct.s | sed -f ../lib/asm.sed | as -o acct.x
+rm acct.s
+cc -I.. -DKERNEL -S clock.c
+/lib/c2 <clock.s | sed -f ../lib/asm.sed | as -o clock.x
+rm clock.s
+cc -I.. -DKERNEL -S fio.c
+/lib/c2 <fio.s | sed -f ../lib/asm.sed | as -o fio.x
+rm fio.s
+cc -I.. -DKERNEL -S iget.c
+/lib/c2 <iget.s | sed -f ../lib/asm.sed | as -o iget.x
+rm iget.s
+cc -I.. -DKERNEL -S ioctl.c
+/lib/c2 <ioctl.s | sed -f ../lib/asm.sed | as -o ioctl.x
+rm ioctl.s
+cc -I.. -DKERNEL -S main.c
+/lib/c2 <main.s | sed -f ../lib/asm.sed | as -o main.x
+rm main.s
+cc -I.. -DKERNEL -S mount.c
+/lib/c2 <mount.s | sed -f ../lib/asm.sed | as -o mount.x
+rm mount.s
+cc -I.. -DKERNEL -S nami.c
+/lib/c2 <nami.s | sed -f ../lib/asm.sed | as -o nami.x
+rm nami.s
+cc -I.. -DKERNEL -S prf.c
+/lib/c2 <prf.s | sed -f ../lib/asm.sed | as -o prf.x
+rm prf.s
+cc -I.. -DKERNEL -S rdwri.c
+/lib/c2 <rdwri.s | sed -f ../lib/asm.sed | as -o rdwri.x
+rm rdwri.s
+cc -I.. -DKERNEL -S rmap.c
+/lib/c2 <rmap.s | sed -f ../lib/asm.sed | as -o rmap.x
+rm rmap.s
+cc -I.. -DKERNEL -S sig.c
+/lib/c2 <sig.s | sed -f ../lib/asm.sed | as -o sig.x
+rm sig.s
+cc -I.. -DKERNEL -S slp.c
+/lib/c2 <slp.s | sed -f ../lib/asm.sed | as -o slp.x
+rm slp.s
+cc -I.. -DKERNEL -S streamio.c
+/lib/c2 <streamio.s | sed -f ../lib/asm.sed | as -o streamio.x
+rm streamio.s
+cc -I.. -DKERNEL -S subr.c
+/lib/c2 <subr.s | sed -f ../lib/asm.sed | as -o subr.x
+rm subr.s
+cc -I.. -DKERNEL -S sys1.c
+/lib/c2 <sys1.s | sed -f ../lib/asm.sed | as -o sys1.x
+rm sys1.s
+sys1.c: 12: #include of /usr/include/... may be non-portable
+cc -I.. -DKERNEL -S sys2.c
+/lib/c2 <sys2.s | sed -f ../lib/asm.sed | as -o sys2.x
+rm sys2.s
+cc -I.. -DKERNEL -S sys3.c
+/lib/c2 <sys3.s | sed -f ../lib/asm.sed | as -o sys3.x
+rm sys3.s
+cc -I.. -DKERNEL -S sys4.c
+/lib/c2 <sys4.s | sed -f ../lib/asm.sed | as -o sys4.x
+rm sys4.s
+cc -I.. -DKERNEL -S sysent.c
+/lib/c2 <sysent.s | sed -f ../lib/asm.sed | as -o sysent.x
+rm sysent.s
+cc -I.. -DKERNEL -S text.c
+/lib/c2 <text.s | sed -f ../lib/asm.sed | as -o text.x
+rm text.s
+cc -I.. -DKERNEL -S trap.c
+/lib/c2 <trap.s | sed -f ../lib/asm.sed | as -o trap.x
+rm trap.s
+cc -I.. -DKERNEL -S trace.c
+/lib/c2 <trace.s | sed -f ../lib/asm.sed | as -o trace.x
+rm trace.s
+names=`membername ../lib/os.a(acct.x) ../lib/os.a(clock.x) ../lib/os.a(fio.x) ../lib/os.a(iget.x) ../lib/os.a(ioctl.x) ../lib/os.a(main.x) ../lib/os.a(mount.x) ../lib/os.a(nami.x) ../lib/os.a(prf.x) ../lib/os.a(rdwri.x) ../lib/os.a(rmap.x) ../lib/os.a(sig.x) ../lib/os.a(slp.x) ../lib/os.a(streamio.x) ../lib/os.a(subr.x) ../lib/os.a(sys1.x) ../lib/os.a(sys2.x) ../lib/os.a(sys3.x) ../lib/os.a(sys4.x) ../lib/os.a(sysent.x) ../lib/os.a(text.x) ../lib/os.a(trap.x) ../lib/os.a(trace.x)`
+ar r ../lib/os.a $names && rm $names
+ranlib ../lib/os.a
+cc -I.. -DKERNEL -S vmdrum.c
+/lib/c2 <vmdrum.s | sed -f ../lib/asm.sed | as -o vmdrum.x
+rm vmdrum.s
+cc -I.. -DKERNEL -S vmmem.c
+/lib/c2 <vmmem.s | sed -f ../lib/asm.sed | as -o vmmem.x
+rm vmmem.s
+cc -I.. -DKERNEL -S vmmon.c
+/lib/c2 <vmmon.s | sed -f ../lib/asm.sed | as -o vmmon.x
+rm vmmon.s
+cc -I.. -DKERNEL -S vmpage.c
+/lib/c2 <vmpage.s | sed -f ../lib/asm.sed | as -o vmpage.x
+rm vmpage.s
+cc -I.. -DKERNEL -S vmproc.c
+/lib/c2 <vmproc.s | sed -f ../lib/asm.sed | as -o vmproc.x
+rm vmproc.s
+cc -I.. -DKERNEL -S vmpt.c
+/lib/c2 <vmpt.s | sed -f ../lib/asm.sed | as -o vmpt.x
+rm vmpt.s
+cc -I.. -DKERNEL -S vmsched.c
+/lib/c2 <vmsched.s | sed -f ../lib/asm.sed | as -o vmsched.x
+rm vmsched.s
+cc -I.. -DKERNEL -S vmsubr.c
+/lib/c2 <vmsubr.s | sed -f ../lib/asm.sed | as -o vmsubr.x
+rm vmsubr.s
+cc -I.. -DKERNEL -S vmswap.c
+/lib/c2 <vmswap.s | sed -f ../lib/asm.sed | as -o vmswap.x
+rm vmswap.s
+cc -I.. -DKERNEL -S vmsys.c
+/lib/c2 <vmsys.s | sed -f ../lib/asm.sed | as -o vmsys.x
+rm vmsys.s
+names=`membername ../lib/vm.a(vmdrum.x) ../lib/vm.a(vmmem.x) ../lib/vm.a(vmmon.x) ../lib/vm.a(vmpage.x) ../lib/vm.a(vmproc.x) ../lib/vm.a(vmpt.x) ../lib/vm.a(vmsched.x) ../lib/vm.a(vmsubr.x) ../lib/vm.a(vmswap.x) ../lib/vm.a(vmsys.x)`
+ar r ../lib/vm.a $names && rm $names
+ranlib ../lib/vm.a
+cc -I.. -DKERNEL -S machdep.c
+/lib/c2 <machdep.s | sed -f ../lib/asm.sed | as -o machdep.x
+rm machdep.s
+cc -I.. -DKERNEL -S mba.c
+/lib/c2 -i <mba.s | sed -f ../lib/asm.sed | as -o mba.y
+rm mba.s
+cc -I.. -DKERNEL -S ubamap.c
+/lib/c2 -i <ubamap.s | sed -f ../lib/asm.sed | as -o ubamap.y
+rm ubamap.s
+cc -I.. -DKERNEL -S consuvax.c
+/lib/c2 <consuvax.s | sed -f ../lib/asm.sed | as -o consuvax.x
+rm consuvax.s
+cc -I.. -DKERNEL -S ubauvax.c
+/lib/c2 -i <ubauvax.s | sed -f ../lib/asm.sed | as -o ubauvax.y
+rm ubauvax.s
+cc -I.. -DKERNEL -S uvaxuddump.c
+/lib/c2 -i <uvaxuddump.s | sed -f ../lib/asm.sed | as -o uvaxuddump.y
+rm uvaxuddump.s
+cc -I.. -DKERNEL -S machstar.c
+/lib/c2 <machstar.s | sed -f ../lib/asm.sed | as -o machstar.x
+rm machstar.s
+cc -I.. -DKERNEL -S mchkstar.c
+/lib/c2 <mchkstar.s | sed -f ../lib/asm.sed | as -o mchkstar.x
+rm mchkstar.s
+cc -I.. -DKERNEL -S mcrstar.c
+/lib/c2 -i <mcrstar.s | sed -f ../lib/asm.sed | as -o mcrstar.y
+rm mcrstar.s
+cc -I.. -DKERNEL -S rststar.c
+/lib/c2 -i <rststar.s | sed -f ../lib/asm.sed | as -o rststar.y
+rm rststar.s
+cc -I.. -DKERNEL -S nexstar.c
+/lib/c2 <nexstar.s | sed -f ../lib/asm.sed | as -o nexstar.x
+rm nexstar.s
+cc -I.. -DKERNEL -S ubastar.c
+/lib/c2 -i <ubastar.s | sed -f ../lib/asm.sed | as -o ubastar.y
+rm ubastar.s
+cc -I.. -DKERNEL -S consstar.c
+/lib/c2 <consstar.s | sed -f ../lib/asm.sed | as -o consstar.x
+rm consstar.s
+cc -I.. -DKERNEL -S cdiskstar.c
+/lib/c2 <cdiskstar.s | sed -f ../lib/asm.sed | as -o cdiskstar.x
+rm cdiskstar.s
+cc -I.. -DKERNEL -S staruddump.c
+/lib/c2 -i <staruddump.s | sed -f ../lib/asm.sed | as -o staruddump.y
+rm staruddump.s
+cc -I.. -DKERNEL -S machcomet.c
+/lib/c2 <machcomet.s | sed -f ../lib/asm.sed | as -o machcomet.x
+rm machcomet.s
+cc -I.. -DKERNEL -S mchkcomet.c
+/lib/c2 <mchkcomet.s | sed -f ../lib/asm.sed | as -o mchkcomet.x
+rm mchkcomet.s
+cc -I.. -DKERNEL -S mcrcomet.c
+/lib/c2 -i <mcrcomet.s | sed -f ../lib/asm.sed | as -o mcrcomet.y
+rm mcrcomet.s
+cc -I.. -DKERNEL -S rstcomet.c
+/lib/c2 <rstcomet.s | sed -f ../lib/asm.sed | as -o rstcomet.x
+rm rstcomet.s
+cc -I.. -DKERNEL -S nexcomet.c
+/lib/c2 <nexcomet.s | sed -f ../lib/asm.sed | as -o nexcomet.x
+rm nexcomet.s
+cc -I.. -DKERNEL -S ubacomet.c
+/lib/c2 -i <ubacomet.s | sed -f ../lib/asm.sed | as -o ubacomet.y
+rm ubacomet.s
+cc -I.. -DKERNEL -S conscomet.c
+/lib/c2 <conscomet.s | sed -f ../lib/asm.sed | as -o conscomet.x
+rm conscomet.s
+cc -I.. -DKERNEL -S ctapecomet.c
+/lib/c2 <ctapecomet.s | sed -f ../lib/asm.sed | as -o ctapecomet.x
+rm ctapecomet.s
+cc -I.. -DKERNEL -S cometupdump.c
+/lib/c2 -i <cometupdump.s | sed -f ../lib/asm.sed | as -o cometupdump.y
+rm cometupdump.s
+cc -I.. -DKERNEL -S cometuddump.c
+/lib/c2 -i <cometuddump.s | sed -f ../lib/asm.sed | as -o cometuddump.y
+rm cometuddump.s
+cc -I.. -DKERNEL -S comethpdump.c
+/lib/c2 -i <comethpdump.s | sed -f ../lib/asm.sed | as -o comethpdump.y
+rm comethpdump.s
+cc -I.. -DKERNEL -S machnaut.c
+/lib/c2 <machnaut.s | sed -f ../lib/asm.sed | as -o machnaut.x
+rm machnaut.s
+cc -I.. -DKERNEL -S mchknaut.c
+/lib/c2 <mchknaut.s | sed -f ../lib/asm.sed | as -o mchknaut.x
+rm mchknaut.s
+cc -I.. -DKERNEL -S mcrnaut.c
+/lib/c2 -i <mcrnaut.s | sed -f ../lib/asm.sed | as -o mcrnaut.y
+rm mcrnaut.s
+cc -I.. -DKERNEL -S rstnaut.c
+/lib/c2 <rstnaut.s | sed -f ../lib/asm.sed | as -o rstnaut.x
+rm rstnaut.s
+cc -I.. -DKERNEL -S nexnaut.c
+/lib/c2 <nexnaut.s | sed -f ../lib/asm.sed | as -o nexnaut.x
+rm nexnaut.s
+cc -I.. -DKERNEL -S ubanaut.c
+/lib/c2 -i <ubanaut.s | sed -f ../lib/asm.sed | as -o ubanaut.y
+rm ubanaut.s
+cc -I.. -DKERNEL -S consnaut.c
+/lib/c2 <consnaut.s | sed -f ../lib/asm.sed | as -o consnaut.x
+rm consnaut.s
+cc -I.. -DKERNEL -S cdisknaut.c
+/lib/c2 <cdisknaut.s | sed -f ../lib/asm.sed | as -o cdisknaut.x
+rm cdisknaut.s
+cc -I.. -DKERNEL -S nautbddump.c
+/lib/c2 -i <nautbddump.s | sed -f ../lib/asm.sed | as -o nautbddump.y
+rm nautbddump.s
+cc -I.. -DKERNEL -S machmflow.c
+/lib/c2 -i <machmflow.s | sed -f ../lib/asm.sed | as -o machmflow.y
+rm machmflow.s
+cc -I.. -DKERNEL -S mchkmflow.c
+/lib/c2 -i <mchkmflow.s | sed -f ../lib/asm.sed | as -o mchkmflow.y
+rm mchkmflow.s
+cc -I.. -DKERNEL -S machmfair.c
+/lib/c2 -i <machmfair.s | sed -f ../lib/asm.sed | as -o machmfair.y
+rm machmfair.s
+cc -I.. -DKERNEL -S mchkmfair.c
+/lib/c2 -i <mchkmfair.s | sed -f ../lib/asm.sed | as -o mchkmfair.y
+rm mchkmfair.s
+cc -I.. -DKERNEL -S mcrmfair.c
+/lib/c2 -i <mcrmfair.s | sed -f ../lib/asm.sed | as -o mcrmfair.y
+rm mcrmfair.s
+names=`membername ../lib/bvax.a(machdep.x) ../lib/bvax.a(mba.y) ../lib/bvax.a(ubamap.y)`
+ar r ../lib/bvax.a $names && rm $names
+ranlib ../lib/bvax.a
+names=`membername ../lib/uvax.a(consuvax.x) ../lib/uvax.a(ubauvax.y) ../lib/uvax.a(uvaxuddump.y)`
+ar r ../lib/uvax.a $names && rm $names
+ranlib ../lib/uvax.a
+names=`membername ../lib/star.a(machstar.x) ../lib/star.a(mchkstar.x) ../lib/star.a(mcrstar.y) ../lib/star.a(rststar.y) ../lib/star.a(nexstar.x) ../lib/star.a(ubastar.y) ../lib/star.a(consstar.x) ../lib/star.a(cdiskstar.x) ../lib/star.a(staruddump.y)`
+ar r ../lib/star.a $names && rm $names
+ranlib ../lib/star.a
+names=`membername ../lib/comet.a(machcomet.x) ../lib/comet.a(mchkcomet.x) ../lib/comet.a(mcrcomet.y) ../lib/comet.a(rstcomet.x) ../lib/comet.a(nexcomet.x) ../lib/comet.a(ubacomet.y) ../lib/comet.a(conscomet.x) ../lib/comet.a(ctapecomet.x) ../lib/comet.a(cometupdump.y) ../lib/comet.a(cometuddump.y) ../lib/comet.a(comethpdump.y)`
+ar r ../lib/comet.a $names && rm $names
+ranlib ../lib/comet.a
+names=`membername ../lib/naut.a(machnaut.x) ../lib/naut.a(mchknaut.x) ../lib/naut.a(mcrnaut.y) ../lib/naut.a(rstnaut.x) ../lib/naut.a(nexnaut.x) ../lib/naut.a(ubanaut.y) ../lib/naut.a(consnaut.x) ../lib/naut.a(cdisknaut.x) ../lib/naut.a(nautbddump.y)`
+ar r ../lib/naut.a $names && rm $names
+ranlib ../lib/naut.a
+names=`membername ../lib/mflow.a(machmflow.y) ../lib/mflow.a(mchkmflow.y)`
+ar r ../lib/mflow.a $names && rm $names
+ranlib ../lib/mflow.a
+names=`membername ../lib/mfair.a(machmfair.y) ../lib/mfair.a(mchkmfair.y) ../lib/mfair.a(mcrmfair.y)`
+ar r ../lib/mfair.a $names && rm $names
+ranlib ../lib/mfair.a
+cc -I.. -DKERNEL -S fd.c
+/lib/c2 <fd.s | sed -f ../lib/asm.sed | as -o fd.x
+rm fd.s
+cc -I.. -DKERNEL -S mem.c
+/lib/c2 <mem.s | sed -f ../lib/asm.sed | as -o mem.x
+rm mem.s
+cc -I.. -DKERNEL -S sw.c
+/lib/c2 <sw.s | sed -f ../lib/asm.sed | as -o sw.x
+rm sw.s
+cc -I.. -DKERNEL -S fineclock.c
+/lib/c2 <fineclock.s | sed -f ../lib/asm.sed | as -o fineclock.x
+rm fineclock.s
+cc -I.. -DKERNEL -S bio.c
+/lib/c2 <bio.s | sed -f ../lib/asm.sed | as -o bio.x
+rm bio.s
+cc -I.. -DKERNEL -S stream.c
+/lib/c2 <stream.s | sed -f ../lib/asm.sed | as -o stream.x
+rm stream.s
+cc -I.. -DKERNEL -S partab.c
+/lib/c2 <partab.s | sed -f ../lib/asm.sed | as -o partab.x
+rm partab.s
+cc -I.. -DKERNEL -S kb.c
+/lib/c2 -i <kb.s | sed -f ../lib/asm.sed | as -o kb.y
+rm kb.s
+cc -I.. -DKERNEL -S dk.c
+/lib/c2 -i <dk.s | sed -f ../lib/asm.sed | as -o dk.y
+rm dk.s
+cc -I.. -DKERNEL -S kdi.c
+/lib/c2 -i <kdi.s | sed -f ../lib/asm.sed | as -o kdi.y
+rm kdi.s
+cc -I.. -DKERNEL -S kmc.c
+/lib/c2 -i <kmc.s | sed -f ../lib/asm.sed | as -o kmc.y
+rm kmc.s
+cc -I.. -DKERNEL -S unixpld.c
+/lib/c2 <unixpld.s | sed -f ../lib/asm.sed | as -o unixpld.x
+rm unixpld.s
+cc -I.. -DKERNEL -S cmcld.c
+/lib/c2 <cmcld.s | sed -f ../lib/asm.sed | as -o cmcld.x
+rm cmcld.s
+cc -I.. -DKERNEL -S dkp.c
+/lib/c2 <dkp.s | sed -f ../lib/asm.sed | as -o dkp.x
+rm dkp.s
+cc -I.. -DKERNEL -S dkmod.c
+/lib/c2 <dkmod.s | sed -f ../lib/asm.sed | as -o dkmod.x
+rm dkmod.s
+cc -I.. -DKERNEL -S tu78.c
+/lib/c2 -i <tu78.s | sed -f ../lib/asm.sed | as -o tu78.y
+rm tu78.s
+cc -I.. -DKERNEL -S te16.c
+/lib/c2 -i <te16.s | sed -f ../lib/asm.sed | as -o te16.y
+rm te16.s
+cc -I.. -DKERNEL -S ttyld.c
+/lib/c2 <ttyld.s | sed -f ../lib/asm.sed | as -o ttyld.x
+rm ttyld.s
+cc -I.. -DKERNEL -S mesg.c
+/lib/c2 <mesg.s | sed -f ../lib/asm.sed | as -o mesg.x
+rm mesg.s
+cc -I.. -DKERNEL -S connld.c
+/lib/c2 <connld.s | sed -f ../lib/asm.sed | as -o connld.x
+rm connld.s
+cc -I.. -DKERNEL -S bufld.c
+/lib/c2 <bufld.s | sed -f ../lib/asm.sed | as -o bufld.x
+rm bufld.s
+cc -I.. -DKERNEL -S dz.c
+/lib/c2 -i <dz.s | sed -f ../lib/asm.sed | as -o dz.y
+rm dz.s
+cc -I.. -DKERNEL -S dhv11.c
+/lib/c2 -i <dhv11.s | sed -f ../lib/asm.sed | as -o dhv11.y
+rm dhv11.s
+cc -I.. -DKERNEL -S om.c
+/lib/c2 -i <om.s | sed -f ../lib/asm.sed | as -o om.y
+rm om.s
+cc -I.. -DKERNEL -S pg.c
+/lib/c2 -i <pg.s | sed -f ../lib/asm.sed | as -o pg.y
+rm pg.s
+cc -I.. -DKERNEL -S scsi.c
+/lib/c2 -i <scsi.s | sed -f ../lib/asm.sed | as -o scsi.y
+rm scsi.s
+cc -I.. -DKERNEL -S vplot.c
+/lib/c2 -i <vplot.s | sed -f ../lib/asm.sed | as -o vplot.y
+rm vplot.s
+cc -I.. -DKERNEL -S mg.c
+/lib/c2 -i <mg.s | sed -f ../lib/asm.sed | as -o mg.y
+rm mg.s
+cc -I.. -DKERNEL -S rco.c
+/lib/c2 -i <rco.s | sed -f ../lib/asm.sed | as -o rco.y
+rm rco.s
+cc -I.. -DKERNEL -S im.c
+/lib/c2 -i <im.s | sed -f ../lib/asm.sed | as -o im.y
+rm im.s
+cc -I.. -DKERNEL -S gpib.c
+/lib/c2 -i <gpib.s | sed -f ../lib/asm.sed | as -o gpib.y
+rm gpib.s
+cc -I.. -DKERNEL -S dsort.c
+/lib/c2 <dsort.s | sed -f ../lib/asm.sed | as -o dsort.x
+rm dsort.s
+cc -I.. -DKERNEL -S bad144.c
+/lib/c2 <bad144.s | sed -f ../lib/asm.sed | as -o bad144.x
+rm bad144.s
+cc -I.. -DKERNEL -S errlog.c
+/lib/c2 <errlog.s | sed -f ../lib/asm.sed | as -o errlog.x
+rm errlog.s
+cc -I.. -DKERNEL -S ra.c
+/lib/c2 <ra.s | sed -f ../lib/asm.sed | as -o ra.x
+rm ra.s
+cc -I.. -DKERNEL -S ta.c
+/lib/c2 <ta.s | sed -f ../lib/asm.sed | as -o ta.x
+rm ta.s
+cc -I.. -DKERNEL -S uda.c
+/lib/c2 -i <uda.s | sed -f ../lib/asm.sed | as -o uda.y
+rm uda.s
+cc -I.. -DKERNEL -S bda.c
+/lib/c2 -i <bda.s | sed -f ../lib/asm.sed | as -o bda.y
+rm bda.s
+cc -I.. -DKERNEL -S up.c
+/lib/c2 -i <up.s | sed -f ../lib/asm.sed | as -o up.y
+rm up.s
+cc -I.. -DKERNEL -S hp.c
+/lib/c2 -i <hp.s | sed -f ../lib/asm.sed | as -o hp.y
+rm hp.s
+cc -I.. -DKERNEL -S cure.c
+/lib/c2 -i <cure.s | sed -f ../lib/asm.sed | as -o cure.y
+rm cure.s
+cc -I.. -DKERNEL -S drbit.c
+/lib/c2 -i <drbit.s | sed -f ../lib/asm.sed | as -o drbit.y
+rm drbit.s
+cc -I.. -DKERNEL -S dn.c
+/lib/c2 -i <dn.s | sed -f ../lib/asm.sed | as -o dn.y
+rm dn.s
+cc -I.. -DKERNEL -S nttyld.c
+/lib/c2 <nttyld.s | sed -f ../lib/asm.sed | as -o nttyld.x
+rm nttyld.s
+cc -I.. -DKERNEL -S deqna.c
+/lib/c2 -i <deqna.s | sed -f ../lib/asm.sed | as -o deqna.y
+rm deqna.s
+cc -I.. -DKERNEL -S ni1010a.c
+/lib/c2 -i <ni1010a.s | sed -f ../lib/asm.sed | as -o ni1010a.y
+rm ni1010a.s
+cc -I.. -DKERNEL -S debna.c
+/lib/c2 -i <debna.s | sed -f ../lib/asm.sed | as -o debna.y
+rm debna.s
+names=`membername ../lib/io.a(fd.x) ../lib/io.a(mem.x) ../lib/io.a(sw.x) ../lib/io.a(fineclock.x) ../lib/io.a(bio.x) ../lib/io.a(stream.x) ../lib/io.a(partab.x) ../lib/io.a(kb.y) ../lib/io.a(dk.y) ../lib/io.a(kdi.y) ../lib/io.a(kmc.y) ../lib/io.a(unixpld.x) ../lib/io.a(cmcld.x) ../lib/io.a(dkp.x) ../lib/io.a(dkmod.x) ../lib/io.a(tu78.y) ../lib/io.a(te16.y) ../lib/io.a(ttyld.x) ../lib/io.a(mesg.x) ../lib/io.a(connld.x) ../lib/io.a(bufld.x) ../lib/io.a(dz.y) ../lib/io.a(dhv11.y) ../lib/io.a(om.y) ../lib/io.a(pg.y) ../lib/io.a(scsi.y) ../lib/io.a(vplot.y) ../lib/io.a(mg.y) ../lib/io.a(rco.y) ../lib/io.a(im.y) ../lib/io.a(gpib.y) ../lib/io.a(dsort.x) ../lib/io.a(bad144.x) ../lib/io.a(errlog.x) ../lib/io.a(ra.x) ../lib/io.a(ta.x) ../lib/io.a(uda.y) ../lib/io.a(bda.y) ../lib/io.a(up.y) ../lib/io.a(hp.y) ../lib/io.a(cure.y) ../lib/io.a(drbit.y) ../lib/io.a(dn.y) ../lib/io.a(nttyld.x) ../lib/io.a(deqna.y) ../lib/io.a(ni1010a.y) ../lib/io.a(debna.y)`
+ar r ../lib/io.a $names && rm $names
+ranlib ../lib/io.a
+cc -I.. -DKERNEL -S fs.c
+/lib/c2 <fs.s | sed -f ../lib/asm.sed | as -o fs.x
+rm fs.s
+cc -I.. -DKERNEL -S fsnami.c
+/lib/c2 <fsnami.s | sed -f ../lib/asm.sed | as -o fsnami.x
+rm fsnami.s
+cc -I.. -DKERNEL -S alloc.c
+/lib/c2 <alloc.s | sed -f ../lib/asm.sed | as -o alloc.x
+rm alloc.s
+cc -I.. -DKERNEL -S neta.c
+/lib/c2 <neta.s | sed -f ../lib/asm.sed | as -o neta.x
+rm neta.s
+cc -I.. -DKERNEL -S proca.c
+/lib/c2 <proca.s | sed -f ../lib/asm.sed | as -o proca.x
+rm proca.s
+cc -I.. -DKERNEL -S ms.c
+/lib/c2 <ms.s | sed -f ../lib/asm.sed | as -o ms.x
+rm ms.s
+cc -I.. -DKERNEL -S netb.c
+/lib/c2 <netb.s | sed -f ../lib/asm.sed | as -o netb.x
+rm netb.s
+cc -I.. -DKERNEL -S errfs.c
+/lib/c2 <errfs.s | sed -f ../lib/asm.sed | as -o errfs.x
+rm errfs.s
+cc -I.. -DKERNEL -S pipe.c
+/lib/c2 <pipe.s | sed -f ../lib/asm.sed | as -o pipe.x
+rm pipe.s
+names=`membername ../lib/fs.a(fs.x) ../lib/fs.a(fsnami.x) ../lib/fs.a(alloc.x) ../lib/fs.a(neta.x) ../lib/fs.a(proca.x) ../lib/fs.a(ms.x) ../lib/fs.a(netb.x) ../lib/fs.a(errfs.x) ../lib/fs.a(pipe.x)`
+ar r ../lib/fs.a $names && rm $names
+ranlib ../lib/fs.a
+grep ^#define ../sys/trap.h | sed 's/#define[ 	]*\([^ 	]*\)[ 	]*\([^ 	]*\).*/	.set	\1,\2/' >traplist.s
+grep ^#define ../sys/clock.h | grep CLK | sed 's/#define[ 	]*\([^ 	]*\)[ 	]*\([^ 	]*\).*/	.set	\1,\2/' >clockparm.s
+/lib/cpp emulate.s | as -o ../lib/asuvemul.o
+as -o ../lib/asstar.o param.s traplist.s start.s boot.s icode.s access.s copy.s setjmp.s swtch.s trap.s misc.s udiv.s urem.s clockparm.s trapbvax.s trapdw780.s trapstar.s
+as -o ../lib/ascomet.o param.s traplist.s start.s boot.s icode.s access.s copy.s setjmp.s swtch.s trap.s misc.s udiv.s urem.s clockparm.s trapbvax.s trapcomet.s
+as -o ../lib/asnaut.o param.s traplist.s start.s boot.s icode.s access.s copy.s setjmp.s swtch.s trap.s misc.s udiv.s urem.s clockparm.s trapbvax.s trapnaut.s
+as -o ../lib/asmflow.o param.s traplist.s start.s boot.s icode.s access.s copy.s setjmp.s swtch.s trap.s misc.s udiv.s urem.s clockparm.s trapmflow.s
+as -o ../lib/asmfair.o param.s traplist.s start.s boot.s icode.s access.s copy.s setjmp.s swtch.s trap.s misc.s udiv.s urem.s clockparm.s trapmflow.s trapmfair.s
+144.4u 63.5s 352r 	 mkall

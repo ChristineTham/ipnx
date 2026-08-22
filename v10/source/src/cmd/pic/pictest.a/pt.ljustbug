@@ -1,0 +1,44 @@
+From houxa!wjmayer Wed Apr 27 07:38 EDT 1988
+To: research!bwk
+
+Here is an example of the problem I described.
+.nf
+
+The following should produce text left adjusted
+and right adjusted within the box.  Using the
+newer pic it is centered at the west edge and
+east edge of the box.
+
+Tnx for your help.
+
+Bill Mayer
+houxa!wjmayer
+..
+
+.nf
+.PS
+scale=100
+define t1219 |
+[ box invis ht 48 wid 70 with .sw at 0,0
+"\fH\s10\&Feature\f1\s0"  at 0,40 ljust
+"\fH\s10\&Spec.\f1\s0"  at 0,24 ljust
+"\fH\s10\&Document\f1\s0"  at 0,8 ljust
+] |
+
+define m13 |
+[ box invis ht 80 wid 80 with .sw at 0,0
+"\fH\s10\&305\f1\s0"  ljust at 4,66
+t1219 with .nw at 4,54
+box ht 80 wid 80 with .nw at 0,80 
+"\fH\s10\&C\f1\s0"  at 76,66 rjust
+] |
+
+define m14 |
+[ box invis ht 160 wid 80 with .sw at 0,0
+m13 with .nw at 0,160
+] |
+
+box invis ht 736 wid 716 with .sw at 0,0
+m14 with .nw at 56,424
+.PE
+.fi

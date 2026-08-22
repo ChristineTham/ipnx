@@ -1,0 +1,15 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.under:
+.nf
+.EQ
+gfont I
+x under ~~~ x sub i under ~~~ {x sub i} under ~~~ {x sub i sup i} under
+~~~ y under ~~~ y sub i under ~~~ {y sub i} under ~~~ {y sub i sup i} under
+.EN
+.EQ
+x utilde ~~~ x sub i utilde ~~~ {x sub i} utilde ~~~ {x sub i sup i} utilde
+~~~ y utilde ~~~ y sub i utilde ~~~ {y sub i} utilde ~~~ {y sub i sup i} utilde
+.EN

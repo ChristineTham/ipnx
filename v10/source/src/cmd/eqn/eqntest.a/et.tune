@@ -1,0 +1,31 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.tune:
+.vs 20p
+You can now (or atl east when i install it) tune parameters
+that control the subscript base shift and superscript shift
+in eqn.  syntax and some experimental values given below.
+Subbase is the distance to move down for a subscript (in ems),
+Supshift is the distance to move up for a superscript.
+The number can be absolute as in the 2nd example, or relative,
+as in the 3rd.  Once you've overwritten the value, it's gone
+forever.
+
+.sp 1i
+.EQ
+x sub 2 sup (n-2) x sub 1 sup [y-2] f sub 2 sup prime f sub 2 sup '
+.EN
+
+.EQ
+define Subbase % 0.25 %
+define Supshift % .5 %
+x sub 2 sup (n-2) x sub 1 sup [y-2] f sub 2 sup prime f sub 2 sup '
+.EN
+
+.EQ
+define Subbase % -.05 %
+define Supshift % -.05 %
+x sub 2 sup (n-2) x sub 1 sup [y-2] f sub 2 sup prime f sub 2 sup '
+.EN

@@ -1,0 +1,7 @@
+for i in $*
+do
+	echo $i:
+	a.out $i >foo2
+	/usr/bin/pic $i >foo1
+	diff foo1 foo2 | ind
+done

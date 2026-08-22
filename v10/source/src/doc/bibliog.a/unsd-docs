@@ -1,0 +1,78 @@
+.so nmac
+.ds NM UNSD
+.ul
+.ce
+UNSD-Standard Documentation
+.TL
+(1037) Referencing Standard UNIX Documentation
+.AU
+G. C. Vogel
+August 23,1974
+Memorandum For File
+.TL
+(1039) Reorganization of UNIX Source Files
+.AU
+G. C. Vogel
+C. D. Perez
+October 29, l974
+Memorandum For File
+.TL 
+(1040) UNIX Operating System Generic Program -PG-1C300 Issue 1
+.AU
+G. C. Vogel
+November 18, l974
+Memorandum For File
+.TL
+(1041) UNIX Source Code Statistic PG-1C300 Issue 1
+.AU
+G. C. Vogel
+December 10, l974
+Programmer's Notes
+.TL
+(1044) UNIX Documentation on Microfiche
+.AU
+G. C. Vogel
+February 7, 1975
+MF-75-8324-16
+The entire set of documents in PG-1C300 Issue 1 is
+contained on a set of 51 microfiche cards.
+.TL
+(1046) UNIX Support Classifications For PG-1C300 - Issue 2
+.AU
+G. C. Vogel
+January 30, 1976
+MF-76-8234-9
+The purpose of this memorandum is to define levels
+of support and to assign pidents to these classifications.
+.TL
+(1095) UNIX User Documentation Plan
+.AU
+J. T. Walker
+R. A. Zinke
+April 29, 1976
+TM 76-9131-4
+This memorandum describes a user documentation
+plan for the UNIX time-sharing software system.
+.TL
+(1096) UNIX Redocumentation And Test Report
+.AU
+J. T. Walker
+R. A. Zinke
+February 3, 1976
+TM 76-9131-3
+This memorandum represents a concise summary of the effort
+of Dept. 9131 in the UNIX redocumentation request.
+.TL
+(1099) Program Generic Control And Documentation On UNIX.
+.AU
+G. C. Vogel
+May 17, 1976
+TM 76-8234-13
+This memorandum describes a general set of program generic
+control and documentation procedures has been developed to
+Bell system format.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+For complete information, see UNED

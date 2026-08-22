@@ -1,0 +1,68 @@
+.so nmac
+.ds NM UNHA
+.ul
+.ce
+UNHA-Hardware
+.TL
+(1026) Proposal for Memory-to-Memory Transfer Unit
+.AU
+Rudd H. Canaday
+March, 1974
+.TL
+(1027) PDP-11 32-Bit Time-Of-Year Clock
+.AU
+Rudd H. Canaday
+March, 1974
+.TL
+(1038) UNIX Recommended Hardware Configurations
+.AU
+G. C. Vogel
+September 26, l975
+MF 75-8234-109
+This memorandum supersedes the document "Unix
+Minimum Hardware Configuration" dated  November 4, 1974.
+
+.TL
+(1048) A Continous Service Real Time Clock for Digital Computers
+.AU
+J. R. Vollaro
+March 13, l975
+TM 75-1273-4
+This paper describes continous service; meaning
+the clock continues to function during power blackouts,
+system failures and shutdowns and be read whenever
+the computer is operable.
+.TL
+(1054) Benchmark of UNIX on DEC 11/70
+.AU
+K. Thompson
+R. B. Brandt
+April 17, l975
+TM 75-8234-4
+TM 75-1271-4
+.TL
+(1058) C - language Oriented Microprogram for
+the HP-21MX
+.AU
+A. G. Fraser
+D. M. Ritchie
+February 25, 1975
+TM 75-1273-1
+This paper proposes an instruction-set architecture
+designed for implementation on the Hewitt-Packard
+21MX Micro-programmed processor.
+.TL
+(1072) Measuring UNIX
+.AU
+D. H. Copp
+P. A. Hamilton
+October 31, 1975
+TM 75-8234-9
+This paper evaluates three off-the-shelf tools for
+measuring the behavior of a UNIX System in a pro-
+duction environment.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+For Complete Information, see UNED

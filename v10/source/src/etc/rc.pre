@@ -1,0 +1,4 @@
+PATH=/bin:/etc:/usr/bin
+export PATH
+/etc/mount /dev/ra0c /usr
+cat /etc/motd

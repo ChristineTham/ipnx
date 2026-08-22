@@ -1,0 +1,76 @@
+.TH F 1 Blit
+.SH NAME
+f \- font conversion program
+.SH SYNOPSIS
+jx
+.B f
+<
+.I script
+.SH DESCRIPTION
+.I f
+is an mpx program that accepts fonts in either Blit or Mergenthaler
+format and can write Blit or
+Canon (Versatec) format fonts.
+.I f
+reads standard input (N.B. jx standard input can
+.I not
+be from the keyboard) until EOF or a character is typed.  Subsequent input
+is taken from the keyboard.
+Normally
+.I f
+is used to make several Blit font files, each with a specific point size, from
+one Mergenthaler archive.  This is reasonable since converting Mergenthaler
+characters is much faster than reading them in.
+.PP
+Conversion takes place using a Mergenthaler simulation modified for extremely
+small point sizes.  For this reason
+.I f
+uses a
+.I rational
+specification of point size.  For example, to generate a 10 point Canon font
+one would choose a pair of numbers whose ratio is (972*32)/(240*10), where
+972 is the Mergenthaler resolution, 32 is the default Mergenthaler point
+size, and 240 is the resolution of the Canon printer.  To specify this
+point size one could say any of "p 1 13", "p 2 26", "p 3 40", or any other
+combination of numbers with the proper ratio and some magical numerical
+properties.  (One chooses these numbers by looking at the results as well
+as calculating what they should be.)
+.PP
+f commands:
+.TP +3
+i \fIfile\fP
+include file
+.TP
+f \fIn\fP
+select font n [0 <= n < 10]
+.TP
+s	(skip) add empty character to selected font
+.TP
+merg \fIfile\fP
+read in a Mergenthaler character
+.TP
+p \fIn m\fP
+set rational point size
+.TP
+space \fIn\fP
+set intercharacter spacing
+.TP
+r	(reduce) add converted character to selected font
+.TP
+can \fIfile\fP
+write Versatec font to file
+.TP
+e \fIfile\fP
+read Blit font from file
+.TP
+w \fIfile\fP
+write Blit font to file
+.TP
+q	exit
+.SH FILES
+/usr/jerq/include/font.h	Blit font format
+.SH BUGS
+A font index must not be more than 1 larger than the previous largest font
+index.
+.br
+Static charge can type a key and stop the program.

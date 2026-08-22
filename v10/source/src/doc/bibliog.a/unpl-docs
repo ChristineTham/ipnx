@@ -1,0 +1,208 @@
+.so nmac
+.ds NM UNPL
+.ul
+.ce
+UNPL-Programming Languages
+.TL
+(1033) Programming in LIL:A Tutorial
+.AU
+P. J. Plauger
+June 17, 1974
+TM 74-1352-6
+.TL
+(1034) LIL Reference Manual
+.AU
+P. J. Plauger
+June 19, 1974
+TM 74-1352-8
+.TL
+(1001) Programming in C - A Tutorial
+.AU
+B. W. Kernighan
+May 5, 1974
+TM 74-1273-12
+.TL
+(1002) C Reference Manual
+.AU
+D.M. Ritchie
+February 1, l975
+.TL
+(1006) The Structure and Use of the C Programming Language
+.AU
+S. T. Schuyler
+TM 74-3412-2
+This document gives a set of productions
+for the C language.  It also contains an
+example of their use with a simple program.
+.TL
+(1007) The Portable C Library
+.AU
+M. E. Lesk
+May 6, 1975
+TM 75-1272-11
+This memorandum is a revision and extension of MM-74-1274-1
+"The GCOS C Library" by M. Lesk and B. A. Barres.
+.TL
+(1009) A Manual For the TMG Compiler-Writing Language
+.AU
+M. D. McIlroy
+MM 72-1271-8
+.TL
+(1012) UNIX Assembler Reference Manual
+.AU
+D. M. Ritchie
+.TL
+(1013) YACC - Yet Another Compiler Compiler
+.AU
+S. C. Johnson
+May 5, 1975
+TM 75-1273-6
+This memorandum is a revision of TM-74-1273-9 dated
+April 18, 1974 and supersedes it.
+.TL
+(1015) C Beautifier
+.AU
+L. A. Dimino
+Memorandum for file
+This document describes a program to do the
+justifying and alignment to make unreadable
+C program more understandable.
+.TL
+(1016) UNIX New Users Course View-Graphs February 6-8,1974
+.AU
+J. F. Maranzano
+T. M. Raleigh
+G. C. Vogel
+Memorandum for file
+.TL
+(1018) GRAFPAC/FR80 - a C version of Deferred GRAFPAC
+  Under the UNIX Time-Sharing system.
+.AU
+G. K. Swanson
+September 23, 1974
+TM 74-1353-6
+.TL
+(1053) BC - An Arbitrary Precision Desk Calculator Language
+.AU
+L. Cherry
+R. Morris
+May 1, 1975
+TM 75-1271-5
+BC is an language and a compiler for doing arbitrary precision
+arithmetic on the PDP-11 under the UNIX Time-Sharing System.
+.TL
+(1056) DC - An Interactive Desk Calculator
+.AU
+L. Cherry
+R. Morris
+May 1, 1975
+TM 75-1271-8
+DC is an interactive desk calculator program implemented
+on the UNIX Time-Sharing System to do arbitrary-precision 
+integer arithmetic.
+.TL
+(1061) LEX - Lexical Analyzer Generator
+.AU
+M. E. Lesk
+July 21, 1975
+TM 75-1274-15
+LEX helps write programs whose control flow is
+directed by instances of regular expressions 
+in the input stream.
+.TL
+(1063) A Description of How UNIX Fortran Works
+.AU
+I. A. Winheim
+April 10, 1975
+TM 75-8234-3
+This memorandum describes the main differences between
+C and Fortran and how to interface Fortran with the 
+operating system.
+.TL
+(1064) AGEN - An Associated Memory Generator
+.AU
+M. E. Lesk
+September 2, 1975
+TM 75-1274-18
+Agen is a program generator for table searches
+It also writes programs to store and retrieve
+information
+.TL
+(1074) A Library of Reference standard Mathematical Subroutines
+.AU
+R. Morris
+May 1, 1975
+TM 75-1271-6
+This memo describes a set of mathematical library functions
+to use arbitrary accuracy.  Relevant error analysis and
+subroutines listings are given.
+.TL
+(1079) BLOSIM - A Discrete Time Block Simulator.
+.AU
+G. Roylance (MIT)
+M. T. Dolan
+J. F. Kaiser
+July 15, 1975
+TM 75-1352-6
+This memorandum describes the language, variable
+precision, implementation, and general use of BLOSIM.
+.TL
+(1080) UNIX Facilities For The Development Of 
+  Programs Written In Macro-11.
+.AU
+P. D. Jensen
+December 5, 1975
+TM 75-8234-14
+This memo describes the initial set of facilities available
+under UNIX for use in developing programs written in DOS
+Macro-11, and BOS & BOS application programs in particular.
+.TL
+(1084) Struct - A Program Which Structures Fortran.
+.AU
+B. S. Baker
+December 22, 1975
+TM 75-1271-12
+Struct is a program which rewrites Fortran programs using
+Ratfor control constructs,  such as WHILE and IF ELSE
+statements.  These constructs are used by Struct to make
+loops and branching apparent.
+.TL
+(1097) SIM - A Language For Simulating Computers.
+.AU
+L. L. Cherry
+May 5, 1976
+TM 76-1271-2
+SIM is a language and compiler for writing computer and
+microprocessor simulators.  SIM currently runs under
+UNIX and will soon be available under GCOS.
+.TL
+(1102) Some Statistics On The Usage Of The C Language.
+.AU
+H. Gajewska
+S. C. Johnson
+TM 75-1273-13
+This paper describes a program that analyses programs
+written in the C language.
+.TL
+(1103) An Algorithm For Structuring Flowgraphs.
+.AU
+B. S. Baker
+May 14, 1976
+TM 76-1271-3
+This paper descibes an algorithm which transforms a flowgraph
+into a program containing IF THEN ELSE and REPEAT (DO FOREVER)
+statements.  The algorithm has been implemented in a program
+called Struct (1084).
+.TL
+(1105) An Interactive Control Language For SIM.
+.AU
+L. L. Cherry
+June 28, 1976
+TM 76-1271-8
+This paper is intended to be a reference manual
+and assumes familiarity with SIM.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+For complete information, see UNED

@@ -1,0 +1,873 @@
+*HEADER,FORTR,FM361
+*FILES1,FORTR,FM361,X
+C***********************************************************************
+C*****  FORTRAN 77
+C*****   FM361               XMAX - (165)
+C*****
+C***********************************************************************
+C*****  GENERAL PURPOSE                                       SUBSET REF
+C*****    TEST OF INTRINSIC FUNCTIONS AMAX0,AMAX1,MAX0,MAX1      15.3
+C*****    CHOOSING LARGEST VALUE                               (TABLE 5)
+C*****
+CBB** ********************** BBCCOMNT **********************************
+C****
+C****            1978 FORTRAN COMPILER VALIDATION SYSTEM
+C****                          VERSION 2.0
+C****
+C****
+C****           SUGGESTIONS AND COMMENTS SHOULD BE FORWARDED TO
+C****                   GENERAL SERVICES ADMINISTRATION
+C****                   FEDERAL SOFTWARE TESTING CENTER
+C****                   5203 LEESBURG PIKE, SUITE 1100
+C****                      FALLS CHURCH, VA. 22041
+C****
+C****                          (703) 756-6153
+C****
+CBE** ********************** BBCCOMNT **********************************
+CBB** ********************** BBCINITA **********************************
+C**** SPECIFICATION STATEMENTS
+C****
+      CHARACTER ZVERS*13, ZVERSD*17, ZDATE*17, ZPROG*5, ZCOMPL*20,
+     1          ZNAME*20, ZTAPE*10, ZPROJ*13, REMRKS*31, ZTAPED*13
+CBE** ********************** BBCINITA **********************************
+CBB** ********************** BBCINITB **********************************
+C**** INITIALIZE SECTION
+      DATA  ZVERS,                  ZVERSD,             ZDATE
+     1      /'VERSION 2.0  ',  '82/08/02*18.33.46',  '*NO DATE*TIME'/
+      DATA       ZCOMPL,             ZNAME,             ZTAPE
+     1      /'*NONE SPECIFIED*', '*NO COMPANY NAME*', '*NO TAPE*'/
+      DATA       ZPROJ,           ZTAPED,         ZPROG
+     1      /'*NO PROJECT*',   '*NO TAPE DATE',  'XXXXX'/
+      DATA   REMRKS /'                               '/
+C**** THE FOLLOWING 9 COMMENT LINES (CZ01, CZ02, ...) CAN BE REPLACED
+C**** FOR IDENTIFYING THE TEST ENVIRONMENT
+C****
+CZ01  ZVERS  = 'VERSION OF THE COMPILER VALIDATION SYSTEM'
+CZ02  ZVERSD = 'CREATION DATE/TIME OF THE COMPILER VALIDATION SYSTEM'
+CZ03  ZPROG  = 'PROGRAM NAME'
+CZ04  ZDATE  = 'DATE OF TEST'
+CZ05  ZCOMPL = 'COMPILER IDENTIFICATION'
+CZ06  ZPROJ  = 'PROJECT NUMBER/IDENTIFICATION'
+CZ07  ZNAME  = 'NAME OF USER'
+CZ08  ZTAPE  = 'TAPE OWNER/ID'
+CZ09  ZTAPED = 'DATE TAPE COPIED'
+C
+      IVPASS = 0
+      IVFAIL = 0
+      IVDELE = 0
+      IVINSP = 0
+      IVTOTL = 0
+      IVTOTN = 0
+      ICZERO = 0
+C
+C     I01 CONTAINS THE LOGICAL UNIT NUMBER FOR THE CARD READER.
+      I01 = 05
+C     I02 CONTAINS THE LOGICAL UNIT NUMBER FOR THE PRINTER.
+      I02 = 06
+C
+CX010   REPLACED BY FEXEC X-010 CONTROL CARD (CARD-READER UNIT NUMBER).
+C     THE CX010 CARD IS FOR OVERRIDING THE PROGRAM DEFAULT I01 = 5
+CX011   REPLACED BY FEXEC X-011 CONTROL CARD.  CX011 IS FOR SYSTEMS
+C     REQUIRING ADDITIONAL STATEMENTS FOR FILES ASSOCIATED WITH CX010.
+C
+CX020   REPLACED BY FEXEC X-020 CONTROL CARD (PRINTER UNIT NUMBER).
+C     THE CX020 CARD IS FOR OVERRIDING THE PROGRAM DEFAULT I02= 6
+CX021   REPLACED BY FEXEC X-021 CONTROL CARD.  CX021 IS FOR SYSTEMS
+C     REQUIRING ADDITIONAL STATEMENTS FOR FILES ASSOCIATED WITH CX020.
+C
+CBE** ********************** BBCINITB **********************************
+      NUVI = I02
+      IVTOTL = 48
+      ZPROG = 'FM361'
+CBB** ********************** BBCHED0A **********************************
+C****
+C**** WRITE REPORT TITLE
+C****
+      WRITE (I02, 90002)
+      WRITE (I02, 90006)
+      WRITE (I02, 90007)
+      WRITE (I02, 90008)  ZVERS, ZVERSD
+      WRITE (I02, 90009)  ZPROG, ZPROG
+      WRITE (I02, 90010)  ZDATE, ZCOMPL
+CBE** ********************** BBCHED0A **********************************
+C*****
+C*****    HEADER FOR SEGMENT 165
+        WRITE (NUVI,16501)
+16501   FORMAT (1H , // 2X,36HXMAX - (165) INTRINSIC FUNCTIONS--  //13X,
+     1          26HAMAX0, AMAX1, MAX0, MAX1     /13X,
+     2          24H(CHOOSING LARGEST VALUE)//2X,
+     3          18HSUBSET REF. - 15.3)
+CBB** ********************** BBCHED0B **********************************
+C**** WRITE DETAIL REPORT HEADERS
+C****
+      WRITE (I02,90004)
+      WRITE (I02,90004)
+      WRITE (I02,90013)
+      WRITE (I02,90014)
+      WRITE (I02,90015) IVTOTL
+CBE** ********************** BBCHED0B **********************************
+C*****
+C*****    TEST OF AMAX0
+C*****
+        WRITE(NUVI, 16502)
+16502   FORMAT (/ 8X, 13HTEST OF AMAX0)
+CT001*  TEST 1                                            BOTH ZEROES
+           IVTNUM = 1
+        IHBVI = 0
+        IHDVI = 0
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS + 0.00005) 20010, 10010, 40010
+40010      IF (RHAVS - 0.00005) 10010, 10010, 20010
+10010      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0011
+20010      IVFAIL = IVFAIL + 1
+           RVCORR = 0.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0011      CONTINUE
+CT002*  TEST 2                                 ONE NON-ZERO, ONE ZERO
+           IVTNUM = 2
+        IHBVI = 6
+        IHDVI = 0
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS - 5.9997) 20020, 10020, 40020
+40020      IF (RHAVS - 6.0003) 10020, 10020, 20020
+10020      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0021
+20020      IVFAIL = IVFAIL + 1
+           RVCORR = 6.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0021      CONTINUE
+CT003*  TEST 3                                      BOTH VALUES EQUAL
+           IVTNUM = 3
+        IHBVI = 7
+        IHDVI = 7
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS - 6.9996) 20030, 10030, 40030
+40030      IF (RHAVS - 7.0004) 10030, 10030, 20030
+10030      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0031
+20030      IVFAIL = IVFAIL + 1
+           RVCORR = 7.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0031      CONTINUE
+CT004*  TEST 4                          UNEQUAL VALUES, BOTH POSITIVE
+           IVTNUM = 4
+        IHBVI = 7
+        IHDVI = 5
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS - 6.9996) 20040, 10040, 40040
+40040      IF (RHAVS - 7.0004) 10040, 10040, 20040
+10040      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0041
+20040      IVFAIL = IVFAIL + 1
+           RVCORR = 7.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0041      CONTINUE
+CT005*  TEST 5                                 ONE NEGATIVE, ONE ZERO
+           IVTNUM = 5
+        IHBVI = -6
+        IHDVI = 0
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS + 0.00005) 20050, 10050, 40050
+40050      IF (RHAVS - 0.00005) 10050, 10050, 20050
+10050      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0051
+20050      IVFAIL = IVFAIL + 1
+           RVCORR = 0.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0051      CONTINUE
+CT006*  TEST 6                       BOTH VALUES EQUAL, BOTH NEGATIVE
+           IVTNUM = 6
+        IHBVI = -7
+        IHDVI = -7
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS + 7.0004) 20060, 10060, 40060
+40060      IF (RHAVS + 6.9996) 10060, 10060, 20060
+10060      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0061
+20060      IVFAIL = IVFAIL + 1
+           RVCORR = -7.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0061      CONTINUE
+CT007*  TEST 7                   BOTH VALUES NOT EQUAL, BOTH NEGATIVE
+           IVTNUM = 7
+        IHBVI = -7
+        IHDVI = -5
+        RHAVS = AMAX0(IHBVI,IHDVI)
+           IF (RHAVS + 5.0003) 20070, 10070, 40070
+40070      IF (RHAVS + 4.9997) 10070, 10070, 20070
+10070      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0071
+20070      IVFAIL = IVFAIL + 1
+           RVCORR = -5.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0071      CONTINUE
+CT008*  TEST 8  1ST VALUE NON-ZERO, 2ND ZERO PRECEDED BY A MINUS SIGN
+           IVTNUM = 8
+        IHDVI = 6
+        IHEVI = 0
+        RHAVS = AMAX0(IHDVI, -IHEVI)
+           IF (RHAVS - 5.9997) 20080, 10080, 40080
+40080      IF (RHAVS - 6.0003) 10080, 10080, 20080
+10080      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0081
+20080      IVFAIL = IVFAIL + 1
+           RVCORR = 6.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0081      CONTINUE
+CT009*  TEST 9                      EXPRESSIONS PRESENTED TO FUNCTION
+           IVTNUM = 9
+        IHDVI = 3
+        IHEVI = 4
+        RHAVS = AMAX0(IHDVI + IHEVI, -IHEVI - IHDVI)
+           IF (RHAVS - 6.9996) 20090, 10090, 40090
+40090      IF (RHAVS - 7.0004) 10090, 10090, 20090
+10090      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0091
+20090      IVFAIL = IVFAIL + 1
+           RVCORR = 7.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0091      CONTINUE
+CT010*  TEST 10                                           3 ARGUMENTS
+           IVTNUM = 10
+        IHBVI = 0
+        IHCVI = 1
+        IHDVI = 3
+        RHAVS = AMAX0(IHBVI, IHCVI, IHDVI)
+           IF (RHAVS - 2.9998) 20100, 10100, 40100
+40100      IF (RHAVS - 3.0002) 10100, 10100, 20100
+10100      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0101
+20100      IVFAIL = IVFAIL + 1
+           RVCORR = 3.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0101      CONTINUE
+CT011*  TEST 11                                           4 ARGUMENTS
+           IVTNUM = 11
+        IHBVI = 0
+        IHCVI = 1
+        IHDVI = 4
+        RHAVS = AMAX0(IHDVI, -IHBVI, IHCVI, IHBVI)
+           IF (RHAVS - 3.9998) 20110, 10110, 40110
+40110      IF (RHAVS - 4.0002) 10110, 10110, 20110
+10110      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0111
+20110      IVFAIL = IVFAIL + 1
+           RVCORR = 4.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0111      CONTINUE
+CT012*  TEST 12                                           5 ARGUMENTS
+           IVTNUM = 12
+        IHDVI = 4.0
+        IHEVI = 5.0
+        RHAVS = AMAX0(IHDVI, -IHDVI, -IHEVI, +IHDVI, IHEVI)
+           IF (RHAVS - 4.9997) 20120, 10120, 40120
+40120      IF (RHAVS - 5.0003) 10120, 10120, 20120
+10120      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0121
+20120      IVFAIL = IVFAIL + 1
+           RVCORR = 5.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0121      CONTINUE
+C*****
+        WRITE (NUVI, 90002)
+        WRITE (NUVI, 90013)
+        WRITE (NUVI, 90014)
+C*****    TEST OF AMAX1
+C*****
+        WRITE(NUVI, 16504)
+16504   FORMAT (/ 8X, 13HTEST OF AMAX1)
+CT013*  TEST 13                                      BOTH VALUES ZERO
+           IVTNUM = 13
+        RHBVS = 0.0
+        RHDVS = 0.0
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS + 0.00005) 20130, 10130, 40130
+40130      IF (RHAVS - 0.00005) 10130, 10130, 20130
+10130      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0131
+20130      IVFAIL = IVFAIL + 1
+           RVCORR = 0.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0131      CONTINUE
+CT014*  TEST 14                     FIRST VALUE NON-ZERO, SECOND ZERO
+           IVTNUM = 14
+        RHBVS = 5.625
+        RHDVS = 0.0
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS - 5.6247) 20140, 10140, 40140
+40140      IF (RHAVS - 5.6253) 10140, 10140, 20140
+10140      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0141
+20140      IVFAIL = IVFAIL + 1
+           RVCORR = 5.625
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0141      CONTINUE
+CT015*  TEST 15                                     BOTH VALUES EQUAL
+           IVTNUM = 15
+        RHBVS = 6.5
+        RHDVS = 6.5
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS - 6.4996) 20150, 10150, 40150
+40150      IF (RHAVS - 6.5004) 10150, 10150, 20150
+10150      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0151
+20150      IVFAIL = IVFAIL + 1
+           RVCORR = 6.5
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0151      CONTINUE
+CT016*  TEST 16                                      VALUES NOT EQUAL
+           IVTNUM = 16
+        RHBVS = 7.125
+        RHDVS = 5.125
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS - 7.1246) 20160, 10160, 40160
+40160      IF (RHAVS - 7.1254) 10160, 10160, 20160
+10160      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0161
+20160      IVFAIL = IVFAIL + 1
+           RVCORR = 7.125
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0161      CONTINUE
+CT017*  TEST 17                     FIRST VALUE NEGATIVE, SECOND ZERO
+           IVTNUM = 17
+        RHBVS = -5.625
+        RHDVS = 0.0
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS + 0.00005) 20170, 10170, 40170
+40170      IF (RHAVS - 0.00005) 10170, 10170, 20170
+10170      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0171
+20170      IVFAIL = IVFAIL + 1
+           RVCORR = 0.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0171      CONTINUE
+CT018*  TEST 18                      BOTH VALUES EQUAL, BOTH NEGATIVE
+           IVTNUM = 18
+        RHBVS = -6.5
+        RHDVS = -6.5
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS + 6.5004) 20180, 10180, 40180
+40180      IF (RHAVS + 6.4996) 10180, 10180, 20180
+10180      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0181
+20180      IVFAIL = IVFAIL + 1
+           RVCORR = -6.5
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0181      CONTINUE
+CT019*  TEST 19                       VALUES NOT EQUAL, BOTH NEGATIVE
+           IVTNUM = 19
+        RHBVS = -7.125
+        RHDVS = -5.125
+        RHAVS = AMAX1(RHBVS, RHDVS)
+           IF (RHAVS + 5.1253) 20190, 10190, 40190
+40190      IF (RHAVS + 5.1247) 10190, 10190, 20190
+10190      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0191
+20190      IVFAIL = IVFAIL + 1
+           RVCORR = -5.125
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0191      CONTINUE
+CT020*  TEST 20   1ST VALUE NON-ZERO, 2ND ZERO PRECEDED BY MINUS SIGN
+           IVTNUM = 20
+        RHDVS = 5.625
+        RHEVS = 0.0
+        RHAVS = AMAX1(RHDVS, -RHEVS)
+           IF (RHAVS - 5.6247) 20200, 10200, 40200
+40200      IF (RHAVS - 5.6253) 10200, 10200, 20200
+10200      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0201
+20200      IVFAIL = IVFAIL + 1
+           RVCORR = 5.625
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0201      CONTINUE
+CT021*  TEST 21                     EXPRESSIONS PRESENTED TO FUNCTION
+           IVTNUM = 21
+        RHDVS = 3.5
+        RHEVS = 4.0
+        RHAVS = AMAX1(RHDVS + RHEVS, -RHEVS - RHDVS)
+           IF (RHAVS - 7.4996) 20210, 10210, 40210
+40210      IF (RHAVS - 7.5004) 10210, 10210, 20210
+10210      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0211
+20210      IVFAIL = IVFAIL + 1
+           RVCORR = 7.5
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0211      CONTINUE
+CT022*  TEST 22                                           3 ARGUMENTS
+           IVTNUM = 22
+        RHBVS = 0.0
+        RHCVS = 1.0
+        RHDVS = 0.5
+        RHAVS = AMAX1(RHBVS, RHCVS, RHDVS)
+           IF (RHAVS - 0.99995) 20220, 10220, 40220
+40220      IF (RHAVS - 1.0001) 10220, 10220, 20220
+10220      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0221
+20220      IVFAIL = IVFAIL + 1
+           RVCORR = 1.0
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0221      CONTINUE
+CT023*  TEST 23                                           4 ARGUMENTS
+           IVTNUM = 23
+        RHBVS = 1.5
+        RHCVS = 3.4
+        RHDVS = 3.5
+        RHAVS = AMAX1(-RHDVS, RHCVS, RHBVS, RHDVS)
+           IF (RHAVS - 3.4998) 20230, 10230, 40230
+40230      IF (RHAVS - 3.5002) 10230, 10230, 20230
+10230      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0231
+20230      IVFAIL = IVFAIL + 1
+           RVCORR = 3.5
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0231      CONTINUE
+CT024*  TEST 24                                           5 ARGUMENTS
+           IVTNUM = 24
+        RHDVS = 3.5
+        RHEVS = 4.5
+        RHAVS = AMAX1(RHDVS, -RHDVS, -RHEVS, +RHDVS, RHEVS)
+           IF (RHAVS - 4.4997) 20240, 10240, 40240
+40240      IF (RHAVS - 4.5003) 10240, 10240, 20240
+10240      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0241
+20240      IVFAIL = IVFAIL + 1
+           RVCORR = 4.5
+           WRITE (NUVI, 80012) IVTNUM, RHAVS, RVCORR
+ 0241      CONTINUE
+C*****
+        WRITE (NUVI, 90002)
+        WRITE (NUVI, 90013)
+        WRITE (NUVI, 90014)
+C*****    TEST OF MAX0
+C*****
+        WRITE(NUVI, 16505)
+16505   FORMAT (/ 8X, 12HTEST OF MAX0)
+C*****
+CT025*  TEST 25                                      BOTH VALUES ZERO
+           IVTNUM = 25
+        IHBVI = 0
+        IHDVI = 0
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI - 0) 20250, 10250, 20250
+10250      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0251
+20250      IVFAIL = IVFAIL + 1
+           IVCORR = 0
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0251      CONTINUE
+CT026*  TEST 26                     FIRST VALUE NON-ZERO, SECOND ZERO
+           IVTNUM = 26
+        IHBVI = 6
+        IHDVI = 0
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI - 6) 20260, 10260, 20260
+10260      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0261
+20260      IVFAIL = IVFAIL + 1
+           IVCORR = 6
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0261      CONTINUE
+CT027*  TEST 27                                     BOTH VALUES EQUAL
+           IVTNUM = 27
+        IHBVI = 7
+        IHDVI = 7
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI - 7) 20270, 10270, 20270
+10270      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0271
+20270      IVFAIL = IVFAIL + 1
+           IVCORR = 7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0271      CONTINUE
+CT028*  TEST 28                                      VALUES NOT EQUAL
+           IVTNUM = 28
+        IHBVI = 7
+        IHDVI = 5
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI - 7) 20280, 10280, 20280
+10280      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0281
+20280      IVFAIL = IVFAIL + 1
+           IVCORR = 7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0281      CONTINUE
+CT029*  TEST 29                     FIRST VALUE NEGATIVE, SECOND ZERO
+           IVTNUM = 29
+        IHBVI = -6
+        IHDVI = 0
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI - 0) 20290, 10290, 20290
+10290      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0291
+20290      IVFAIL = IVFAIL + 1
+           IVCORR = 0
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0291      CONTINUE
+CT030*  TEST 30                      BOTH VALUES EQUAL, BOTH NEGATIVE
+           IVTNUM = 30
+        IHBVI = -7
+        IHDVI = -7
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI + 7) 20300, 10300, 20300
+10300      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0301
+20300      IVFAIL = IVFAIL + 1
+           IVCORR = -7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0301      CONTINUE
+CT031*  TEST 31                       VALUES NOT EQUAL, BOTH NEGATIVE
+           IVTNUM = 31
+        IHBVI = -7
+        IHDVI = -5
+        IHAVI = MAX0(IHBVI, IHDVI)
+           IF (IHAVI + 5) 20310, 10310, 20310
+10310      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0311
+20310      IVFAIL = IVFAIL + 1
+           IVCORR = -5
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0311      CONTINUE
+CT032*  TEST 32   1ST VALUE NON-ZERO, 2ND ZERO PRECEDED BY MINUS SIGN
+           IVTNUM = 32
+        IHDVI = 6
+        IHEVI = 0
+        IHAVI = MAX0(IHDVI, -IHEVI)
+           IF (IHAVI - 6) 20320, 10320, 20320
+10320      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0321
+20320      IVFAIL = IVFAIL + 1
+           IVCORR = 6
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0321      CONTINUE
+CT033*  TEST 33                     EXPRESSIONS PRESENTED TO FUNCTION
+           IVTNUM = 33
+        IHDVI = 3
+        IHEVI = 4
+        IHAVI = MAX0(IHDVI + IHEVI, -IHEVI - IHDVI)
+           IF (IHAVI - 7) 20330, 10330, 20330
+10330      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0331
+20330      IVFAIL = IVFAIL + 1
+           IVCORR = 7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0331      CONTINUE
+CT034*  TEST 34                                           3 ARGUMENTS
+           IVTNUM = 34
+        IHBVI = 0
+        IHCVI = 3
+        IHDVI = -4
+        IHAVI = MAX0(IHDVI, IHBVI, IHCVI)
+           IF (IHAVI - 3) 20340, 10340, 20340
+10340      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0341
+20340      IVFAIL = IVFAIL + 1
+           IVCORR = 3
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0341      CONTINUE
+CT035*  TEST 35                                           4 ARGUMENTS
+           IVTNUM = 35
+        IHBVI = -1
+        IHCVI = 0
+        IHDVI = 4
+        IHAVI = MAX0(IHDVI, IHCVI, IHBVI, IHDVI)
+           IF (IHAVI - 4) 20350, 10350, 20350
+10350      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0351
+20350      IVFAIL = IVFAIL + 1
+           IVCORR = 4
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0351      CONTINUE
+CT036*  TEST 36                                           5 ARGUMENTS
+           IVTNUM = 36
+        IHDVI = 4
+        IHEVI = 5
+        IHAVI = MAX0(IHDVI, -IHDVI, -IHEVI, +IHDVI, IHEVI)
+           IF (IHAVI - 5) 20360, 10360, 20360
+10360      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0361
+20360      IVFAIL = IVFAIL + 1
+           IVCORR = 5
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0361      CONTINUE
+C*****
+        WRITE (NUVI, 90002)
+        WRITE (NUVI, 90013)
+        WRITE (NUVI, 90014)
+C*****    TEST OF MAX1
+C*****
+        WRITE(NUVI, 16507)
+16507   FORMAT (/ 8X, 12HTEST OF MAX1)
+CT037*  TEST 37                                     BOTH VALUES EQUAL
+           IVTNUM = 37
+        RHBVS = 0.0
+        RHDVS = 0.0
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI - 0) 20370, 10370, 20370
+10370      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0371
+20370      IVFAIL = IVFAIL + 1
+           IVCORR = 0
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0371      CONTINUE
+CT038*  TEST 38                     FIRST VALUE NON-ZERO, SECOND ZERO
+           IVTNUM = 38
+        RHBVS = 5.625
+        RHDVS = 0.0
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI - 5) 20380, 10380, 20380
+10380      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0381
+20380      IVFAIL = IVFAIL + 1
+           IVCORR = 5
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0381      CONTINUE
+CT039*  TEST 39                                     BOTH VALUES EQUAL
+           IVTNUM = 39
+        RHBVS = 6.5
+        RHDVS = 6.5
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI - 6) 20390, 10390, 20390
+10390      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0391
+20390      IVFAIL = IVFAIL + 1
+           IVCORR = 6
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0391      CONTINUE
+CT040*  TEST 40                                      VALUES NOT EQUAL
+           IVTNUM = 40
+        RHBVS = 7.125
+        RHDVS = 5.125
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI - 7) 20400, 10400, 20400
+10400      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0401
+20400      IVFAIL = IVFAIL + 1
+           IVCORR = 7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0401      CONTINUE
+CT041*  TEST 41                     FIRST VALUE NEGATIVE, SECOND ZERO
+           IVTNUM = 41
+        RHBVS = -5.625
+        RHDVS = 0.0
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI - 0) 20410, 10410, 20410
+10410      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0411
+20410      IVFAIL = IVFAIL + 1
+           IVCORR = 0
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0411      CONTINUE
+CT042*  TEST 42                      BOTH VALUES EQUAL, BOTH NEGATIVE
+           IVTNUM = 42
+        RHBVS = - 6.5
+        RHDVS = - 6.5
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI + 6) 20420, 10420, 20420
+10420      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0421
+20420      IVFAIL = IVFAIL + 1
+           IVCORR = -6
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0421      CONTINUE
+CT043*  TEST 43                      VALUES NOT EQUAL,  BOTH NEGATIVE
+           IVTNUM = 43
+        RHBVS = -7.125
+        RHDVS = -5.125
+        IHAVI = MAX1(RHBVS, RHDVS)
+           IF (IHAVI + 5) 20430, 10430, 20430
+10430      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0431
+20430      IVFAIL = IVFAIL + 1
+           IVCORR = -5
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0431      CONTINUE
+CT044*  TEST 44 1ST VALUE NON-ZERO, 2ND ZERO PRECEDED BY A MINUS SIGN
+           IVTNUM = 44
+        RHDVS = 5.625
+        RHEVS = 0.0
+        IHAVI = MAX1(RHDVS, -RHEVS)
+           IF (IHAVI - 5) 20440, 10440, 20440
+10440      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0441
+20440      IVFAIL = IVFAIL + 1
+           IVCORR = 5
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0441      CONTINUE
+CT045*  TEST 45                     EXPRESSIONS PRESENTED TO FUNCTION
+           IVTNUM = 45
+        RHDVS = 3.5
+        RHEVS = 4.0
+        IHAVI = MAX1(RHDVS + RHEVS, -RHEVS - RHDVS)
+           IF (IHAVI - 7) 20450, 10450, 20450
+10450      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0451
+20450      IVFAIL = IVFAIL + 1
+           IVCORR = 7
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0451      CONTINUE
+CT046*  TEST 46                                           3 ARGUMENTS
+           IVTNUM = 46
+        RHBVS = 0.0
+        RHCVS = 4.0
+        RHDVS = 0.0
+        IHAVI = MAX1(RHBVS, -RHCVS, RHDVS)
+           IF (IHAVI - 0) 20460, 10460, 20460
+10460      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0461
+20460      IVFAIL = IVFAIL + 1
+           IVCORR = 0
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0461      CONTINUE
+CT047*  TEST 47                                           4 ARGUMENTS
+           IVTNUM = 47
+        RHBVS = 3.49
+        RHCVS = 0.0
+        RHDVS = 3.5
+        IHAVI = MAX1(RHDVS, RHBVS, -RHBVS, RHCVS)
+           IF (IHAVI - 3) 20470, 10470, 20470
+10470      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0471
+20470      IVFAIL = IVFAIL + 1
+           IVCORR = 3
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0471      CONTINUE
+CT048*  TEST 48                                           5 ARGUMENTS
+           IVTNUM = 48
+        RHDVS = 3.5
+        RHEVS = 4.5
+        IHAVI = MAX1(RHDVS, -RHDVS, -RHEVS, +RHDVS, RHEVS)
+           IF (IHAVI - 4) 20480, 10480, 20480
+10480      IVPASS = IVPASS + 1
+           WRITE (NUVI, 80002) IVTNUM
+           GO TO 0481
+20480      IVFAIL = IVFAIL + 1
+           IVCORR = 4
+           WRITE (NUVI, 80010) IVTNUM, IHAVI, IVCORR
+ 0481      CONTINUE
+C*****
+CBB** ********************** BBCSUM0  **********************************
+C**** WRITE OUT TEST SUMMARY
+C****
+      IVTOTN = IVPASS + IVFAIL + IVDELE + IVINSP
+      WRITE (I02, 90004)
+      WRITE (I02, 90014)
+      WRITE (I02, 90004)
+      WRITE (I02, 90020) IVPASS
+      WRITE (I02, 90022) IVFAIL
+      WRITE (I02, 90024) IVDELE
+      WRITE (I02, 90026) IVINSP
+      WRITE (I02, 90028) IVTOTN, IVTOTL
+CBE** ********************** BBCSUM0  **********************************
+CBB** ********************** BBCFOOT0 **********************************
+C**** WRITE OUT REPORT FOOTINGS
+C****
+      WRITE (I02,90016) ZPROG, ZPROG
+      WRITE (I02,90018) ZPROJ, ZNAME, ZTAPE, ZTAPED
+      WRITE (I02,90019)
+CBE** ********************** BBCFOOT0 **********************************
+CBB** ********************** BBCFMT0A **********************************
+C**** FORMATS FOR TEST DETAIL LINES
+C****
+80000 FORMAT (1H ,2X,I3,4X,7HDELETED,32X,A31)
+80002 FORMAT (1H ,2X,I3,4X,7H PASS  ,32X,A31)
+80004 FORMAT (1H ,2X,I3,4X,7HINSPECT,32X,A31)
+80008 FORMAT (1H ,2X,I3,4X,7H FAIL  ,32X,A31)
+80010 FORMAT (1H ,2X,I3,4X,7H FAIL  ,/,1H ,15X,10HCOMPUTED= ,
+     1I6,/,1H ,15X,10HCORRECT=  ,I6)
+80012 FORMAT (1H ,2X,I3,4X,7H FAIL  ,/,1H ,16X,10HCOMPUTED= ,
+     1E12.5,/,1H ,16X,10HCORRECT=  ,E12.5)
+80018 FORMAT (1H ,2X,I3,4X,7H FAIL  ,/,1H ,16X,10HCOMPUTED= ,
+     1A21,/,1H ,16X,10HCORRECT=  ,A21)
+80020 FORMAT (1H ,16X,10HCOMPUTED= ,A21,1X,A31)
+80022 FORMAT (1H ,16X,10HCORRECT=  ,A21,1X,A31)
+80024 FORMAT (1H ,16X,10HCOMPUTED= ,I6,16X,A31)
+80026 FORMAT (1H ,16X,10HCORRECT=  ,I6,16X,A31)
+80028 FORMAT (1H ,16X,10HCOMPUTED= ,E12.5,10X,A31)
+80030 FORMAT (1H ,16X,10HCORRECT=  ,E12.5,10X,A31)
+80050 FORMAT (1H ,48X,A31)
+CBE** ********************** BBCFMT0A **********************************
+CBB** ********************** BBCFMT0B **********************************
+C**** FORMAT STATEMENTS FOR PAGE HEADERS
+C****
+90002 FORMAT (1H1)
+90004 FORMAT (1H )
+90006 FORMAT (1H ,20X,31HFEDERAL SOFTWARE TESTING CENTER)
+90007 FORMAT (1H ,19X,34HFORTRAN COMPILER VALIDATION SYSTEM)
+90008 FORMAT (1H ,21X,A13,A17)
+90009 FORMAT (1H ,/,2H *,A5,6HBEGIN*,12X,15HTEST RESULTS - ,A5,/)
+90010 FORMAT (1H ,8X,16HTEST DATE*TIME= ,A17,15H  -  COMPILER= ,A20)
+90013 FORMAT (1H ,8H TEST   ,10HPASS/FAIL ,6X,17HDISPLAYED RESULTS,
+     1       7X,7HREMARKS,24X)
+90014 FORMAT (1H ,46H----------------------------------------------,
+     1        33H---------------------------------)
+90015 FORMAT (1H ,48X,17HTHIS PROGRAM HAS ,I3,6H TESTS,/)
+C****
+C**** FORMAT STATEMENTS FOR REPORT FOOTINGS
+C****
+90016 FORMAT (1H ,/,2H *,A5,4HEND*,14X,14HEND OF TEST - ,A5,/)
+90018 FORMAT (1H ,A13,13X,A20,7H   *   ,A10,1H/,
+     1        A13)
+90019 FORMAT (1H ,26HFOR OFFICIAL USE ONLY     ,35X,15HCOPYRIGHT  1982)
+C****
+C**** FORMAT STATEMENTS FOR RUN SUMMARY
+C****
+90020 FORMAT (1H ,21X,I5,13H TESTS PASSED)
+90022 FORMAT (1H ,21X,I5,13H TESTS FAILED)
+90024 FORMAT (1H ,21X,I5,14H TESTS DELETED)
+90026 FORMAT (1H ,21X,I5,25H TESTS REQUIRE INSPECTION)
+90028 FORMAT (1H ,21X,I5,4H OF ,I3,15H TESTS EXECUTED)
+CBE** ********************** BBCFMT0B **********************************
+C*****
+C*****    END OF TEST SEGMENT 165
+        STOP
+        END
+
+*END-OF,FM361

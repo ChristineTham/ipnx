@@ -1,0 +1,15 @@
+CFLAGS = -I/usr/jerq/include
+
+all:	mcc mnm msize mstrip
+
+mcc:	mcc5.c
+	$(CC) $(CFLAGS) -I/usr/include/sys -o mcc mcc5.c
+
+mnm:	mnm.c
+	$(CC) $(CFLAGS) -o mnm mnm.c
+
+msize:	msize.c
+	$(CC) $(CFLAGS) -o msize msize.c
+
+mstrip:	mstrip.o index.o
+	$(CC) $(CFLAGS) -o mstrip mstrip.o index.o

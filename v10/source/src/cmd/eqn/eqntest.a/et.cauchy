@@ -1,0 +1,38 @@
+.po .5i
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+
+et.cauchy
+.ll 7.75i
+.nf
+.vs 16p
+.sp
+.EQ
+gfont I
+f sup (n) (z) = n! over  {2 pi i} int sub C
+{f( zeta )} over { ( zeta - z ) sup n+1} d zeta
+.EN
+.sp 
+.EQ
+
+dE over  dt = - int rho PHI sub ,j sup (react) v sub j d sup 3 x
+
+.EN
+.EQ
+
+dJ sub j over  dt = - int epsilon sub jkl x sub k rho PHI sub ,l sup (react) d sup 3 x
+
+.EN
+
+.EQ
+dE over dt = - 1 over 5 < { I to "..." } sub jk {I to "..."} sub jk >
+.EN
+
+
+.EQ
+|  DELTA B sub n sup roman "(GW)" | =
+left ( { 2 F sub v ( omega sub n / 2 pi ) \(is sigma sub n dv } over
+{M {omega sub n} sup 2} right ) sup 1/2 .
+.EN

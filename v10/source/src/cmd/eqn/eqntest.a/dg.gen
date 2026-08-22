@@ -1,0 +1,37 @@
+cat <<\!
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+.nf
+.vs 16p
+.sp
+!
+
+awk '
+function pad(s,	n,	i, j) {
+	if (s ~ /^[a-zA-Z]$/)
+		s = "\\f2" s "\\fP"
+	printf("%s%s", s, shim(n))
+}
+function shim(n) {
+	return substr("\\^\\^\\^\\^\\^\\^\\^\\^\\^\\^\\^", 1, 2*n)
+}
+
+{	for (n = 0; n <= 3; n++) {
+		for (i = 1; i <= NF; i++)
+			pad($i, n)
+		printf("\n");
+	}
+	printf("\n")
+}
+' <<\!
+2 ( x + 1 ) f ( x ) h ( x 2 ) ( 2 + x ) ( \(*p + 1 ) 2 x | x | || x || g ( x ) x i , j ( i ) ( j ) 3 f [ x ] x / x \(mo S { min } m i n !
+2 ( y + 1 ) f ( y ) h ( y 2 ) ( 2 + y ) ( \(*p + 1 ) 2 y | y | || y || g ( y ) y i , j ( i ) ( j ) 3 f [ y ] y / y \(mo S { min } m i n !
+2 ( X + 1 ) f ( X ) h ( X 2 ) ( 2 + X ) ( \(*p + 1 ) 2 X | X | || X || g ( X ) X i , j ( i ) ( j ) 3 f [ X ] X / X \(mo S { min } m i n !
+2 ( Y + 1 ) f ( Y ) h ( Y 2 ) ( 2 + Y ) ( \(*p + 1 ) 2 Y | Y | || Y || g ( Y ) Y i , j ( i ) ( j ) 3 f [ Y ] Y / Y \(mo S { min } m i n !
+2 ( \(*p + 1 ) f ( \(*p ) h ( \(*p 2 ) ( 2 + \(*p ) ( \(*p + 1 ) 2 \(*p | \(*p | || \(*p || g ( \(*p ) \(*p i , j ( i ) ( j ) 3 f [ \(*p ] \(*p / \(*p \(mo S { min } m i n !
+2 ( f + 1 ) f ( f ) h ( f 2 ) ( 2 + f ) ( f + 1 ) 2 f | f | || f || g ( f ) f i , j ( i ) ( j ) 3 f [ f ] f / f \(mo S { min } m i n !
+2 ( i + 1 ) f ( i ) h ( i 2 ) ( 2 + i ) ( \(*p + 1 ) 2 i | i | || i || g ( i ) i i , j ( i ) ( j ) 3 f [ i ] i / i \(mo S { min } m i n !
+2 ( j + 1 ) f ( j ) h ( j 2 ) ( 2 + j ) ( \(*p + 1 ) 2 j | j | || j || g ( j ) j i , j ( i ) ( j ) 3 f [ j ] j / j \(mo S { min } m i n !
+!

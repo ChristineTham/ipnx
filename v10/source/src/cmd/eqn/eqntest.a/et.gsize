@@ -1,0 +1,17 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.gsize:
+.EQ
+gfont I
+delim $$
+.EN
+.ps 15
+box "$size 10 { M sub B}$" wid 1
+box "$ gsize 10 M sub T$" wid 1
+.ps 15
+.EQ
+gsize 10 { M sub B}
+.EN
+glop

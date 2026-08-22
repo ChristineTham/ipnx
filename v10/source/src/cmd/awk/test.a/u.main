@@ -1,0 +1,6 @@
+BEGIN {
+	system(ARGV[0])	# usage
+	system(ARGV[0] " -f")
+	system(ARGV[0] " -f /glop/glop")	# program accessible
+	system(ARGV[0] " -zzz")	# weird option
+}

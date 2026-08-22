@@ -1,0 +1,52 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.compete:
+This set of equations took 70 minutes with MacEqn and 35 minutes with
+MathWriter, according to an article in Tentacle (LLL), August 1987.
+Takes 7 minutes locally (much of which was spent getting braces
+balanced, unfortunately).
+.nf
+.sp 1i
+.EQ
+gfont I
+xi sub 1 left {
+ pile { P dot sub g above P dot sub s } right }
+~ mark =~
+left [ matrix { col {b sub 1 above b sub 5 } col {b sub 2 above b sub 6 } } right ]
+left { pile { P sub g above P sub s } right }
+~+~ left { pile { b sub 3 (t) above b sub 8 (t) } right }
+~+~ left { pile { b sub 4 above b sub 9 } right }
+~+~ left { pile { 0 sub "" above g sub 1 } right }
+.EN
+.sp
+.EQ
+b sub 2 ~ lineup =~ [ 1 + ( pi sub g sup o / epsilon sub s )]
+.EN
+.sp
+.EQ
+b sub 3 (t) ~ lineup =~ pi tilde sub g
+.EN
+.sp 2
+This is an unrelated set for science typographers
+
+.LP
+.EQ
+(N sub roman Sh ) sub a sup * mark = 1 over 2 left ( d sub t over L right )
+  N sub roman Re N sub roman Sc
+.EN
+.EQ
+lineup times
+left [
+{ 1 - sum from j=1 to {j= inf} {-4 beta sub j} over {beta sub j sup 2}
+  left ( {d phi sub j} over dr sub + right ) sub {r sub + =1}
+  exp left ( {- beta sub j sup 2 (x/r sub t ) } over { N sub Re N sub roman Sc} right ) 
+}
+over
+{ 1 + sum from j=1 to {j= inf} {-4 beta sub j} over {beta sub j sup 2}
+  left ( {d phi sub j} over dr sub + right ) sub {r sub + =1}
+  exp left ( {- beta sub j sup 2 (x/r sub t ) } over { N sub Re N sub roman Sc} right ) 
+}
+right ]
+.EN

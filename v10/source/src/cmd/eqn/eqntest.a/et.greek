@@ -1,0 +1,22 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.greek:
+.nf
+.EQ
+gfont I
+alpha ~~~ beta ~~~ gamma ~~~
+GAMMA ~~~ delta ~~~ DELTA ~~~
+epsilon ~~~ zeta ~~~ eta ~~~
+THETA ~~~ theta ~~~ lambda ~~~
+LAMBDA ~~~ mu ~~~ nu ~~~
+.EN
+.EQ
+xi ~~~ pi ~~~ PI ~~~
+rho ~~~ sigma ~~~ SIGMA ~~~
+tau ~~~ phi ~~~ PHI ~~~
+psi ~~~ PSI ~~~ omega ~~~
+OMEGA ~~~ del ~~~ "\(no" ~~~
+partial ~~~ integral ~~~
+.EN

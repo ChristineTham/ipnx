@@ -1,0 +1,168 @@
+From research!csnet!ucl-cs.arpa!drw%maths.nottingham.ac.uk ov 85 19:31:34 UT (Fri)
+.\"pic
+.\"roff
+.\"
+.ds 1 \fI\s12
+.ds 2 \fR\s-3\v'3p'
+.ds 3 \s+3\v'-3p'
+.sp 1.25i
+.PS
+scale=1.05
+a = 0.25
+c = 0.05
+d = 1/32
+h = 2.25
+
+define Ds '(-d*dy/dist , d*dx/dist )'		# vectors
+define Dh '( c*dx/dist , c*dy/dist )'
+define Dsh '(-h*d*dy/dist , h*d*dx/dist )'	# should be able to say h*Ds
+define Dhh '( h*c*dx/dist , h*c*dy/dist )'
+
+define implies "
+dx = $2.x - $1.x			# pity: prevents args of form (a,b)
+dy = $2.y - $1.y
+dist = sqrt( dx * dx + dy * dy )
+P1: (0.25/dist) < $1 , $2 >
+P2: (0.25/dist) < $2 , $1 >
+line from P1+Ds to P2+Ds-Dh
+line from P1-Ds to P2-Ds-Dh
+line from P2+Dsh-Dhh to P2
+line from P2-Dsh-Dhh to P2
+"
+
+A:	"\*1A\*2\*3" at 0,0
+BS:	"\*1B\*2S\*3" at 1,0.5
+BW:	"\*1B\*2W\*3" at 1,-0.5
+implies(A,BS)
+implies(BS,BW)
+CS:	"\*1C\*2S\*3" at 2,0.5
+CW:	"\*1C\*2W\*3" at 2,-0.5
+implies(BS,CS)
+implies(BW,CW)
+implies(CS,CW)
+DS:	"\*1D\*2S\*3" at 3,0.5
+DW:	"\*1D\*2W\*3" at 3,-0.5
+implies(CS,DS)
+implies(CW,DW)
+implies(DS,DW)
+ES:	"\*1E\*2S\*3" at 4,0.5
+EW:	"\*1E\*2W\*3" at 4,-0.5
+implies(DS,ES)
+implies(DW,EW)
+implies(ES,EW)
+FS:	"\*1F\*2S\*3" at 5,1.375
+FW:	"\*1F\*2W\*3" at 5,0.375
+implies(ES,FS)
+implies(EW,FW)
+implies(FS,FW)
+GS:	"\*1G\*2S\*3" at 5,-0.375
+GW:	"\*1G\*2W\*3" at 5,-1.375
+implies(ES,GS)
+implies(EW,GW)
+implies(GS,GW)
+H:	"\*1H\*2\*3" at 6,0
+implies(FW,H)
+implies(GW,H)
+.PE
+.br
+.sp 1i
+.ps 10
+.ce
+Figure 1.
+.ds 1 \fI\s12
+.ds 2 \fR\z\(fm\s-3\v'3p'
+.ds 3 \s+3\v'-3p'
+.ds 4 \fR\(fm
+.sp 1.25i
+.PS
+scale=1.05
+a = 0.25
+c = 0.05
+d = 1/32
+h = 2.25
+
+define Ds '(-d*dy/dist , d*dx/dist )'
+define Dh '( c*dx/dist , c*dy/dist )'
+define Dsh '(-h*d*dy/dist , h*d*dx/dist )'
+define Dhh '( h*c*dx/dist , h*c*dy/dist )'
+
+define equiv "
+dx = $2.x - $1.x
+dy = $2.y - $1.y
+dist = sqrt( dx * dx + dy * dy )
+P1: (0.25/dist) < $1 , $2 >
+P2: (0.25/dist) < $2 , $1 >
+line from P1+Ds+Dh to P2+Ds-Dh
+line from P1-Ds+Dh to P2-Ds-Dh
+line from P2+Dsh-Dhh to P2
+line from P2-Dsh-Dhh to P2
+line from P1 to P1+Dsh+Dhh
+line from P1 to P1-Dsh+Dhh
+"
+
+b=0.35
+r=0.8
+s=1.025
+pi=3.1415926535
+c1=cos(pi/5)
+s1=sin(pi/5)
+c2=cos(2*pi/5)
+s2=sin(2*pi/5)
+
+
+A:	"\*1A\*4" at 0,0
+BS:	"\*1B\*2S\*3" at 1,0.5
+BW:	"\*1B\*2W\*3" at 1,-0.5
+Y:	BS - (0.05,0)
+implies(A,Y)
+CS:	"\*1C\*2S\*3" at 2,0.5
+CW:	"\*1C\*2W\*3" at 2,-0.5
+equiv(BS,CS)
+equiv(BW,CW)
+X:	(1.5,0.5)
+Y:	(1.5,-0.5)
+implies(X,Y)
+
+DS:	"\*1D\*2S\*3" at 3,0.5
+DW:	"\*1D\*2W\*3" at 3,-0.5
+implies(CS,DS)
+implies(CW,DW)
+ES:	"\*1E\*2S\*3" at 4,0.5
+EW:	"\*1E\*2W\*3" at 4,-0.5
+equiv(DS,ES)
+equiv(DW,EW)
+X:	(3.5,0.5)
+Y:	(3.5,-0.5)
+implies(X,Y)
+
+Pent: 5+r*c1,0
+FS:	"\*1F\*2S\*3" at Pent+(-r*c1,r*s1)
+FW:	"\*1F\*2W\*3" at Pent+(r*c2,r*s2)
+GS:	"\*1G\*2S\*3" at Pent+(-r*c1,-r*s1)
+GW:	"\*1G\*2W\*3" at Pent+(r*c2,-r*s2)
+H:	"\*1H\*4" at Pent+(r,0)
+X:	EW + (0.05,0)
+Y:	(4.95,0)
+implies(X,Y)
+equiv(FS,FW)
+equiv(GS,GW)
+equiv(FW,H)
+equiv(GW,H)
+.ps 10
+box ht b wid 1+b with .sw at BS.c-(b/2,b/2)
+box ht b wid 1+b with .sw at BW.c-(b/2,b/2)
+box ht b wid 1+b with .sw at DS.c-(b/2,b/2)
+box ht b wid 1+b with .sw at DW.c-(b/2,b/2)
+line from Pent+(-s*c1,s*s1) to Pent+(-s*c1,-s*s1)
+line from Pent+(-s*c1,s*s1) to Pent+(s*c2,s*s2)
+line from Pent+(s,0) to Pent+(s*c2,s*s2)
+line from Pent+(-s*c1,-s*s1) to Pent+(s*c2,-s*s2)
+line from Pent+(s,0) to Pent+(s*c2,-s*s2)
+.PE
+.br
+.sp 1i
+.ps 10
+.ce
+Figure 2.
+
+

@@ -1,0 +1,207 @@
+.so nmac
+.ds NM UNED
+.ul
+.ce
+UNED-Editing and Documentation Preparation
+.TL
+(1000) A Tutorial Introduction to the UNIX Text Editor
+.AU
+B. W. Kernighan
+Memorandum for file
+TM 74-1273-17
+A good document for first time users.
+.TL
+(1028) Typing Documents on UNIX
+.AU
+M. Lesk
+TM 74-1274-24
+A description of TROFF and NROFF macros for
+producing papers in normal BTL format.
+.TL
+(1029) A System for Typesetting Mathematics
+.AU
+B. W. Kernighan
+L. L. Cherry
+March 18, 1974
+TM 74-1273-5
+.TL
+(1030) Documentation a la UNIX
+.AU
+June 15, 1974
+TM 74-9152-2
+J. R. Mashey.
+.TL
+(1032) TROFF User's Manual
+.AU
+J. F. Ossanna
+April 19, 1974
+TM 74-1271-4
+Also addendum dated 7/25/74
+.TL
+
+(1036) View -graphs Macros
+.AU
+R.H. Canaday
+T.A. Dolotta
+Memorandum for File on View-graph macros for Phototypsetter.
+.TL
+(1004) NROFF User's Manual
+.AU
+J. F. Ossanna
+TM 74-1271-14
+This manual describes the use of the NROFF documentation 
+preparation program.
+Also addendum dated 5/l9/75
+.TL
+(1010) TROFF Made Trivial
+.AU
+B. W. Kernighan
+TM 73-1273-10
+This document is a tutorial for the photo-typesetting
+system available on the Research Machine.
+.TL
+(1011) Typesetting Mathematics - User's Guide (Second Edition)
+.AU
+B. W. Kernighan
+L. L. Cherry
+June 2, 1976
+TM 76-1273-4
+TM 76-1271-4
+This is the user's guide for a system for typesetting
+mathematics, using the phototypesetters on the UNIX and
+GCOS operating systems.  This memo replaces TM 74-1273-3
+and 74-1274-4 by the same authors.
+.TL
+(1016) UNIX New Users Course View-Graphs February 6-8,1974
+.AU
+J. F. Maranzano
+T. M. Raleigh
+G. C. Vogel
+Memorandum for file
+.TL
+(1022) NROFF Macros for Producing Documents on UNIX
+.AU
+G. C. Vogel
+Programmer's Notes describing 
+macros for sectioning and producing a table of contents.
+.TL
+(1019) Computer Detection of Typographical Errors
+.AU
+R. Morris
+L. L. Cherry
+April 3, l974
+TM 73-1271-4
+.TL
+(1042) UNIX For Beginners
+.AU
+B. W. Kernighan
+October 29, 1974
+TM 74-1273-18
+This paper is meant to help new users get started on UNIX.
+.TL
+(1043) UNIX Summary
+.AU
+M. D. McIlroy
+.TL
+(1049) GLANCE Terminals on UNIX Time-Sharing
+.AU
+H. Lycklama
+March 3, l975
+TM 75-1352-3
+This document describes the characteristics
+of the GLANCE terminal in enough detail to enable
+users to write their own applications programs.
+.TL
+(1075) Typesetting ACS and APS Meeting Abstracts.
+.AU
+D. Edelson
+November 12, 1975
+TM 75-1532-9
+This memo describes how meeting abstracts can now
+be photocomposed using a convenient package of TROFF
+commands.
+.TL
+(1082) Wesbster's Second on the Head of a Pin.
+.AU
+R. Morris
+K. Thompson
+July 15, 1974
+TM 74-1271-13
+This memo describes a list of words from Webster's
+Second Unabridged Dictionary (without definitions)
+as a test case for special purpose text compression
+techniques.
+.TL
+(1083) An Algorithm For Differential File Comparison.
+.AU
+J. W. Hunt
+M. D. Mc Ilroy
+October 1, 1975
+TM 75-1271-11
+The program diff reports differences between two files
+expressed as a minimal list of line changes to bring
+either file into agreement with the other.
+.TL
+(1085) Numeric Pattern Recognition Data Base for UNIX Systems.
+.AU
+M. E. Greenberg
+C. S. Roberts
+January 5, 1976
+TM 76-1353-1
+This memorandum describes the data base contents and format.
+.TL
+(1089) Computer Typesetting Of Technical Journals On UNIX.
+.AU
+M. E. Lesk
+B. W. Kernighan
+March 29, 1976
+TM 76-1274-2
+TM 76-1273-1
+.TL
+(1091) A Secretarial Typing System Using UNIX.
+.AU
+E. F. Engelbert
+February 27, 1976
+Memorandum For File
+.TL
+(1098) PWB/MM - Programmer's Workbench Memorandum Macros.
+.AU
+J. R. Mashey
+D. W. Smith
+March 1, 1976
+TM 76-9144-1
+This memorandum is a user's guide and reference manual
+for PWB/MM, a general purpose package of text formatting
+macros for use with the UNIX text formatters NROFF and TROFF.
+.TL
+(1104) Computer-Aided Instruction On UNIX.
+.AU
+M. E. Lesk
+B. W. Kernighan
+June 18, 1976
+TM 76-1274-6
+TM 76-1273-5
+This paper describes the LEARN program for interpreting
+CAI scripts on UNIX, and a set of scripts which provide 
+a computerized introduction to use of the UNIX operating
+system.
+.TL
+(1106) TBL - Aprogram To Format Tables.
+.AU
+M. E. Lesk
+June 11,1976 (Rev. 8/10/76)
+TM 76-1274-5
+TBL is a document formatting preprocessor for TROFF
+or NROFF which makes even fairly complex talbes easy to
+to specify and enter.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+T. A. Dolotta, J. R. Mashey, etc.
+July 30, 1976
+TM 76-9144-3, 76-9144-6
+TM 76-9411-1, 76-9421-2
+Six papers are included in this memo.  They consist
+of four specific PWB facilities and a description
+of one user group's experience with PWB.

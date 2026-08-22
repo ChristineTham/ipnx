@@ -1,0 +1,116 @@
+
+.PS
+fillval = .7
+box
+"Above is an unfilled, visible box" below at last box.s
+move down
+box fill
+"Above is a filled, visible box" below at last box.s
+move down
+box fill invis
+"Above is a filled, invisible box" below at last box.s
+move down
+box invis fill
+"Above is an invisible, filled box" below at last box.s
+move down
+box invis
+"Above is an invisible box" below at last box.s
+move down
+box invis fill "invis,fill"
+"Above is an invisible, filled box with text" below at last box.s
+.PE
+
+.PS
+fillval = .7
+circle
+"Above is an unfilled, visible circle" below at last circle.s
+move down
+circle fill
+"Above is a filled, visible circle" below at last circle.s
+move down
+circle fill invis
+"Above is a filled, invisible circle" below at last circle.s
+move down
+circle invis fill
+"Above is an invisible, filled circle" below at last circle.s
+move down
+circle invis
+"Above is an invisible circle" below at last circle.s
+move down
+circle invis fill "invis,fill"
+"Above is an invisible, filled circle with text" below at last circle.s
+.PE
+
+.PS
+fillval = .7
+ellipse
+"Above is an unfilled, visible ellipse" below at last ellipse.s
+move down
+ellipse fill
+"Above is a filled, visible ellipse" below at last ellipse.s
+move down
+ellipse fill invis
+"Above is a filled, invisible ellipse" below at last ellipse.s
+move down
+ellipse invis fill
+"Above is an invisible, filled ellipse" below at last ellipse.s
+move down
+ellipse invis
+"Above is an invisible ellipse" below at last ellipse.s
+move down
+ellipse invis fill "invis,fill"
+"Above is an invisible, filled ellipse with text" below at last ellipse.s
+.PE
+
+
+.PS
+spline from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 fill "text" "here"
+.PE
+
+.PS
+spline from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 \
+       to 0,-1 to -1,-1 to -1,0 to 0,0 fill "text" "here"
+.PE
+
+.PS
+line from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 fill "text" "here"
+.PE
+
+.PS
+line from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 \
+       to 0,-1 to -1,-1 to -1,0 to 0,0 fill "text" "here"
+.PE
+
+.PS
+spline invis from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 fill "text" "here"
+.PE
+
+.PS
+spline invis from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 \
+       to 0,-1 to -1,-1 to -1,0 to 0,0 fill "text" "here"
+.PE
+
+.PS
+line invis from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 fill "text" "here"
+.PE
+
+.PS
+line invis from 0,0 to 1,0 to 1,1 to 0,1 to 0,0 \
+       to 0,-1 to -1,-1 to -1,0 to 0,0 fill "text" "here"
+.PE
+
+.PS
+arc at 0,0 from 1,0 to 0,1 fill "text" "here"
+.PE
+
+.PS
+arc invis at 0,0 from 1,0 to 0,1 fill "text" "here"
+.PE
+
+.PS
+arc cw at 0,0 from 1,0 to 0,1 fill "text" "here"
+.PE
+
+.PS
+arc cw invis at 0,0 from 1,0 to 0,1 fill "text" "here"
+.PE

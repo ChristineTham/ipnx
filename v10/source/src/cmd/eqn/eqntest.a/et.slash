@@ -1,0 +1,103 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.slash:
+.nf
+.sp .5i
+.EQ
+gfont I
+z+z-z/z/z>z<z>=z<=z->z<-z,z;z:z>>z<<z
+.EN
+.EQ
+j+j-j/j/j>j<j>=j<=j->j<-j,j;j:j>>j<<j
+.EN
+.EQ
+i+i-i/i/i>i<i>=i<=i->i<-i,i;i:i>>i<<i
+.EN
+.EQ
+j+j-j/j/j>j<j>=j<=j->j<-j,j;j:j>>j<<j
+.EN
+.EQ
+f+f-f/f/f>f<f>=f<=f->f<-f,f;f:f>>f<<f
+.EN
+.EQ
+x+x-x/x/x>x<x>=x<=x->x<-x,x;x:x>>x<<x
+.EN
+.EQ
+1+1-1/1/1>1<1>=1<=1->1<-1,1;1:1>>1<<1
+.EN
+.EQ
+0+0-0/0/0>0<0>=0<=0->0<-0,0;0:0>>0<<0
+.EN
+.EQ
+X+X-X/X/X>X<X>=X<=X->X<-X,X;X:X>>X<<X
+.EN
+.EQ
+H+H-H/H/H>H<H>=H<=H->H<-H,H;H:H>>H<<H
+.EN
+.EQ
+Y+Y-Y/Y/Y>Y<Y>=Y<=Y->Y<-Y,Y;Y:Y>>Y<<Y
+.EN
+.EQ
+partial + partial - partial / partial / partial > partial < partial >= partial <= partial -> partial <- partial , partial ; partial : partial >> partial << partial 
+.EN
+.EQ
+pi + pi - pi / pi / pi > pi < pi >= pi <= pi -> pi <- pi , pi ; pi : pi >> pi << pi 
+.EN
+.EQ
+lambda + lambda - lambda / lambda / lambda > lambda < lambda >= lambda <= lambda -> lambda <- lambda , lambda ; lambda : lambda >> lambda << lambda 
+.EN
+.EQ
+1/2 2/1 3/4 4/3 1/x x/2 x/n x/N N/2 N/x pi / 2
+.EN
+.sp 2
+.EQ
+gfont R
+.EN
+.EQ
+z+z-z/z/z>z<z>=z<=z->z<-z,z;z:z>>z<<z
+.EN
+.EQ
+j+j-j/j/j>j<j>=j<=j->j<-j,j;j:j>>j<<j
+.EN
+.EQ
+i+i-i/i/i>i<i>=i<=i->i<-i,i;i:i>>i<<i
+.EN
+.EQ
+j+j-j/j/j>j<j>=j<=j->j<-j,j;j:j>>j<<j
+.EN
+.EQ
+f+f-f/f/f>f<f>=f<=f->f<-f,f;f:f>>f<<f
+.EN
+.EQ
+x+x-x/x/x>x<x>=x<=x->x<-x,x;x:x>>x<<x
+.EN
+.EQ
+1+1-1/1/1>1<1>=1<=1->1<-1,1;1:1>>1<<1
+.EN
+.EQ
+0+0-0/0/0>0<0>=0<=0->0<-0,0;0:0>>0<<0
+.EN
+.EQ
+X+X-X/X/X>X<X>=X<=X->X<-X,X;X:X>>X<<X
+.EN
+.EQ
+H+H-H/H/H>H<H>=H<=H->H<-H,H;H:H>>H<<H
+.EN
+.EQ
+Y+Y-Y/Y/Y>Y<Y>=Y<=Y->Y<-Y,Y;Y:Y>>Y<<Y
+.EN
+.EQ
+partial + partial - partial / partial / partial > partial < partial >= partial <= partial -> partial <- partial , partial ; partial : partial >> partial << partial 
+.EN
+.EQ
+pi + pi - pi / pi / pi > pi < pi >= pi <= pi -> pi <- pi , pi ; pi : pi >> pi << pi 
+.EN
+.EQ
+lambda + lambda - lambda / lambda / lambda > lambda < lambda >= lambda <= lambda -> lambda <- lambda , lambda ; lambda : lambda >> lambda << lambda 
+.EN
+
+.EQ
+1/2 2/1 3/4 4/3 1/x x/2 x/n x/N N/2 N/x pi / 2
+.EN

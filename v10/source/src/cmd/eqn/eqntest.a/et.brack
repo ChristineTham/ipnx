@@ -1,0 +1,94 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.brack:
+.po .5i
+.vs 20p
+.sp
+.EQ I
+gfont I
+left [ H over K right ]
+~=~
+left { H over K right }
+~=~
+left [ H over K right ] sup 2
+~=~
+left { H over K right } sup 2
+~=~
+left [ H over K over C right ]
+~=~
+left { H over K over C right }
+~=~
+left [ H over K over C right ] sup 2
+~=~
+left { H over K over C right } sup 2
+~=~
+left [ H over K over C over D right ]
+~=~
+left { H over K over C over D right }
+~=~
+left [ H over K over C over D right ] sup 2
+~=~
+left { H over K over C over D right } sup 2
+.EN
+.EQ I
+1 over left [ H over K right ]
+~=~
+1 over left { H over K right }
+~=~
+1 over left [ H over K right ] sup 2
+~=~
+1 over left { H over K right } sup 2
+~=~
+1 over left [ H over K over C right ]
+~=~
+1 over left { H over K over C right }
+~=~
+1 over left [ H over K over C right ] sup 2
+~=~
+1 over left { H over K over C right } sup 2
+~=~
+1 over left [ H over K over C over D right ]
+~=~
+1 over left { H over K over C over D right }
+~=~
+1 over left [ H over K over C over D right ] sup 2
+~=~
+1 over left { H over K over C over D right } sup 2
+.EN
+.sp .5i
+.EQ I
+left [ H sup 2 sup 3 over K right ]
+~=~
+left { H sup 2 sup 3 over K right }
+~=~
+left [ H sup 2 sup 3 over K right ] sup 2
+~=~
+left { H sup 2 sup 3 over K right } sup 2
+~=~
+left [ H sup 2 sup 3 over K over C right ]
+~=~
+left { H sup 2 sup 3 over K over C right }
+~=~
+left [ H sup 2 sup 3 over K over C right ] sup 2
+~=~
+left { H sup 2 sup 3 over K over C right } sup 2
+~=~
+left [ H over K sup 2 sup 3 right ]
+~=~
+left { H over K sup 2 sup 3 right }
+~=~
+left [ H over K sup 2 sup 3 right ] sup 2
+~=~
+left { H over K sup 2 sup 3 right } sup 2
+~=~
+left [ H over K sup 2 sup 3 over C right ]
+~=~
+left { H over K sup 2 sup 3 over C right }
+~=~
+left [ H over K sup 2 sup 3 over C right ] sup 2
+~=~
+left { H over K sup 2 sup 3 over C right } sup 2
+~=~
+.EN

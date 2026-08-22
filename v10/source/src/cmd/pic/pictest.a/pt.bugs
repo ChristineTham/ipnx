@@ -1,0 +1,141 @@
+this looks like a bug in troff --
+changing the spline to line works,
+as does adding the X.  the pic output
+actually looks ok from both
+
+.PS
+Muxt: box ht .75
+	spline from Muxt.s down then right to Muxt.w; #"X"
+	L: line from Muxt.e
+.PE
+.PS
+#generated deref thru 0 on sun, 3b20:
+circle below "abc"
+.PE
+.PS
+box
+arrow right from 2/3 <last box.ne, last box.se>
+.PE
+.PS
+"x" at .5 < (0,0),(1,1) >
+.PE
+.PS 
+CRT: circle "DISK"
+"  paper" ljust at  0.25, 0.25
+.PE
+.PS
+define ur "then up right"
+define ul "then up left"
+define dr "then down right"
+define dl "then down left"
+
+spline  down right dr ur ur ur ul ul ul ul dl dl dl dl dr dr
+.PE
+.PS
+box
+.PF
+.PS
+arrow
+.PE
+.PS
+"abc" with .w at 1,2
+.PE
+.PS
+line from 1,0 to 0,0
+X: 1,0
+"x"
+.PE
+.PS
+define Lulu %
+	if "$2" == "" then || else | x = $2; |
+	if "$3" == "" then || else | y = $3; |
+	if "$4" == "" then | n = m; | else | n = $4; |
+	xx=x*hu; vx=xx*(1-n)/2; yy=y*vu; vy=yy*(1+n)/2
+	spline $1 to Here + vx,vy to Here + xx,yy
+	kx = vx/2;		ky = vy/2;
+	mx = (vx+xx)/2;		my = (vy+yy)/2;
+	mxk = mx-kx;		myk = my-ky;
+	vxk = vx-kx;		vyk = vy-ky;
+
+	b = 2*vxk; a = mxk-b;
+	d = 2*vyk; c = myk-d;
+	bcad = b*c - a*d;
+	k = .5*bcad*(a*b+c*d)/(a*a+c*c);
+	ksq = k*k;
+	ta = d*bcad-2*c*k;
+	tb = -b*bcad+2*a*k;
+	ey = (ksq+k*ta/c)/(tb+a*ta/c);
+	ex = (ksq-tb*ey)/ta;
+% x=0; y=0; m=0; # initially
+
+hu = 0.3i; vu = hu;
+define T % { Lulu(,6,3,$1);} %
+
+T(-1.5)
+T(-1)
+T(-.5)
+T(0)
+T(.5)
+T(1)
+T(1.5);
+
+.PE
+.PS
+define Lulu %
+	if "$2" == "" then || else | x = $2 * hu; |
+	if "$3" == "" then || else | y = $3 * hu; |
+	{ line $1 to Here + x,y chop c
+	} move to Here + x,y
+%
+x = 0; y = 0; c = 0
+.PE
+.PS
+define S % "$1"; { circle rad .12i at Here; } %
+define F % S($1); { circle rad .1i at Here; } %
+define T % Lulu(-> "$1" above,$2,$3); %
+c = .12; hu = .75; vu = .5
+T(start,1,0); S(0);
+{	T(<,1,1); F(1);
+	{	T(=,1,.75); F(2);
+	}{	T(>,1,-.75); F(3);
+	}
+}{	T(=,1,0); F(4);
+}{	T(>,1,-1); F(5); T(=,1,0); F(6);
+}
+.PE
+this should scale to 1 wide 2 high:
+
+.PS2 1
+box wid 1 ht 1
+circle rad .5 at last box
+.PE
+.PS
+# When the next line is in, a 60000 X 60000 picture shrunk to 7 X 7
+# problem is that size of B: [ O: 0,0 ] is zero, but it's set internally
+# to -60000
+# NOW FIXED
+
+B: [ Origin: (0,0) ]
+	#A: [ Origin: "" at (0,0) ] # This one works fine
+
+A: [ Origin: 
+	line from 0,0 to 1,1
+] with .Origin at B
+.PE
+.PS
+#	if the closing curly of { if $3 ...} is on the same line,
+#	the motion is not restored.  If I split it:
+#		{ if ...
+#		}
+#	it seems to work
+#	also if use ; or else {}
+# CAN'T SEE ANYTHING WRONG NOW
+
+define nibble {	# nibble(len, "label", offset, any)
+Nib:	box $2 $4
+	{ if $3 >= 0 then { "\s-4 $3\s0" at Nib.w + (0,boxht/3) ljust } ; }
+}
+right
+nibble(8, "label", 0000)
+nibble(8, "word 0", -1)
+.PE

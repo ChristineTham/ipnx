@@ -1,0 +1,12 @@
+echo T.errmsg:  check some error messages
+
+awk=${awk-../a.out}
+
+for i in u.*
+do
+	echo
+	echo $i:
+	$awk -f $i /etc/passwd >/dev/null
+done
+
+test -r core && echo BAD: someone dropped core 1>&2

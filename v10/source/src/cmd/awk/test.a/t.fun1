@@ -1,0 +1,2 @@
+func f() { print "hello" }
+NR < 3 { f(1,2,3) }

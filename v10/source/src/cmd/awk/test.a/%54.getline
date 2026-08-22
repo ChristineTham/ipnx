@@ -1,0 +1,72 @@
+echo T.getline: test getline function
+
+awk=${awk-../a.out}
+
+who >foo1
+cat foo1 | $awk '
+BEGIN {
+	while (getline)
+		print
+	exit
+}
+' >foo
+diff foo1 foo || echo 'BAD: T.getline (bare getline)'
+
+who >foo1
+cat foo1 | $awk '
+BEGIN {
+	while (getline xxx)
+		print xxx
+	exit
+}
+' >foo
+diff foo1 foo || echo 'BAD: T.getline (getline xxx)'
+
+$awk '
+BEGIN {
+	while (getline <"/etc/passwd")
+		print
+	exit
+}
+' >foo
+diff /etc/passwd foo || echo 'BAD: T.getline (getline <file)'
+
+$awk '
+BEGIN {
+	while (getline <ARGV[1])
+		print
+	exit
+}
+' /etc/passwd >foo
+diff /etc/passwd foo || echo 'BAD: T.getline (getline <arg)'
+
+$awk '
+BEGIN {
+	while (getline x <ARGV[1])
+		print x
+	exit
+}
+' /etc/passwd >foo
+diff /etc/passwd foo || echo 'BAD: T.getline (getline x <arg)'
+
+$awk '
+BEGIN {
+	while (("cat " ARGV[1]) | getline)
+		print
+	exit
+}
+' /etc/passwd >foo
+diff /etc/passwd foo || echo 'BAD: T.getline (cat arg | getline)'
+
+$awk '
+BEGIN {
+	while (("cat " ARGV[1]) | getline x)
+		print x
+	exit
+}
+' /etc/passwd >foo
+diff /etc/passwd foo || echo 'BAD: T.getline (cat arg | getline x)'
+
+$awk ' BEGIN { print getline <"/glop/glop/glop" } ' >foo
+echo '-1' >foo1
+diff foo foo1 || echo 'BAD: T.getline (non-existent file)'

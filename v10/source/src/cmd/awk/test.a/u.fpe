@@ -1,0 +1,1 @@
+BEGIN { print 1e35 * 1e35 }

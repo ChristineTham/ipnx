@@ -1,0 +1,68 @@
+.so nmac
+.ds NM UNPM
+.ul
+.ce
+UNPM-UNIX Programmers' Manual
+.TL
+(1014) UNIX Programmer's Manual - Sixth Edition
+.AU
+K. Thompson
+D. M. Ritchie
+May, 1975
+Contains descriptions of the use of all commands and
+system calls.
+.TL
+(1021) UNIX Reference Card - First Edition
+.AU
+L. L. Cherry
+September, 1975
+A handy guide to UNIX commands and syntax.
+.TL
+(1070) MERT Programmer's Manual - First Edition
+.AU
+H. Lycklama
+D. L. Bayer
+October, 1975
+This manual provides a description of the interanl
+features of the MERT Operating System.
+.TL
+(1071) Programmer's Workbench
+.AU
+P. V. Guidi
+T. B. Muenzer
+November 1, 1975
+The Programmer's Workbench is a set of software
+tools which can be used with the Sixth Unix OS,
+to build, maintain, document, and control applications
+systems designed for DEC PDP-11, S/360-70, Univac
+1100 and possibly other computer systems.
+.TL
+(1073) UNIX Programming
+.AU
+B. W. Kernighan
+D. W. Ritchie
+October 22, 1975
+TM 75-1273-11
+This paper is an introduction to programming on
+UNIX.  The emphasis is on how to write programs
+that interface to the operating system.
+.TL
+(1086) SCCS/PWB User's Manual
+.AU
+Alan L. Glasser
+December 15, 1976
+TM 75-9144-1
+A description of the Programmer's Workbench
+Source Code Control System.
+.TL
+(1088) UNIX Programmer's Manual - PG-1C300 Issue 2
+.AU
+Published by the UNIX Support Group
+January, 1976
+Contains descriptions of the use of all commands
+and system calls.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+For complete information, see UNED

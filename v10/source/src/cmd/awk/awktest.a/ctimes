@@ -1,0 +1,38 @@
+awk '
+BEGIN {
+	OFS = "\t"
+	print "     new      old   new/old"
+	print ""
+}
+/differ/
+/:$/ {	name = $1; cnt = 0; next }
+$1 ~ /u$/ && $2 ~ /s$/ && /a.out|drek/ {
+	new += $1 + $2
+	cnt++
+	if (cnt == 2)
+		dump()
+}
+$1 ~ /u$/ && $2 ~ /s$/ && !/(a.out|drek) / {
+	old += $1 + $2
+	cnt++
+	if (cnt == 2)
+		dump()
+}
+function dump() {
+	if (old > 0) {
+		printf "%8.1f %8.1f %8.3f  %s\n", new, old, new/old, name
+		rat += new/old
+	}
+	nrat++
+	totnew += new
+	totold += old
+	old = new = cnt = 0
+}
+END {
+	print ""
+	printf "%8.1f %8.1f\n\n", totnew, totold
+	printf "avg new/old   = %.3f\n", rat/nrat
+	printf "total new/old = %.3f\n", totnew/totold
+	print nrat " tests"
+}
+' $*

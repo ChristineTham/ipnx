@@ -1,0 +1,214 @@
+.so nmac
+.ds NM UNOS
+.ul
+.ce
+UNOS-Operating System (see also category COOS)
+.TL
+(1005) The UNIX I/O System
+.AU
+D. M. Ritchie
+This document describes how to write drivers for the UNIX system.
+It is an important manual for those comtemplating driver writing.
+.TL
+(1008) The UNIX Time-Sharing System
+.AU
+D. M. Ritchie
+K. Thompson
+Overview of the UNIX time-sharing system.
+.TL
+(1016) UNIX New Users Course View-Graphs February 6-8, 1974
+.AU
+J. F. Maranzano
+T. M. Raleigh
+G. C. Vogel
+Memorandum For File
+.TL
+(1017) Setting Up UNIX - Issue Three
+.br
+  Regenerating System Software - Issue Three
+.AU
+I. A. Winheim
+September 19, l975
+MF 75-8234-104
+This paper describes the procedure used to install
+standard UNIX System on the PDP 11/40 or 11/45,
+and steps necessary to regenerate sections of the
+System Software. This is a revision of MF 75-8234-17.
+dated February 10, 1975.
+.TL 
+(1045) Emulation of UNIX on Peripheral Processors
+.AU
+H. Lycklama
+C. Christensen
+January 9, l975
+TM 75-1352-2
+This document describes UNIX Operating System emulation
+on a peripheral PDP ll computer.
+.TL 
+(1047) Explanation Of Abnormal Conditions
+  Within The UNIX Operating System.
+.AU
+T. M. Raleigh
+MF 75-8234-28
+Error messages printed by the UNIX operating
+system on the system console are discussed with
+their causes, implications and remedies.
+.TL
+(1050) UNIX System Call to Access the PDP-11 KG-11
+  Communications Arithmetic Option - File 40117
+.AU
+R. C. White Jr.
+April 23, l975
+Memorandum For File
+.TL
+(1051) Real-Time Measurements of the Prestandard
+  Automatic Trouble Analysis (ATA) System.
+.AU
+J. L. Barberio
+March 15, 1975
+TM 75-5161-1
+.TL
+(1052) A Structured Operating System for a PDP-11/45.
+.AU
+H. Lycklama
+D. L. Bayer
+May 6, l975
+TM 75-1352-4
+This paper provides an overview of the MERT System
+on which UNIX Time-Sharing has been implemented.
+.TL
+(1055) Performance Measurement of the File Access Subsystem -
+  A UNIX-Based System.
+.AU
+G. C. Vogel
+May 21, 1975
+MF 75-8234-54
+The File Access Subsystem (FAS) of the Automatic
+Intercept System (AIS) is a UNIX-Based System
+that is used to administer the intercept number
+data of the AIS.
+.TL
+(1059) The Programmer's Workbench - A Machine for
+  Software Development.
+.AU
+E. L. Ivie
+May 19, 1975
+TM 75-9152-4
+This paper suggests separation of program development 
+and maintenance function onto a  specialized computer.
+.TL
+(1062) MERT - A Multi-Environment Real-Time 
+  Operating System.
+.AU
+D. L. Bayer
+H. Lycklama
+TM 75-1352-7
+Memorandum For File
+.TL
+(1066) UNIX Operating System - Change to Header Files
+.AU
+T. M. Raleigh
+June 7, 1974
+Memorandum for File
+.TL
+(1067) UNIX Program Description
+  Program Generic PG-1C300 Issue 2
+.AU
+Published by the UNIX Support Group
+January 1976
+This document supersedes Memorandum For File
+dated October 8, 1975 by R. B. Brandt
+.TL
+(1069) Introduction to Scheduling and Switching under UNIX
+.AU
+T. M. Raleigh
+October 20, 1975
+TM 75-8234-7
+This memorandum discusses process switching and
+scheduling under Unix using queuing models as and
+aid to visualization of the system's operation.
+.TL
+(1072) Measuring UNIX
+.AU
+D. H. Copp
+P. A. Hamilton
+October 31, 1975
+TM 75-8234-9
+This paper evaluates three off-the-shelf tools for
+measuring the behavior of a UNIX System in a pro-
+duction environment.
+.TL
+(1073) UNIX Programming
+.AU
+B. W. Kernighan
+D. M. Ritchie
+October 22, 1975
+TM 75-1273-11
+This paper is an introduction to programming on 
+UNIX.  The emphasis is on how to write programs
+that interface to the operatiing system.
+.TL
+(1076) LKOUT - A New UNIX System Call To Suspend
+  And Resume Input From User Terminals.
+.AU
+R. C. White, Jr.
+December 17, 1975
+TM 75-4145-2
+.TL
+(1077) UNIX DH-11 Driver To Support Both Teletypewriter
+  And DATASPEED 40 Timesharing Terminals.
+.AU
+R. C. White, Jr.
+December 17, 1975
+TM 75-4145-1
+.TL
+(1087) Guide to IBM Remote Job Entry for
+  Programmer's Workbench Users
+.AU
+T. G. Lyons
+February 16, 1976
+This document describes the RJE services provided
+between Programmer's Workbench machines and the IBM
+Computer Center at Raritan River.
+.TL
+(1090) Proposal For UNIX Interprocess Communication.
+.AU
+R. B. Brandt
+March 17, 1976
+TM 76-8234-4
+This memorandum provides functional design specifications
+for a compreshensive set of interprocess communications
+enhancements to UNIX OS.
+.TL
+(1092) TCMP - A Program For Comparing Program Text
+  After A System Crash.
+.AU
+T. M. Raleigh
+April 27, 1976
+MF 76-8234-29
+TCMP is a program which compares the original
+text (instructions) of a program with the text
+of that program in a system crash dump.
+.TL
+(1093) DEAD - A Program For Analyzing UNIX System Crashes
+.AU
+T. M. Raleigh
+April 30, 1976
+MF 76-8234-30
+DEAD is a program for qucikly summarizing the state of a
+crashed UNIX System.
+.TL
+(1094) Cautions On The Use Of The Alarm Signal
+.AU
+T. G. Lyons
+April 26, 1976
+Programmer's Notes
+Two System calls Alarm (n) and Pause () have
+been installed on the PWB machines operated by 
+Dept. 9144.  They were coded at MH and are likely
+to filter down to standard UNIX.
+.TL
+(1107) Programmer's Workbench Papers To Be Presented At The
+  Second Interantional Conference On Software Engineering.
+.AU
+For complete information,see UNED

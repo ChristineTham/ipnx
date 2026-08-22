@@ -1,0 +1,16 @@
+mcc -g -c main.c
+mcc -g -c spaceman.c
+mcc -g -c charsubs.c
+mcc -g -c fontsubs.c
+mcc -g -c filesubs.c
+mcc -g -c magnify.c
+mcc -g -c buttons.c
+mcc -g -c kbdstring.c
+mcc -g -c strcat2.c
+mcc -g -c brotate.c
+mcc -g -c rsupport.c
+mcc -g -c menuhit3.c
+mcc -g -c lexit3.c
+mcc -g -c mice.c
+mcc -g -c reshaped.c
+mcc -g main.o spaceman.o charsubs.o fontsubs.o filesubs.o magnify.o buttons.o kbdstring.o strcat2.o brotate.o rsupport.o  menuhit3.o lexit3.o mice.o reshaped.o -o jf.m

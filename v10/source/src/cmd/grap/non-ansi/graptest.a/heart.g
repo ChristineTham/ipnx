@@ -1,0 +1,45 @@
+.G1
+148
+120
+120
+100
+96
+96
+92
+96
+92
+92
+96
+88
+92
+96
+92
+88
+92
+100
+88
+92
+label "Heartbeat at 15-Second Intervals" "After 55 Rope Jumps (circle)" "And After 91 Jumps (square)"
+ticks bot at 4 "1 min.", 8 "2", 12 "3", 16 "4", 20 "5"
+new square
+160
+140
+128
+116
+116
+108
+104
+104
+100
+100
+100
+96
+92
+100
+96
+104
+96
+100
+100
+100
+.G2
