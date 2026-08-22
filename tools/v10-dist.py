@@ -91,23 +91,28 @@ PLACED = {
                 "`char *logfile = \"/usr/dk/LOGPROC\"' -- not the tree's home"),
     "netfs":   ("usr/src/netfs",
                 "v8 keeps its own at /usr/src/netfs"),
-    # THE TAPE'S DIRECTORY NAME WAS NEVER ITS ADDRESS, which is why every
-    # search keyed on `ncurses' came up empty.  ncurses/screen/README.delwin
-    # says "This file should be installed in
-    # /usr/src/lib/libcurses/screen/delwin.c", and delwin.c sits at
-    # ncurses/screen/delwin.c -- the tree naming its own path under a
-    # different name.  v8 keeps its own curses at exactly /usr/src/lib/
-    # libcurses, so the template agrees independently.
+    # KEEP THE TAPE'S OWN NAME.  An earlier pass sent this to
+    # /usr/src/lib/libcurses on the strength of ncurses/screen/README.delwin,
+    # which says "This file should be installed in
+    # /usr/src/lib/libcurses/screen/delwin.c".  That is a VENDOR PATCH NOTICE
+    # -- Symptoms, Cause, Installation, sum -r -- telling sites where to drop a
+    # fixed file into SYSTEM V's source layout.  It describes somebody else's
+    # tree, not this tape, and it read as self-reference only because the path
+    # shape happened to match.
     #
-    # It is System V terminfo curses (`@(#) libcurses.mk: 1.1 10/15/83', a tic
-    # compiler, terminfo/*.ti) and it was NOT what this machine ran: its
-    # curses.h differs from r70's installed /usr/include/curses.h, while
-    # libcurses/curses.h is byte-identical to it, and V10 has no term.h at all.
-    # Where the source lives and what got installed are different questions.
-    "ncurses": ("usr/src/lib/libcurses",
-                "ncurses/screen/README.delwin names "
-                "/usr/src/lib/libcurses/screen/delwin.c, and delwin.c is there; "
-                "v8 keeps its curses at the same path"),
+    # V10 HAS NO /usr/src/lib.  All seventeen of its library directories sit at
+    # the /usr/src root -- libc, libcurses, libplot, libpicfile, libF77 -- so
+    # that placement invented a level this tape never uses.  v8 does group
+    # under lib/, but v8's convention is not evidence about V10's.
+    #
+    # What it is, which is a separate question from where it goes: System V
+    # terminfo curses (`@(#) libcurses.mk: 1.1 10/15/83', a tic compiler,
+    # terminfo/*.ti), and NOT what this machine ran -- its curses.h differs
+    # from r70's installed /usr/include/curses.h while libcurses/curses.h is
+    # byte-identical to it, and V10 has no term.h at all.
+    "ncurses": ("usr/src/ncurses",
+                "the tape's own directory name, at the /usr/src root where all "
+                "seventeen of V10's library directories sit"),
     "libpicfile": ("usr/src/libpicfile",
                 "its picfile.h is BYTE-IDENTICAL to the one in r70's "
                 "/usr/include, so the library shipped on a real machine -- "

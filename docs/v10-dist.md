@@ -22,7 +22,6 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/games` | `games` | 210 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/ipc` | `ipc` | 536 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/lbin` | `lbin` | 245 | named in srctotape, the tape's own manifest of /usr/src |
-| `usr/src/lib/libcurses` | `ncurses` | 241 | ncurses/screen/README.delwin names /usr/src/lib/libcurses/screen/delwin.c, and delwin.c is there; v8 keeps its curses at the same path |
 | `usr/src/libF77` | `libF77` | 141 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libI77` | `libI77` | 147 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libc` | `libc` | 909 | named in srctotape, the tape's own manifest of /usr/src |
@@ -40,6 +39,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/libsdb` | `libsdb` | 2 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libtermlib` | `libtermlib` | 7 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/liby` | `liby` | 3 | named in srctotape, the tape's own manifest of /usr/src |
+| `usr/src/ncurses` | `ncurses` | 241 | the tape's own directory name, at the /usr/src root where all seventeen of V10's library directories sit |
 | `usr/src/netfs` | `netfs` | 84 | v8 keeps its own at /usr/src/netfs |
 | `usr/sys` | `sys` | 1109 | the kernel tree; 124 references to /usr/sys, and v8 keeps its kernel at the same place |
 | `usr/vol2` | `vol2` | 1509 | 40 SELF-references: vol2/index/tools/gettop opens `M=/usr/vol2/index/tools' and sits at vol2/index/tools/gettop; vol2/ADM/mkfile does `cd /usr/vol2' |
