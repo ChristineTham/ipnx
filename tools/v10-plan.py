@@ -1028,6 +1028,17 @@ def build_plan(s):
             continue
         if any(x in parts for x in ("oldplot", "ostdio")) or base == "liboc.a":
             continue
+        # libdmalloc IS A NAMED EXCLUSION, not a shortfall.  Its whole content
+        # is one member and libc/mkfile builds it with lcc:
+        #	libdmalloc.a: gen/malloc.c
+        #		cp $prereq goo.c
+        #		lcc $CFLAGS -Ddebug -c goo.c
+        # and lcc is ruled out here -- the prebuilt driver hands `-undef' to a
+        # cpp that rejects it, so cpp writes nothing, as assembles a valid EMPTY
+        # object, and lcc exits 0.  A loud failure beats a silent hole.  It is a
+        # DEBUG malloc; nothing on this disk links against it.
+        if base == "libdmalloc.a":
+            continue
         if base.endswith(".a") and not base.endswith(".c.a") and unit in bundles:
             continue
         if base.endswith(".c.a"):
@@ -1037,7 +1048,13 @@ def build_plan(s):
             how = "%d members" % cnt
         else:
             continue
-        rows.append(("4", "/usr/lib/" + name, "build", unit, "ORDER", "-", how))
+        # THE ORDER FILE'S PATH, NOT THE WORD `ORDER'.  A .c.a bundle keeps its
+        # members under a directory named for the BUNDLE and not for the
+        # library: lib2621's is hp.c.a/ORDER, because the library name comes
+        # from the DIRECTORY (`lib4014.a: tek.c.a' is the tape's own rule).  The
+        # two do not match, so the builder has to be told which to read.
+        rows.append(("4", "/usr/lib/" + name, "build", unit,
+                     base + "/ORDER", "-", how))
 
     rows.append(("5", "/unix", "build", "src/lsys", "ipnx780.m", "-",
                  "mkconf, then two compiles and one link"))

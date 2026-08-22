@@ -29,7 +29,7 @@ The walk is reconciled against the filesystem before any number here is printed;
 | 1 | The toolchain | 12 |
 | 2 | libc | 1 |
 | 3 | The fixpoint | 0 |
-| 4 | The libraries | 14 |
+| 4 | The libraries | 13 |
 | 5 | The kernel | 1 |
 | 6 | The commands | 1,601 |
 | 7 | /dev, /etc, /usr/include | 252 |
@@ -135,24 +135,23 @@ The image rebuilds its toolchain against its own libc.  Installs nothing; it is 
 
 Every archive the commands link against.
 
-14 paths.
+13 paths.
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
-| `/usr/lib/lib2621.a` | build | `src/libplot/lib2621` | `ORDER` | `-` | 32 sources, via `ar x' |
-| `/usr/lib/lib4014.a` | build | `src/libplot/lib4014` | `ORDER` | `-` | 32 sources, via `ar x' |
-| `/usr/lib/lib5620.a` | build | `src/libplot/lib5620` | `ORDER` | `-` | 31 sources, via `ar x' |
-| `/usr/lib/libblit.a` | build | `src/libplot/libblit` | `ORDER` | `-` | 31 sources, via `ar x' |
-| `/usr/lib/libcurses.a` | build | `src/libcurses` | `ORDER` | `-` | 35 members |
-| `/usr/lib/libdmalloc.a` | build | `src/libc` | `ORDER` | `-` | 1 members |
-| `/usr/lib/libj.a` | build | `src/libj` | `ORDER` | `-` | 12 members |
-| `/usr/lib/libln.a` | build | `src/libl` | `ORDER` | `-` | 5 members |
-| `/usr/lib/libmp.a` | build | `src/libmp` | `ORDER` | `-` | 9 members |
-| `/usr/lib/libpen.a` | build | `src/libplot/libpen` | `ORDER` | `-` | 22 sources, via `ar x' |
-| `/usr/lib/libpicfile.a` | build | `src/libpicfile` | `ORDER` | `-` | 14 members |
-| `/usr/lib/libplot.a` | build | `src/libplot/libplot` | `ORDER` | `-` | 2 sources, via `ar x' |
-| `/usr/lib/libram.a` | build | `src/libplot/libram` | `ORDER` | `-` | 32 sources, via `ar x' |
-| `/usr/lib/libtr.a` | build | `src/libplot/libtr` | `ORDER` | `-` | 31 sources, via `ar x' |
+| `/usr/lib/lib2621.a` | build | `src/libplot/lib2621` | `hp.c.a/ORDER` | `-` | 32 sources, via `ar x' |
+| `/usr/lib/lib4014.a` | build | `src/libplot/lib4014` | `tek.c.a/ORDER` | `-` | 32 sources, via `ar x' |
+| `/usr/lib/lib5620.a` | build | `src/libplot/lib5620` | `blit.c.a/ORDER` | `-` | 31 sources, via `ar x' |
+| `/usr/lib/libblit.a` | build | `src/libplot/libblit` | `blit.c.a/ORDER` | `-` | 31 sources, via `ar x' |
+| `/usr/lib/libcurses.a` | build | `src/libcurses` | `crlib/ORDER` | `-` | 35 members |
+| `/usr/lib/libj.a` | build | `src/libj` | `libj.a/ORDER` | `-` | 12 members |
+| `/usr/lib/libln.a` | build | `src/libl` | `libln.a/ORDER` | `-` | 5 members |
+| `/usr/lib/libmp.a` | build | `src/libmp` | `libmp.a/ORDER` | `-` | 9 members |
+| `/usr/lib/libpen.a` | build | `src/libplot/libpen` | `pen.c.a/ORDER` | `-` | 22 sources, via `ar x' |
+| `/usr/lib/libpicfile.a` | build | `src/libpicfile` | `libpicfile.a/ORDER` | `-` | 14 members |
+| `/usr/lib/libplot.a` | build | `src/libplot/libplot` | `plot.c.a/ORDER` | `-` | 2 sources, via `ar x' |
+| `/usr/lib/libram.a` | build | `src/libplot/libram` | `ramtek.c.a/ORDER` | `-` | 32 sources, via `ar x' |
+| `/usr/lib/libtr.a` | build | `src/libplot/libtr` | `tr.c.a/ORDER` | `-` | 31 sources, via `ar x' |
 
 ## Stage 5 — The kernel
 

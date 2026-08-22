@@ -157,10 +157,13 @@ do
 	#
 	# The object-to-source map is the unit's own mkfile, which carries an
 	# explicit `obj: dir/src.c' line for every member.
-	if test "$objs" = ORDER
-	then
+	case $objs in
+	ORDER|*/ORDER)
 		SD=$TAPE/$src
-		ORD=$SD/$name/ORDER
+		if test "$objs" = ORDER
+		then	ORD=$SD/$name/ORDER
+		else	ORD=$SD/$objs
+		fi
 		if test ! -s $ORD
 		then
 			echo "$Q $path no ORDER at $name/ORDER"
@@ -172,21 +175,62 @@ do
 		# column carries any named exclusion.
 		AF="`echo $note | sed -e 's/^[^-]*//'`"
 		DROP="`echo $libs | sed -e '/^DROP=/!d' -e 's/^DROP=//'`"
+		ARCD=`echo $ORD | sed -e 's|/ORDER$||'`
 		rm -rf w ; mkdir w ; cd w
 		MK=
 		for m in makefile Makefile mkfile
 		do
 			if test -s $SD/$m ; then MK=$SD/$m ; fi
 		done
+		# THE UNIT'S HEADERS COME IN FIRST.  Every stage-4 failure was a
+		# quoted include the compiler could not resolve -- curses.ext,
+		# jerq.h, io.h, balloc.h -- each sitting in the directory the
+		# member came from.  A bundle carries its own headers too:
+		# hp.c.a holds hp.h, ramtek.c.a holds ram.h, blit.c.a holds both
+		# jcom.h and jplot.h, and 143 of 145 apparent blocks were these
+		# four, inside the very archive the recipe unpacks.
+		cp $SD/*.h . 2>/dev/null
+		cp $SD/*.ext . 2>/dev/null
+		if test -d $ARCD
+		then	cp $ARCD/* . 2>/dev/null
+		fi
+		# OUR OVERLAY LAST, because it must WIN.  Copying it before the
+		# bundle let the tape's own openpl.c overwrite our corrected one,
+		# so the fix was on the disk and not in the compile -- the same
+		# shape as "it is in the golden, it will arrive on Reset".
+		orel=`echo $src | sed -e 's|^src/||'`
+		if test -d $OURS/$orel
+		then	cp $OURS/$orel/* . 2>/dev/null
+		fi
+		rm -f *.o
 		rm -f mem.bad first.log
+		# A BUNDLE'S MEMBERS ARE SOURCES, NOT OBJECTS.  `ar' predates tar
+		# being everywhere and was the ordinary way to package any file
+		# set, so on this tape X.c.a is an archive of .c FILES and `ar x'
+		# is step one of the recipe:
+		#	lib4014.a: tek.c.a
+		#		mkdir xplot; cd xplot; ar x ../tek.c.a
+		#		cc -c -O *.c; ar rc ../lib4014.a *.o
+		# Read as "24 members have no source" it looks like tape rot.
 		for o in `cat $ORD`
 		do
 			case " $DROP " in
 			*" $o "*)	continue ;;
 			esac
-			st2=`echo $o | sed -e 's|\.o$||'`
+			case $o in
+			*.h)	continue ;;
+			esac
+			st2=`echo $o | sed -e 's|\.[a-z]*$||'`
 			# the mkfile names the source; fall back to a search
+			# a member of an UNPACKED bundle is right there
+			if test -s $ARCD/$st2.c
+			then	rel=`echo $ARCD/$st2.c | sed -e "s|^$SD/||"`
+			else	rel=
+			fi
+			if test -z "$rel"
+			then
 			rel=`sed -n "/^$st2\.o[ 	]*:/s/^[^:]*:[ 	]*//p" $MK 2>/dev/null | sed -e 's/[ 	].*//' -e 1q`
+			fi
 			if test -z "$rel" -o ! -s "$SD/$rel"
 			then
 				rel=
@@ -202,8 +246,9 @@ do
 			if test -z "$rel"
 			then	echo "$st2" >> mem.bad ; continue
 			fi
+			ob=$st2.o
 			case $rel in
-			*.s)	${BP}../bin/as -o $o $SD/$rel > m.log 2>&1 ;;
+			*.s)	${BP}../bin/as -o $ob $SD/$rel > m.log 2>&1 ;;
 			*)	# THE SOURCE'S OWN DIRECTORY COMES WITH IT.
 				# V10's cpp cannot resolve a quoted include for
 				# an out-of-tree source, so lifting stdio/
@@ -215,7 +260,16 @@ do
 				if test "$sdir" != "$rel"
 				then	cp $SD/$sdir/*.h . 2>/dev/null
 				fi
-				cp $SD/$rel $st2.c 2>/dev/null
+				# THE OVERLAY WINS AT THE MEMBER LEVEL TOO.
+				# Copying it into the directory first is not
+				# enough: this line then copies the TAPE's
+				# source over the top of it, so the corrected
+				# openpl.c was present in the directory and
+				# absent from the compile.
+				if test -s $OURS/$orel/$st2.c
+				then	cp $OURS/$orel/$st2.c $st2.c 2>/dev/null
+				else	cp $SD/$rel $st2.c 2>/dev/null
+				fi
 				# NOT /dev/null.  Discarding the compiler's
 				# output made 261 members fail with no reason
 				# at all, which is the same fault as a marker
@@ -223,7 +277,7 @@ do
 				( $CC -O $AF -c $st2.c 2>&1
 				  echo "CCST=$?" ) | sed -e 20q > m.log ;;
 			esac
-			if test ! -s $o
+			if test ! -s $ob
 			then
 				echo "$st2" >> mem.bad
 				# The FIRST failure's reason, once: 261 copies
@@ -247,19 +301,30 @@ do
 		# the driver's own `test -s libc.a' agreed with it.
 		if test $nb -gt 0
 		then
-			echo "$Q $path -- $nb of `echo "$MEM" | sed -n '$='` members did not compile"
+			echo "$Q $path -- $nb of $want members did not compile"
 			echo . >> ../no.cnt
 			cd ..
 			continue
 		fi
 		# IN THE TAPE'S ORDER, not the shell's alphabetical glob.
 		rm -f $name
-		MEM=`sed -e "/^$DROP\$/d" $ORD`
-		ar cr $name $MEM > /dev/null 2>&1
+		# THE MEMBER LIST GOES IN A FILE, not a variable read back
+		# through nested quotes.  `echo "$MEM" | sed -n "$="' inside a
+		# double-quoted echo inside backticks does not survive 1970s sh:
+		# the counts came out as `2 of 1' and `29 of 1', which is a
+		# quoting fault reported as a measurement.
+		# A BUNDLE'S MEMBERS ARE NOT ALL SOURCES.  hp.c.a carries hp.h,
+		# ramtek.c.a carries ram.h and blit.c.a carries both jcom.h and
+		# jplot.h -- they are EXTRACTED beside the sources so `-I.'
+		# finds them, and compiling them produces nothing.  143 of 145
+		# apparent blocks were these four headers.
+		sed -e "/^$DROP\$/d" -e '/\.h$/d' -e 's|\.[a-z]*$|.o|' $ORD > mem.lst
+		want=`sed -n '$=' mem.lst`
+		if test -z "$want" ; then want=0 ; fi
+		ar cr $name `cat mem.lst` > /dev/null 2>&1
 		ranlib $name > /dev/null 2>&1
 		got=`ar t $name 2>/dev/null | sed -e '/SYMDEF/d' | sed -n '$='`
 		if test -z "$got" ; then got=0 ; fi
-		want=`echo "$MEM" | sed -n '$='`
 		if test "$got" != "$want"
 		then
 			echo "$Q $path -- archive holds $got of $want members"
@@ -277,7 +342,8 @@ do
 		fi
 		cd ..
 		continue
-	fi
+		;;
+	esac
 
 	# ------------------------------------------------------------ build ---
 	# IN-TREE, AND THAT IS NOT A PREFERENCE.  V10's cpp cannot resolve a
@@ -319,10 +385,13 @@ do
 		esac
 	done
 	# OUR OVERLAY WINS.  v10/src holds the named patches; copying it second
-	# is what makes them real.
-	if test -d $OURS/$src
+	# is what makes them real.  It is rooted at the TAPE'S src/, so
+	# v10/src/cmd/... corresponds to tape src/cmd/... -- asking for
+	# $OURS/src/cmd finds nothing at all.
+	orel=`echo $src | sed -e 's|^src/||'`
+	if test -d $OURS/$orel
 	then
-		cp $OURS/$src/* . 2>/dev/null
+		cp $OURS/$orel/* . 2>/dev/null
 	fi
 	# THE TAPE SHIPS 1989 OBJECTS BESIDE THE SOURCE and a link over them
 	# would pull Bell Labs' bytes into our binary silently -- and in the
