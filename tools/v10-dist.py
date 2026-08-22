@@ -91,6 +91,23 @@ PLACED = {
                 "`char *logfile = \"/usr/dk/LOGPROC\"' -- not the tree's home"),
     "netfs":   ("usr/src/netfs",
                 "v8 keeps its own at /usr/src/netfs"),
+    # THE TAPE'S DIRECTORY NAME WAS NEVER ITS ADDRESS, which is why every
+    # search keyed on `ncurses' came up empty.  ncurses/screen/README.delwin
+    # says "This file should be installed in
+    # /usr/src/lib/libcurses/screen/delwin.c", and delwin.c sits at
+    # ncurses/screen/delwin.c -- the tree naming its own path under a
+    # different name.  v8 keeps its own curses at exactly /usr/src/lib/
+    # libcurses, so the template agrees independently.
+    #
+    # It is System V terminfo curses (`@(#) libcurses.mk: 1.1 10/15/83', a tic
+    # compiler, terminfo/*.ti) and it was NOT what this machine ran: its
+    # curses.h differs from r70's installed /usr/include/curses.h, while
+    # libcurses/curses.h is byte-identical to it, and V10 has no term.h at all.
+    # Where the source lives and what got installed are different questions.
+    "ncurses": ("usr/src/lib/libcurses",
+                "ncurses/screen/README.delwin names "
+                "/usr/src/lib/libcurses/screen/delwin.c, and delwin.c is there; "
+                "v8 keeps its curses at the same path"),
     "libpicfile": ("usr/src/libpicfile",
                 "its picfile.h is BYTE-IDENTICAL to the one in r70's "
                 "/usr/include, so the library shipped on a real machine -- "
@@ -112,11 +129,6 @@ LEFT = {
                   "itself nowhere. sys/ is the vanilla one: 1,134 files "
                   "against lsys's 922, newer on 111 of 266 differing files "
                   "against 8, and more 780 support (52 `star' paths to 35).",
-    "ncurses":    "a curses library beside the libcurses that IS in srctotape. "
-                  "Dated 1990-02, ten months AFTER srctotape was written, so "
-                  "its absence from that list is staleness rather than "
-                  "exclusion -- but nothing positively places it: no header of "
-                  "its own reaches /usr/include and it names itself nowhere.",
     "history":    "five loose files left after history/ix was excluded; they "
                   "name themselves nowhere.",
     "dist":       "a distribution working directory, naming itself nowhere.",

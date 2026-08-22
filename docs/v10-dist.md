@@ -22,6 +22,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/games` | `games` | 210 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/ipc` | `ipc` | 536 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/lbin` | `lbin` | 245 | named in srctotape, the tape's own manifest of /usr/src |
+| `usr/src/lib/libcurses` | `ncurses` | 241 | ncurses/screen/README.delwin names /usr/src/lib/libcurses/screen/delwin.c, and delwin.c is there; v8 keeps its curses at the same path |
 | `usr/src/libF77` | `libF77` | 141 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libI77` | `libI77` | 147 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libc` | `libc` | 909 | named in srctotape, the tape's own manifest of /usr/src |
@@ -42,7 +43,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/netfs` | `netfs` | 84 | v8 keeps its own at /usr/src/netfs |
 | `usr/sys` | `sys` | 1109 | the kernel tree; 124 references to /usr/sys, and v8 keeps its kernel at the same place |
 | `usr/vol2` | `vol2` | 1509 | 40 SELF-references: vol2/index/tools/gettop opens `M=/usr/vol2/index/tools' and sits at vol2/index/tools/gettop; vol2/ADM/mkfile does `cd /usr/vol2' |
-| **total** | | **31522** | |
+| **total** | | **31763** | |
 
 Two kinds of evidence were allowed, and only these:
 
@@ -60,9 +61,8 @@ Two kinds of evidence were allowed, and only these:
 | `history` | five loose files left after history/ix was excluded; they name themselves nowhere. |
 | `lsys` | `local sys' -- one machine's kernel tree, and it names itself nowhere. sys/ is the vanilla one: 1,134 files against lsys's 922, newer on 111 of 266 differing files against 8, and more 780 support (52 `star' paths to 35). |
 | `nbstests` | a test corpus, naming itself nowhere. |
-| `ncurses` | a curses library beside the libcurses that IS in srctotape. Dated 1990-02, ten months AFTER srctotape was written, so its absence from that list is staleness rather than exclusion -- but nothing positively places it: no header of its own reaches /usr/include and it names itself nowhere. |
 
-1894 files. Leaving a tree behind costs nothing — the superset is committed and validated, and a directory can be promoted in one line once its home is known. Guessing costs the thing this rebuild was for: a tree whose shape is a claim about V10 rather than a record of it.
+1653 files. Leaving a tree behind costs nothing — the superset is committed and validated, and a directory can be promoted in one line once its home is known. Guessing costs the thing this rebuild was for: a tree whose shape is a claim about V10 rather than a record of it.
 
 Loose files at the superset root, not placed: `facedl`, `makefile`, `srctotape`.
 
