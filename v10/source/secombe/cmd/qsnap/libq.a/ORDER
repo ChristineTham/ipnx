@@ -1,0 +1,4 @@
+q.o
+gpib.o
+iberr.o
+library.o

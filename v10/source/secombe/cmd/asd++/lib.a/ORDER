@@ -1,0 +1,8 @@
+checksum.o
+decl.o
+dir.o
+domach.o
+impl.o
+locksubs.o
+param.o
+path.o

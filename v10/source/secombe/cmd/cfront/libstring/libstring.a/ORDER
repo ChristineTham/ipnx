@@ -1,0 +1,12 @@
+string.o
+sysfns.o
+stringCtor.o
+Memcpy.o
+error.o
+rep.o
+list.o
+generic.o
+voidP_list.o
+voidP_out.o
+list_sort.o
+Regexp.o

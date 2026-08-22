@@ -1,0 +1,8 @@
+bdir.o
+lock.o
+sum.o
+logprint.o
+fail.o
+rx.o
+fakeargv.o
+relay.o

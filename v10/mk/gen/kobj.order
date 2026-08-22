@@ -1,2 +1,0 @@
-lsys/io/spipe.c	spipe.x	io.a	tape
-lsys/os/streamio.c	streamio.x	os.a	ours

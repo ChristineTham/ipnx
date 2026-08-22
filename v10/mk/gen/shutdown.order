@@ -1,2 +1,0 @@
-halt	cmd	etc/halt
-sleep	cmd	usr/bin/sleep

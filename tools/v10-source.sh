@@ -354,6 +354,38 @@ for dp, _, fs in os.walk(d):
         except OSError:
             pass
 PY2
+# UNPACKING KEEPS EVERY BYTE AND DESTROYS ONE THING: THE ORDER OF THE MEMBERS.
+# A directory listing is not an archive, and that order is Bell Labs' own answer
+# to the ordering question -- load-bearing, because V10's ld makes ONE sequential
+# pass without a current __.SYMDEF and the golden has neither lorder nor tsort to
+# recompute it.  libc.a must be rebuilt in the tape's order or backward
+# references go unresolved.  So every unpacked archive carries ORDER beside its
+# members, written from the archive BEFORE it is removed.
+write_order() {
+    python3 - "$1" "$2" <<'PYO'
+import os, sys
+arc, out = sys.argv[1], sys.argv[2]
+d = open(arc, "rb").read()
+if d[:8] != b"!<arch>\n":
+    raise SystemExit(0)
+o, names = 8, []
+while o + 60 <= len(d):
+    h = d[o:o+60]
+    if h[58:60] != b"`\n":
+        break
+    nm = h[0:16].decode("ascii", "replace").strip().rstrip("/")
+    try:
+        size = int(h[48:58].decode("ascii", "replace").strip())
+    except ValueError:
+        break
+    if nm and nm != "__.SYMDEF":
+        names.append(nm)
+    o += 60 + size + (size & 1)
+if names:
+    open(os.path.join(out, "ORDER"), "w").write("".join(x + "\n" for x in names))
+PYO
+}
+
 n=0; bad=0
 while IFS= read -r a; do
     [[ -n "$a" ]] || continue
@@ -362,6 +394,7 @@ while IFS= read -r a; do
     if ( cd "$tmp" && ar x "$a" ) 2>/dev/null; then
         rm -f "$tmp/__.SYMDEF"
         if [ -n "$(ls -A "$tmp")" ]; then
+            write_order "$a" "$tmp"
             rm -f "$a" && mv "$tmp" "$a"      # the DIRECTORY takes the name
             n=$((n+1))
             continue
@@ -391,6 +424,7 @@ while o + 60 <= len(d):
 sys.exit(0 if n else 1)
 PY3
     then
+        write_order "$a" "$tmp"
         rm -f "$a" && mv "$tmp" "$a"
         n=$((n+1)); continue
     fi

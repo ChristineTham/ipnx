@@ -1,0 +1,6 @@
+shelves.o
+jinit.o
+cold.o
+warm.o
+load.o
+allocate.o

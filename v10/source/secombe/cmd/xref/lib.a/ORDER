@@ -1,0 +1,5 @@
+ctype.o
+input.o
+output.o
+divide.o
+string.o

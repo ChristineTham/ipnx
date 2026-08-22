@@ -1,0 +1,4 @@
+detach.o
+dialin.o
+dialout.o
+log.o
