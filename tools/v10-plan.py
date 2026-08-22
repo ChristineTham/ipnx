@@ -998,8 +998,23 @@ def build_plan(s):
         rows.append(("1", dest, "build", p[1], " ".join(p[3]), p[4], p[5]))
 
     n = dict(s["archives"]).get("src/libc/libc.a", 0)
-    rows.append(("2", "/lib/libc.a", "build", "src/libc", "ORDER", "-",
-                 "%d members, the tape's own order" % n))
+    # -DV10 IS MISSING FROM THE TAPE'S OWN cc RULE, and everything downstream
+    # looks like a different bug.  libc/mkfile gives lcc `LCCARGS = ... -DV10'
+    # and its default C recipe is a bare `cc -O -c $prereq' -- so -DV10 IS this
+    # tree's answer and simply never reached the cc rule.  Without it every
+    # `#ifdef V10' is skipped, stdio/iolib.h takes its pANS #else branch and
+    # dies on headers r70 does not have:
+    #	./iolib.h: 36: Can't find include file unistd.h
+    # which reads as a missing header and is a missing -D.  It belongs HERE and
+    # not in a source patch, because V10 never had these makefiles.
+    #
+    # setupshares is a NAMED EXCLUSION, not a shortfall: <sys/share.h>'s
+    # struct sh_consts is printed in no manual page and referenced in neither
+    # kernel tree, and L_GETCOSTS has the KERNEL write through that pointer, so
+    # a guessed size corrupts the caller's stack.  Subtracted, not hidden.
+    rows.append(("2", "/lib/libc.a", "build", "src/libc", "ORDER",
+                 "DROP=setupshares.o",
+                 "%d members in the tape's own archive order -DV10" % n))
 
     # A library is decided by CONTENT: libX.a is objects, X.c.a is SOURCES and
     # `ar x' is step one of the tape's own recipe (`lib4014.a: tek.c.a').  A

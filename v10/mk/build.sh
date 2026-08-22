@@ -168,6 +168,10 @@ do
 			continue
 		fi
 		echo "P: $path `sed -n '$=' $ORD` members from $SD"
+		# The flags ride the note, as they do for a program; the libs
+		# column carries any named exclusion.
+		AF="`echo $note | sed -e 's/^[^-]*//'`"
+		DROP="`echo $libs | sed -e '/^DROP=/!d' -e 's/^DROP=//'`"
 		rm -rf w ; mkdir w ; cd w
 		MK=
 		for m in makefile Makefile mkfile
@@ -177,6 +181,9 @@ do
 		rm -f mem.bad first.log
 		for o in `cat $ORD`
 		do
+			case " $DROP " in
+			*" $o "*)	continue ;;
+			esac
 			st2=`echo $o | sed -e 's|\.o$||'`
 			# the mkfile names the source; fall back to a search
 			rel=`sed -n "/^$st2\.o[ 	]*:/s/^[^:]*:[ 	]*//p" $MK 2>/dev/null | sed -e 's/[ 	].*//' -e 1q`
@@ -197,12 +204,23 @@ do
 			fi
 			case $rel in
 			*.s)	${BP}../bin/as -o $o $SD/$rel > m.log 2>&1 ;;
-			*)	cp $SD/$rel $st2.c 2>/dev/null
+			*)	# THE SOURCE'S OWN DIRECTORY COMES WITH IT.
+				# V10's cpp cannot resolve a quoted include for
+				# an out-of-tree source, so lifting stdio/
+				# fprintf.c into a scratch directory loses
+				# iolib.h and seventeen members fail on a
+				# header that is sitting beside the file they
+				# came from.
+				sdir=`echo $rel | sed -e 's|/[^/]*$||'`
+				if test "$sdir" != "$rel"
+				then	cp $SD/$sdir/*.h . 2>/dev/null
+				fi
+				cp $SD/$rel $st2.c 2>/dev/null
 				# NOT /dev/null.  Discarding the compiler's
 				# output made 261 members fail with no reason
 				# at all, which is the same fault as a marker
 				# that cannot say why it did not appear.
-				( $CC -O -c $st2.c 2>&1
+				( $CC -O $AF -c $st2.c 2>&1
 				  echo "CCST=$?" ) | sed -e 20q > m.log ;;
 			esac
 			if test ! -s $o
@@ -229,18 +247,19 @@ do
 		# the driver's own `test -s libc.a' agreed with it.
 		if test $nb -gt 0
 		then
-			echo "$Q $path -- $nb of `sed -n '$=' $ORD` members did not compile"
+			echo "$Q $path -- $nb of `echo "$MEM" | sed -n '$='` members did not compile"
 			echo . >> ../no.cnt
 			cd ..
 			continue
 		fi
 		# IN THE TAPE'S ORDER, not the shell's alphabetical glob.
 		rm -f $name
-		ar cr $name `cat $ORD` > /dev/null 2>&1
+		MEM=`sed -e "/^$DROP\$/d" $ORD`
+		ar cr $name $MEM > /dev/null 2>&1
 		ranlib $name > /dev/null 2>&1
 		got=`ar t $name 2>/dev/null | sed -e '/SYMDEF/d' | sed -n '$='`
 		if test -z "$got" ; then got=0 ; fi
-		want=`sed -n '$=' $ORD`
+		want=`echo "$MEM" | sed -n '$='`
 		if test "$got" != "$want"
 		then
 			echo "$Q $path -- archive holds $got of $want members"

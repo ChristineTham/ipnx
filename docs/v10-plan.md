@@ -122,7 +122,7 @@ Compiled by the passes stage 1 installed.  Member order is the tape's own, read 
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
-| `/lib/libc.a` | build | `src/libc` | `ORDER` | `-` | 261 members, the tape's own order |
+| `/lib/libc.a` | build | `src/libc` | `ORDER` | `DROP=setupshares.o` | 261 members in the tape's own archive order -DV10 |
 
 ## Stage 3 — The fixpoint
 
