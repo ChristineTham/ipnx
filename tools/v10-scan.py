@@ -510,12 +510,31 @@ def phase_secombe(v):
     if len(unblock) > 20:
         out.append("   ... and %d more" % (len(unblock) - 20))
 
+    # CLASSIFY THE DIFFERENCES.  A flat list of 162 is dominated by two
+    # things that are not disagreements about the tape at all: OUR patches
+    # (applied to src, not to secombe) and OBJECTS inside unpacked archives,
+    # which differ because they were compiled on different days.  What is
+    # left is where the two machines genuinely held different source.
+    ours = set()
+    ov = os.path.join(TREE, "OVERLAY")
+    if os.path.exists(ov):
+        for line in open(ov):
+            f = line.split("\t")
+            if len(f) >= 2 and f[1].startswith("src/"):
+                ours.add(f[1][4:])
+    mine = [r for r in diffs if r in ours]
+    objs = [r for r in diffs if r not in ours and
+            (r.endswith((".o", ".x", ".O")) or ".a/" in r)]
+    real = [r for r in diffs if r not in ours and r not in set(objs)]
     out.append("")
-    out.append("files present in both but DIFFERENT: %d" % differ)
-    for r in diffs[:10]:
-        out.append("   %s" % r)
-    if len(diffs) > 10:
-        out.append("   ... and %d more" % (len(diffs) - 10))
+    out.append("the %d differences, classified:" % differ)
+    out.append("   OUR patches (applied to src, not secombe)   %4d" % len(mine))
+    out.append("   objects inside unpacked archives            %4d" % len(objs))
+    out.append("   GENUINE source differences                  %4d" % len(real))
+    for r in real[:30]:
+        out.append("      %s" % r)
+    if len(real) > 30:
+        out.append("      ... and %d more" % (len(real) - 30))
     return len(both) + len(onlyA) + len(onlyB), out
 
 
