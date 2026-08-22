@@ -353,6 +353,53 @@ def aliases(text, m, rules):
     return out
 
 
+# Destinations that are DIRECTORIES rather than file paths.  `cp yaccpar
+# /usr/lib' installs /usr/lib/yaccpar, while `cp strip.out /usr/bin/strip'
+# renames.  Distinguishing them by the basename alone gets the rename wrong, so
+# the known install directories are named.
+INSTDIRS = ("/bin", "/etc", "/lib", "/usr/bin", "/usr/lib", "/usr/games",
+            "/usr/dict", "/usr/lib/lex", "/usr/lib/upas", "/usr/lib/tmac",
+            "/usr/lib/uucp", "/usr/lib/font", "/usr/adm", "/usr/maps",
+            "/usr/jerq/bin", "/usr/jerq/lib", "/usr/lib/pascal", "/usr/new")
+
+
+def unit_data(text, m, rules, present):
+    """[(path, srcfile)] -- DATA a unit installs, not programs and not scripts.
+
+    A TOOL THAT IS PRESENT MAY STILL BE MISSING ITS DATA, and lex is the case
+    this project already met: the golden has /usr/bin/lex and no /usr/lib/lex
+    at all, so every lex unit fails with
+
+	(Error) Lex driver missing, file /usr/lib/lex/ncform
+
+    which reads as a grammar the tape cannot process.  `test -s /usr/bin/lex'
+    is not "lex works".  The tape says where it goes -- `cp ncform
+    $(DESTDIR)/usr/lib/lex' -- and yacc says the same for yaccpar.  These lines
+    were being read to place PROGRAMS and then discarded.
+    """
+    out = []
+    for tgt in ("install", "all"):
+        if tgt not in rules:
+            continue
+        for raw in rules[tgt][1]:
+            for line in re.split(r"[;&]+", expand(raw, m)):
+                mo = re.match(r"\s*cp\s+(\S+)\s+(/\S+)\s*$", line.strip())
+                if not mo:
+                    continue
+                src, dst = mo.group(1), mo.group(2).rstrip("/")
+                base = src.split("/")[-1]
+                if base not in present or src.endswith((".o", ".a", ".sh")):
+                    continue
+                if dst in INSTDIRS:
+                    path = dst + "/" + base
+                elif dst.split("/")[-1] == base:
+                    path = dst
+                else:
+                    path = dst              # a rename: strip.out -> strip
+                out.append((path, base))
+    return out
+
+
 def unit_scripts(text, m, rules, srcs):
     """[(name, dir, srcfile)] -- scripts a unit's OWN makefile installs.
 
@@ -579,7 +626,7 @@ def scan():
 
     admin = admin_dest()
     large = admin_large()
-    progs, parks, gaps, links, scripts = [], [], [], [], []
+    progs, parks, gaps, links, scripts, data = [], [], [], [], [], []
 
     # cmd/Admin/Mk BUILDS FIVE SUFFIXES, NOT ONE, and reading only *.c lost
     # twelve commands outright -- bc (a yacc grammar), wc (assembly), and ten
@@ -660,6 +707,12 @@ def scan():
                 if os.path.isdir(os.path.join(TREE, d)) else u["src"]
             for nm, dd, sf in unit_scripts(text, mm, rr, allf):
                 scripts.append((nm, dd, d + "/" + sf))
+            try:
+                present = set(os.listdir(os.path.join(TREE, d)))
+            except OSError:
+                present = set()
+            for path, sf in unit_data(text, mm, rr, present):
+                data.append((path, d + "/" + sf))
 
         # ---- EVERY main() IS ACCOUNTED FOR, and this is the correction that
         # matters.  Gating the fallback on "this directory produced nothing"
@@ -716,7 +769,8 @@ def scan():
     return {"files": files, "roles": roles, "byroot": byroot, "units": units,
             "progs": progs, "archives": archives, "parked": parks,
             "dropped": dropped, "gaps": gaps, "admin": admin, "links": links,
-            "scripts": sorted(set(scripts)), "large": large}
+            "scripts": sorted(set(scripts)), "large": large,
+            "data": sorted(set(data))}
 
 
 def dedupe(progs):
@@ -972,6 +1026,15 @@ def build_plan(s):
         rows.append(("6", d.rstrip("/") + "/" + name, "link", target, "-", "-",
                      "a second name for %s -- the tape's own ln" % target))
 
+    taken = {r[1] for r in rows}
+    for path, src in s["data"]:
+        if path in taken:
+            continue
+        rows.append(("7", path, "copy", src, "-", "-",
+                     "data the tape installs -- a command without it fails in "
+                     "a way that reads as a different bug"))
+        taken.add(path)
+
     rows.append(("7", "/usr/include/**", "tree", "include", "-", "-",
                  "r70's reconstruction, %d files"
                  % sum(1 for r, _, _, _, _ in s["files"] if r == "include")))
@@ -1062,8 +1125,9 @@ def main(argv):
     print("   units %d   programs %d   archives %d   parked %d   dropped %d"
           % (len(s["units"]), len(s["progs"]), len(s["archives"]),
              len(s["parked"]), len(s["dropped"])))
-    print("   aliases %d   shell scripts %d   -O names %d"
-          % (len(s["links"]), len(s["scripts"]), len(s["large"])))
+    print("   aliases %d   scripts %d   data files %d   -O names %d"
+          % (len(s["links"]), len(s["scripts"]), len(s["data"]),
+             len(s["large"])))
     print("   SEEN BUT NOT BUILT: %d directories" % len(s["gaps"]))
 
     if a.gaps:

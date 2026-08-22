@@ -32,7 +32,7 @@ The walk is reconciled against the filesystem before any number here is printed;
 | 4 | The libraries | 14 |
 | 5 | The kernel | 1 |
 | 6 | The commands | 1,601 |
-| 7 | /dev, /etc, /usr/include | 252 |
+| 7 | /dev, /etc, /usr/include | 297 |
 | 8 | The manuals | 1 |
 
 ## Seen but not built: 52 directories
@@ -1777,7 +1777,7 @@ Everything else the scan found.
 
 The tables and the headers.
 
-252 paths.
+297 paths.
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
@@ -2029,10 +2029,55 @@ The tables and the headers.
 | `/etc/profile` | copy | `v10/src/etc/profile` | `-` | `0644` | 36 bytes -- our config, from source |
 | `/etc/rc` | copy | `v10/src/etc/rc` | `-` | `0644` | 419 bytes -- our config, from source |
 | `/etc/rc.pre` | copy | `v10/src/etc/rc.pre` | `-` | `0644` | 76 bytes -- our config, from source |
+| `/etc/termcap` | copy | `src/cmd/termcap/termcap.obj` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 | `/etc/ttys` | copy | `v10/src/etc/ttys` | `-` | `0644` | 74 bytes -- our config, from source |
 | `/etc/utmp` | copy | `v10/src/etc/utmp` | `-` | `0644` | 0 bytes -- our config, from source |
 | `/etc/whoami` | copy | `v10/src/etc/whoami` | `-` | `0644` | 9 bytes -- our config, from source |
+| `/tmp/$$` | copy | `src/cmd/chuck/a.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/calendar` | copy | `src/cmd/calendar/calendar` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/cbt` | copy | `src/cmd/cbt/cbt` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/compat` | copy | `src/cmd/compat/v7run` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/ipa` | copy | `src/cmd/ipa/ipa` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/sed` | copy | `src/cmd/sed/sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/snocone` | copy | `src/cmd/snocone/sc2` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/spitbol` | copy | `src/cmd/spitbol/newspit` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/strip` | copy | `src/cmd/strip/strip.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/bin/units` | copy | `src/cmd/units/units` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/games/${SAIL.LOG}` | copy | `src/games/sail/sail.log` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/games/lib/atc` | copy | `src/games/atc/airspaces` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/games/lib/saildriver` | copy | `src/games/sail/driver` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/games/word_clout` | copy | `src/games/word_clout/word_clout` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/include` | copy | `src/ipc/h/ipc.h` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 | `/usr/include/**` | tree | `include` | `-` | `-` | r70's reconstruction, 336 files |
+| `/usr/ipc/mgrs` | copy | `src/ipc/mgrs/dkmgr/dkmgr` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/jerq/bin/graphdraw` | copy | `milligan/jerq/src/graphdraw/graphdraw` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/jerq/bin/graphdraw.h` | copy | `milligan/jerq/src/graphdraw/graphdraw.h` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/jerq/include` | copy | `milligan/jerq/src/lib/pot/pot.pub` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/apsend` | copy | `src/cmd/apsend/apsend` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/asd` | copy | `src/cmd/asd++/dlist` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/calendar3` | copy | `src/cmd/calendar/calendar3` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/dired` | copy | `src/cmd/dired/dired.help` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/docgen` | copy | `src/cmd/docgen/mcsdata` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/ideal/ideal` | copy | `src/cmd/ideal/a.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/lex/ncform` | copy | `src/cmd/lex/ncform` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/libpc.a` | copy | `src/cmd/pascal/libpc/libpc` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/prefer` | copy | `src/cmd/prefer/prefawk/prefawk` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/style` | copy | `src/cmd/wwb/acro.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/style/dict.d` | copy | `src/cmd/diction/dict.d` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/style/macs.tr` | copy | `src/cmd/diction/macs.tr` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/style/script.sed` | copy | `src/cmd/wwb/script.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/style/suggest.d` | copy | `src/cmd/diction/suggest.d` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/tmac/cstrans` | copy | `src/cmd/docgen/cstrans` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/tmac/name.sed` | copy | `src/cmd/docgen/name.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/upas/route` | copy | `src/cmd/nupas/config/112clients/route` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/upas/smtproute` | copy | `src/cmd/nupas/config/112clients/smtproute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/upas/uucproute` | copy | `src/cmd/nupas/config/112clients/uucproute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/upas/xunetroute` | copy | `src/cmd/nupas/config/112clients/xunetroute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/vis.help` | copy | `src/cmd/visi/helpfile` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/lib/yaccpar` | copy | `src/cmd/yacc/yaccpar` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/man/man1` | copy | `src/cmd/bcp/bcp.1` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/maps/map` | copy | `src/cmd/map/map` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
+| `/usr/spool/ap` | copy | `src/cmd/ap/apkeys/distribute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 
 ## Stage 8 — The manuals
 
