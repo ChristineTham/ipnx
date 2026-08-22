@@ -3,107 +3,104 @@
 
 	tools/v10-scan.py            # scan, write docs/v10-plan.md
 	tools/v10-scan.py --check    # is the plan current?
-	tools/v10-scan.py --report   # what the scan found, nothing written
+	tools/v10-scan.py --gaps     # what the scan can see and cannot build
 
-THE SCAN IS THE WHOLE TREE.  54,000-odd files, every one classified, because
-every negative this project has got wrong came from surveying part of a tree
-and stating the result as a fact about the whole: "the 5620's compiler is not
+THE SCAN IS THE WHOLE TREE, AND IT REFUSES TO REPORT IF IT MISSED ANYTHING.
+Every negative this project has got wrong came from surveying part of a tree
+and stating the result as a fact about the whole -- "the 5620's compiler is not
 on the tape" (it is, in milligan), "145 library sources are absent" (they were
-inside .c.a archives), "the commands are all under cmd/" (51 are not).  A file
-that is not scanned cannot be planned, and a plan that skips a directory says
-so rather than being silently short.
+inside .c.a archives), "the commands are all under cmd/" (games alone holds 23
+more).  So the walk is reconciled against an independent enumeration before any
+number derived from it is printed.
 
-WHICH ROOT SUPPLIES WHAT.  Six archives, never merged -- src and secombe are
-both /usr/src from different machines, so merging picks one file per path and
-calls the result "the tape".
+WHICH ROOT SUPPLIES WHAT.  Six archives, never merged: src and secombe are both
+/usr/src from different machines, so merging picks one file per path and calls
+the result "the tape".
 
-	src         BUILD.  Dan Cross's v10src; our 47 patches are written
+	src         BUILD.  Dan Cross's v10src; our patches are written
 	            against it and stages 1-3 are proven on it.
-	milligan    BUILD into /usr/jerq.  The 5620 distribution: sgs is the
-	            cross-compiler, src/mux the terminal software.
+	milligan    BUILD into /usr/jerq.  The 5620 distribution.
 	include     INSTALL to /usr/include.  r70's reconstruction.
 	sellers     INSTALL to /usr/man.  The manuals.
 	secombe     WITNESS.  A second /usr/src -- a third opinion where our
 	            bytes differ, never a build input.
 	blit        PARKED.  The 68000 Blit, not the 5620 we emulate.
 
-ORDER MATTERS AND IS NOT DERIVABLE.  tools/v10-source.sh unpacks every ar
-archive into a directory, which keeps every byte and destroys the one thing a
-directory cannot hold: the order of the members.  V10's ld makes ONE sequential
+ORDER IS NOT DERIVABLE FROM A DIRECTORY.  tools/v10-source.sh unpacks every ar
+archive member by member, which keeps every byte and destroys the one thing a
+directory cannot hold: the ORDER of the members.  V10's ld makes ONE sequential
 pass when __.SYMDEF is absent or stale, so libc.a must be rebuilt in the tape's
-own order or backward references go unresolved -- and the golden has neither
-lorder nor tsort to recompute it.  The extractor therefore writes ORDER beside
-the members, and this scan reads it.
+own order or backward references go unresolved, and the golden has neither
+lorder nor tsort to recompute it.  The extractor writes ORDER beside the
+members; this reads it.
 """
 
 import argparse
 import collections
+import fnmatch
 import os
 import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TREE = os.path.join(ROOT, "v10", "source")
-OURS = os.path.join(ROOT, "v10", "src")
 PLAN = os.path.join(ROOT, "docs", "v10-plan.md")
 
 BUILD_ROOTS = ("src", "milligan")
-ROLE_ROOTS = {"src": "build", "milligan": "build", "include": "install",
-              "sellers": "install", "secombe": "witness", "blit": "parked"}
 
-# PARKED INSIDE A BUILD ROOT.  These are not ours to build and each is a
-# different machine or a different operating system; left in, `src/history/ix'
-# alone contributes a second `ls', a second `adb' and a second everything, and
-# the plan then has two rows for one installed path.
-PARKED_DIRS = ("src/history",          # IX -- the Ninth Edition's descendant
-               "src/630",              # the 630 MTG, a different terminal
-               "src/vol2", "src/doc",  # the manuals, not programs
-               "src/sys")              # the OTHER kernel tree; lsys is ours
+# Not ours to build: a different operating system, a different terminal, the
+# manuals, or the kernel tree we do not use.  Parking is a statement about what
+# the image carries, never about what the scan reads -- all of it is walked.
+PARKED_DIRS = ("src/history", "src/630", "src/vol2", "src/doc", "src/sys")
 
-# A UNIT PER MACHINE, AND ONLY ONE OF THEM IS OURS.  cmd/adb has seven back
-# ends -- 11v 68v comm cray null seq vax -- each building a program called
-# `adb', so a scan that takes them all produces seven rows for /bin/adb and the
-# build installs whichever ran last.  The VAX is the machine we emulate.
-MACHDIR_KEEP = ("vax", "vax-v9", "comm", "common")
+# One unit per machine, and only one machine is ours.  cmd/adb has seven back
+# ends all building a program called `adb'.
 MACHDIR_DROP = ("11v", "68v", "68k", "cray", "seq", "null", "mips", "sparc",
                 "sparc_sun", "sgi", "3b", "u3b", "pdp11", "i386", "m68k",
-                "hp", "ibm", "sun", "sun3", "sun4", "apollo", "gould")
+                "ibm", "sun", "sun3", "sun4", "apollo", "gould")
+
+# What a working directory accumulates.  Superseded generations sit beside the
+# live one and the tape names them plainly.
+SUPERSEDED = ("Old", "old", "new", "bak", "orig", "OLD")
 
 SRCEXT = (".c", ".s", ".y", ".l", ".g", ".lex", ".e", ".f")
 BUILDFILES = ("makefile", "Makefile", "mkfile", "MAKEFILE")
 
-# V10's own style is `# include <x>' as often as `#include' -- cpp.c itself
-# opens `# include <libc.h>'.  A scan that misses the space declares every
-# header present and the build then dies on the one that is not.
+# V10's own style is `# include <x>' as often as `#include' -- cpp.c opens
+# `# include <libc.h>'.  A scan that misses the space declares every header
+# present and the build dies on the one that is not.
 INC = re.compile(r"^[ \t]*#[ \t]*include[ \t]*([<\"])([^>\"]+)[>\"]", re.M)
-RULE = re.compile(r"^([^\s:=#][^:=]*):([^=].*|)$", re.M)
+RULE = re.compile(r"^([^\s:=#][^:=]*):([^=].*|)$")
+# re.M IS LOAD-BEARING: macros() findalls over the whole file, so
+# without it `^` matches only at the very start and every macro after
+# line 1 is invisible -- cmd/as's $(OBJS) expanded to nothing and the
+# ASSEMBLER vanished from the plan.  Same class as the missing re.M
+# that once made an include resolve only in a file whose first
+# character began one.
 MACRO = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)[ \t]*=[ \t]*(.*)$", re.M)
 MAIN = re.compile(r"^[ \t]*(?:int[ \t]+|void[ \t]+)?main[ \t]*\(", re.M)
+NAMEOK = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$")
 
 
-# --------------------------------------------------------------- the walk ---
-# EVERY DIRECTORY ENTRY IS ACCOUNTED FOR, AND THE COUNT IS RECONCILED AGAINST
-# THE FILESYSTEM.  os.walk alone is not exhaustive and the gap is silent: a
-# SYMLINK TO A DIRECTORY lands in its dirnames, not its filenames, so
-# secombe/cmd/map/export/libmap simply never appeared -- 54,327 seen against
-# 54,328 on disk, a difference small enough to read as rounding and large
-# enough to hide a whole subtree.  A BROKEN symlink (map/export/mapdata) does
-# appear, and stat'ing it raises rather than answering.
-#
-# So the walk enumerates with scandir, records what each entry IS, and refuses
-# to follow a symlinked directory -- following it would walk secombe's map data
-# twice under two names and inflate every count downstream.
+# =========================================================== 1. the walk ===
 def walk():
-    """Every entry under v10/source: (root, relpath, dirpath, name, kind)."""
-    out = []
-    stack = [TREE]
-    seen_dirs = set()
+    """Every entry under TREE: (root, rel, dirpath, name, kind).
+
+    os.walk is NOT exhaustive and the gap is silent: a symlink to a directory
+    lands in its dirnames, not its filenames, so one entry holding a whole
+    subtree simply never appeared -- 54,327 seen against 54,328 on disk, a
+    difference small enough to read as rounding.  A broken symlink does appear,
+    and stat'ing it raises rather than answering.  Symlinked directories are
+    counted and NOT followed: following one walks the same files twice under
+    two names and inflates every count downstream.
+    """
+    out, stack, seen = [], [TREE], set()
     while stack:
         dp = stack.pop()
         real = os.path.realpath(dp)
-        if real in seen_dirs:
+        if real in seen:
             continue
-        seen_dirs.add(real)
+        seen.add(real)
         try:
             entries = sorted(os.scandir(dp), key=lambda e: e.name)
         except OSError:
@@ -114,85 +111,78 @@ def walk():
         for e in entries:
             r = os.path.join(rel, e.name) if rel else e.name
             if e.is_symlink():
-                tgt = os.path.realpath(e.path)
                 if not os.path.exists(e.path):
                     out.append((root, r, dp, e.name, "broken-link"))
                 elif os.path.isdir(e.path):
-                    # NOT followed, but COUNTED -- see the note above.
                     out.append((root, r, dp, e.name, "link-dir"))
                 else:
                     out.append((root, r, dp, e.name, "link-file"))
-                continue
-            if e.is_dir():
+            elif e.is_dir():
                 stack.append(e.path)
-                continue
-            out.append((root, r, dp, e.name, "file"))
+            else:
+                out.append((root, r, dp, e.name, "file"))
     return out
 
 
-# ------------------------------------------------------------- inspection ---
-# CLASSIFY BY CONTENT, NOT BY NAME, because on this tape the name lies in both
-# directions and each lie has already cost this project a wrong conclusion:
-#
-#   libdbm.a   is `mv dbm.o libdbm.a'   -- a bare object wearing a .a name
-#   libsdb.a   is `as dbxxx.s -o ...'   -- likewise
-#   plot.c.a   is an archive of .c FILES, not objects; ar was the ordinary way
-#              to package any file set before tar was everywhere
-#   crlib      is libcurses' archive, with no .a at all
-#
-# A first read of 512 bytes answers all of it: 0407/0410/0413 is a VAX a.out,
-# `!<arch>' an archive, `#!' a script, and anything with a NUL in the first
-# block is not text.
+def reconcile(entries):
+    """(missing, extra) against an independent enumeration of the tree."""
+    seen = {os.path.join(dp, n) for _, _, dp, n, _ in entries}
+    disk, stack = set(), [TREE]
+    while stack:
+        d = stack.pop()
+        try:
+            for e in os.scandir(d):
+                if e.is_symlink() or not e.is_dir():
+                    disk.add(e.path)
+                else:
+                    stack.append(e.path)
+        except OSError:
+            pass
+    return disk - seen, seen - disk
+
+
+# ===================================================== 2. what each file is ===
+# The NAME lies in both directions on this tape and each lie has cost a wrong
+# conclusion: libdbm.a is `mv dbm.o libdbm.a' (a bare object), plot.c.a is an
+# archive of SOURCES, crlib is libcurses' archive with no .a at all.  A first
+# read of 512 bytes settles it.
 MAGIC_AOUT = (0o407, 0o410, 0o413, 0o405, 0o560)
 
 
 def sniff(path):
-    """(kind, head) from the file's first block.  '' if unreadable."""
     try:
         with open(path, "rb") as fh:
             head = fh.read(512)
     except OSError:
-        return "unreadable", b""
+        return "unreadable"
     if not head:
-        return "empty", head
+        return "empty"
     if head[:8] == b"!<arch>\n":
-        return "archive", head
+        return "archive"
     if head[:2] == b"#!":
-        return "script", head
-    if len(head) >= 2:
-        mag = head[0] | (head[1] << 8)
-        if mag in MAGIC_AOUT:
-            return "object", head
-    if b"\0" in head:
-        return "binary", head
-    return "text", head
+        return "script"
+    if len(head) >= 2 and (head[0] | (head[1] << 8)) in MAGIC_AOUT:
+        return "object"
+    return "binary" if b"\0" in head else "text"
 
 
 def classify(name, path, kind):
-    """What the build does with this entry.  Content decides; name informs."""
     if kind in ("broken-link", "link-dir"):
         return kind
-    what, head = sniff(path)
-    if what in ("unreadable", "empty"):
+    what = sniff(path)
+    if what in ("unreadable", "empty", "archive", "object"):
         return what
-    if what == "archive":
-        return "archive"
-    if what == "object":
-        return "object"
     if name in BUILDFILES:
         return "buildfile"
     if name == "ORDER":
         return "order"
     if what == "binary":
         return "data"
-    # -- text from here down: the suffix is now a reliable hint
     for e in SRCEXT:
         if name.endswith(e):
             return "source"
-    if name.endswith(".h") or name.endswith(".def"):
+    if name.endswith((".h", ".def")):
         return "header"
-    if name.endswith(".o") or name.endswith(".x"):
-        return "object"
     if re.match(r"^.*\.[0-9][a-z]?$", name):
         return "manual"
     if what == "script" or name.endswith(".sh"):
@@ -200,63 +190,253 @@ def classify(name, path, kind):
     return "text"
 
 
-# ------------------------------------------------------------ build rules ---
+# ====================================================== 3. build files ===
 def macros(text):
+    """Macro definitions, with continuations JOINED FIRST.
+
+    sh's $OFILES spans three lines; read separately they name eight of
+    twenty-four objects, which would prove that sixteen of the shell's own
+    sources are not in its build.
+    """
     m = {}
-    # A CONTINUATION IS PART OF THE LINE.  sh's $OFILES spans three lines; read
-    # separately they name eight of twenty-four objects, which would "prove"
-    # that sixteen of the shell's own sources are not in its build.
-    text = re.sub(r"\\\n", " ", text)
-    for k, v in MACRO.findall(text):
+    for k, v in MACRO.findall(re.sub(r"\\\n", " ", text)):
         m[k] = v.strip()
     return m
 
 
 def expand(s, m, depth=0):
-    if depth > 8:
+    """$(X), ${X} and mk's bare $X.
+
+    205 of this tape's build files are mkfiles and spell macros bare, so
+    handling only the parenthesised form leaves cmd/sh's whole link line
+    unexpanded.  $target/$prereq/$stem are mk's own and the caller supplies
+    them.
+    """
+    if depth > 8 or "$" not in s:
         return s
     def rep(mo):
         return m.get(mo.group(1) or mo.group(2) or mo.group(3), "")
-    # THREE SPELLINGS.  `$(X)' and `${X}' are make; a BARE `$X' is plan9 mk,
-    # which 205 of this tape's build files use -- cmd/sh links `$CC $LDFLAGS
-    # $OFILES -o $TESTDIR/sh' and without the bare form none of it expands, so
-    # the shell yielded no program at all.  $target and $prereq are mk's own
-    # and are handled by the caller, so they are excluded here.
     out = re.sub(r"\$\(([A-Za-z_][A-Za-z0-9_]*)\)"
                  r"|\$\{([A-Za-z_][A-Za-z0-9_]*)\}"
                  r"|\$(?!target\b|prereq\b|stem\b)([A-Za-z_][A-Za-z0-9_]*)",
                  rep, s)
-    return expand(out, m, depth + 1) if out != s and "$" in out else out
+    return expand(out, m, depth + 1) if out != s else out
 
 
 def recipes(text):
-    """{target: [recipe lines]} -- a recipe is a BLOCK, not a line.
+    """{target: (prereq, [lines])} -- a recipe is a BLOCK, not a line.
 
-    cmd/ccom runs yacc and then seds y.tab.c into cgram.c on the NEXT line;
-    cmd/2500 edits it with ed.  Judged a line at a time both look like a plain
-    yacc call and the build would compile a generated source the tape never
-    compiles.
+    cmd/ccom runs yacc and then seds y.tab.c into cgram.c on the next line;
+    judged a line at a time both look like a plain yacc call.
     """
     out, cur = {}, None
-    body = re.sub(r"\\\n", " ", text)
-    for line in body.split("\n"):
+    for line in re.sub(r"\\\n", " ", text).split("\n"):
         if line.startswith("\t"):
             if cur:
-                out.setdefault(cur, []).append(line.strip())
+                out[cur][1].append(line.strip())
+            continue
+        # A BLANK OR COMMENT LINE DOES NOT END A RECIPE, and treating it as one
+        # silently truncated recipes across the whole tree.  cmd/ex separates
+        # its ninstall body with a blank line, so `ln .../ex .../vi' and the
+        # `view' line after it were dropped -- and the NEXT rule then collected
+        # them, which is worse than losing them: they were attributed to
+        # `newucb'.  vi, view and edit vanished from the plan as a result.
+        if not line.strip() or line.lstrip().startswith("#"):
             continue
         mo = RULE.match(line)
-        if mo:
-            cur = mo.group(1).strip()
-            out.setdefault(cur, [])
-            out[cur + "\0prereq"] = mo.group(2).strip()
-        else:
-            cur = None
+        cur = mo.group(1).strip() if mo else None
+        if cur:
+            out.setdefault(cur, (mo.group(2).strip(), []))
     return out
 
 
-def admin_dest(tree_dir):
+def globs(objs, srcs):
+    """Resolve `y?.o' / `y[1-4].o' against the unit's real sources."""
+    stems = {s.rsplit(".", 1)[0] for s in srcs if "." in s}
+    out = []
+    for o in objs:
+        if not any(c in o for c in "?*["):
+            out.append(o)
+            continue
+        stem = o[:-2] if o.endswith(".o") else o
+        hit = sorted(s + ".o" for s in stems if fnmatch.fnmatch(s, stem))
+        out.extend(hit or [o])
+    return out
+
+
+def install_dirs(rules, m):
+    """{product: directory} from the unit's own install rule.
+
+    SEVERAL COMMANDS MAY SHARE A LINE, and cmd/sh is why: its install is
+    `mv /bin/sh /bin/osh;  cp sh /bin/sh;  strip /bin/sh', so a whole-line
+    match sees none of it and a scanner reading destinations without splitting
+    answers /bin/osh -- the BACKUP -- because the mv comes first.  The source
+    token must be the product's own name.  `mv' installs too (cmd/as).
+    """
+    out = {}
+    for tgt in ("install", "all"):
+        if tgt not in rules:
+            continue
+        for raw in rules[tgt][1]:
+            for line in re.split(r"[;&]+", expand(raw, m)):
+                mo = re.match(r"\s*(?:cp|mv)\s+(\S+)\s+(\S+)\s*$", line)
+                if not mo or mo.group(1) == "a.out":
+                    continue
+                what, where = mo.group(1), mo.group(2).rstrip("/")
+                if where.count("/") >= 1 and not where.endswith(
+                        ("/bin", "/etc", "/lib", "/usr/bin", "/usr/lib",
+                         "/usr/games", "/usr/jerq/bin")):
+                    d = "/".join(where.split("/")[:-1])
+                    out.setdefault(what, d or "/usr/bin")
+                else:
+                    out.setdefault(what, where)
+    return out
+
+
+def aliases(text, m, rules):
+    """[(name, dir, target)] -- a command that is a SECOND NAME for a binary.
+
+    THE TAPE STATES ITS OWN ALIASES AND THEY OUTRANK ANYTHING INFERRED.  70 `ln'
+    lines across src/, and they close a cluster that otherwise reads as missing
+    commands:
+
+	ln .../ex .../vi        edit = ex = vi = view, ONE inode four names
+	ln /usr/bin/= /usr/bin/==     and =p and ==p
+	ln $(BIN)/compress $(BIN)/uncompress   and zcat
+
+    So building `ex' closes FOUR names, not one.  Three refusals, each of which
+    produced a wrong row first: an alias equal to its own target (from a macro
+    that expanded to the same thing); a destination outside the command
+    directories, which is how twelve MANUAL PAGES arrived in a list of commands;
+    and a link whose target we do not build, which would install a dangling
+    name.
+    """
+    out = []
+    for tgt in ("install", "all", "ninstall"):
+        if tgt not in rules:
+            continue
+        for raw in rules[tgt][1]:
+            for line in re.split(r"[;&]+", expand(raw, m)):
+                mo = re.match(r"\s*ln\s+(?:-[a-z]+\s+)?(\S+)\s+(\S+)\s*$", line)
+                if not mo:
+                    continue
+                src, dst = mo.group(1), mo.group(2)
+                # A MANUAL PAGE IS NOT A COMMAND.  `ln $(MAN)/btoa.$(L)
+                # $(MAN)/atob.$(L)' is a documentation link.
+                if re.search(r"\.[0-9][a-z]?$", dst) or "/man" in dst:
+                    continue
+                sname, dname = src.split("/")[-1], dst.split("/")[-1]
+                if not sname or not dname or sname == dname:
+                    continue
+                if not NAMEOK.match(dname) and dname not in ("==", "=p", "==p"):
+                    continue
+                d = "/".join(dst.split("/")[:-1])
+                # Strip any $(DESTDIR)-ish prefix the macro left behind.
+                # /usr/new IS BERKELEY'S `NEW COMMANDS' DIRECTORY and it is
+                # on nobody's PATH.  cmd/ex puts ninstall BEFORE install, so a
+                # scanner taking the first rule sends ex, vi and view there and
+                # the three names vanish from every real directory.  V8's
+                # measured disk says /usr/bin, and that is where they go.
+                d = re.sub(r"/usr/new$", "/usr/bin", d)
+                # LONGEST FIRST.  "/usr/bin".endswith("/bin") is true, so a
+                # shortest-first walk put vi, view and edit in /bin while ex
+                # went to /usr/bin -- an alias in a different directory from
+                # its target, which is not a hard link at all.
+                for pre in ("/usr/jerq/bin", "/usr/games", "/usr/lib",
+                            "/usr/bin", "/bin", "/etc", "/lib"):
+                    if d.endswith(pre):
+                        d = pre
+                        break
+                else:
+                    continue
+                out.append((dname, d, sname))
+    return out
+
+
+def rule_programs(text, srcs, admin):
+    """[(name, dest, objects, libs, how)] from the unit's build file.
+
+    FIVE IDIOMS, and each was found because a program went missing:
+
+      a.out-cp   `a.out: objs' with `install: cp a.out awk'
+      a.out-mv   NO -o at all: `$(CC) $(OBJS)' then `mv a.out as' -- the
+                 ASSEMBLER, without which stage 1 cannot run
+      explicit   `-o NAME' anywhere in a recipe.  NOT anchored on a compiler
+                 token: cmd/adb links `$(CC) -o adb $(FILES)' and defines no
+                 CC, so expanding it to nothing leaves ` -o adb ...'
+      implicit   `NAME: NAME.c' with no recipe -- make's built-in rule
+      Admin/Mk   handled by the caller for loose sources
+    """
+    m = macros(text)
+    rules = recipes(text)
+    inst = install_dirs(rules, m)
+    out, seen = [], set()
+
+    def add(name, objs, libs, how, odir=""):
+        if (not name or name in seen or name == "a.out"
+                or not NAMEOK.match(name)
+                or name.endswith((".o", ".a", ".x", ".c", ".h"))):
+            return
+        objs = globs([o for o in objs], srcs)
+        if not objs:
+            return
+        dest = (odir if odir.startswith("/")
+                else inst.get(name, admin.get(name, "/usr/bin")))
+        out.append((name, dest, objs, libs or "-", how))
+        seen.add(name)
+
+    # -- the two a.out idioms
+    aout = rules.get("a.out", ("", []))[0]
+    for tgt, (pre, lines) in rules.items():
+        for raw in lines:
+            for line in re.split(r"[;&]+", expand(raw, m)):
+                mo = re.match(r"\s*(?:mv|cp)\s+a\.out\s+(\S+)\s*$", line)
+                if not mo:
+                    continue
+                src = expand(aout, m) if tgt in ("install", "all") else expand(pre, m)
+                objs = [w for w in src.split() if w.endswith((".o", ".a"))]
+                add(mo.group(1).split("/")[-1], objs, "-", "a.out")
+
+    # -- explicit -o
+    for tgt, (pre, lines) in rules.items():
+        p = expand(pre, m)
+        for raw in lines:
+            e = expand(raw, m)
+            mo = re.search(r"-o\s+(\S+)", e)
+            if not mo:
+                continue
+            name = mo.group(1)
+            if name in ("$target", "$@"):
+                name = tgt
+            odir = ""
+            if "/" in name:
+                odir, name = name.rsplit("/", 1)
+                if odir in (".", ""):
+                    odir = ""
+            # The objects may come BEFORE -o: cmd/sh is
+            # `$CC $LDFLAGS $OFILES -o $TESTDIR/sh' with nothing after.
+            rest = (e[:mo.start()] + " " + e[mo.end():])
+            rest = rest.replace("$prereq", p).replace("$^", p)
+            objs = [w for w in rest.split() if w.endswith((".o", ".a"))]
+            libs = " ".join(w for w in rest.split() if w.startswith("-l"))
+            if not objs:
+                cs = [w for w in rest.split() if w.endswith(".c")]
+                objs = [w[:-2] + ".o" for w in cs]
+            add(name, objs, libs, "explicit", odir)
+
+    # -- implicit
+    for tgt, (pre, lines) in rules.items():
+        if lines or "/" in tgt or "." in tgt:
+            continue
+        if expand(pre, m).strip() == tgt + ".c":
+            add(tgt, [tgt + ".o"], "-", "implicit")
+    return out
+
+
+# ======================================================== 4. the scan ===
+def admin_dest():
     """cmd/Admin is the tape's own answer to `where does this install'."""
-    d = os.path.join(tree_dir, "cmd", "Admin")
+    d = os.path.join(TREE, "src", "cmd", "Admin")
     table = {}
     for f, dest in (("binfiles", "/bin"), ("etcfiles", "/etc"),
                     ("libfiles", "/lib"), ("ulibfiles", "/usr/lib")):
@@ -269,335 +449,43 @@ def admin_dest(tree_dir):
     return table
 
 
-def programs(unitdir, rel, text, m, admin):
-    """Every program this unit builds, with its objects, libs and flags.
+def parked(d):
+    """Why this directory is not built, or None."""
+    parts = d.split("/")
+    if any(d == p or d.startswith(p + "/") for p in PARKED_DIRS):
+        return "another system"
+    if parts[-1] in MACHDIR_DROP:
+        return "another machine"
+    # An unpacked package is a SECOND COPY of the tree: v10-source.sh unpacks
+    # .tar/.cpio/.a members in place, so cmd/odist/src.tar holds another whole
+    # odist.  The unpacking is right; it is not a build input.
+    if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
+        return "an unpacked package"
+    if parts[-1] in SUPERSEDED or parts[-1].endswith((".old", ".bak", ".orig")):
+        return "superseded"
+    # `oNAME' is the tape's own word for superseded, CHECKED against the
+    # sibling: cmd/sh's makefile writes `mv /bin/sh /bin/osh', so the o- prefix
+    # IS the backup.  oasd++/asd++, omovie/movie, ops/ps, osh/sh.
+    last = parts[-1]
+    if (len(last) > 1 and last[0] in "oO"
+            and os.path.isdir(os.path.join(TREE, "/".join(parts[:-1]),
+                                           last[1:]))):
+        return "superseded (o- prefix)"
+    return None
 
-    FOUR IDIOMS, and the third is the one a naive scan misses entirely:
 
-      explicit   cc -o pack pack.o
-      implicit   11cc: 11cc.c        -- one source, no recipe, make's rule
-      a.out      a.out: awk.g.o ...  with `install: cp a.out /usr/bin/awk',
-                 so the NAME comes from the cp and the OBJECTS from a.out
-      Admin/Mk   the tape's own per-suffix rule, used by loose cmd/*.c
-    """
+def mains_of(d, srcs):
     out = []
-    rules = recipes(text)
-    seen = set()
-
-    # -- the a.out idiom: name from the install rule's cp destination
-    aout_objs = rules.get("a.out\0prereq", "")
-    for tgt in ("install", "all"):
-        for line in rules.get(tgt, []):
-            mo = re.match(r"cp\s+a\.out\s+(\S+)", expand(line, m))
-            if mo and aout_objs:
-                dest = mo.group(1)
-                name = dest.rstrip("/").split("/")[-1]
-                d = "/".join(dest.rstrip("/").split("/")[:-1]) or "/usr/bin"
-                objs = [o for o in expand(aout_objs, m).split()
-                        if o.endswith(".o")]
-                if name and objs:
-                    out.append((name, d, objs, "-", "a.out"))
-                    seen.add(name)
-
-    # -- where a unit's install rule puts things, for the rules that link
-    #    without saying.  `cp $prereq /usr/bin' is the tape's commonest form and
-    #    it names the DIRECTORY, not the file.
-    instdir = {}
-    for tgt in ("install", "all"):
-        for raw in rules.get(tgt, []):
-            # SEVERAL COMMANDS ON ONE LINE, and cmd/sh is why.  Its install is
-            #   mv /bin/sh /bin/osh;   cp sh /bin/sh;   strip /bin/sh
-            # so a whole-line match sees none of it, and a scanner reading
-            # destinations without splitting would answer /bin/osh -- the
-            # BACKUP -- because the mv comes first.  The source token must be
-            # the product's own name.
-            for line in re.split(r"[;&]+", expand(raw, m)):
-                e = line.strip()
-                if not e:
-                    continue
-                # `mv' INSTALLS TOO.  cmd/as is `mv as ${DESTDIR}/bin'; a
-                # cp-only scan reads no destination and falls back to Admin.
-                mo = re.match(r"(?:cp|mv)\s+(\S+)\s+(\S+)\s*$", e)
-                if not mo or mo.group(1) == "a.out":
-                    continue
-                what, where = mo.group(1), mo.group(2)
-                if where.endswith("/"):
-                    where = where[:-1]
-            # A DESTINATION FILE, not a directory: `cp sh /bin/sh'.  And the
-            # source token must be the PRODUCT's name -- cmd/sh's makefile
-            # opens `mv /bin/sh /bin/osh' on the same line, which would answer
-            # /bin/osh to a scanner reading destinations.
-                if where.count("/") >= 1 and not where.endswith(
-                        ("/bin", "/etc", "/lib", "/usr/bin", "/usr/lib",
-                         "/usr/games")):
-                    d = "/".join(where.split("/")[:-1])
-                    instdir.setdefault(what, d or "/usr/bin")
-                else:
-                    instdir.setdefault(what, where)
-
-    # -- THE DEFAULT-a.out IDIOM, WHICH HAS NO -o AT ALL.  cmd/as is
-    #        as: $(OBJS)
-    #                $(CC) $(LDFLAGS) $(OBJS)
-    #                mv a.out as
-    #    so the link names no output, ld writes a.out, and the NEXT line
-    #    renames it.  The assembler -- without which stage 1 cannot run -- had
-    #    no row in the plan for exactly this reason, and the plan said so
-    #    rather than quietly shipping eleven of twelve bootstrap programs.
-    for tgt, lines in rules.items():
-        if "\0prereq" in tgt:
+    for f in sorted(srcs):
+        if not f.endswith(".c"):
             continue
-        pre = expand(rules.get(tgt + "\0prereq", ""), m)
-        for raw in lines:
-            for line in re.split(r"[;&]+", expand(raw, m)):
-                mo = re.match(r"\s*(?:mv|cp)\s+a\.out\s+(\S+)\s*$", line)
-                if not mo:
-                    continue
-                name = mo.group(1).split("/")[-1]
-                objs = [w for w in pre.split() if w.endswith((".o", ".a"))]
-                if not objs or name in seen:
-                    continue
-                if not re.match(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$", name):
-                    continue
-                out.append((name, instdir.get(name,
-                                              admin.get(name, "/usr/bin")),
-                            objs, "-", "a.out"))
-                seen.add(name)
-
-    # -- explicit link: find `-o NAME ...' in any recipe line.
-    #
-    # NOT ANCHORED ON A COMPILER TOKEN, and that is the fix rather than a
-    # loosening.  cmd/adb/11v links with `$(CC) -o adb $(FILES)' and defines no
-    # CC at all, so expanding an undefined macro to the empty string leaves
-    # ` -o adb ...' with nothing for a `cc' pattern to match -- 269 cmd units
-    # yielded no program for exactly this reason.  What identifies a link is the
-    # -o, not the word in front of it.
-    for tgt, lines in rules.items():
-        if "\0prereq" in tgt:
-            continue
-        pre = expand(rules.get(tgt + "\0prereq", ""), m)
-        for line in lines:
-            e = expand(line, m)
-            mo = re.search(r"-o\s+(\S+)", e)
-            if not mo:
-                continue
-            name = mo.group(1)
-            # THE OBJECTS MAY COME BEFORE `-o', AND cmd/sh IS WHY.  Its link is
-            #   $CC $LDFLAGS $OFILES -o $TESTDIR/sh
-            # with nothing after the target at all, so a pattern demanding
-            # `-o NAME rest' matches nothing and the shell -- the program
-            # /etc/init execs by absolute path -- was missing from the plan.
-            # Take the whole line and remove the -o argument.
-            rest = (e[:mo.start()] + " " + e[mo.end():])
-            # mk spells these; make does not.  $target is the rule's own name
-            # and $prereq its prerequisites -- cmd/2500 is
-            # `2500: $OBJ' / `$CC $CFLAGS -o $target $prereq -lipc'.
-            if name in ("$target", "$@"):
-                name = tgt
-            # `-o' MAY NAME A PATH.  cmd/sh links `-o $TESTDIR/sh' over
-            # TESTDIR=., so the target is ./sh and a `no slash' test drops the
-            # shell -- the one program /etc/init execs by absolute path.  An
-            # ABSOLUTE directory there is also the install destination.
-            odir = ""
-            if "/" in name:
-                odir, name = name.rsplit("/", 1)
-                if odir in (".", ""):
-                    odir = ""
-            rest = rest.replace("$prereq", pre).replace("$^", pre)
-            # A PROGRAM NAME IS A FILENAME, AND DROPPING THAT TEST PUT REGEXES
-            # IN THE PLAN.  Unanchoring the search from a compiler token (the
-            # fix for adb) also matched `grep -o '^(poot)$' ...' in cmd/worm,
-            # so /usr/bin/'^(poot)$' became a row.  And `a.out' is never a
-            # program: it is the intermediate the a.out idiom renames.
-            if (not name or name in seen or name == "a.out"
-                    or not re.match(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$", name)
-                    or name.endswith((".o", ".a", ".x", ".c", ".h"))):
-                continue
-            objs = [w for w in rest.split() if w.endswith((".o", ".a"))]
-            libs = [w for w in rest.split() if w.startswith("-l")]
-            if not objs:
-                # `cc -o foo foo.c' links straight from source.
-                srcs = [w for w in rest.split() if w.endswith(".c")]
-                if not srcs:
-                    continue
-                objs = [w[:-2] + ".o" for w in srcs]
-            dest = (odir if odir.startswith("/")
-                    else instdir.get(name, admin.get(name, "/usr/bin")))
-            out.append((name, dest, objs, " ".join(libs) or "-", "explicit"))
-            seen.add(name)
-
-    # -- implicit: `NAME: NAME.c' with no recipe
-    for tgt, lines in rules.items():
-        if "\0prereq" in tgt or lines:
-            continue
-        pre = rules.get(tgt + "\0prereq", "")
-        if tgt in seen or "/" in tgt or "." in tgt:
-            continue
-        if expand(pre, m).strip() == tgt + ".c":
-            out.append((tgt, admin.get(tgt, "/usr/bin"), [tgt + ".o"],
-                        "-", "implicit"))
-            seen.add(tgt)
-    return out
-
-
-def expand_globs(objs, srcs):
-    """Resolve `y?.o' / `y[1-4].o' against the unit's real sources."""
-    import fnmatch
-    stems = {s.rsplit(".", 1)[0] for s in srcs if "." in s}
-    out = []
-    for o in objs:
-        if not any(c in o for c in "?*["):
-            out.append(o)
-            continue
-        stem = o[:-2] if o.endswith(".o") else o
-        hit = sorted(s + ".o" for s in stems if fnmatch.fnmatch(s, stem))
-        out.extend(hit if hit else [o])
-    return out
-
-
-def dedupe(progs):
-    """One row per installed path, chosen by a STATED rule.
-
-    Two rows for one path means the build installs whichever ran last, which is
-    not a decision anybody made.  The order of authority, most specific first:
-
-      a machine directory   cmd/adb/vax beats cmd/adb/comm -- comm is the
-                            shared source, vax is the machine we emulate
-      a unit of its own     cmd/ed beats the loose cmd/*.c Admin/Mk fallback,
-                            because a directory with a makefile is the tape
-                            describing its own build
-      the shallower path    cmd/btree beats cmd/btree/gbt
-
-    Anything dropped is RECORDED, because a silent tie-break is how a plan
-    comes to install something nobody chose.
-    """
-    def rank(p):
-        name, d, dest, objs, libs, how, root = p
-        parts = d.split("/")
-        r = 0
-        # THE CANONICAL SOURCE OF A COMMAND OUTRANKS AN INCIDENTAL FILE OF THE
-        # SAME NAME, and without this the recursion actively made the plan
-        # worse: /bin/test came from milligan/jerq/src/sysmon/test (a 5620
-        # program), /usr/bin/tee from cmd/learn, /usr/bin/fmt from lbin/Mail
-        # and /usr/bin/pic from cmd/pascal/px.  Every one of those directories
-        # happens to contain a file named after a command it has nothing to do
-        # with -- learn has a tee.c because a lesson uses one.
-        #
-        # A command's own source is `cmd/NAME.c' (the loose Admin/Mk idiom) or
-        # `cmd/NAME/' (a unit named for it).  Nothing else may outrank those.
-        if len(parts) == 2 and parts[1] == "cmd" and how == "Admin/Mk":
-            r -= 16                      # cmd/NAME.c IS the command
-        # RECURSION IS THE WEAKEST EVIDENCE, so it loses to every real rule.
-        # It exists to find programs no build rule names, not to overrule one.
-        if how == "recursed":
-            r += 12
-        # A COMMAND DOES NOT COME OUT OF THE 5620 DISTRIBUTION.  milligan builds
-        # into /usr/jerq; if it is competing for /bin or /usr/bin, it is a
-        # coincidence of naming.
-        if root == "milligan" and not dest.startswith("/usr/jerq"):
-            r += 20
-        # THE UNIT NAMED AFTER THE PROGRAM WINS, and this is not cosmetic:
-        # cmd/yacc and cmd/picasso both build a `yacc', both explicit, both
-        # three components deep -- a tie, broken by whichever the walk reached
-        # first, which put picasso's yacc in the plan.  cmd/yacc is the yacc.
-        # A DIRECTORY NAMED FOR THE PROGRAM IS THE STRONGEST EVIDENCE, and it
-        # must beat the loose cmd/NAME.c below: where the tape has both,
-        # cmd/ed/ and cmd/sort/ are its SECOND GENERATION of each and the loose
-        # file is what they replaced.
-        if parts[-1] == name:
-            r -= 20
-        if parts[-1] in MACHDIR_KEEP and parts[-1] not in ("comm", "common"):
-            r -= 4                       # the machine's own back end
-        if how != "Admin/Mk":
-            r -= 2                       # a real buildfile beat the fallback
-        r += len(parts)                  # prefer the shallower unit
-        return r
-
-    best, dropped = {}, []
-    for p in progs:
-        k = (p[2], p[0])
-        if k not in best:
-            best[k] = p
-            continue
-        if rank(p) < rank(best[k]):
-            dropped.append(best[k])
-            best[k] = p
-        else:
-            dropped.append(p)
-    return sorted(best.values()), dropped
-
-
-# THE COMMANDS ARE NOT ALL UNDER cmd/, AND SCANNING ONLY cmd/ REPORTED THAT AS
-# A FACT ABOUT THE TAPE.  Same shape as "the 5620's compiler is not on the
-# tape", which was a fact about one tree stated about the project.  Four more
-# roots hold programs, and games is the one that shows it worst: 23 loose .c
-# files with a main() and NONE of them reached the plan.
-#
-#   games   ~23 loose .c plus atc/ mille/ rogue/ sail/ trek/ ...
-#   lbin    Mail, csh, kermit, mailx -- the Berkeley userland V8 carries
-#   dregs   xstr, restor variants
-#   local   site-local programs
-#
-# The install directory for games is /usr/games and it comes from V8's measured
-# disk, not from V10's manual -- V10 does not document games at all, and V8 puts
-# all twenty there.  cmd/Admin's `dest' has no opinion either, since its
-# if-chain falls through to /usr/bin for anything not in its four lists.
-LOOSE_AREAS = (("cmd", None),          # Admin decides
-               ("games", "/usr/games"),
-               ("lbin", "/usr/bin"),
-               ("dregs", "/usr/bin"),
-               ("local", "/usr/bin"))
-
-
-def loose_commands(tree_dir, admin):
-    """Loose *.c with a main(), across every root that holds programs."""
-    out = []
-    for area, fixed in LOOSE_AREAS:
-        d = os.path.join(tree_dir, area)
-        if not os.path.isdir(d):
-            continue
-        for f in sorted(os.listdir(d)):
-            if not f.endswith(".c"):
-                continue
-            p = os.path.join(d, f)
-            if not os.path.isfile(p):
-                continue
-            try:
-                if not MAIN.search(open(p, errors="replace").read()):
-                    continue
-            except OSError:
-                continue
-            name = f[:-2]
-            dest = fixed or admin.get(name, "/usr/bin")
-            out.append((name, dest, [name + ".o"], "-", "Admin/Mk", area))
-    return out
-
-
-# ------------------------------------------------------------------ scan ---
-def reconcile(entries):
-    """Refuse to report a scan that did not see everything.
-
-    A count that is nearly right is the dangerous kind: 54,327 against 54,328
-    reads as rounding and was a symlinked directory holding a whole subtree.
-    So the walk is checked against an independent enumeration before any number
-    derived from it is printed -- the same argument as v10fs.py refusing to
-    answer unless struct filsys computes to one block.
-    """
-    seen = {os.path.join(dp, n) for _, _, dp, n, _ in entries}
-    disk, stack = set(), [TREE]
-    while stack:
-        d = stack.pop()
         try:
-            for e in os.scandir(d):
-                if e.is_symlink():
-                    disk.add(e.path)
-                elif e.is_dir():
-                    stack.append(e.path)
-                else:
-                    disk.add(e.path)
+            if MAIN.search(open(os.path.join(TREE, d, f),
+                                errors="replace").read()):
+                out.append(f)
         except OSError:
             pass
-    missing, extra = disk - seen, seen - disk
-    return missing, extra
+    return out
 
 
 def scan():
@@ -605,35 +493,26 @@ def scan():
     missing, extra = reconcile(files)
     if missing or extra:
         for p in sorted(missing)[:5]:
-            print("v10-scan: NOT SEEN  %s" % p, file=sys.stderr)
-        for p in sorted(extra)[:5]:
-            print("v10-scan: PHANTOM   %s" % p, file=sys.stderr)
+            print("v10-scan: NOT SEEN %s" % p, file=sys.stderr)
         sys.exit("v10-scan: the walk missed %d and invented %d -- refusing to "
                  "report" % (len(missing), len(extra)))
 
-    admin = admin_dest(os.path.join(TREE, "src"))
-
     roles = collections.Counter()
     byroot = collections.Counter()
-    units = {}                      # rel dir -> {buildfile, sources, ...}
-    archives = []                   # (rel dir of unpacked .a, member count)
-
+    units, archives = {}, []
     for root, rel, dp, f, kind in files:
         byroot[root] += 1
         role = classify(f, os.path.join(dp, f), kind)
         roles[role] += 1
         d = os.path.dirname(rel)
-        if role in ("source", "buildfile", "header", "order"):
-            u = units.setdefault(d, {"build": None, "src": [], "hdr": [],
-                                     "order": None, "root": root})
-            if role == "buildfile" and u["build"] is None:
-                u["build"] = f
-            elif role == "source":
-                u["src"].append(f)
-            elif role == "header":
-                u["hdr"].append(f)
-            elif role == "order":
-                u["order"] = f
+        u = units.setdefault(d, {"root": root, "build": None, "src": [],
+                                 "hdr": []})
+        if role == "buildfile" and u["build"] is None:
+            u["build"] = f
+        elif role == "source":
+            u["src"].append(f)
+        elif role == "header":
+            u["hdr"].append(f)
         if f == "ORDER":
             try:
                 n = sum(1 for l in open(os.path.join(dp, f)) if l.strip())
@@ -641,250 +520,306 @@ def scan():
                 n = 0
             archives.append((os.path.dirname(rel), n))
 
-    # programs, from the units we BUILD
-    progs, parked = [], []
+    admin = admin_dest()
+    progs, parks, gaps, links = [], [], [], []
+
     for d, u in sorted(units.items()):
-        if u["root"] not in BUILD_ROOTS:
+        if u["root"] not in BUILD_ROOTS or not u["src"]:
             continue
-        if not u["build"]:
+        why = parked(d)
+        if why:
+            parks.append((d, why))
             continue
-        if any(d == p or d.startswith(p + "/") for p in PARKED_DIRS):
-            parked.append(d)
-            continue
-        parts = d.split("/")
-        last = parts[-1]
-        if last in MACHDIR_DROP:
-            parked.append(d)
-            continue
-        # AN UNPACKED PACKAGE IS A SECOND COPY OF THE TREE.  v10-source.sh
-        # unpacks .tar/.cpio/.a members in place, so src/cmd/odist/src.tar
-        # holds another whole odist and contributes a duplicate row for every
-        # program in it.  The unpacking is right -- a file that is not
-        # extracted cannot be analysed -- but it is not a build input.
-        if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
-            parked.append(d)
-            continue
-        # SUPERSEDED GENERATIONS, which the tape keeps beside the live one.
-        # cmd/view2d/Old, brush/new, cmd/spell.old -- developers' working
-        # directories, and what survived is whatever was last compiled in place.
-        if last in ("Old", "old", "new", "bak", "orig") or last.endswith(
-                (".old", ".bak", ".orig")):
-            parked.append(d)
-            continue
-        # THE `oNAME' CONVENTION IS THE TAPE'S OWN WAY OF SAYING SUPERSEDED,
-        # and it is checked rather than assumed: the park applies only where
-        # the sibling NAME also exists.  cmd/sh's own makefile writes
-        # `mv /bin/sh /bin/osh' -- the o- prefix IS the backup -- and the tree
-        # carries osed0.c, olint1.c and OLDex_temp.c on the same principle.
-        # Measured here: oasd++/asd++, omovie/movie, ops/ps, osh/sh.
-        if (len(last) > 1 and last.startswith("o")
-                and os.path.isdir(os.path.join(TREE,
-                                               "/".join(parts[:-1]),
-                                               last[1:]))):
-            parked.append(d)
-            continue
-        p = os.path.join(TREE, d, u["build"])
-        try:
-            text = open(p, errors="replace").read()
-        except OSError:
-            continue
-        m = macros(text)
-        for name, dest, objs, libs, how in programs(os.path.join(TREE, d),
-                                                    d, text, m, admin):
-            # A GLOB IS NOT AN OBJECT LIST.  cmd/yacc links `y?.o' and
-            # cmd/picasso `y[1-4].o'; passed through, the plan would name a
-            # file that does not exist and the shell would expand it in the
-            # WRONG directory.  Resolve against the unit's own sources.
-            objs = expand_globs(objs, u["src"])
+
+        rows = []
+        if u["build"]:
+            try:
+                text = open(os.path.join(TREE, d, u["build"]),
+                            errors="replace").read()
+            except OSError:
+                text = ""
+            rows = rule_programs(text, u["src"], admin)
+            mm = macros(text)
+            for dname, ddir, target in aliases(text, mm, recipes(text)):
+                links.append((dname, ddir, target, d))
+
+        # ---- EVERY main() IS ACCOUNTED FOR, and this is the correction that
+        # matters.  Gating the fallback on "this directory produced nothing"
+        # dropped whole subsystems: cmd/upas/smtp has FIVE main()s, contributed
+        # one and lost four, and the postscript tree lost twenty-six
+        # directories the same way.  A main() is covered when its object is in
+        # some program's object list; anything else is a program the plan does
+        # not build, whatever else the directory managed to produce.
+        covered = set()
+        for _, _, objs, _, _ in rows:
+            covered.update(objs)
+        mains = mains_of(d, u["src"])
+        loose = [f for f in mains if f[:-2] + ".o" not in covered]
+
+        area = d.split("/")[1] if len(d.split("/")) > 1 else "cmd"
+        fixed = "/usr/games" if area == "games" else None
+        for f in loose:
+            # ONE main() MEANS THE PROGRAM IS THE DIRECTORY.  cmd/pic and
+            # cmd/grap keep theirs in main.c, so naming after the FILE gives a
+            # `main' from each, which collides with every other main.  Only
+            # when the directory contributes nothing else, though -- otherwise
+            # the extra main is its own program.
+            if len(mains) == 1 and not rows and f == "main.c":
+                name = d.split("/")[-1]
+                objs = [c[:-2] + ".o" for c in sorted(u["src"])
+                        if c.endswith(".c")]
+            else:
+                name = f[:-2]
+                objs = [name + ".o"]
+            dest = fixed or admin.get(name, "/usr/bin")
+            rows.append((name, dest, objs, "-", "scanned"))
+
+        for name, dest, objs, libs, how in rows:
             progs.append((name, d, dest, objs, libs, how, u["root"]))
 
-    # the loose *.c at the top of each area, which have no makefile at all
-    for r in BUILD_ROOTS:
-        for name, dest, objs, libs, how, area in loose_commands(
-                os.path.join(TREE, r), admin):
-            progs.append((name, r + "/" + area, dest, objs, libs, how, r))
-
-    # ------------------------------------------------------ and RECURSE ---
-    # A DIRECTORY WITH SOURCES AND NO USABLE BUILD RULE STILL HOLDS PROGRAMS.
-    # Scanning only the top of each area left 54 directories under cmd/, three
-    # under games/ (adv, boggle, doctor) and one under lbin/ with a main() and
-    # no row -- either they carry no makefile at all, or they carry one this
-    # scan could not read a link out of.  Either way the tape has the source and
-    # the plan should say so.
-    #
-    # HOW MANY PROGRAMS A DIRECTORY HOLDS IS DECIDED BY ITS main()s, and the two
-    # cases must not be conflated:
-    #
-    #   one main    the program is the whole directory -- every object
-    #   many mains  one program per main, from ITS OWN object only.  71 units
-    #               carry more than one; pairing each main with ALL the unit's
-    #               objects would give cmd/awk a `maketab' carrying the whole
-    #               of awk, because ld pulls in every .o it is named.
-    have = {(p[1], p[0]) for p in progs}
-    havedir = {p[1] for p in progs}
-    for d, u in sorted(units.items()):
-        if u["root"] not in BUILD_ROOTS or d in havedir:
-            continue
-        if any(d == p or d.startswith(p + "/") for p in PARKED_DIRS):
-            continue
-        parts = d.split("/")
-        if parts[-1] in MACHDIR_DROP or len(parts) < 2:
-            continue
-        if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
-            continue
-        if parts[-1] in ("Old", "old", "new", "bak", "orig"):
-            continue
-        cs = [f for f in u["src"] if f.endswith(".c")]
-        if not cs:
-            continue
-        mains = []
-        for f in sorted(cs):
-            try:
-                if MAIN.search(open(os.path.join(TREE, d, f),
-                                    errors="replace").read()):
-                    mains.append(f)
-            except OSError:
-                pass
-        if not mains:
-            continue
-        area = parts[1] if len(parts) > 1 else "cmd"
-        fixed = "/usr/games" if area == "games" else None
-        for f in mains:
-            # ONE main() MEANS THE PROGRAM IS THE DIRECTORY.  cmd/pic and
-            # cmd/grap keep theirs in main.c, so naming the program after the
-            # FILE produced a `main' from each -- which then collided with
-            # every other main and was dropped as a duplicate, losing pic and
-            # grap outright.  This is the same blind spot that once left `sh'
-            # with no row: a survey asking "does cmd/X hold X.c" never finds a
-            # unit whose entry point is main.c.
-            name = parts[-1] if len(mains) == 1 else f[:-2]
-            if (d, name) in have:
-                continue
-            objs = ([c[:-2] + ".o" for c in sorted(cs)] if len(mains) == 1
-                    else [name + ".o"])
-            dest = fixed or admin.get(name, "/usr/bin")
-            progs.append((name, d, dest, objs, "-", "recursed", u["root"]))
-            have.add((d, name))
-
     progs, dropped = dedupe(progs)
-    # NO SILENT CAPS.  A unit can emit programs and still end with none, if
-    # every one of them loses a tie -- the recursion decides whether to fire
-    # from a `have' set computed BEFORE dedupe.  cmd/movie and cmd/spool do
-    # exactly that.  A plan that is short by two directories must say so;
-    # silence reads as "covered everything" when it did not.
-    final = {p[1] for p in progs}
-    emptied = sorted({d[1] for d in dropped} - final)
-    return {"files": files, "roles": roles, "byroot": byroot,
-            "units": units, "progs": progs, "archives": archives,
-            "admin": admin, "parked": parked, "dropped": dropped,
-            "emptied": emptied}
+
+    # NO SILENT CAPS.  Anything the scan can SEE and cannot BUILD is listed,
+    # because a plan that is short must say so -- silence reads as "covered
+    # everything" when it did not.
+    final = collections.Counter(p[1] for p in progs)
+    for d, u in sorted(units.items()):
+        if u["root"] not in BUILD_ROOTS or not u["src"] or parked(d):
+            continue
+        if mains_of(d, u["src"]) and not final.get(d):
+            gaps.append(d)
+
+    # AN ALIAS IS ONLY REAL IF WE BUILD ITS TARGET.  Installing a name whose
+    # binary the plan never makes leaves a dangling command.
+    made = {p[0] for p in progs}
+    links = sorted({(n, d, t) for n, d, t, _ in links if t in made})
+    return {"files": files, "roles": roles, "byroot": byroot, "units": units,
+            "progs": progs, "archives": archives, "parked": parks,
+            "dropped": dropped, "gaps": gaps, "admin": admin, "links": links}
 
 
-# ------------------------------------------------------------------ plan ---
-# THE BOOTSTRAP SET IS A DECISION, NOT A MEASUREMENT, so it is written down.
-# Everything else in the plan is derived from the scan; these twelve are chosen,
-# because "which programs must exist before anything else can be built" is not a
-# question the tape answers -- V10 was never built from scratch.
-#
-#   the seven passes   V10's own ccom, as and libc.a are on the tape as linked
-#                      VAX binaries and run on the builder, so only the passes
-#                      with no binary strictly must be built -- but stage 3 is a
-#                      fixpoint over all seven, so all seven are built.
-#   ar cmp ed          stage 2 IS an archive and stage 3 IS a byte comparison,
-#                      and the golden has neither tool.
-#   halt sleep         a machine that cannot halt cleanly corrupts its disk.
+def dedupe(progs):
+    """One row per installed path, chosen by a STATED order of authority.
+
+    Two rows for one path means the build installs whichever ran last, which is
+    not a decision anybody made.  Most specific first:
+
+      a directory named for the program   cmd/ed beats cmd/ed.c -- where the
+                                          tape has both, the directory is its
+                                          SECOND generation
+      cmd/NAME.c                          the loose Admin/Mk idiom IS the
+                                          command
+      an explicit rule elsewhere
+      a scanned main()                    the weakest evidence, and it may
+                                          never overrule a real rule
+
+    Without the last two, scanning found files named after commands in
+    directories with nothing to do with them and they WON: /bin/test from
+    milligan/jerq/src/sysmon, /usr/bin/tee from cmd/learn (which has a tee.c
+    because a lesson uses one), /usr/bin/fmt from lbin/Mail.
+    """
+    def rank(p):
+        name, d, dest, objs, libs, how, root = p
+        parts = d.split("/")
+        r = len(parts)
+        if parts[-1] == name:
+            r -= 20
+        if len(parts) == 2 and parts[1] == "cmd" and how == "Admin/Mk":
+            r -= 16
+        if how != "scanned":
+            r -= 2
+        else:
+            r += 12
+        if root == "milligan" and not dest.startswith("/usr/jerq"):
+            r += 20
+        return r
+
+    best, dropped = {}, []
+    for p in progs:
+        k = (p[2], p[0])
+        if k not in best:
+            best[k] = p
+        elif rank(p) < rank(best[k]):
+            dropped.append(best[k])
+            best[k] = p
+        else:
+            dropped.append(p)
+    return sorted(best.values()), dropped
+
+
+# ==================================================== 4b. /dev and /etc ===
+def majors():
+    """{name: (kind, major)} from the tape's own lsys/lib/tab.
+
+    DEVICE MAJORS ARE A PROPERTY OF THE TAPE, NOT OF OUR CONFIG.  The obvious
+    reading of a generated cdevsw[] is that it follows the config's device
+    list, so a machine with a different .m would number its devices
+    differently -- it is not so.  `tab' is a FIXED assignment and it is the -t
+    argument mkconf already takes, which is why our 780 kernel boots a /dev
+    made for another machine.  Read tab before writing a mknod: a wrong major
+    is not harmless, since on V8 a node built into the wrong bdevsw slot
+    panicked the kernel through a wild pointer.
+    """
+    out = {}
+    for src in (os.path.join(ROOT, "v10", "src", "lsys", "lib", "tab"),
+                os.path.join(TREE, "src", "lsys", "lib", "tab")):
+        if not os.path.exists(src):
+            continue
+        for line in open(src, errors="replace"):
+            mo = re.match(r"^(cdev|bdev)\s+(\d+)\s+(\S+)", line)
+            if mo:
+                out.setdefault((mo.group(1), mo.group(3)), int(mo.group(2)))
+        break                             # ours first; it is the one mkconf reads
+    return out
+
+
+def devices():
+    """[(name, kind, major, minor, mode)] -- every node the image needs.
+
+    MINORS ARE DERIVED, NEVER WRITTEN DOWN.  `64 | (unit<<3) | part'
+    reproduces every value this project has measured -- /dev/ra0a is 64 and
+    /dev/ra0c is 66 off Bell Labs' own nodes -- so a computed minor cannot
+    repeat the failure where a hand-written 79 addressed unit 1 while the disk
+    sat on unit 2 and nineteen assertions passed about the wrong filesystem.
+    """
+    M = majors()
+    out = []
+
+    def add(name, kind, maj, minor, mode="0600"):
+        if maj is None:
+            return
+        out.append((name, kind, maj, minor, mode))
+
+    cc, cb = ("cdev", "bdev")
+    add("console", "c", M.get((cc, "console")), 0, "0600")
+    # dz11 -- eight lines, and every one gets a node because /etc/ttys enables
+    # eight gettys.
+    for i in range(8):
+        add("tty%02d" % i, "c", M.get((cc, "dz11")), i, "0600")
+    # mem minor 4 is `obsolete' in V10's mem.c -- the case is deleted -- so
+    # there is no kmemr here however much V8 has one.
+    for nm, mi, mode in (("mem", 0, "0600"), ("kmem", 1, "0600"),
+                         ("null", 2, "0666")):
+        add(nm, "c", M.get((cc, "mem")), mi, mode)
+    add("drum", "c", M.get((cc, "drum")), 0)
+    add("stdio", "c", M.get((cc, "stdio")), 0, "0666")
+    # RA81s: two units, eight partitions each, block AND raw.
+    for unit in (0, 1):
+        for pi, part in enumerate("abcdefgh"):
+            mi = 64 | (unit << 3) | pi
+            add("ra%d%s" % (unit, part), "b", M.get((cb, "ra")), mi, "0600")
+            add("rra%d%s" % (unit, part), "c", M.get((cc, "ra")), mi, "0600")
+    # Massbus RP, which our config also carries.
+    for unit in (0, 1):
+        for pi, part in enumerate("abcdefgh"):
+            mi = (unit << 3) | pi
+            add("hp%d%s" % (unit, part), "b", M.get((cb, "hp")), mi, "0600")
+            add("rhp%d%s" % (unit, part), "c", M.get((cc, "hp")), mi, "0600")
+    # The Interlan, and the IP protocol devices.  /dev/ip6 and /dev/ip17 are
+    # PROTOCOL numbers, not unit numbers -- 6 is TCP and 17 is UDP, which is
+    # what /etc/rc pushes the disciplines onto.
+    for i in (0, 1):
+        add("il%d" % i, "c", M.get((cc, "ni1010a")), i, "0600")
+    add("ip6", "c", M.get((cc, "ip")), 6, "0600")
+    add("ip17", "c", M.get((cc, "ip")), 17, "0600")
+    # tcp minors must be ODD on the active side: tcp_device.c refuses an even
+    # one whose socket is not already active, because even minors are the
+    # accept side.  libin's tcp_sock() walks `for (n = 01; n < 100; n += 2)'.
+    for i in range(1, 64):
+        add("tcp%02d" % i, "c", M.get((cc, "tcp")), i, "0666")
+    for i in range(1, 32):
+        add("udp%02d" % i, "c", M.get((cc, "udp")), i, "0666")
+    # Stream pipes: `pt 64' in our config, cdev 18 in our tab.
+    for i in range(64):
+        add("pt%02d" % i, "c", M.get((cc, "pt")), i, "0666")
+    return out
+
+
+def etcfiles():
+    """The config we ship, from v10/src/etc -- source, not typed in.
+
+    A file a harness writes into the disk is a file with no source: it cannot
+    be reviewed, diffed or regenerated, and a change to it is invisible in a
+    diff of the source tree.  Five files once reached a golden that way.
+    """
+    d = os.path.join(ROOT, "v10", "src", "etc")
+    if not os.path.isdir(d):
+        return []
+    out = []
+    for f in sorted(os.listdir(d)):
+        p = os.path.join(d, f)
+        if not os.path.isfile(p):
+            continue
+        # mtab and utmp ship EMPTY: a fresh system has nothing mounted and
+        # nobody logged in.  Carrying the builder's copies once left a disk
+        # booting with three stale mounts.
+        mode = "0644" if f not in ("passwd", "group") else "0644"
+        out.append((f, mode, os.path.getsize(p)))
+    return out
+
+
+# ======================================================== 5. the plan ===
+# The bootstrap set is a DECISION, not a measurement, so it is written down.
+# Everything else is derived.  "Which programs must exist before anything else
+# can be built" is not a question the tape answers -- V10 was never built from
+# scratch.
 BOOTSTRAP = [("yacc", "/usr/bin/yacc"), ("cpp", "/lib/cpp"),
              ("comp", "/lib/ccom"), ("as", "/bin/as"), ("c2", "/lib/c2"),
-             ("ld", "/bin/ld"), ("cc", "/bin/cc"),
-             ("ar", "/bin/ar"), ("cmp", "/bin/cmp"), ("ed", "/bin/ed"),
-             ("halt", "/etc/halt"), ("sleep", "/usr/bin/sleep")]
+             ("ld", "/bin/ld"), ("cc", "/bin/cc"), ("ar", "/bin/ar"),
+             ("cmp", "/bin/cmp"), ("ed", "/bin/ed"), ("halt", "/etc/halt"),
+             ("sleep", "/usr/bin/sleep")]
 
 STAGES = [("1", "The toolchain",
            "Built by the BUILDER's compiler into the new image, which is "
-           "mounted throughout.  At the end of this stage the image has a C "
-           "compiler of its own."),
+           "mounted throughout.  At the end the image has a C compiler."),
           ("2", "libc",
-           "Compiled by the passes stage 1 just installed -- `cc -B$MNT/lib/'."
-           "  Member order is the tape's own, read from ORDER."),
+           "Compiled by the passes stage 1 installed.  Member order is the "
+           "tape's own, read from ORDER."),
           ("3", "The fixpoint",
-           "The image rebuilds its own toolchain against its own libc.  "
-           "Installs nothing new; it is the test the bootstrap exists to pass."),
+           "The image rebuilds its toolchain against its own libc.  Installs "
+           "nothing; it is the test the bootstrap exists to pass."),
           ("4", "The libraries", "Every archive the commands link against."),
-          ("5", "The kernel",
-           "Our ipnx780 config.  /unix goes down before the bulk of the files."),
+          ("5", "The kernel", "Our ipnx780 config.  /unix before the bulk."),
           ("6", "The commands", "Everything else the scan found."),
           ("7", "/dev, /etc, /usr/include", "The tables and the headers."),
           ("8", "The manuals", "sellers, the tape's own documentation.")]
 
 
 def build_plan(s):
-    """[(stage, path, method, source, objects, libs, note)] -- every path."""
     rows = []
     boot = {n for n, _ in BOOTSTRAP}
-    byname = {}
+    byname = collections.defaultdict(list)
     for p in s["progs"]:
-        byname.setdefault(p[0], []).append(p)
+        byname[p[0]].append(p)
 
-    # -- stage 1
     for name, dest in BOOTSTRAP:
-        cand = [p for p in byname.get(name, []) if p[6] == "src"]
+        cand = [p for p in byname[name] if p[6] == "src"]
         if not cand:
-            rows.append(("1", dest, "MISSING", "-", "-", "-",
-                         "the scan found no source for this"))
+            rows.append(("1", dest, "MISSING", "-", "-", "-", "no source"))
             continue
         p = sorted(cand, key=lambda q: len(q[1].split("/")))[0]
         rows.append(("1", dest, "build", p[1], " ".join(p[3]), p[4], p[5]))
 
-    # -- stage 2
-    order = [d for d, n in s["archives"] if d.endswith("libc/libc.a")]
-    n = dict(s["archives"]).get(order[0], 0) if order else 0
+    n = dict(s["archives"]).get("src/libc/libc.a", 0)
     rows.append(("2", "/lib/libc.a", "build", "src/libc", "ORDER", "-",
                  "%d members, the tape's own order" % n))
 
-    # -- stage 4.  A LIBRARY IS DECIDED BY CONTENT, and there are two shapes:
-    #
-    #   libX.a    an archive of OBJECTS -- rebuild from the sources beside it
-    #   X.c.a     an archive of SOURCES, which is the tape's own designated
-    #             build route for the whole libplot family:
-    #                 lib4014.a: tek.c.a
-    #                         mkdir xplot; cd xplot; ar x ../tek.c.a
-    #                         cc -c -O *.c; ar rc ../lib4014.a *.o
-    #             so `ar x' is step one of the recipe, not a stray artefact.
-    #             Read as "24 members have no source" it looks like tape rot.
-    #
-    # Superseded generations are skipped by the same rule as everywhere else:
-    # oldplot, ostdio and liboc are what a working directory accumulates.
-    # A UNIT CAN CARRY BOTH SHAPES, and libpen is the case: libpen.a with 21
-    # OBJECTS beside pen.c.a with 22 SOURCES.  The bundle is the build route --
-    # the tape's own recipe is `ar x' then compile -- and the object archive is
-    # the ORACLE, Bell Labs' bytes to check ours against.  Emitting both gives
-    # two rows for /usr/lib/libpen.a.
+    # A library is decided by CONTENT: libX.a is objects, X.c.a is SOURCES and
+    # `ar x' is step one of the tape's own recipe (`lib4014.a: tek.c.a').  A
+    # unit carrying both gives the bundle the build and the archive the oracle.
     bundles = {"/".join(d.split("/")[:-1]) for d, _ in s["archives"]
                if d.endswith(".c.a")}
     for d, cnt in sorted(s["archives"]):
         parts = d.split("/")
-        base = parts[-1]
-        unit = "/".join(parts[:-1])
-        if not d.startswith("src/lib"):
+        base, unit = parts[-1], "/".join(parts[:-1])
+        if not d.startswith("src/lib") or (base == "libc.a" and unit == "src/libc"):
+            continue
+        if any(x in parts for x in ("oldplot", "ostdio")) or base == "liboc.a":
             continue
         if base.endswith(".a") and not base.endswith(".c.a") and unit in bundles:
-            continue                      # the oracle, not the build route
-        if base in ("liboc.a",):
-            continue                      # the superseded libc
-        if base == "libc.a" and unit == "src/libc":
-            continue                      # stage 2 builds it
-        if any(x in parts for x in ("oldplot", "ostdio", "old", "Old")):
             continue
-        if base.startswith("o") and base.endswith(".a"):
-            continue                      # oliboc.a, olibtr.a -- superseded
         if base.endswith(".c.a"):
-            # THE LIBRARY IS NAMED FOR ITS DIRECTORY, NOT ITS BUNDLE, and the
-            # tape's own rule says so: `lib4014.a: tek.c.a'.  Deriving from the
-            # bundle gives libtek.a and libhp.a -- names that appear on no -l
-            # line anywhere -- and makes lib5620/blit.c.a and libblit/blit.c.a
-            # collide on one output.
-            name = unit.split("/")[-1] + ".a"
-            how = "%d sources, extracted by the tape's own `ar x' recipe" % cnt
+            name, how = unit.split("/")[-1] + ".a", "%d sources, via `ar x'" % cnt
         elif base.endswith(".a") or base == "crlib":
             name = base if base.endswith(".a") else "libcurses.a"
             how = "%d members" % cnt
@@ -892,24 +827,44 @@ def build_plan(s):
             continue
         rows.append(("4", "/usr/lib/" + name, "build", unit, "ORDER", "-", how))
 
-    # -- stage 5
     rows.append(("5", "/unix", "build", "src/lsys", "ipnx780.m", "-",
                  "mkconf, then two compiles and one link"))
 
-    # -- stage 6
     for name, d, dest, objs, libs, how, root in s["progs"]:
         if name in boot and root == "src":
             continue
         rows.append(("6", dest.rstrip("/") + "/" + name, "build", d,
                      " ".join(objs), libs, how))
 
-    # -- stage 7 / 8
+    # THE TAPE STATING ITS OWN ALIAS OUTRANKS A PROGRAM WE INFERRED AT THE
+    # SAME PATH.  /usr/bin/view had two rows -- the ln to ex, and a `view'
+    # scanned out of milligan/jerq/src/font, which is a 5620 font tool that
+    # happens to share the name.  Aliases are resolved after dedupe, so they
+    # cannot compete in it; the competing build row is removed here instead.
+    linkpaths = {d.rstrip("/") + "/" + n for n, d, _ in s["links"]}
+    rows = [r for r in rows if not (r[1] in linkpaths and r[2] == "build")]
+    for name, d, target in s["links"]:
+        rows.append(("6", d.rstrip("/") + "/" + name, "link", target, "-", "-",
+                     "a second name for %s -- the tape's own ln" % target))
+
     rows.append(("7", "/usr/include/**", "tree", "include", "-", "-",
-                 "r70's reconstruction"))
-    rows.append(("7", "/dev/**", "mknod", "src/lsys/lib/tab", "-", "-",
-                 "majors are the tape's, from lsys/lib/tab"))
-    rows.append(("7", "/etc/**", "copy", "v10/src/etc", "-", "-",
-                 "our config, from source, never typed in by a harness"))
+                 "r70's reconstruction, %d files"
+                 % sum(1 for r, _, _, _, _ in s["files"] if r == "include")))
+    for name, kind, maj, minor, mode in devices():
+        rows.append(("7", "/dev/" + name, "mknod", "src/lsys/lib/tab",
+                     "%s %d %d" % (kind, maj, minor), mode,
+                     "major from the tape's tab; minor derived"))
+    # OUR CONFIG OUTRANKS A PROGRAM THAT SHARES ITS PATH.  cmd/cref holds an
+    # mtab.o, so the scan offered a /etc/mtab BUILD beside the /etc/mtab we
+    # ship -- two rows for one path, and the build would install whichever ran
+    # last over a file that must be empty on a fresh system.
+    etcnames = {f for f, _, _ in etcfiles()}
+    rows = [r for r in rows
+            if not (r[1].startswith("/etc/") and r[2] == "build"
+                    and r[1][5:] in etcnames)]
+    for f, mode, size in etcfiles():
+        rows.append(("7", "/etc/" + f, "copy", "v10/src/etc/" + f, "-", mode,
+                     "%d bytes -- our config, from source" % size))
     rows.append(("8", "/usr/man/**", "tree", "sellers/man", "-", "-",
                  "the tape's manuals"))
     return rows
@@ -918,32 +873,36 @@ def build_plan(s):
 def emit(s, rows):
     o = ["# The Tenth Edition golden image, file by file\n\n",
          "Generated by `tools/v10-scan.py` from a full scan of `v10/source`. ",
-         "Do not edit.\n\n",
-         "## What the scan saw\n\n",
-         "| | |\n|---|---:|\n",
+         "Do not edit.\n\n## What the scan saw\n\n| | |\n|---|---:|\n",
          "| entries walked | %s |\n" % format(len(s["files"]), ","),
          "| units | %s |\n" % format(len(s["units"]), ","),
          "| programs | %s |\n" % format(len(s["progs"]), ","),
          "| unpacked archives | %s |\n" % format(len(s["archives"]), ","),
          "| parked units | %s |\n" % format(len(s["parked"]), ","),
-         "| duplicate rows dropped | %s |\n\n" % format(len(s["dropped"]), ","),
-         "Every entry under `v10/source` is walked and reconciled against the "
-         "filesystem before any number here is printed; the scan refuses to "
-         "report if it missed one.\n\n",
+         "| duplicate rows dropped | %s |\n" % format(len(s["dropped"]), ","),
+         "| **buildable but unbuilt** | **%s** |\n\n" % format(len(s["gaps"]), ","),
+         "The walk is reconciled against the filesystem before any number here "
+         "is printed; the scan refuses to report if it missed one.\n\n",
          "## The rules\n\n",
          "1. **The source contains everything.** `v10/source` and `v10/src` "
          "are the only inputs.\n"
-         "2. **No staging tree.** `$DEST` is the new image, mounted, for the "
-         "whole run.\n"
-         "3. **The new toolchain runs on the new image.** From stage 2 the "
-         "compiler is the one on the disk being built.\n\n"]
+         "2. **No staging tree.** `$DEST` is the new image, mounted, "
+         "throughout.\n"
+         "3. **The new toolchain runs on the new image.**\n\n"]
     bystage = collections.defaultdict(list)
     for r in rows:
         bystage[r[0]].append(r)
     o.append("## Stages\n\n| stage | what | paths |\n|---|---|---:|\n")
     for st, title, _ in STAGES:
-        o.append("| %s | %s | %s |\n"
-                 % (st, title, format(len(bystage[st]), ",")))
+        o.append("| %s | %s | %s |\n" % (st, title,
+                                         format(len(bystage[st]), ",")))
+    if s["gaps"]:
+        o.append("\n## Seen but not built: %d directories\n\n"
+                 % len(s["gaps"]))
+        o.append("Each holds a `main()` the scan could not turn into a "
+                 "program. Listed rather than omitted.\n\n")
+        for d in s["gaps"]:
+            o.append("- `%s`\n" % d)
     for st, title, why in STAGES:
         rs = bystage[st]
         o.append("\n## Stage %s — %s\n\n%s\n\n%s paths.\n\n"
@@ -952,7 +911,8 @@ def emit(s, rows):
             continue
         o.append("| installed path | method | source | objects | libs | note |\n"
                  "|---|---|---|---|---|---|\n")
-        for _, path, meth, src, objs, libs, note in sorted(rs, key=lambda r: r[1]):
+        for _, path, meth, src, objs, libs, note in sorted(rs,
+                                                           key=lambda r: r[1]):
             o.append("| `%s` | %s | `%s` | `%s` | `%s` | %s |\n"
                      % (path, meth, src, objs or "-", libs or "-",
                         str(note).replace("|", "\\|")))
@@ -962,38 +922,31 @@ def emit(s, rows):
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
-    ap.add_argument("--report", action="store_true")
+    ap.add_argument("--gaps", action="store_true")
     a = ap.parse_args(argv)
 
     if not os.path.isdir(TREE):
         sys.exit("v10-scan: no v10/source -- run tools/v10-source.sh")
 
     s = scan()
-    print("v10-scan: %d files" % len(s["files"]))
-    print("   by root:  " + "  ".join("%s %d" % (k or ".", v)
-                                      for k, v in sorted(s["byroot"].items())))
-    print("   by role:  " + "  ".join("%s %d" % kv
-                                      for kv in s["roles"].most_common()))
-    print("   units %d   programs %d   unpacked archives %d   parked units %d"
+    print("v10-scan: %d entries" % len(s["files"]))
+    print("   by root: " + "  ".join("%s %d" % (k or ".", v)
+                                     for k, v in sorted(s["byroot"].items())))
+    print("   by role: " + "  ".join("%s %d" % kv
+                                     for kv in s["roles"].most_common()))
+    print("   units %d   programs %d   archives %d   parked %d   dropped %d"
           % (len(s["units"]), len(s["progs"]), len(s["archives"]),
-             len(s["parked"])))
-    dup = collections.Counter((p[2], p[0]) for p in s["progs"])
-    clash = [k for k, v in dup.items() if v > 1]
-    print("   dropped as duplicates %d   (unresolved clashes %d)"
-          % (len(s["dropped"]), len(clash)))
-    for d, n in sorted(clash)[:6]:
-        where = [p[1] for p in s["progs"] if p[0] == n and p[2] == d]
-        print("      %s/%s  <- %s" % (d, n, ", ".join(where)))
+             len(s["parked"]), len(s["dropped"])))
+    print("   aliases (the tape's own ln): %d" % len(s["links"]))
+    print("   SEEN BUT NOT BUILT: %d directories" % len(s["gaps"]))
 
-    if s["emptied"]:
-        print("   UNITS THAT BUILD NOTHING (every program lost a tie): %d"
-              % len(s["emptied"]))
-        for d in s["emptied"][:6]:
+    if a.gaps:
+        for d in s["gaps"]:
             print("      %s" % d)
+        return 0
+
     rows = build_plan(s)
     body = emit(s, rows)
-    if a.report:
-        return 0
     if a.check:
         if not os.path.exists(PLAN) or open(PLAN).read() != body:
             print("v10-scan: docs/v10-plan.md is stale")
@@ -1006,10 +959,8 @@ def main(argv):
     for k, t, _ in STAGES:
         print("      stage %s  %-28s %5d" % (k, t, st[k]))
     miss = [r for r in rows if r[2] == "MISSING"]
-    if miss:
-        print("   NO SOURCE FOUND for %d bootstrap paths:" % len(miss))
-        for r in miss:
-            print("      %s" % r[1])
+    for r in miss:
+        print("   NO SOURCE: %s" % r[1])
     return 0
 
 
