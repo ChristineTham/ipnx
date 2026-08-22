@@ -1,0 +1,293 @@
+#!/usr/bin/env expect
+# Blank disk to finished disk, one pass, driven by docs/v10-plan.md.
+#
+#	expect tools/v10-build.exp <builder> <blank> <tport> <oport> <pport>
+#
+# Normally run through tools/v10-build.sh.
+#
+# THE SHAPE.  The new image is mounted at $MNT before anything is built and
+# stays mounted for the whole run, and v10/mk/build.sh installs into it
+# directly.  Nothing is built somewhere and copied afterwards, so there is no
+# second step in which provenance can be lost -- the scripts this replaces
+# built into the builder or into a staged root, and 33 files ended up on a disk
+# whose only source was the machine that made it.
+#
+# EXPECT HAS THREE SPELLINGS AND TWO OF THEM FAIL SILENTLY.  Measured:
+#
+#	expect -timeout 15 -- "sim>" {} timeout {}     CORRECT
+#	expect { -timeout 15 "sim>" {} timeout {} }    never times out
+#	expect -timeout 15 { "sim>" {} timeout {} }    never MATCHES
+#
+# The third is the dangerous one: a braced body following a flag is taken as ONE
+# glob pattern, braces and action bodies included.  Expect only re-splits a
+# braced body into pattern/action pairs when that body is the command's only
+# argument.  Everything below uses the flat form.
+
+set timeout 3600
+log_user 1
+
+set ROOT  [file normalize [file dirname [file dirname [info script]]]]
+set IMG   [lindex $argv 0]
+set BLANK [lindex $argv 1]
+set vport [lindex $argv 2]
+set pport [lindex $argv 3]
+
+set SIM   "$ROOT/work/opensimh/BIN/vax780"
+set ROM   "$ROOT/v10/source/src/lsys/boot/star/uda"
+set MEDIA [file dirname $IMG]
+
+set MNT  /mnt
+set OBJ  /usr/bo
+# ONE SHARE FOR v10/, WHICH HOLDS source/ src/ AND mk/ TOGETHER.  Three mounts
+# were two too many: the guest needs the tape, our overlay and build.sh, and all
+# three live under v10/.  Each netfs mount also costs a device number -- neta.h
+# is explicit that a repeat gives EBUSY -- so fewer mounts is fewer ways to get
+# that wrong.
+set V10  /n/v10
+set N    $V10/source
+set OURS $V10/src
+set BLD  $V10/mk/build.sh
+set PLAN /n/plan
+
+# ra_sizes[] IS IN 512-BYTE SECTORS, NOT BLOCKS: a is 10,240 sectors = 1,280
+# blocks of 4096, c is 249,848 of which MAXSMALL (30,752 blocks) keeps the free
+# bitmap inside the superblock.  Reading those as blocks once made a harness ask
+# mkbitfs for eight times the partition and the guest said nothing at all --
+# mkbitfs wrote an s_fsize of 0 and every later step failed on a filesystem that
+# was never made.
+set RBLKS 1280
+set UBLKS 30752
+# 64 | (unit<<3) | part.  DERIVED, never written down: a hand-written 79 once
+# addressed unit 1 while the disk sat on rq2, and nineteen assertions passed
+# about a filesystem written over the wrong image.  The blank is rq1, so
+# a = 64|8|0 = 72 and c = 64|8|2 = 74.
+set RMINOR 72
+set UMINOR 74
+
+set results {}
+proc note {name ok} { global results; lappend results [list $name $ok] }
+proc report {} {
+    global results
+    puts "\n===== V10 BUILD ====="
+    set bad 0
+    foreach r $results {
+        puts [format "  %-56s %s" [lindex $r 0] [expr {[lindex $r 1] ? "ok" : "NO"}]]
+        if {![lindex $r 1]} { incr bad }
+    }
+    puts [format "===== %d/%d =====" [expr {[llength $results] - $bad}] [llength $results]]
+    return $bad
+}
+
+proc bail {why} {
+    global spawn_id
+    puts "\nv10-build: BAIL -- $why"
+    # ^E then quit, bounded.  `close' alone does not stop a simulator that is
+    # not READING its console -- a guest wedged in a read never sees the EOF,
+    # and one such orphan sat at 98% of a core with no pty left to reach it.
+    catch { send "\005" }
+    catch { expect -timeout 30 -- "sim>" {} timeout {} }
+    catch { send "quit\r" }
+    catch { expect -timeout 30 -- eof {} timeout {} }
+    catch { close }
+    catch { wait -nowait }
+    exit 3
+}
+
+proc must {name ok} {
+    note $name $ok
+    if {!$ok} { report; bail "$name -- nothing below this can be asserted" }
+}
+
+# ------------------------------------------------------------ the console ---
+proc sim {cmd} {
+    global spawn_id
+    send "$cmd\r"
+    expect -timeout 120 -- "sim>" {} timeout { bail "no sim> after $cmd" }
+}
+
+set MARK 0
+# THE TTY ECHOES TYPED CHARACTERS AS THEY ARRIVE and they interleave INTO
+# whatever is printing, so a marker lands mid-line.  Spelling it through a shell
+# variable means the echo carries `$M+' and only the result carries the token.
+proc sh {cmd {t 300}} {
+    global spawn_id MARK
+    incr MARK
+    set m "+ok$MARK"
+    send "M=$m\r"
+    expect -timeout 60 -- "# " {} timeout {}
+    send "$cmd\r"
+    expect -timeout 30 -- "# " {} timeout {}
+    send "echo \$M+\r"
+    expect -timeout $t -- "$m+" {} timeout { bail "no marker after: $cmd" }
+}
+
+# A COMMAND THAT TAKES THE TTY NEEDS THIS, not sh: sh sends the command and its
+# marker together, so against a program that reads stdin the marker is consumed
+# by the program.  This waits for the program's own closing output.
+proc run {cmd endmark {t 3600}} {
+    global spawn_id
+    set hit 0
+    send "$cmd\r"
+    # UNANCHORED, because the tty splices the tail of the typed line into the
+    # first line of output every time -- `MISS atof.o' arrived as `MMISS
+    # atof.o' and an anchored grep dropped it, so a run reported one missing
+    # member where there were two.
+    expect -timeout $t -- "$endmark" { set hit 1 } timeout { set hit 0 }
+    return $hit
+}
+
+proc try {cmd want {t 300}} {
+    global spawn_id
+    set hit 0
+    send "$cmd\r"
+    expect -timeout $t -- "$want" { set hit 1 } timeout { set hit 0 }
+    # resync, so the next command starts from a known place
+    catch { send "\r" }
+    catch { expect -timeout 30 -- "# " {} timeout {} }
+    return $hit
+}
+
+# ================================================================== boot ===
+if {![file exists $SIM]}   { puts "no simulator at $SIM";  exit 1 }
+if {![file exists $ROM]}   { puts "no boot rom at $ROM";   exit 1 }
+
+set cfg "/tmp/v10build.[pid].conf"
+set fh [open $cfg w]
+puts $fh "set cpu 8m"
+puts $fh "set rq0 ra81"
+puts $fh "attach rq0 [file tail $IMG]"
+puts $fh "set rq1 ra81"
+puts $fh "attach rq1 [file tail $BLANK]"
+puts $fh "set il enable"
+puts $fh "set il address=2013E800"
+puts $fh "set il vector=E8"
+puts $fh "attach il nat:"
+close $fh
+
+# cd into the media directory so ATTACH can use short names -- a relative path
+# in a config is resolved against the process's cwd, and a driver that does not
+# do this writes its trace into work/v10gold/work/.
+cd $MEDIA
+spawn $SIM $cfg
+expect -timeout 180 -- "sim>" {} timeout { bail "simulator never prompted" }
+
+# The tape's own boot ROM, loaded at FA00 and entered at FA02.  It finds /unix
+# itself, which is why there is no `boot' command here.
+sim "load -o $ROM FA00"
+send "run FA02\r"
+
+set booted 0
+expect -timeout 900 \
+    -- "ogin:"  { set booted 1 } \
+    -- "panic:" { set booted 0 } \
+    timeout     { set booted 0 }
+must "the builder boots to a login prompt" $booted
+
+send "root\r"
+expect -timeout 300 -- "# " {} timeout { bail "no root shell" }
+sh "PATH=/bin:/etc:/usr/bin; export PATH" 60
+sh "OK=-ok" 60
+
+# ================================================================ shares ===
+# ONE DEVICE NUMBER PER MOUNT.  neta.h says `short dev; /* server may be using
+# several */' and nadomount() gives EBUSY for a repeat, so two shares mounted
+# with the same dev fail on the second -- both asked for (fstyp 1, dev 0, ino 2)
+# and the first still holds that inode.
+sh "mkdir /n; mkdir $V10; mkdir $PLAN" 120
+must "v10 mounts"           [try "/etc/nafsmnt 10.0.2.2 $vport $V10  0" "mounted on" 900]
+must "the plan mounts"      [try "/etc/nafsmnt 10.0.2.2 $pport $PLAN 1" "mounted on" 900]
+must "the tape is readable" [try "test -d $N/src/cmd/as && echo RD\$OK" "RD-ok" 300]
+must "the plan is readable" [try "test -s $PLAN/v10-plan.md && echo PL\$OK" "PL-ok" 300]
+must "build.sh is readable" [try "test -s $BLD && echo BS\$OK" "BS-ok" 300]
+
+# THE BUILDER'S libc.a MUST HAVE A CURRENT TABLE OF CONTENTS or every link in
+# stage 1 fails and the errors name the wrong thing.  V10's ld getfile() returns
+# 3 -- stale -- when the archive's mtime is newer than __.SYMDEF's, and then
+# makes ONE sequential pass instead of `while (ldrand()) continue;'.  Measured
+# 2026-08-22: archive mtime 21:48 against a SYMDEF of six days earlier, and nine
+# of thirteen components died on `Undefined: _memcpy' with memcpy.o present and
+# 104 bytes of real code.  Every compile had SUCCEEDED; only the links failed.
+must "the builder's libc.a has a current table of contents" \
+    [try "/usr/bin/ranlib /lib/libc.a && echo RL\$OK" "RL-ok" 900]
+
+# =========================================== the new disk, mounted at $MNT ===
+sh "rm -f /dev/ra1a /dev/ra1c" 60
+sh "/etc/mknod /dev/ra1a b 7 $RMINOR; /etc/mknod /dev/ra1c b 7 $UMINOR" 300
+must "the blank's nodes exist" \
+    [try "test -b /dev/ra1a && test -b /dev/ra1c && echo ND\$OK" "ND-ok" 300]
+must "mkbitfs writes the ${RBLKS}-block root" \
+    [try "/etc/mkbitfs /dev/ra1a $RBLKS && echo M1\$OK" "M1-ok" 1800]
+must "mkbitfs writes the ${UBLKS}-block /usr" \
+    [try "/etc/mkbitfs /dev/ra1c $UBLKS && echo M2\$OK" "M2-ok" 1800]
+
+sh "rm -rf $MNT; mkdir $MNT" 300
+must "the new root mounts"   [try "/etc/mount /dev/ra1a $MNT && echo MT\$OK" "MT-ok" 900]
+sh "mkdir $MNT/usr" 120
+must "the new /usr mounts"   [try "/etc/mount /dev/ra1c $MNT/usr && echo MU\$OK" "MU-ok" 900]
+
+# Every directory an install target writes into.  V10's mkdir makes ONE level
+# and prints `File exists' rather than failing, which is right for an additive
+# pass.
+foreach d {bin etc lib dev tmp n usr} { sh "mkdir $MNT/$d" 120 }
+foreach d {bin lib include games maps man doc adm tmp src jerq} {
+    sh "mkdir $MNT/usr/$d" 120
+}
+sh "mkdir $MNT/usr/lib/lex" 120
+sh "mkdir $MNT/usr/jerq/bin" 120
+sh "rm -rf $OBJ; mkdir $OBJ" 300
+
+# ================================================================= build ===
+# ONE SCRIPT, EVERY STAGE, READING ONLY THE PLAN.  A build that consults a
+# second list can disagree with its own plan, which is how a stage came to name
+# a makefile nobody generated.
+puts "\n===== the plan, stage by stage =====\n"
+
+foreach st {1 2 4 5 6} {
+    puts "\n----- stage $st -----\n"
+    set ok [run "sh $BLD $st $N $OURS $PLAN $OBJ $MNT /bin/cc /lib/ > /tmp/s$st.log 2>&1; sed -e '/^PLAN/!d' /tmp/s$st.log; echo PEND" \
+                "PEND" 14400]
+    note "stage $st ran to its end marker" $ok
+}
+
+note "the image has a C compiler" \
+    [try "test -s $MNT/bin/cc && test -s $MNT/lib/ccom && echo CC\$OK" "CC-ok" 600]
+note "and an assembler and a loader" \
+    [try "test -s $MNT/bin/as && test -s $MNT/bin/ld && echo AL\$OK" "AL-ok" 600]
+note "and libc" \
+    [try "test -s $MNT/lib/libc.a && echo LC\$OK" "LC-ok" 600]
+note "and a shell" \
+    [try "test -s $MNT/bin/sh && echo SH\$OK" "SH-ok" 600]
+
+run "echo INV; ls $MNT/bin | wc -l; ls $MNT/etc | wc -l; ls $MNT/usr/bin | wc -l; echo INVEND" "INVEND" 900
+
+# ============================================================== teardown ===
+# V10's KERNEL DOES NOT SYNC ON HALT and V8's does, so do not carry V8's habits
+# across.  lsys/md/machdep.c's boot() is two lines -- `if (howto&RB_HALT)
+# death();' -- and RB_NOSYNC is referenced nowhere.  The userland sync is the
+# whole flush, and sync(2) sets B_ASYNC and returns before the disk has the
+# block, so it is sync, wait, sync.
+#
+# AND /usr MUST BE UNMOUNTED.  V10's superblock records that a filesystem is
+# mounted; halting without unmounting leaves the flag set and the NEXT boot
+# answers `mount /dev/ra0c on /usr type 0: In use' and carries on into
+# multi-user with an empty /usr showing through.  Nothing reports an error after
+# that line -- it cost a whole run in which stage 1's toolchain was invisible.
+sh "cd /; sync" 300
+sh "/etc/umount -a" 1800
+sh "sync" 300
+sh "/bin/sleep 5" 120
+sh "sync" 300
+
+set bad [report]
+send "/etc/halt\r"
+# V10 prints `death', not V8's `halting'.  Waiting for the wrong word times out
+# on a machine that halted perfectly, and the provisioning restart then
+# relaunches over a guest that confirmed nothing.
+expect -timeout 300 -- "death" {} timeout { puts "v10-build: no death marker" }
+expect -timeout 300 -- "sim>" {} timeout { catch { send "\005" } }
+catch { send "quit\r" }
+catch { expect -timeout 60 -- eof {} timeout {} }
+catch { close }
+catch { wait -nowait }
+file delete $cfg
+exit [expr {$bad ? 1 : 0}]

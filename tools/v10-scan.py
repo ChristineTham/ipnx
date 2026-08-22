@@ -474,12 +474,37 @@ def dedupe(progs):
         name, d, dest, objs, libs, how, root = p
         parts = d.split("/")
         r = 0
+        # THE CANONICAL SOURCE OF A COMMAND OUTRANKS AN INCIDENTAL FILE OF THE
+        # SAME NAME, and without this the recursion actively made the plan
+        # worse: /bin/test came from milligan/jerq/src/sysmon/test (a 5620
+        # program), /usr/bin/tee from cmd/learn, /usr/bin/fmt from lbin/Mail
+        # and /usr/bin/pic from cmd/pascal/px.  Every one of those directories
+        # happens to contain a file named after a command it has nothing to do
+        # with -- learn has a tee.c because a lesson uses one.
+        #
+        # A command's own source is `cmd/NAME.c' (the loose Admin/Mk idiom) or
+        # `cmd/NAME/' (a unit named for it).  Nothing else may outrank those.
+        if len(parts) == 2 and parts[1] == "cmd" and how == "Admin/Mk":
+            r -= 16                      # cmd/NAME.c IS the command
+        # RECURSION IS THE WEAKEST EVIDENCE, so it loses to every real rule.
+        # It exists to find programs no build rule names, not to overrule one.
+        if how == "recursed":
+            r += 12
+        # A COMMAND DOES NOT COME OUT OF THE 5620 DISTRIBUTION.  milligan builds
+        # into /usr/jerq; if it is competing for /bin or /usr/bin, it is a
+        # coincidence of naming.
+        if root == "milligan" and not dest.startswith("/usr/jerq"):
+            r += 20
         # THE UNIT NAMED AFTER THE PROGRAM WINS, and this is not cosmetic:
         # cmd/yacc and cmd/picasso both build a `yacc', both explicit, both
         # three components deep -- a tie, broken by whichever the walk reached
         # first, which put picasso's yacc in the plan.  cmd/yacc is the yacc.
+        # A DIRECTORY NAMED FOR THE PROGRAM IS THE STRONGEST EVIDENCE, and it
+        # must beat the loose cmd/NAME.c below: where the tape has both,
+        # cmd/ed/ and cmd/sort/ are its SECOND GENERATION of each and the loose
+        # file is what they replaced.
         if parts[-1] == name:
-            r -= 8
+            r -= 20
         if parts[-1] in MACHDIR_KEEP and parts[-1] not in ("comm", "common"):
             r -= 4                       # the machine's own back end
         if how != "Admin/Mk":
@@ -501,26 +526,49 @@ def dedupe(progs):
     return sorted(best.values()), dropped
 
 
+# THE COMMANDS ARE NOT ALL UNDER cmd/, AND SCANNING ONLY cmd/ REPORTED THAT AS
+# A FACT ABOUT THE TAPE.  Same shape as "the 5620's compiler is not on the
+# tape", which was a fact about one tree stated about the project.  Four more
+# roots hold programs, and games is the one that shows it worst: 23 loose .c
+# files with a main() and NONE of them reached the plan.
+#
+#   games   ~23 loose .c plus atc/ mille/ rogue/ sail/ trek/ ...
+#   lbin    Mail, csh, kermit, mailx -- the Berkeley userland V8 carries
+#   dregs   xstr, restor variants
+#   local   site-local programs
+#
+# The install directory for games is /usr/games and it comes from V8's measured
+# disk, not from V10's manual -- V10 does not document games at all, and V8 puts
+# all twenty there.  cmd/Admin's `dest' has no opinion either, since its
+# if-chain falls through to /usr/bin for anything not in its four lists.
+LOOSE_AREAS = (("cmd", None),          # Admin decides
+               ("games", "/usr/games"),
+               ("lbin", "/usr/bin"),
+               ("dregs", "/usr/bin"),
+               ("local", "/usr/bin"))
+
+
 def loose_commands(tree_dir, admin):
-    """cmd/*.c with a main() -- the Admin/Mk idiom, no per-unit makefile."""
+    """Loose *.c with a main(), across every root that holds programs."""
     out = []
-    d = os.path.join(tree_dir, "cmd")
-    if not os.path.isdir(d):
-        return out
-    for f in sorted(os.listdir(d)):
-        if not f.endswith(".c"):
+    for area, fixed in LOOSE_AREAS:
+        d = os.path.join(tree_dir, area)
+        if not os.path.isdir(d):
             continue
-        p = os.path.join(d, f)
-        if not os.path.isfile(p):
-            continue
-        try:
-            if not MAIN.search(open(p, errors="replace").read()):
+        for f in sorted(os.listdir(d)):
+            if not f.endswith(".c"):
                 continue
-        except OSError:
-            continue
-        name = f[:-2]
-        out.append((name, admin.get(name, "/usr/bin"), [name + ".o"],
-                    "-", "Admin/Mk"))
+            p = os.path.join(d, f)
+            if not os.path.isfile(p):
+                continue
+            try:
+                if not MAIN.search(open(p, errors="replace").read()):
+                    continue
+            except OSError:
+                continue
+            name = f[:-2]
+            dest = fixed or admin.get(name, "/usr/bin")
+            out.append((name, dest, [name + ".o"], "-", "Admin/Mk", area))
     return out
 
 
@@ -623,6 +671,18 @@ def scan():
                 (".old", ".bak", ".orig")):
             parked.append(d)
             continue
+        # THE `oNAME' CONVENTION IS THE TAPE'S OWN WAY OF SAYING SUPERSEDED,
+        # and it is checked rather than assumed: the park applies only where
+        # the sibling NAME also exists.  cmd/sh's own makefile writes
+        # `mv /bin/sh /bin/osh' -- the o- prefix IS the backup -- and the tree
+        # carries osed0.c, olint1.c and OLDex_temp.c on the same principle.
+        # Measured here: oasd++/asd++, omovie/movie, ops/ps, osh/sh.
+        if (len(last) > 1 and last.startswith("o")
+                and os.path.isdir(os.path.join(TREE,
+                                               "/".join(parts[:-1]),
+                                               last[1:]))):
+            parked.append(d)
+            continue
         p = os.path.join(TREE, d, u["build"])
         try:
             text = open(p, errors="replace").read()
@@ -638,16 +698,86 @@ def scan():
             objs = expand_globs(objs, u["src"])
             progs.append((name, d, dest, objs, libs, how, u["root"]))
 
-    # the loose cmd/*.c, which have no makefile at all
+    # the loose *.c at the top of each area, which have no makefile at all
     for r in BUILD_ROOTS:
-        for name, dest, objs, libs, how in loose_commands(
+        for name, dest, objs, libs, how, area in loose_commands(
                 os.path.join(TREE, r), admin):
-            progs.append((name, r + "/cmd", dest, objs, libs, how, r))
+            progs.append((name, r + "/" + area, dest, objs, libs, how, r))
+
+    # ------------------------------------------------------ and RECURSE ---
+    # A DIRECTORY WITH SOURCES AND NO USABLE BUILD RULE STILL HOLDS PROGRAMS.
+    # Scanning only the top of each area left 54 directories under cmd/, three
+    # under games/ (adv, boggle, doctor) and one under lbin/ with a main() and
+    # no row -- either they carry no makefile at all, or they carry one this
+    # scan could not read a link out of.  Either way the tape has the source and
+    # the plan should say so.
+    #
+    # HOW MANY PROGRAMS A DIRECTORY HOLDS IS DECIDED BY ITS main()s, and the two
+    # cases must not be conflated:
+    #
+    #   one main    the program is the whole directory -- every object
+    #   many mains  one program per main, from ITS OWN object only.  71 units
+    #               carry more than one; pairing each main with ALL the unit's
+    #               objects would give cmd/awk a `maketab' carrying the whole
+    #               of awk, because ld pulls in every .o it is named.
+    have = {(p[1], p[0]) for p in progs}
+    havedir = {p[1] for p in progs}
+    for d, u in sorted(units.items()):
+        if u["root"] not in BUILD_ROOTS or d in havedir:
+            continue
+        if any(d == p or d.startswith(p + "/") for p in PARKED_DIRS):
+            continue
+        parts = d.split("/")
+        if parts[-1] in MACHDIR_DROP or len(parts) < 2:
+            continue
+        if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
+            continue
+        if parts[-1] in ("Old", "old", "new", "bak", "orig"):
+            continue
+        cs = [f for f in u["src"] if f.endswith(".c")]
+        if not cs:
+            continue
+        mains = []
+        for f in sorted(cs):
+            try:
+                if MAIN.search(open(os.path.join(TREE, d, f),
+                                    errors="replace").read()):
+                    mains.append(f)
+            except OSError:
+                pass
+        if not mains:
+            continue
+        area = parts[1] if len(parts) > 1 else "cmd"
+        fixed = "/usr/games" if area == "games" else None
+        for f in mains:
+            # ONE main() MEANS THE PROGRAM IS THE DIRECTORY.  cmd/pic and
+            # cmd/grap keep theirs in main.c, so naming the program after the
+            # FILE produced a `main' from each -- which then collided with
+            # every other main and was dropped as a duplicate, losing pic and
+            # grap outright.  This is the same blind spot that once left `sh'
+            # with no row: a survey asking "does cmd/X hold X.c" never finds a
+            # unit whose entry point is main.c.
+            name = parts[-1] if len(mains) == 1 else f[:-2]
+            if (d, name) in have:
+                continue
+            objs = ([c[:-2] + ".o" for c in sorted(cs)] if len(mains) == 1
+                    else [name + ".o"])
+            dest = fixed or admin.get(name, "/usr/bin")
+            progs.append((name, d, dest, objs, "-", "recursed", u["root"]))
+            have.add((d, name))
 
     progs, dropped = dedupe(progs)
+    # NO SILENT CAPS.  A unit can emit programs and still end with none, if
+    # every one of them loses a tie -- the recursion decides whether to fire
+    # from a `have' set computed BEFORE dedupe.  cmd/movie and cmd/spool do
+    # exactly that.  A plan that is short by two directories must say so;
+    # silence reads as "covered everything" when it did not.
+    final = {p[1] for p in progs}
+    emptied = sorted({d[1] for d in dropped} - final)
     return {"files": files, "roles": roles, "byroot": byroot,
             "units": units, "progs": progs, "archives": archives,
-            "admin": admin, "parked": parked, "dropped": dropped}
+            "admin": admin, "parked": parked, "dropped": dropped,
+            "emptied": emptied}
 
 
 # ------------------------------------------------------------------ plan ---
@@ -855,6 +985,11 @@ def main(argv):
         where = [p[1] for p in s["progs"] if p[0] == n and p[2] == d]
         print("      %s/%s  <- %s" % (d, n, ", ".join(where)))
 
+    if s["emptied"]:
+        print("   UNITS THAT BUILD NOTHING (every program lost a tie): %d"
+              % len(s["emptied"]))
+        for d in s["emptied"][:6]:
+            print("      %s" % d)
     rows = build_plan(s)
     body = emit(s, rows)
     if a.report:
