@@ -364,9 +364,24 @@ do
 	rm -rf w
 	mkdir w
 	cd w
-	# `cp f1 ... fn d' is V10's own -- cmd/cp/cp.c loops -- so a directory
-	# in the glob fails that one copy and every other file still lands.
-	cp $SD/* . 2>/dev/null
+	# COPY WHAT THIS PROGRAM NEEDS, NOT THE WHOLE DIRECTORY.  src/cmd holds
+	# 420 entries, so `cp $SD/* .' expands to some 17 KB of arguments -- far
+	# past V10's NCARGS -- and the copy fails ENTIRELY.  Every loose cmd
+	# program then lost its source and reported a missing object: 2,046 of
+	# them, which reads as a tape with no sources in it.  Headers are few
+	# and are taken wholesale; sources are named.
+	cp $SD/*.h . 2>/dev/null
+	for o in $objs
+	do
+		b=`echo $o | sed -e 's|.*/||'`
+		st3=`echo $b | sed -e 's|\.o$||'`
+		for e in c s y l
+		do
+			if test -s $SD/$st3.$e
+			then	cp $SD/$st3.$e . 2>/dev/null
+			fi
+		done
+	done
 	# A UNIT MAY SPAN TWO DIRECTORIES.  cmd/ccom is ONE program built from
 	# ccom/vax (the VAX back end) and ccom/common (the pcc front end): the
 	# objects are plain names but the SOURCES and HEADERS are split, so

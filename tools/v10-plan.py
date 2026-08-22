@@ -427,6 +427,12 @@ def rule_programs(text, srcs, admin):
     out, seen = [], set()
 
     def add(name, objs, libs, how, odir=""):
+        # AN INSTALL PATH MUST BE ABSOLUTE AND SINGLE-SLASHED.  Two rows came
+        # out as `../bin/basic' and `//etc/config' -- a relative destination
+        # from a macro that expanded to `..', and a doubled slash from one that
+        # expanded to the empty string.  Neither is a path the build can make.
+        if odir.startswith("..") or "//" in odir:
+            odir = ""
         if (not name or name in seen or name == "a.out"
                 or not NAMEOK.match(name)
                 or name.endswith((".o", ".a", ".x", ".c", ".h"))):
@@ -1100,7 +1106,21 @@ def build_plan(s):
                      "%d bytes -- our config, from source" % size))
     rows.append(("8", "/usr/man/**", "tree", "sellers/man", "-", "-",
                  "the tape's manuals"))
-    return rows
+    # AN INSTALL PATH MUST BE ABSOLUTE AND SINGLE-SLASHED.  Two rows came out
+    # as `../bin/basic' and `//etc/config' -- a relative destination from a
+    # macro that expanded to `..', and a doubled slash from one that expanded
+    # to the empty string.  Neither is a path the build can create; both fail
+    # at install time reading as a missing directory.  Guarded here, once,
+    # rather than at each of the four producers.
+    out = []
+    for r in rows:
+        p_ = r[1]
+        if p_.startswith('..'):
+            p_ = '/usr/bin/' + p_.rsplit('/', 1)[-1]
+        while '//' in p_:
+            p_ = p_.replace('//', '/')
+        out.append((r[0], p_) + tuple(r[2:]))
+    return out
 
 
 def emit(s, rows):

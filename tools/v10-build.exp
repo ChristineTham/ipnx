@@ -279,10 +279,19 @@ if {$STAGE == 1} {
     set USECC "$MNT/bin/cc"
     set USEBP "$MNT/lib/"
 }
-set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PEND" \
+# THE LITERAL IS BROKEN WITH A QUOTE PAIR, and this is not decoration.  The tty
+# echoes every character typed, so a command line containing `echo PEND' puts
+# PEND on the wire BEFORE the program has run -- and run's unanchored match
+# takes it as the answer.  The driver then moved on while build.sh was still
+# compiling: for stages 1, 2 and 4 the later expects absorbed the output and
+# the counts happened to survive, but for stage 6 the driver started typing
+# `cd /; sync' into a shell that was 1,500 compiles from finished.
+# `echo PE''ND' echoes harmlessly and still prints PEND.  A literal in the
+# QUESTION counts as an answer.
+set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PE''ND" \
             "PEND" 14400]
 note "stage $STAGE ran to its end marker" $ok
-run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILEND" "SFAILEND" 900
+run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILE''ND" "SFAILEND" 900
 
 # AN ASSERTION FOR A LATER STAGE IS NOT A FAILURE, IT IS A DELAY.  Checking for
 # libc and /bin/sh after stage 1 cost twenty minutes of timeouts on a run that

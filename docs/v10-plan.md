@@ -171,8 +171,6 @@ Everything else the scan found.
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
-| `../bin/basic` | build | `src/cmd/basic/basic` | `aputvars.o atof1.o basic.o bed.o bedutil.o bfiles.o binops.o breakpoint.o bsys.o call.o class.o copy.o def.o delete.o dim.o encode.o error.o eval.o fetch.o for.o getdims.o go.o if.o input.o let.o lex.o list.o load.o npredefs.o on.o option.o path.o pathopen.o print.o prnt_using.o putvars.o read.o reseq.o run.o save.o sigcatch.o sing.o spredefs.o strspace.o sub.o symtab.o sys.o while.o write.o` | `-lm -lPW` | explicit -O |
-| `//etc/config` | build | `src/cmd/config` | `y.tab.o main.o lex.yy.o mkioconf.o mkmakefile.o mkubglue.o mkheaders.o mkconf.o` | `-ll` | explicit -Od2 |
 | `/bin/adb` | build | `src/cmd/adb/comm` | `access.o command.o expr.o format.o input.o main.o message.o opset.o optab.o output.o pcs.o print.o regs.o runpcs.o setup.o sym.o mchio.o mchrun.o mchsys.o mchframe.o` | `-` | explicit -g |
 | `/bin/arff` | build | `src/cmd` | `arff.o` | `-` | Admin/Mk -O |
 | `/bin/at` | build | `src/cmd/at` | `at.o` | `-` | explicit -Od2 |
@@ -231,6 +229,7 @@ Everything else the scan found.
 | `/etc/bad144` | build | `src/cmd` | `bad144.o` | `-` | Admin/Mk -Od2 |
 | `/etc/chown` | build | `src/cmd` | `chown.o` | `-` | Admin/Mk -Od2 |
 | `/etc/clri` | build | `src/cmd` | `clri.o` | `-` | Admin/Mk -Od2 |
+| `/etc/config` | build | `src/cmd/config` | `y.tab.o main.o lex.yy.o mkioconf.o mkmakefile.o mkubglue.o mkheaders.o mkconf.o` | `-ll` | explicit -Od2 |
 | `/etc/cron` | build | `src/cmd` | `cron.o` | `-` | Admin/Mk -Od2 |
 | `/etc/dcheck` | build | `src/cmd` | `dcheck.o` | `-` | Admin/Mk -O |
 | `/etc/dmesg` | build | `src/cmd` | `dmesg.o` | `-` | Admin/Mk -Od2 |
@@ -343,6 +342,7 @@ Everything else the scan found.
 | `/usr/bin/bas` | build | `src/cmd/basic/bas` | `cmds.o def.o expr.o fns.o io.o main.o misc.o plot.o renum.o stack.o sym.o sys.o tokens.o wlib.o enter.o` | `-lm` | explicit -Od2 |
 | `/usr/bin/base-nested` | build | `src/cmd/cfront/ooptcfront/demo` | `base-nested.o` | `-` | scanned -Od2 |
 | `/usr/bin/basename` | build | `src/cmd` | `basename.o` | `-` | Admin/Mk -Od2 |
+| `/usr/bin/basic` | build | `src/cmd/basic/basic` | `aputvars.o atof1.o basic.o bed.o bedutil.o bfiles.o binops.o breakpoint.o bsys.o call.o class.o copy.o def.o delete.o dim.o encode.o error.o eval.o fetch.o for.o getdims.o go.o if.o input.o let.o lex.o list.o load.o npredefs.o on.o option.o path.o pathopen.o print.o prnt_using.o putvars.o read.o reseq.o run.o save.o sigcatch.o sing.o spredefs.o strspace.o sub.o symtab.o sys.o while.o write.o` | `-lm -lPW` | explicit -O |
 | `/usr/bin/basic.tmp` | build | `src/cmd/basic/basic` | `aputvars.o atof1.o basic.o bed.o bedutil.o bfiles.o binops.o breakpoint.o bsys.o call.o class.o copy.o def.o delete.o dim.o encode.o error.o eval.o fetch.o for.o getdims.o go.o if.o input.o let.o lex.o list.o load.o npredefs.o on.o option.o path.o pathopen.o print.o prnt_using.o putvars.o read.o reseq.o run.o save.o sigcatch.o sing.o spredefs.o strspace.o sub.o symtab.o sys.o while.o write.o` | `-` | explicit -O |
 | `/usr/bin/batch` | build | `src/cmd/netnews/src` | `batch.o` | `-` | explicit -DDEBUG -g -O -DDBM -DFOURTEENMAX |
 | `/usr/bin/bb` | build | `src/cmd/lcomp` | `bb.o` | `-` | scanned -Od2 |
