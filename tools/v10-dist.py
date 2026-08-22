@@ -74,6 +74,16 @@ PLACED = {
                 "/usr/630/lib and /usr/630/mbin"),
     "local":   ("usr/local",
                 "270 references to /usr/local, none to /usr/src/local"),
+    "vol2":    ("usr/vol2",
+                "40 SELF-references: vol2/index/tools/gettop opens "
+                "`M=/usr/vol2/index/tools' and sits at vol2/index/tools/gettop; "
+                "vol2/ADM/mkfile does `cd /usr/vol2'"),
+    "dk":      ("usr/src/dk",
+                "Datakit source, and v8 keeps its own at /usr/src/dk. The "
+                "/usr/dk strings in it are RUNTIME paths -- "
+                "`char *logfile = \"/usr/dk/LOGPROC\"' -- not the tree's home"),
+    "netfs":   ("usr/src/netfs",
+                "v8 keeps its own at /usr/src/netfs"),
     "maps":    ("usr/maps",
                 "cmd/map/export/mapdata is a SYMLINK to /usr/maps -- the tape "
                 "naming the path itself"),
@@ -81,30 +91,28 @@ PLACED = {
 
 # tree -> why it is not in the distribution
 LEFT = {
-    "blit":       "the 68000 Blit, a different terminal from the 5620 this "
-                  "project emulates. Its own tape, and no evidence of where a "
-                  "V10 machine kept it.",
-    "lsys":       "`local sys' -- one machine's kernel tree. sys/ is the "
-                  "vanilla one and is 1,134 files against lsys's 922, newer on "
-                  "111 of 266 differing files against 8, and carries more 780 "
-                  "support (52 `star' paths to 35).",
-    "history":    "five loose files left after history/ix was excluded; no "
-                  "evidence of where they belong.",
-    "dist":       "a distribution working directory, not a tree the machine "
-                  "carries.",
+    "blit":       "the 68000 Blit. Its own files name /usr/blit 228 times, so "
+                  "the PATH is not in doubt -- what is in doubt is whether a "
+                  "Tenth Edition machine carried it at all. It is a different "
+                  "terminal from the 5620 this project emulates, and the tape "
+                  "came bundled with V8-era material. Placement evidence is "
+                  "not shipping evidence.",
+    "lsys":       "`local sys' -- one machine's kernel tree, and it names "
+                  "itself nowhere. sys/ is the vanilla one: 1,134 files "
+                  "against lsys's 922, newer on 111 of 266 differing files "
+                  "against 8, and more 780 support (52 `star' paths to 35).",
+    "ncurses":    "a curses library beside the libcurses that IS in srctotape. "
+                  "Not in srctotape, not in v8's source tree, and it names "
+                  "itself nowhere.",
+    "libpicfile": "not in srctotape, not in v8's source tree, and it names "
+                  "itself nowhere -- despite the lib* spelling of its "
+                  "siblings.",
+    "history":    "five loose files left after history/ix was excluded; they "
+                  "name themselves nowhere.",
+    "dist":       "a distribution working directory, naming itself nowhere.",
     "dregs":      "the name is the tape's own verdict on it.",
-    "nbstests":   "a test corpus with no reference anywhere naming its home.",
-    "vol2":       "Volume 2 of the manual. 50 references to /usr/vol2, but it "
-                  "is not in srctotape and v8 keeps its papers at /usr/doc -- "
-                  "two plausible homes and no file that names one.",
-    "dk":         "Datakit, the network V10 lost. 20 references to /usr/dk, "
-                  "not in srctotape; a whole subsystem on weak evidence.",
-    "ncurses":    "not in srctotape and nothing names its path.",
-    "netfs":      "not in srctotape and nothing names its path.",
-    "libpicfile": "a library directory the tape's own /usr/src manifest does "
-                  "not list.",
+    "nbstests":   "a test corpus, naming itself nowhere.",
 }
-
 
 def main():
     ap = argparse.ArgumentParser()
