@@ -32,7 +32,7 @@ The walk is reconciled against the filesystem before any number here is printed;
 | 4 | The libraries | 14 |
 | 5 | The kernel | 1 |
 | 6 | The commands | 1,601 |
-| 7 | /dev, /etc, /usr/include | 297 |
+| 7 | /dev, /etc, /usr/include | 252 |
 | 8 | The manuals | 1 |
 
 ## Seen but not built: 52 directories
@@ -108,7 +108,7 @@ Built by the BUILDER's compiler into the new image, which is mounted throughout.
 | `/bin/ld` | build | `src/cmd` | `ld.o` | `-` | Admin/Mk -O |
 | `/etc/halt` | build | `src/cmd` | `halt.o` | `-` | Admin/Mk -Od2 |
 | `/lib/c2` | build | `src/cmd/c2` | `c20.o c21.o c22.o` | `-` | explicit |
-| `/lib/ccom` | build | `src/games/boggle` | `comp.o` | `-` | scanned |
+| `/lib/ccom` | build | `src/cmd/ccom/vax` | `cgram.o xdefs.o scan.o pftn.o trees.o optim.o local.o reader.o debug.o common1.o pjw.o gencode.o genaux.o printx.o lookup.o lcatch2.o catch2.o genmore.o` | `-` | explicit |
 | `/lib/cpp` | build | `src/cmd/cpp` | `cpp.o cpy.o rodata.o yylex.o` | `-` | explicit |
 | `/usr/bin/sleep` | build | `src/cmd` | `sleep.o` | `-` | Admin/Mk -Od2 |
 | `/usr/bin/yacc` | build | `src/cmd/yacc` | `y1.o y2.o y3.o y4.o` | `-` | explicit |
@@ -294,7 +294,6 @@ Everything else the scan found.
 | `/usr/bin/AllCharges` | copy | `src/cmd/AllCharges.sh` | `-` | `-` | a shell script -- Admin/Mk installs it, never compiles |
 | `/usr/bin/CATALOG` | build | `milligan/jerq/icon/16x16` | `CATALOG.o` | `-` | scanned |
 | `/usr/bin/Charges` | copy | `src/cmd/Charges.sh` | `-` | `-` | a shell script -- Admin/Mk installs it, never compiles |
-| `/usr/bin/DRIVE.pro` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o driver1.o driver2.o driver3.o grap.o` | `-ljobs` | explicit |
 | `/usr/bin/EWD` | build | `milligan/jerq/demo/src` | `EWD.o` | `-` | scanned |
 | `/usr/bin/Efix` | build | `src/cmd/efl/efixsrc` | `main.o process.o` | `-` | explicit |
 | `/usr/bin/F2cargs` | build | `src/cmd/f2c/misc` | `F2cargs.o` | `-` | scanned |
@@ -308,7 +307,6 @@ Everything else the scan found.
 | `/usr/bin/Opostgif` | build | `src/cmd/post.src/postgif` | `Opostgif.o` | `-` | scanned |
 | `/usr/bin/Oserver` | build | `src/cmd/server` | `Oserver.o` | `-` | scanned |
 | `/usr/bin/Q2snap` | build | `src/cmd/qsnap` | `Q2snap.o` | `-` | scanned |
-| `/usr/bin/SAIL.pro` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o version.o player1.o player2.o` | `-lcurses -ltermlib -ljobs` | explicit |
 | `/usr/bin/UClocal2` | build | `src/cmd/pcc1/pcc` | `UClocal2.o` | `-` | scanned |
 | `/usr/bin/VHashAssoc` | build | `src/cmd/cfront/ooptcfront/demo` | `VHashAssoc.o` | `-` | scanned |
 | `/usr/bin/WWB/double` | build | `src/cmd/wwb` | `double.o cbtype.o` | `-` | explicit |
@@ -673,7 +671,6 @@ Everything else the scan found.
 | `/usr/bin/incr` | build | `src/cmd/lcc/tst` | `incr.o` | `-` | scanned |
 | `/usr/bin/ind0` | build | `src/cmd/cref` | `ind0.o` | `-` | scanned |
 | `/usr/bin/inews` | build | `src/cmd/netnews/src` | `inews.o ifuncs.o iextern.o control.o fullname.o ipathinit.o funcs.o getdate.o header.o` | `-ldbm` | explicit |
-| `/usr/bin/info` | build | `src/games/sail` | `info.o globals.o` | `-` | explicit |
 | `/usr/bin/inspkg` | build | `src/cmd/asd` | `inspkg.o` | `-` | explicit |
 | `/usr/bin/int1` | build | `src/cmd/lcc/ph` | `int1.o` | `-` | scanned |
 | `/usr/bin/int10` | build | `src/cmd/lcc/ph` | `int10.o` | `-` | scanned |
@@ -709,7 +706,6 @@ Everything else the scan found.
 | `/usr/bin/jukebox` | build | `src/cmd/worm/scsi` | `jukebox.o juke.a scsish.a scsi.a` | `-` | explicit |
 | `/usr/bin/junk` | build | `src/cmd/qsnap` | `junk.o` | `-` | scanned |
 | `/usr/bin/junk1` | build | `src/man/man1` | `junk1.o` | `-` | scanned |
-| `/usr/bin/k.out` | build | `src/games/rogue` | `vers.o armor.o chase.o command.o daemon.o daemons.o fight.o init.o io.o list.o main.o misc.o monsters.o move.o new_level.o options.o pack.o passages.o potions.o rings.o rip.o rooms.o save.o scrolls.o sticks.o things.o weapons.o wizard.o sprintf.o /usr/lib/libcurses.a /usr/lib/libtermlib.a` | `-` | explicit |
 | `/usr/bin/kaiser` | build | `src/cmd/refer` | `kaiser.o` | `-` | scanned |
 | `/usr/bin/keydo` | build | `src/cmd/ap/apkeys` | `apsel.o y.tab.o par.o shell.o suft.o` | `-` | explicit |
 | `/usr/bin/keywords` | build | `src/cmd/lcc/etc` | `keywords.o` | `-` | scanned |
@@ -1155,7 +1151,6 @@ Everything else the scan found.
 | `/usr/bin/override` | build | `src/cmd/cfront/ooptcfront/demo` | `override.o` | `-` | scanned |
 | `/usr/bin/owcopy` | build | `src/cmd/worm` | `owcopy.o` | `-` | scanned |
 | `/usr/bin/p` | build | `src/cmd/p` | `p.o spname.o pad.o` | `-` | explicit |
-| `/usr/bin/p.out` | build | `src/games/rogue` | `/usr/lib/libcurses.a /usr/lib/libtermlib.a` | `-` | explicit |
 | `/usr/bin/pack` | build | `src/cmd/pack` | `pack.o` | `-` | explicit |
 | `/usr/bin/paranoia` | build | `src/cmd/lcc/tst` | `paranoia.o` | `-` | scanned |
 | `/usr/bin/parts` | copy | `src/cmd/style/parts.sh` | `-` | `-` | a shell script -- Admin/Mk installs it, never compiles |
@@ -1274,7 +1269,6 @@ Everything else the scan found.
 | `/usr/bin/rcc` | build | `src/cmd/lcc/c` | `/dag.o /decl.o /enode.o /error.o /expr.o /init.o /input.o /lex.o /main.o /output.o /profio.o /simp.o /stmt.o /string.o /sym.o /tree.o /types.o` | `-` | explicit |
 | `/usr/bin/rcp` | build | `src/ipc/bin` | `rcp.o` | `-` | scanned |
 | `/usr/bin/rdhdr` | build | `src/cmd/usgmake` | `rdhdr.o` | `-` | scanned |
-| `/usr/bin/readdump` | build | `src/games/mille` | `readdump.o extern.o varpush.o` | `-` | explicit |
 | `/usr/bin/readnews` | build | `src/cmd/netnews/src` | `readnews.o rfuncs.o rfuncs2.o rextern.o readr.o process.o rpathinit.o digest.o funcs.o getdate.o header.o` | `-` | explicit |
 | `/usr/bin/readrast` | build | `src/cmd/dimpress` | `glob.o misc.o readrast.o rast.o rotate.o` | `-` | explicit |
 | `/usr/bin/readslow` | build | `src/cmd` | `readslow.o` | `-` | Admin/Mk -Od2 |
@@ -1313,7 +1307,6 @@ Everything else the scan found.
 | `/usr/bin/road` | build | `milligan/jerq/demo/src` | `road.o` | `-` | scanned |
 | `/usr/bin/rogin` | build | `src/ipc/bin` | `rogin.o` | `-` | scanned |
 | `/usr/bin/rogind` | build | `src/ipc/servers` | `rogind.o` | `-lin` | explicit |
-| `/usr/bin/rogue` | build | `src/games/rogue` | `vers.o armor.o chase.o command.o daemon.o daemons.o fight.o init.o io.o list.o main.o misc.o monsters.o move.o new_level.o options.o pack.o passages.o potions.o rings.o rip.o rooms.o save.o scrolls.o sticks.o things.o weapons.o wizard.o sprintf.o` | `-` | a.out |
 | `/usr/bin/rose` | build | `milligan/jerq/demo/src` | `rose.o` | `-` | scanned |
 | `/usr/bin/route` | build | `src/ipc/internet` | `route.o ../libin/libin.a ../libipc/libipc.a` | `-` | explicit |
 | `/usr/bin/routed` | build | `src/ipc/internet` | `routed.o ../libin/libin.a ../libipc/libipc.a ../mgrs/common/libcommon.a` | `-` | explicit |
@@ -1382,7 +1375,6 @@ Everything else the scan found.
 | `/usr/bin/spline` | build | `src/cmd` | `spline.o` | `-` | Admin/Mk -Od2 |
 | `/usr/bin/split` | build | `src/cmd` | `split.o` | `-` | Admin/Mk -Od2 |
 | `/usr/bin/sprog` | build | `src/cmd/spell` | `sprog.o` | `-` | explicit |
-| `/usr/bin/sread` | build | `src/games/atc` | `sread.o` | `-` | explicit |
 | `/usr/bin/ss` | build | `src/cmd/sdb` | `ss.o` | `-` | scanned |
 | `/usr/bin/ssmux` | build | `milligan/jerq/src/mux` | `smux.o pcheck.o pinit.o precv.o psend.o ptimeout.o` | `-` | explicit |
 | `/usr/bin/stab` | build | `src/cmd/strip` | `stab.o rdout.o prtsym.o` | `-` | explicit |
@@ -1414,7 +1406,6 @@ Everything else the scan found.
 | `/usr/bin/szal2.1` | build | `src/cmd/cfront` | `szal2.1.o` | `-` | scanned |
 | `/usr/bin/t` | build | `src/cmd/view2d` | `t.o` | `-` | explicit |
 | `/usr/bin/ta` | build | `src/cmd/troff` | `ta.o draw.o` | `-lm` | explicit |
-| `/usr/bin/table` | build | `src/games/mille` | `table.o extern.o` | `-` | explicit |
 | `/usr/bin/tabs` | build | `src/cmd` | `tabs.o` | `-` | Admin/Mk -Od2 |
 | `/usr/bin/tail` | build | `src/cmd` | `tail.o` | `-` | Admin/Mk -Od2 |
 | `/usr/bin/tape` | build | `src/cmd` | `tape.o` | `-` | Admin/Mk -O |
@@ -1620,6 +1611,8 @@ Everything else the scan found.
 | `/usr/bin/zarf` | build | `src/netfs/serv` | `zarf.o except.o libdir.o ../libnetb/libnetb.a` | `-` | explicit |
 | `/usr/bin/zcat` | link | `compress` | `-` | `-` | a second name for compress -- the tape's own ln |
 | `/usr/bin/zero` | build | `src/cmd` | `zero.o` | `-` | Admin/Mk -Od2 |
+| `/usr/games/DRIVE.pro` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o driver1.o driver2.o driver3.o grap.o` | `-ljobs` | explicit |
+| `/usr/games/SAIL.pro` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o version.o player1.o player2.o` | `-lcurses -ltermlib -ljobs` | explicit |
 | `/usr/games/adv` | build | `src/games/adv` | `adv.o` | `-` | scanned |
 | `/usr/games/ana` | build | `src/games` | `ana.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/arithmetic` | build | `src/games` | `arithmetic.o` | `-` | Admin/Mk -Od2 |
@@ -1638,20 +1631,27 @@ Everything else the scan found.
 | `/usr/games/hangman` | build | `src/games` | `hangman.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/hanoi` | build | `src/games` | `hanoi.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/imp` | build | `src/games` | `imp.o` | `-` | Admin/Mk -Od2 |
+| `/usr/games/info` | build | `src/games/sail` | `info.o globals.o` | `-` | explicit |
+| `/usr/games/k.out` | build | `src/games/rogue` | `vers.o armor.o chase.o command.o daemon.o daemons.o fight.o init.o io.o list.o main.o misc.o monsters.o move.o new_level.o options.o pack.o passages.o potions.o rings.o rip.o rooms.o save.o scrolls.o sticks.o things.o weapons.o wizard.o sprintf.o /usr/lib/libcurses.a /usr/lib/libtermlib.a` | `-` | explicit |
 | `/usr/games/lib/driver` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o driver1.o driver2.o driver3.o grap.o` | `-ljobs` | explicit |
 | `/usr/games/lib/small` | build | `src/games/word_clout` | `small.o regcomp.o regerror.o regexec.o regsub.o` | `-lm` | explicit |
 | `/usr/games/mille` | build | `src/games/mille` | `comp.o end.o extern.o init.o mille.o misc.o move.o print.o roll.o save.o types.o varpush.o` | `-lcurses -ltermlib` | explicit |
 | `/usr/games/morse` | build | `src/games` | `morse.o` | `-` | Admin/Mk -Od2 |
+| `/usr/games/p.out` | build | `src/games/rogue` | `/usr/lib/libcurses.a /usr/lib/libtermlib.a` | `-` | explicit |
 | `/usr/games/pacr` | build | `src/games/pacman` | `pacman.o monster.o util.o` | `-ltermlib -lcurses` | explicit |
 | `/usr/games/ppt` | build | `src/games` | `ppt.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/psych` | build | `src/games` | `psych.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/quiz` | build | `src/games` | `quiz.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/rain` | build | `src/games/rain` | `rain.o` | `-ltermlib` | explicit |
+| `/usr/games/readdump` | build | `src/games/mille` | `readdump.o extern.o varpush.o` | `-` | explicit |
 | `/usr/games/rnd` | build | `src/games` | `rnd.o` | `-` | Admin/Mk -Od2 |
+| `/usr/games/rogue` | build | `src/games/rogue` | `vers.o armor.o chase.o command.o daemon.o daemons.o fight.o init.o io.o list.o main.o misc.o monsters.o move.o new_level.o options.o pack.o passages.o potions.o rings.o rip.o rooms.o save.o scrolls.o sticks.o things.o weapons.o wizard.o sprintf.o` | `-` | a.out |
 | `/usr/games/rot` | build | `src/games` | `rot.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/sail` | build | `src/games/sail` | `assorted.o boarders.o game.o parties.o screen.o main.o globals.o version.o player1.o player2.o` | `-lcurses -ltermlib -ljobs` | explicit |
 | `/usr/games/sail.log` | build | `src/games/sail` | `sail.log.o globals.o` | `-` | explicit |
 | `/usr/games/say` | build | `src/games` | `say.o` | `-` | Admin/Mk -Od2 |
+| `/usr/games/sread` | build | `src/games/atc` | `sread.o` | `-` | explicit |
+| `/usr/games/table` | build | `src/games/mille` | `table.o extern.o` | `-` | explicit |
 | `/usr/games/thanks` | build | `src/games` | `thanks.o` | `-` | Admin/Mk -Od2 |
 | `/usr/games/trek` | build | `src/games/trek` | `abandon.o attack.o checkcond.o compkl.o computer.o damage.o destruct.o dock.o dump.o events.o externs.o extra.o getcodi.o getpar.o help.o impulse.o initquad.o input.o kill.o klmove.o log.o lose.o lrscan.o main.o move.o new.o nova.o phaser.o play.o printf.o query.o ram.o ranf.o report.o rest.o schedule.o score.o setup.o setwarp.o shell.o shield.o snova.o srscan.o ssradio.o torped.o visual.o warp.o win.o` | `-lm` | explicit |
 | `/usr/games/worm` | build | `src/games` | `worm.o` | `-` | Admin/Mk -Od2 |
@@ -1777,7 +1777,7 @@ Everything else the scan found.
 
 The tables and the headers.
 
-297 paths.
+252 paths.
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
@@ -2029,55 +2029,10 @@ The tables and the headers.
 | `/etc/profile` | copy | `v10/src/etc/profile` | `-` | `0644` | 36 bytes -- our config, from source |
 | `/etc/rc` | copy | `v10/src/etc/rc` | `-` | `0644` | 419 bytes -- our config, from source |
 | `/etc/rc.pre` | copy | `v10/src/etc/rc.pre` | `-` | `0644` | 76 bytes -- our config, from source |
-| `/etc/termcap` | copy | `src/cmd/termcap/termcap.obj` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 | `/etc/ttys` | copy | `v10/src/etc/ttys` | `-` | `0644` | 74 bytes -- our config, from source |
 | `/etc/utmp` | copy | `v10/src/etc/utmp` | `-` | `0644` | 0 bytes -- our config, from source |
 | `/etc/whoami` | copy | `v10/src/etc/whoami` | `-` | `0644` | 9 bytes -- our config, from source |
-| `/tmp/$$` | copy | `src/cmd/chuck/a.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/calendar` | copy | `src/cmd/calendar/calendar` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/cbt` | copy | `src/cmd/cbt/cbt` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/compat` | copy | `src/cmd/compat/v7run` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/ipa` | copy | `src/cmd/ipa/ipa` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/sed` | copy | `src/cmd/sed/sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/snocone` | copy | `src/cmd/snocone/sc2` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/spitbol` | copy | `src/cmd/spitbol/newspit` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/strip` | copy | `src/cmd/strip/strip.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/bin/units` | copy | `src/cmd/units/units` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/games/${SAIL.LOG}` | copy | `src/games/sail/sail.log` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/games/lib/atc` | copy | `src/games/atc/airspaces` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/games/lib/saildriver` | copy | `src/games/sail/driver` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/games/word_clout` | copy | `src/games/word_clout/word_clout` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/include` | copy | `src/ipc/h/ipc.h` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 | `/usr/include/**` | tree | `include` | `-` | `-` | r70's reconstruction, 336 files |
-| `/usr/ipc/mgrs` | copy | `src/ipc/mgrs/dkmgr/dkmgr` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/jerq/bin/graphdraw` | copy | `milligan/jerq/src/graphdraw/graphdraw` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/jerq/bin/graphdraw.h` | copy | `milligan/jerq/src/graphdraw/graphdraw.h` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/jerq/include` | copy | `milligan/jerq/src/lib/pot/pot.pub` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/apsend` | copy | `src/cmd/apsend/apsend` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/asd` | copy | `src/cmd/asd++/dlist` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/calendar3` | copy | `src/cmd/calendar/calendar3` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/dired` | copy | `src/cmd/dired/dired.help` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/docgen` | copy | `src/cmd/docgen/mcsdata` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/ideal/ideal` | copy | `src/cmd/ideal/a.out` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/lex/ncform` | copy | `src/cmd/lex/ncform` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/libpc.a` | copy | `src/cmd/pascal/libpc/libpc` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/prefer` | copy | `src/cmd/prefer/prefawk/prefawk` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/style` | copy | `src/cmd/wwb/acro.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/style/dict.d` | copy | `src/cmd/diction/dict.d` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/style/macs.tr` | copy | `src/cmd/diction/macs.tr` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/style/script.sed` | copy | `src/cmd/wwb/script.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/style/suggest.d` | copy | `src/cmd/diction/suggest.d` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/tmac/cstrans` | copy | `src/cmd/docgen/cstrans` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/tmac/name.sed` | copy | `src/cmd/docgen/name.sed` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/upas/route` | copy | `src/cmd/nupas/config/112clients/route` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/upas/smtproute` | copy | `src/cmd/nupas/config/112clients/smtproute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/upas/uucproute` | copy | `src/cmd/nupas/config/112clients/uucproute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/upas/xunetroute` | copy | `src/cmd/nupas/config/112clients/xunetroute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/vis.help` | copy | `src/cmd/visi/helpfile` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/lib/yaccpar` | copy | `src/cmd/yacc/yaccpar` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/man/man1` | copy | `src/cmd/bcp/bcp.1` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/maps/map` | copy | `src/cmd/map/map` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
-| `/usr/spool/ap` | copy | `src/cmd/ap/apkeys/distribute` | `-` | `-` | data the tape installs -- a command without it fails in a way that reads as a different bug |
 
 ## Stage 8 — The manuals
 
