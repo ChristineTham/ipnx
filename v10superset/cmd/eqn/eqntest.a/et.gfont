@@ -1,0 +1,28 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.gfont:
+.EQ
+gfont I
+gfont B
+x sub 123 ~~~
+123 roman 456 789 ~~~
+(abc) ~~~
+()[] ~~~
+.EN
+.EQ
+gfont R
+x sub 123 ~~~
+123 italic 456 789 ~~~
+(abc) ~~~
+()[] ~~~
+.EN
+.EQ
+gfont roman
+hello world 123
+.EN
+.EQ
+gfont bold
+now is the time
+.EN

@@ -1,0 +1,117 @@
+.so nmac
+.ds NM UNSU
+.ul
+.ce
+UNSU-Service and Utility Programs
+.TL
+(1025) Synthetic English Speech by Rule
+.AU
+M. D. Mcilroy
+TM 73-1271-7
+.TL
+(1031) YAPP (Yet Another Plotting Package)
+.AU
+R.H. Bradley
+B.N. Dickman
+May l0, l974
+Memorandum for File describing a plotting package for the
+GSI terminal under UNIX.
+.TL
+(1035) Description of the LPR Program
+.AU
+I. A. Winheim
+July 23, 1974
+.TL
+(1003) Implementation of Large Contiguous Files and Asynchronous
+.AU
+I/O in UNIX
+H. Lycklama
+TM 74-1352-1
+This document describes physical I/O for the 
+UNIX - A (assembler ) based system.
+.TL
+(1020) Structured File Scanner
+.AU
+L. A. Dimino
+TM 74-1271-2
+A description of a file maintenance system.
+.TL
+(1023) Date Manipulation Subroutines
+.AU
+F. S. Menzel
+Programmer's Notes.
+.TL
+(1024) Snapshot() - A Callable Core Snapshot Function for 
+  Debugging Programs
+.AU
+S. T. Schuyler
+Programmer's Notes.
+.TL
+(1057) Calling UNIX System Entries from Fortran
+  or Going to Sleep in Fortran.
+.AU
+I. A. Winheim
+June 25, 1975
+MF 75-8234-30
+This memorandum describes the Sleep routine, 
+as well as how a user's written assembly
+language subroutine interfaces to Fortran.
+.TL
+(1060) SYSGEN Shell Procedure Creating
+A New File System.
+.AU
+I. A. Winheim
+July 25, 1975
+SYSGEN, a shell procedure to generate new systems,
+and to recompile portions of the generated systems,
+has been added to UNIX Release 2.
+.TL
+(1065) A Description of the Unix File System.
+.AU
+J. F. Maranzano
+September 16, 1975
+MF 75-8234-32
+This memorandum describes the structure of the
+file system as well as the applicable control
+blocks.
+.TL
+(1068) UNIXLIST - An IBM/370 Utility Program to List a 
+  UNIX File Stored on a 9-Track Magnetic Tape.
+.AU
+C. S. Roberts
+January 29, 1975
+Memorandum For Record
+.TL
+(1078) Make - A program For Maintaining Computer Programs.
+.AU
+S. I. Feldman
+December 5, 1975
+TM 75-1274-26
+This memo describes a program called MAKE that provides
+a simple mechanism for maintaining up-to-date versions
+of programs that result from many operations on a  number 
+of files.
+.TL
+(1081) A Tape Back-Up system For The Network File Store.
+.AU
+R. J. Elliott
+November 24, 1975
+TM 75-1273-12
+This paper describes a system which maintains a complete
+copy on tape of all files on the file store of the Spider
+Network.
+.TL
+(1101) A Regular Expression Matcher For The C Language.
+.AU
+A. L. Sabsevitz
+June 2, 1976
+TM 76-9141-5
+This memoranudm describes a primitive regular expression
+matching facility written for language C.  Routines have
+been provided to compile regular expressions and to apply
+such compiled expressions to string subjects.
+.TL
+(1107) Programmmer's Workbench Papers To Be Presented At The
+  Second International Conference On Software Engineering.
+.AU
+For complete information, see UNED

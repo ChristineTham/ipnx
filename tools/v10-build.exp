@@ -37,6 +37,12 @@ set pport [lindex $argv 3]
 set STAGE [lindex $argv 4]
 if {$STAGE eq ""} { set STAGE 1 }
 set ONLY [lindex $argv 5]
+# THE WRITABLE SHARE.  build.sh's whole output goes to /tmp/s.log on a guest
+# that halts at the end of the run, and only twenty lines of it were ever
+# brought back -- so a stage with a thousand failures reported twenty
+# diagnostics and killed the evidence for the rest.  This copies the log out
+# before the halt.
+set lport [lindex $argv 6]
 
 set SIM   "$ROOT/work/opensimh/BIN/vax780"
 set ROM   "$ROOT/v10/source/src/lsys/boot/star/uda"
@@ -54,6 +60,7 @@ set N    $V10/source
 set OURS $V10/src
 set BLD  $V10/mk/build.sh
 set PLAN /n/plan
+set LOGD /n/log
 
 # ra_sizes[] IS IN 512-BYTE SECTORS, NOT BLOCKS: a is 10,240 sectors = 1,280
 # blocks of 4096, c is 249,848 of which MAXSMALL (30,752 blocks) keeps the free
@@ -215,9 +222,13 @@ sh "OK=-ok" 60
 # several */' and nadomount() gives EBUSY for a repeat, so two shares mounted
 # with the same dev fail on the second -- both asked for (fstyp 1, dev 0, ino 2)
 # and the first still holds that inode.
-sh "mkdir /n; mkdir $V10; mkdir $PLAN" 120
+sh "mkdir /n; mkdir $V10; mkdir $PLAN; mkdir $LOGD" 120
 must "v10 mounts"           [try "/etc/nafsmnt 10.0.2.2 $vport $V10  0" "mounted on" 900]
 must "the plan mounts"      [try "/etc/nafsmnt 10.0.2.2 $pport $PLAN 1" "mounted on" 900]
+# ONE DEVICE NUMBER PER MOUNT: the log gets 2, because 0 and 1 are taken and a
+# repeat answers `nafsmnt: fmount: In use' -- both mounts would be asking for
+# (fstyp 1, dev N, ino 2) and the first still holds that inode.
+must "the log share mounts" [try "/etc/nafsmnt 10.0.2.2 $lport $LOGD 2" "mounted on" 900]
 must "the tape is readable" [try "test -d $N/src/cmd/as && echo RD\$OK" "RD-ok" 300]
 must "the plan is readable" [try "test -s $PLAN/v10-plan.md && echo PL\$OK" "PL-ok" 300]
 must "build.sh is readable" [try "test -s $BLD && echo BS\$OK" "BS-ok" 300]
@@ -292,6 +303,12 @@ if {$STAGE == 1} {
 set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP '$ONLY' > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PE''ND" \
             "PEND" 14400]
 note "stage $STAGE ran to its end marker" $ok
+# THE WHOLE LOG COMES HOME FIRST, and the twenty-line digest is only a digest.
+# Copying before the summary matters: if anything below bails, the evidence is
+# already on the host.
+run "cp /tmp/s.log $LOGD/stage$STAGE.log; echo CPD''ONE" "CPDONE" 1800
+note "the stage log reached the host" \
+    [try "test -s $LOGD/stage$STAGE.log && echo LG\$OK" "LG-ok" 300]
 run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILE''ND" "SFAILEND" 900
 
 # AN ASSERTION FOR A LATER STAGE IS NOT A FAILURE, IT IS A DELAY.  Checking for

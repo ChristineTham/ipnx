@@ -1,0 +1,6 @@
+getwd.o
+killpg.o
+setpgrp.o
+signal.o
+sigset.o
+wait3.o

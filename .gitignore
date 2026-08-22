@@ -43,11 +43,20 @@ libdmd/*.pgm
 libdmd/*.png
 __pycache__/
 
-# THE EXTRACTED TAPE IS SOURCE, WHATEVER ITS SUFFIX.  v10/source holds the
-# six V10 archives unpacked file by file, and nine of those files are named
+# THE RECONSTRUCTED TREE IS SOURCE, WHATEVER ITS SUFFIX.  v10/ is the superset
+# of the six tapes built by tools/v10-tree.py, and some of its files are named
 # *.tar or *.cpio -- source packages under cmd/, the same shape as the .c.a
-# archives.  The rules above exist to keep BUILT artefacts (disk images,
-# tapes) out of git; they are not about the tape's own contents, and without
-# this exception the extract silently loses nine files.
-!v10/source/**
-v10/READ.jsonl
+# archives.  The rules above exist to keep BUILT artefacts (disk images, tapes)
+# out of git; they are not about the tape's own contents, and without this
+# exception the tree silently loses those files.
+!v10superset/**
+!v10/**
+v10superset/READ.jsonl
+
+# THE PRISTINE EXTRACTS ARE NOT COMMITTED, and that is a deliberate trade.
+# v10tapes/ is 514 MB and is reproducible byte for byte by tools/v10-tapes.sh
+# from the six archives in work/, which its MANIFEST records with a hash per
+# file.  What IS committed is v10/ -- the tree the build reads -- so a question
+# about what we build from is a git grep, while a question about what a
+# particular TAPE says is one extract away and provable against the manifest.
+v10tapes/

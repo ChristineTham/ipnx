@@ -1,0 +1,19 @@
+.in +10
+.po +10
+.de TL
+.ne 10
+.sp 2
+.in -5
+.ti -5
+.fi
+..
+.de PG
+'sp 2
+.tl ''\\*(NM-%''
+'bp
+..
+.de AU
+.in +5
+.nf
+..
+.wh 56 PG

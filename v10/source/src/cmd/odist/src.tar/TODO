@@ -1,7 +1,0 @@
-finish new setuid scheme
-write document
-add security configuration file support
-(idea: receive reads this file, which looks like:
-local-user remote-system	remote-user	remote-file	actions...)
-set up two-pass install/remove scheme
-make a backup package before installation

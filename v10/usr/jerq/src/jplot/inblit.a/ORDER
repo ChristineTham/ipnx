@@ -1,0 +1,7 @@
+graphics.c
+jfill.c
+nbltpar.c
+outc.c
+term.c
+jcom.h
+jjplot.h

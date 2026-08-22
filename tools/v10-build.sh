@@ -36,7 +36,14 @@ MAKEBLANK=$([[ "$STAGE" == 1 ]] && echo yes || echo no)
 CLONE="$GOLD/build-builder.img"
 LOG="$ROOT/work/v10-build.log"
 NETFSD="$ROOT/netfs/.build/release/netfsd"
-VPORT="${VPORT:-9340}"; PPORT="${PPORT:-9341}"
+VPORT="${VPORT:-9340}"; PPORT="${PPORT:-9341}"; LPORT="${LPORT:-9342}"
+# A WRITABLE SHARE, SO THE RUN'S OWN EVIDENCE OUTLIVES IT.  build.sh's
+# full output lives at /tmp/s.log on a guest that is about to halt, and the
+# driver only ever brought back twenty lines of it -- so a stage reporting
+# 1,046 failures produced twenty diagnostics and the other thousand died
+# with the machine.  Every conclusion drawn from that sample was drawn from
+# a sample.  netfs is read/write, so the log comes home whole.
+LOGDIR="$ROOT/work/v10log"
 
 # ------------------------------------------------------------- the inputs ---
 [[ -e "$BUILDER" ]]          || { echo "v10-build: no $BUILDER"; exit 1; }
@@ -66,6 +73,8 @@ trap 'for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done' EXIT
 serve() { "$NETFSD" -p "$1" -v "$2" > "$ROOT/work/netfs-build-$3.log" 2>&1 & PIDS+=($!); }
 serve "$VPORT" "$ROOT/v10"   v10
 serve "$PPORT" "$ROOT/docs"  plan
+mkdir -p "$LOGDIR"
+serve "$LPORT" "$LOGDIR"    log
 sleep 1
 for p in "${PIDS[@]}"; do
     kill -0 "$p" 2>/dev/null || { echo "netfsd died"; tail -5 "$ROOT"/work/netfs-build-*.log; exit 1; }
@@ -100,7 +109,7 @@ rm -f "$CLONE"
 cp -c "$BUILDER" "$CLONE" 2>/dev/null || cp "$BUILDER" "$CLONE"
 
 rm -f "$LOG"
-expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" "$STAGE" "$ONLY" 2>&1 | tee "$LOG"
+expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" "$STAGE" "$ONLY" "$LPORT" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------- the boot block ---
@@ -124,5 +133,6 @@ echo "== v10-build =="
 echo "   image    $OUT"
 echo "   builder  $(basename "$BUILDER")  (cloned; the original is untouched)"
 echo "   log      $LOG"
+echo "   stage    $LOGDIR/stage$STAGE.log  ($(wc -l < "$LOGDIR/stage$STAGE.log" 2>/dev/null | tr -d ' ') lines)"
 echo "== v10-build exit $rc =="
 exit "$rc"

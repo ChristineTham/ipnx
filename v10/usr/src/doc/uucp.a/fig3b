@@ -1,0 +1,49 @@
+.bp
+.LP
+.ds LA <\h'-1.75n'\f2\\l'.5i\-'\f1
+.ds RA \f2\\l'|3.00i\-'\f1\h'-1n'>
+.ds RD \f2\\l'|3.00i\&='\h'-1.00n'\f1>
+.ds LD <\h'-1.75n'\f2\\l'.55i\&='\f1
+.ds SD \f2\l'.3i\&='\f1
+.nf
+.ta 1i 1.75i 2.5i 3.25i 4.25i
+.mk
+.B1
+CALLING
+SYSTEM
+.B2
+.nf
+.rt
+.po +3.25i
+.B1
+CALLED
+SYSTEM
+.B2
+.po
+.nf
+.vs 20p
+.cs I 25
+		555-6789 \*(RA		[ Dialup ]
+	\*(LA	\f3login:\f1
+		userid, password \*(RA		[ Identification ]
+	\*(LA	\f3S\f1 36			[ Handshake and
+		\f3S\f1 36 myname \*(RA			  sequence check ]
+	\*(LA	\f3P\f1 abc			[ Offer protocol ]
+		\f3U\f1 b \*(RA		[ Choose protocol ]
+		\f3S\f1 /abc/def/ghi \*(RA		[ Send file ]
+	\h'.25i'\*(SD	Data \*(RD
+		\f3R\f1 /abc/def/jkl		[ Get file ]
+	\*(LD	Data \*(SD
+		\f3H\f1 \*(RA		[ Offer to stop ]
+	\*(LA	\f3HN\f1			[ Refused ]
+	\*(LA	\f3S\f1 /abc/def/mno		[ Called system sends file ]
+	\*(LD	Data \*(SD
+	\*(LA	\f3H\f1			[ Offer to stop ]
+		\f3HY\f1 \*(RA		[ Accepted ]
+	\*(LA	\f3(OO)\f1 \*(RA
+		Hangup
+.sp 2
+.ce
+Figure 3
+.ce
+Sample conversation

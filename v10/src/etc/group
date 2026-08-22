@@ -1,4 +1,0 @@
-wheel:*:0:root
-daemon:*:1:daemon
-bin:*:3:bin
-other:*:20:

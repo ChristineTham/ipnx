@@ -1,7 +1,0 @@
-32ld.o
-mux.o
-pcheck.o
-pinit.o
-precv.o
-psend.o
-ptimeout.o

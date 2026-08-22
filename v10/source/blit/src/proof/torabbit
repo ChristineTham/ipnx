@@ -1,7 +1,0 @@
-push rabbit /usr/news/proof /usr/news
-push rabbit proof.1 /usr/man/man1
-push rabbit /usr/jerq/bin/proof /usr/jerq/bin
-push rabbit /usr/jerq/mbin/proof.m /usr/jerq/mbin
-push rabbit /usr/jerq/lib/proof.j /usr/jerq/lib
-push rabbit /usr/jerq/Font /usr/jerq
-push rabbit shipit .

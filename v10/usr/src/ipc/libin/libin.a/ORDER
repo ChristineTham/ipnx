@@ -1,0 +1,9 @@
+tcp_lib.o
+udp_lib.o
+in_service.o
+in_address.o
+in_host.o
+in_subrs.o
+in_ntoa.o
+in_ntoh.o
+tcp.o

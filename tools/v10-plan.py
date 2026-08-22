@@ -914,13 +914,29 @@ def devices():
 
 
 def etcfiles():
-    """The config we ship, from v10/src/etc -- source, not typed in.
+    """The tape's own /etc, at src/history/ix/root/etc.
 
-    A file a harness writes into the disk is a file with no source: it cannot
-    be reviewed, diffed or regenerated, and a change to it is invisible in a
-    diff of the source tree.  Five files once reached a golden that way.
+    THIS USED TO READ v10/src/etc -- ELEVEN FILES WE WROTE.  A motd describing
+    the project, a whoami naming it, an rc and a ttys built for this machine:
+    configuration invented here and installed by the plan, so a disk built
+    "from source" came up announcing itself in words no Bell Labs tape
+    contains.  v10/source/OVERLAY marked every one of them `add', which is the
+    record saying the tape does not have them -- the same column that marks a
+    genuine patch `patch'.  They sat in the same directory as the real repairs
+    and were invisible for that reason.
+
+    THE TAPE HAS EXACTLY ONE /etc AND IT BELONGS TO A NAMED MACHINE.
+    src/history/ix/root/etc is `giacobini' -- thirteen filesystems in its
+    fstab, Datakit in its rc, and `/etc/ldpcs /etc/pcs750.bin' loading 11/750
+    microcode.  So /etc on this tape is one machine's configuration rather
+    than a template, and that is the finding, not a shortfall: a restoration
+    inherits the machine it was cut from.
+
+    What ships is what the tape has.  Where a file cannot work on this
+    hardware the disk will say so at boot, and any change is then a patch with
+    a stated reason -- never a replacement written here.
     """
-    d = os.path.join(ROOT, "v10", "src", "etc")
+    d = os.path.join(TREE, "src", "history", "ix", "root", "etc")
     if not os.path.isdir(d):
         return []
     out = []
@@ -928,11 +944,17 @@ def etcfiles():
         p = os.path.join(d, f)
         if not os.path.isfile(p):
             continue
-        # mtab and utmp ship EMPTY: a fresh system has nothing mounted and
-        # nobody logged in.  Carrying the builder's copies once left a disk
-        # booting with three stale mounts.
-        mode = "0644" if f not in ("passwd", "group") else "0644"
-        out.append((f, mode, os.path.getsize(p)))
+        # The BINARIES in that directory are that machine's compiled tools --
+        # login.x, pwx, su, dkclean -- and they are not configuration.  They
+        # are also another machine's a.out, which is the one category this
+        # build has no way to check.  Text only.
+        try:
+            head = open(p, "rb").read(512)
+        except OSError:
+            continue
+        if b"\0" in head:
+            continue
+        out.append((f, "0644", os.path.getsize(p)))
     return out
 
 
@@ -973,7 +995,7 @@ STAGES = [("1", "The toolchain",
            "The image rebuilds its toolchain against its own libc.  Installs "
            "nothing; it is the test the bootstrap exists to pass."),
           ("4", "The libraries", "Every archive the commands link against."),
-          ("5", "The kernel", "Our ipnx780 config.  /unix before the bulk."),
+          ("5", "The kernel", "alice.m reduced to this emulator's hardware.  /unix before the bulk."),
           ("6", "The commands", "Everything else the scan found."),
           ("7", "/dev, /etc, /usr/include", "The tables and the headers."),
           ("8", "The manuals", "sellers, the tape's own documentation.")]
@@ -1065,8 +1087,23 @@ def build_plan(s):
     # THE KERNEL IS ITS OWN METHOD.  It is not a program: one mkconf run, two
     # compiles, one assembly and one link over SEVEN prebuilt per-subsystem
     # archives, because the tape ships the kernel that way (asstar.o, fs.a,
-    # io.a, star.a, bvax.a, os.a, vm.a, inet.a).  The config is ours --
-    # v10/src/lsys/astro/ipnx780.m, derived from Bell Labs' own alice.m.
+    # io.a, star.a, bvax.a, os.a, vm.a, inet.a).
+    #
+    # THE CONFIG IS OURS, AND IT IS THE ONE CUSTOMISATION THIS BUILD CANNOT DO
+    # WITHOUT.  Of the seventeen machines in lsys/astro, alice is the only
+    # VAX-11/780 -- `ms780' memory controllers, `dw780' Unibus adapters, an
+    # `mba' Massbus; research is a 750 (`dw750') and r70 a Q-bus MicroVAX
+    # (`uvqbus').  But alice is a specific machine at Bell Labs and describes
+    # hardware this emulator does not provide: its ROOT is on `ra 0' behind a
+    # uda50 at 0772160, where open-simh's vax780 puts its only MSCP controller
+    # at 0772150, and it also configures a TU78 on a second Massbus, a DN11,
+    # a DR-11C and Datakit.  A kernel built from it cannot find its own root.
+    #
+    # So ipnx780.m stays: alice reduced to the hardware that is actually
+    # there, derived from it and diffed against it in v10/src/PATCHES.md.
+    # What does NOT stay is anything the config was carrying beyond that --
+    # the banner is now the tape's own date rule from lsys/lib/mk.star, not a
+    # name, and /etc comes off the tape rather than from files written here.
     rows.append(("5", "/unix", "kernel", "src/lsys", "ipnx780.m", "-",
                  "mkconf, two compiles, one link over seven archives"))
 
@@ -1107,8 +1144,9 @@ def build_plan(s):
             if not (r[1].startswith("/etc/") and r[2] == "build"
                     and r[1][5:] in etcnames)]
     for f, mode, size in etcfiles():
-        rows.append(("7", "/etc/" + f, "copy", "v10/src/etc/" + f, "-", mode,
-                     "%d bytes -- our config, from source" % size))
+        rows.append(("7", "/etc/" + f, "copy",
+                     "src/history/ix/root/etc/" + f, "-", mode,
+                     "%d bytes -- the tape's own /etc" % size))
     rows.append(("8", "/usr/man/**", "tree", "sellers/man", "-", "-",
                  "the tape's manuals"))
     # AN INSTALL PATH MUST BE ABSOLUTE AND SINGLE-SLASHED.  Two rows came out

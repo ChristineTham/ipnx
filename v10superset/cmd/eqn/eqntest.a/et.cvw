@@ -1,0 +1,550 @@
+.so /usr/lib/tmac/tmac.s
+.LP
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.cvw:
+.EQ
+tdefine ciplus % "\o'\(pl\(ci'" %
+ndefine ciplus % O+ %
+tdefine citimes % "\o'\(mu\(ci'" %
+ndefine citimes % Ox %
+tdefine =wig % "\(eq\h'-\w'\(eq'u-\w'\s-2\(ap'u/2u'\v'-.4m'\s-2\z\(ap\(ap\s+2\v'.4m'\h'\w'\(eq'u-\w'\s-2\(ap'u/2u'" %
+ndefine =wig % ="~" %
+tdefine bigstar % "\o'\(pl\(mu'" %
+ndefine bigstar % X|- %
+tdefine =dot % "\z\(eq\v'-.6m'\h'.2m'\s+2.\s-2\v'.6m'\h'.1m'" %
+ndefine =dot % = dot %
+tdefine orsign % "\s-2\v'-.15m'\z\e\e\h'-.05m'\z\(sl\(sl\v'.15m'\s+2" %
+ndefine orsign % \e/ %
+tdefine andsign % "\s-2\v'-.15m'\z\(sl\(sl\h'-.05m'\z\e\e\v'.15m'\s+2" %
+ndefine andsign % /\e %
+tdefine =del % "\v'.3m'\z=\v'-.6m'\h'.3m'\s-1\(*D\s+1\v'.3m'" %
+ndefine =del % = to DELTA %
+tdefine oppA % "\s-2\v'-.15m'\z\e\e\h'-.05m'\z\(sl\(sl\v'-.15m'\h'-.75m'\z-\z-\h'.2m'\z-\z-\v'.3m'\h'.4m'\s+2" %
+ndefine oppA % V- %
+tdefine oppE %"\s-3\v'.2m'\z\(em\v'-.5m'\z\(em\v'-.5m'\z\(em\v'.55m'\h'.9m'\z\(br\z\(br\v'.25m'\s+3" %
+ndefine oppE % E/ %
+tdefine incl % "\s-1\z\(or\h'-.1m'\v'-.45m'\z\(em\v'.7m'\z\(em\v'.2m'\(em\v'-.45m'\s+1" %
+ndefine incl % C_ %
+tdefine nomem % "\o'\(mo\(sl'" %
+ndefine nomem % C-/ %
+tdefine angstrom % "\fR\zA\v'-.3m'\h'.2m'\(de\v'.3m'\fP\h'.2m'" %
+ndefine angstrom % A to o %
+tdefine star %{ roman "\v'.5m'\s+3*\s-3\v'-.5m'"}%
+ndefine star % * %
+tdefine || % \(or\(or %
+tdefine <wig % "\z<\v'.4m'\(ap\v'-.4m'" %
+ndefine <wig %{ < from "~" }%
+tdefine >wig % "\z>\v'.4m'\(ap\v'-.4m'" %
+ndefine >wig %{ > from "~" }%
+tdefine langle % "\s-3\b'\(sl\e'\s0" %
+ndefine langle %<%
+tdefine rangle % "\s-3\b'\e\(sl'\s0" %
+ndefine rangle %>%
+tdefine hbar % "\zh\v'-.6m'\h'.05m'\(ru\v'.6m'" %
+ndefine hbar % h\u-\d %
+ndefine ppd % _| %
+tdefine ppd % "\o'\(ru\s-2\(or\s+2'" %
+tdefine <-> % "\o'\(<-\(->'" %
+ndefine <-> % "<-->" %
+tdefine <=> % "\s-2\z<\v'.05m'\h'.2m'\z=\h'.55m'=\h'-.6m'\v'-.05m'>\s+2" %
+ndefine <=> % "<=>" %
+tdefine |< % "\o'<\(or'" %
+ndefine |< % <| %
+tdefine |> % "\o'>\(or'" %
+ndefine |> % |> %
+tdefine ang % "\v'-.15m'\z\s-2\(sl\s+2\v'.15m'\(ru" %
+ndefine ang % /_ %
+tdefine rang % "\z\(or\h'.15m'\(ru" %
+ndefine rang % L %
+tdefine 3dot % "\v'-.8m'\z.\v'.5m'\z.\v'.5m'.\v'-.2m'" %
+ndefine 3dot % .\u.\u.\d\d %
+tdefine thf % ".\v'-.5m'.\v'.5m'." %
+ndefine thf % ..\u.\d %
+tdefine quarter % roman \(14 %
+ndefine quarter % 1/4 %
+tdefine 3quarter % roman \(34 %
+ndefine 3quarter % 3/4 %
+tdefine degree % \(de %
+ndefine degree % nothing sup o %
+tdefine square % \(sq %
+ndefine square % [] %
+tdefine circle % \(ci %
+ndefine circle % O %
+tdefine blot % "\fB\(sq\fP" %
+ndefine blot % HIX %
+tdefine bullet % \(bu %
+ndefine bullet % oxe %
+tdefine -wig % "\(~=" %
+ndefine -wig % - to "~" %
+tdefine wig % \(ap %
+ndefine wig % "~" %
+tdefine prop % \(pt %
+ndefine prop % oc %
+tdefine empty % \(es %
+ndefine empty % O/ %
+tdefine member % \(mo %
+ndefine member % C- %
+tdefine cup % \(cu %
+ndefine cup % U %
+define cap % \(ca %
+define subset % \(sb %
+define supset % \(sp %
+define !subset % \(ib %
+define !supset % \(ip %
+delim $$
+.EN
+.ds LF "Draft
+.ds RF "Comments Solicited
+.nr PS 12
+.nr VS 16
+.TL
+Convex Hulls of Piecewise-Smooth Jordan Curves
+.AU
+Alejandro A. Sch$a dotdot$ffer*
+.AU
+Christopher J. Van Wyk
+.AI
+.MH
+.FS
+*Department of Computer Science,
+Margaret Jacks Hall,
+Stanford University,
+Stanford, California 94305
+.FE
+.ft
+.EQ
+define F /"\fHF\fP"/
+define Fim /{ F sub > }/
+define Fpre /{ F sup < }/
+define Finv /{ F sup <- }/
+define ej /{ e sub j }/
+define sej /"{" ej "}"/
+define fj /{ f sub j }/
+define bC /{ partial C }/
+define bD /{ partial D }/
+define bP /{ partial P }/
+define scrC /"\fHC\fP"/
+define scrR /bold "I" back 20 bold "R"/
+define QED /"\(bx"/
+define mod /{roman "mod"}/
+define LO /{ L sub O }/
+define scrl /"\(Sl"/
+define ejk /{ e sub j sub k }/
+define sejk /SIGMA/
+define evar /E/
+define p1 /{ p sub 1 }/
+define p2 /{ p sub 2 }/
+define op2 /{ op sub 2 }/
+define begin /"\f(CWbegin\fP"/
+define end /"\f(CWend\fP"/
+define if /"\f(CWif\fP"/
+define then /"\f(CWthen\fP"/
+define else /"\f(CWelse\fP"/
+define do /"\f(CWdo\fP"/
+define output /"\f(CWoutput\fP"/
+define while /"\f(CWwhile\fP"/
+define until /"\f(CWuntil\fP"/
+define not /"\f(CWnot\fP"/
+define pop /"\f(CWpop\fP"/
+define top /"\f(CWtop\fP"/
+define push /"\f(CWpush\fP"/
+define endloop /"\f(CWendloop\fP"/
+define next /"\f(CWnext\fP"/
+define loop /"\f(CWloop\fP"/
+define input /"\f(CWinput\fP"/
+define nomem /"\o'|\(mo'"/
+define nosubset /"\o'|\(sb'"/
+define and /andsign/
+define bgk /partial G(k)/
+.EN
+.LP
+Let $scrC$ be the unit circle in $scrR sup 2$.
+The closed arc of $scrC$ traversed as one moves
+counterclockwise from $alpha member scrC$ to $beta member scrC$ is denoted
+$[ alpha , beta ]$.
+Call the closed line segment between two points $x, ~ y member scrR sup 2$
+$L(x,y)$;
+let $ ~ LO (x,y)$ be the open line segment between $x$ and $y$.
+Given two points $x, ~ y member scrR sup 2$,
+the closed half plane that contains any counterclockwise 
+circular arc through $x$ and $y$
+is denoted $HP(x,y)$;
+the open half plane is denoted $HP sub O (x,y)$.
+Fix $n >0$, and
+let $theta ~ = ~ exp (i pi / n )$.
+Let $F : scrC ~ -> ~ scrR sup 2$
+be given by a family of $n$ functions
+$fj : [ theta sup j , theta sup j+1 ] ~ -> ~ scrR sup 2$,
+$0 <= j < n$.
+Since the domain intervals are closed,
+$f sub {(j-1) mod n} ( theta sup j ) ~=~ fj ( theta sup j )$
+for all $j$.
+Call the image*
+.FS
+*For any mapping $g: X -> Y$,
+$A subset X$ and $B subset Y$,
+$g sub > ( A )$ denotes the image of the set $A$ under $g$,
+$g sup < ( B )$ denotes the preimage of the set $B$ under $g$;
+if $g$ is bijective and $y member Y$,
+$g sup <- ( y )$ denotes the inverse image of the element $y$ under $g$ [12].
+.FE
+of the $j sup {roman "th"}$ arc,
+$fj sub > ( [ theta sup j ,  theta sup j+1 ] )$,
+the $j sup {roman "th"}$ $edge$, denoted $ej$;
+$fj ( theta sup j )$ and $fj ( theta sup j+1 )$
+are the $endpoints$ of $ej$.
+Assume $F$ satisfies the following:
+.IP (1)
+$F$ is injective; i.e., the image is non-self-intersecting;
+.IP (2)
+the coordinate functions of each $fj$ are differentiable everywhere
+on their domain; and,
+.IP (3)
+the tangent line at any point $fj ( t )$,
+$t member [ theta sup j  , theta sup j+1 ]$,
+bounds a closed half plane that contains $ej$.
+.LP
+Let $P$ be the closed region in $scrR sup 2$ bounded by $Fim ( scrC )$.  
+Let $bP$ be the boundary of $P$; that is, $bP$ is
+the homeomorphic image of $scrC$ under $F$.
+Conditions (1)-(3) above imply that $bP$ is a Jordan curve
+composed of $n$ convex differentiable curves.
+If the edges $e sub j$ are all line segments, then $bP$ is a simple polygon.
+Assume without loss of generality that the endpoints of $bP$ are
+generated in counterclockwise order as $scrC$ is traversed counterclockwise.
+Given $x, ~ y member bP$, define
+$trace (x,y) ~ = ~ Fim ([ Finv (x) , Finv (y) ])$,
+the portion of $bP$ encountered in a counterclockwise traversal of $bP$
+from $x$ to $y$ (Figure 2);
+put $trace sub O (x,y) ~=~ trace (x,y) "\e" "{"x,y"}"$.
+.LP
+$trace(x,^y)$ includes $F ( theta )$ and $F ( theta sup 4 )$;
+$trace(y,^x)$ includes $F ( theta sup 9 )$.
+Let $C$ be the convex hull of $P$.
+.LP
+$C$ in $O(n)$ operations.
+.LP
+$Lemma$ 2.
+Let $x$ and $y$ be distinct points in $bC cap bP$,
+with $trace(x,y) subset ej$.
+If $trace sub O (x,y) nosubset HP(y,x)$,
+then $trace(x,y) subset bC$;
+that is, the piece of $ej$ between $x$ and $y$ lies on the boundary of 
+the convex hull of $P$.
+Otherwise,
+$L(x,y) subset bC$; that is, the line segment between $x$ and $y$ lies
+on the boundary of the convex hull of $P$.
+$Proof$.
+Consider the open region $Q$ bounded away from $P$
+by lines of support at $x$ and $y$
+and the subedge $trace(x,y)$.
+No point in $P$ can lie in $Q$;
+by definition, every convex combination of $x$ and $y$ lies in $C$,
+and every point in $P$ lies in $C$.
+Thus,
+if $trace sub O (x,y) nosubset HP(y,x)$,
+then $trace(x,y) subset bC$
+(Figure 4(a));
+otherwise, $L(x,y) subset bC$
+(Figure 4(b)).  $QED$
+.LP
+Let $B ~ = ~ Fpre ( bP cap bC )$;
+$B$ is the preimage under $F$ of the intersection of edges in $bP$ with $bC$.
+A point $rho member B$ is an $interior$ point of $B$ if $B$ contains
+an open neighborhood in $scrC$ of $rho$.
+Points $rho member B$ that are not interior points of $B$
+are called $boundary$ points.
+.LP
+$Lemma$ 3.
+Suppose for some edge $ej$,
+$bC cap ej ~ != ~ empty$.
+At most two points in $fj sup < ( bC cap ej )$
+are boundary points of $B$.
+$Proof$.
+Suppose three distinct points
+$x , ~ y , ~ z member ej$
+are the images of boundary points of $B$.
+Assume without loss of generality that
+$x$, $y$, and $z$ lie in counterclockwise order on $ej$.
+By property (3) of $F$ either every chord of $ej$
+lies outside $P$ or every chord of $ej$
+intersects the interior of $P$.
+If the chords $L( x, y)$,
+$L( y, z)$ and
+$L( x, z)$ lie outside $P$
+(Figure 5(a)),
+by Lemma 2 they lie on $bC$;
+but they form a triangle outside which $P$ is known to lie
+and since $bC$ is simple, this is a contradiction.
+If the chord $L( x, z)$ lies inside $P$
+(Figure 5(b)),
+then the part of $ej$ between $x$ and $z$
+lies on $bC$ by Lemma 2, so $Finv ( y)$ is not an interior point of $B$.  $QED$
+.LP
+Edge endpoints in $bP cap bC$
+and the images of boundary points of $B$ under $F$
+are called $vertices$ of $bC$.
+An argument similar to the proof of Lemma 3
+shows that an edge can contain at most two vertices,
+so the number of vertices of $bC$ is at most $2n$.
+Let $p sub 1$ and $p sub 2$ be points in $bP$.
+Suppose that for any $epsilon > 0$ there exist points
+$q sub 1 , ~ q sub 2 member L sub O ( p sub 1 , p sub 2 )$
+that do not lie in the interior of $P$
+such that for $1 <= i <= 2$, $| p sub i - q sub i | < epsilon$.
+If $trace ( p sub 1 , p sub 2 ) subset HP( p sub 2 , p sub 1 )$
+and $trace ( p sub 2 , p sub 1 ) nosubset HP( p sub 2 , p sub 1 )$,
+$trace ( p sub 1 , p sub 2 )$ is a $pouch$
+(Figure 6(a));
+if both $trace ( p sub 1 , p sub 2 ) subset HP( p sub 2 , p sub 1 )$
+and $trace ( p sub 2 , p sub 1 ) subset HP( p sub 2 , p sub 1 )$,
+and furthermore the interior of the region defined by $trace( p sub 1 , p sub 2 )$
+and $L( p sub 1 , p sub 2 )$ does not intersect $trace( p sub 2 , p sub 1 )$,
+$trace ( p sub 1 , p sub 2 )$ is also a $pouch$
+The fringes show $HP( p sub 2 , p sub 1 )$.
+.LP
+$Lemma$ 4.
+Suppose $p , q member bP$,
+$trace(p,q)$ is a pouch,
+and $trace sub O (p,q) cap L( p , q) ~=~ empty$.
+Then $trace sub O (p,q) cap bC ~ = ~ empty $.
+$Proof$.
+Since $P$ is simple,
+there must exist points $z$ and $w$ on the line
+through $p$ and $q$ that lie on opposite sides
+of the segment $L(p,q)$ such that $trace(z,w)$
+lies in $HP(q,p)$ but outside the pouch:
+if $trace sub O (q,p) nosubset HP(q,p)$,
+$w$ and $z$ must exist by the Jordan curve theorem (Figure 7(a));
+if $trace sub O (q,p) subset HP(q,p)$,
+$z = q$ and $w = p$
+by the definition of pouch (Figure 7(b)).
+In either case any point on $trace sub O (p,q)$
+lies inside the region defined by $trace(z,w)$
+and $L(z,w)$,
+and hence does not lie on $bC$.
+$QED$
+.LP
+.EQ
+define support /"\f(CWsupport\fP"/
+define psupport /"\f(CWplane_support\fP"/
+.EN
+The construction uses two functions
+\f(CWsupport\^(edge_1,\^edge_2)\fP,
+and \f(CWplane_support\^(edge_1,\^edge_2)\fP,
+where \f(CWedge_1\fP and \f(CWedge_2\fP are \f(CWedge\fPs.
+(Type \f(CWedge\fP in the algorithm includes
+edges of $P$ and line segments.)
+Let $A$ be the set of all half planes that support
+\f(CWedge_1\fP$cap S$
+and \f(CWedge_2\fP$cap S$.
+Function $psupport$ returns an element of $A$.
+The boundaries of
+elements of $A$ may be common tangents to both \f(CWedge\fPs,
+lines through an endpoint of one \f(CWedge\fP and tangent to the other,
+and lines through endpoints of both \f(CWedge\fPs.
+Thus $A$ is finite unless the edges share an endpoint,
+in which case the candidates for the result of $psupport$
+are enumerated below.
+Since operations to compute the possible elements of $A$
+were assumed to have been given,
+$psupport$ can be computed in $O(1)$ operations.
+If every member of $A$ passes through a shared endpoint $x$ of
+\f(CWedge_1\fP and \f(CWedge_2\fP and no other point of \f(CWedge_2\fP,
+$psupport$ returns the containing half plane
+whose boundary includes the tangent to \f(CWedge_1\fP at $x$
+or the chord between $x$ and the other endpoint of \f(CWedge_1\fP
+(The proof of Lemma 2 shows that at most one of these supports
+\f(CWedge_1\fP and \f(CWedge_2\fP.),
+unless that is $S$,
+in which case $psupport$ returns the containing half plane
+whose boundary is tangent to \f(CWedge_2\fP at $x$.
+In the more usual case $psupport$ returns $HP(q,p) member A$
+where $p member$\f(CWedge_1\fP
+and $q member$\f(CWedge_2\fP,
+with $p != q$ and
+(\f(CWedge_1\fP$cup$\f(CWedge_2\fP)$cap S subset HP(q,p)$.
+A less formal way to think of this computation is
+to imagine some creature
+standing at the first endpoint of \f(CWedge_1\fP
+moving toward \f(CWedge_2\fP seeking a line of sight that touches
+both edges and lies to their right;
+the line of sight it finds is the boundary
+of the half plane computed by $psupport$.
+Function \f(CWsupport\^(edge_1,\^edge_2)\fP returns
+$p member$\f(CWedge_1\fP
+and
+$q member$\f(CWedge_2\fP
+corresponding to $p$ and $q$ in the computation of $psupport$ on those arguments.
+If there is more than one way to choose $p$ and $q$,
+$support$ returns the points $p$ and $q$ that maximize the length of the arc 
+$Fpre ( trace (p,q))$.
+.LP
+.
+.sp -1
+.LP
+\fBFigure 9:\fP
+The results of $support$ and $psupport$ in several cases:
+$support ( e sub 0 , e sub 1 )$ returns $s$ and $v sub 1$,
+and $psupport$ is bounded by the line through them;
+$support ( e sub 0 , e sub 2 )$ returns $v sub 1$ and $v sub 2$,
+and $psupport$ is bounded by the line through them;
+$support ( e sub 4 , e sub 5 )$ returns $v sub 4$ and $v sub 5$,
+and $psupport$ is bounded by the line
+that contains edge $e sub 4$;
+$support ( e sub 4 , e sub 6 )$ returns $v sub 5$ and $x$,
+and $psupport$ is bounded by the line through them.
+Algorithm \f(CWImplicitHull\fP places on a stack
+a sequence of $h$ edges of $P$
+whose convex hull is $bD$,
+hence the name $implicit$ $hull$.
+(See Figure 10 and Lemma 5 below.)
+.LP
+.
+.LP
+\fBFigure 10:\fP
+The implicit hull that determines $D$ in Figure 8.
+.LP
+As in [7]
+the algorithm uses a function $next$
+to refer to the second element on the stack.
+The algorithm terminates when the input is exhausted.
+.LP
+.nr pP 0 1
+.ds Pp "\\n+(pP	
+.ta 0.4i 0.7i 1i 1.3i 1.6i 1.9i 2.2i 2.5i 2.8i 3.1i 3.4i 3.7i 4i
+\*(Pp\f(CWImplicitHull\fP $( sej , ~ s , ~ t , ~ e sub m , ~ sejk )$
+\*(Pp\f(CWinput sequence\fP $sej$
+\*(Pp\f(CWstack\fP $sejk$
+\*(Pp\f(CWpoint\fP $s, ~t$
+\*(Pp\f(CWedge\fP $e sub m , ~ evar$
+\*(Pp$begin$
+\*(Pp	$sejk ~ <- ~ empty$
+\*(Pp	$push ( L(s,t) , sejk )$
+\*(Pp	$evar ~ <- ~ input$
+\*(Pp	$while ~ evar cap HP sub O (s,t) = empty ~ do$
+\*(Pp		$evar ~ <- ~ input$
+\*(Pp	$push ( evar , sejk )$
+\*(Pp	$loop ~ begin$
+\*(Pp		$evar ~ <- ~ input$
+\*(Pp		$while ~ next ( sejk ) != empty ~ do$
+\*(Pp			$if ~ evar nosubset psupport ( top  ( sejk ),  next ( sejk )) ~ then$
+\*(Pp				$pop ( sejk )$
+\*(Pp		$if ~ evar nosubset psupport ( top ( sejk ), e sub m ) ~ then$
+\*(Pp			$push ( evar , sejk )$
+\*(Pp	$endloop$	
+\*(Pp$end$
+.sp 1
+\*(Pp\f(CWConstructHull\fP $( sejk , ~ s , ~ t)$
+\*(Pp\f(CWstack\fP $sejk$
+\*(Pp\f(CWpoint\fP $s, ~ t, ~ p1 , ~ p2 , ~ op2$
+\*(Pp\f(CWedge\fP $evar$
+\*(Pp$begin$
+\*(Pp	$evar ~ <- ~ top ( sejk )$
+\*(Pp	$pop ( sejk )$
+\*(Pp	$op2 ~ <- ~ t$
+\*(Pp	$while ~ next ( sejk ) != empty ~ do ~ begin$
+\*(Pp		$p2 , ~ p1 ~ <- ~ support ( top ( sejk ), evar )$
+\*(Pp		$if ~ op2 ~ != ~ p1 ~ then$
+\*(Pp			$if ~ trace sub O ( op2 , p1 ) nosubset HP( p1 , op2 ) ~ then$
+\*(Pp				$output ~ trace ( op2 , p1 )$
+\*(Pp			$else$
+\*(Pp				$output ~ L ( op2 , p1 )$
+\*(Pp		$if ~ p1 ~ != ~ p2 ~ then$
+\*(Pp			$output ~ L( p1 , ~ p2 )$
+\*(Pp		$op2 ~ <- ~ p2$
+\*(Pp		$evar ~ <- ~ top ( sejk )$
+\*(Pp		$pop ( sejk )$
+\*(Pp	$end$
+\*(Pp	$if ~ op2 ~ != ~ s ~ then$
+\*(Pp		$if ~ trace sub O ( op2 , s ) nosubset HP( s , op2 ) ~ then$
+\*(Pp			$output ~ trace ( op2 , s)$
+\*(Pp		$else$
+\*(Pp			$output ~ L ( op2 , s)$
+\*(Pp$end$
+.sp 1
+If $E sub top$ and $E sub next$ are consecutive edges in $P$,
+then $trace ( p sub top , p sub next )$ is a pouch by property (3)
+of the edges.
+The proof when $E sub top$ and $E sub next$ are not consecutive in $P$
+is by induction on the number of edges pushed
+after $E sub next$ is pushed but popped before $E sub top$ is pushed.
+If there are no such edges,
+then all edges in $P$ between $E sub next$ and $E sub top$
+lie in $psupport ( E sub next , e sub m )$ by the test at line 18,
+and $E sub top$ does not;
+thus $trace ( support ( E sub next , E sub top ))$ is a pouch.
+Take as induction hypothesis that if $k$ edges are both pushed and popped
+after $E sub next$ is pushed but before $E sub top$ is pushed on top of it,
+then $trace ( support ( E sub next , E sub top ))$ is a pouch.
+Now consider the case when $k+1$ edges are pushed and popped
+between $E sub next$ and $E sub top$.
+Let $"{" E sub i "}" sub { 1 <= i <= j <= k }$
+be the subsequence of edges of $P$
+that are on the stack above $E sub next$ when $E sub top$
+is input at line 14.
+Then for $1 <= i <= j$,
+$E sub top nosubset psupport ( E sub i , E sub i-1 )$ by line 16;
+$E sub next nosubset psupport ( E sub scrl , e sub m )$ by line 18;
+$trace ( support ( E sub next , E sub 1 ))$ and
+$trace ( support ( E sub i , E sub i+1 ))$, $1 <= i < j$,
+are pouches by the induction hypothesis.
+It follows that $trace ( support ( E sub next , E sub top ))$ is a pouch.
+$QED$
+Line 16 tests new input edges against
+the last pouches found.
+It follows that if $E sub a$, $E sub b$ and $E sub c$
+are three edges in input order such that
+$trace ( support ( E sub a , E sub c ))$ is a pouch,
+then $E sub b$ cannot be on the stack after $E sub c$
+has been processed.
+.LP
+$Lemma$ 6.
+Suppose some sequence of edges $sej sub 1<=j<=k$ has been processed.
+Let $G(k)$ be the convex hull of $( sej sub 1<=j<=k cup L(s,t)) cap S$.
+The stack contains precisely those edges that
+contain a vertex of $bgk$.
+$Proof$.
+The proof is by induction on $k$.
+When $k=0$ (at line 7), the lemma is trivially true.
+Suppose the lemma holds for $k$,
+and consider what happens when $e sub k+1$ is input.
+If $bgk ~=~ partial G(k+1)$,
+then the tests at lines 16 and 18 fail,
+so the contents of the stack are unchanged,
+and the lemma is true.
+If $bgk ~!=~ partial G(k+1)$,
+it follows from Lemma 4 that
+the condition in line 18 is true with $evar = e sub k+1$,
+so $e sub k+1$ is pushed onto $sejk$.
+By Lemma 5, the contents of $sejk$ at line 21 after
+$e sub k+1$ has been pushed determine a sequence of pouches
+between vertices on $partial G(k+1)$.
+$QED$
+.LP
+$Lemma$ 7.
+If the stack $sejk$ contains the implicit hull for $D$,
+then \f(CWConstructHull\fP
+$( sejk ,s,t)$
+outputs the part of $bD$ that lies on $bC$.
+$L(s,t)$ is output if and only if
+it is the only item on the stack.
+$Proof$.
+The output of algorithm \f(CWConstructHull\fP
+is a sequence of line segments that support $P$,
+as well as subedges and chords of edges of $P$
+that lie on $bD$.
+By Lemmas 2, 3, and 4,
+the task of computing that part of
+$bD$ that lies on $bC$ can be accomplished by  filling in the line
+segments or subedges of $P$ connecting consecutive vertices of $bC cap D$.
+Function \f(CWsupport\fP is defined so that
+$p1$ and $p2$ are assigned (at line 10) to
+consecutive vertices unless the segments $e$ and
+\f(CWtop\fP
+$( sejk )$ have a common endpoint,
+$p$, which is also a vertex of $bC cap D$.
+In this second case,
+both $p1$ and $p2$ will be assigned to $p$.
