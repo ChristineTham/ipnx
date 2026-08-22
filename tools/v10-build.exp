@@ -35,6 +35,12 @@ set BLANK [lindex $argv 1]
 set tport [lindex $argv 2]
 set oport [lindex $argv 3]
 set mport [lindex $argv 4]
+# 1 = stage 4 may run.  v10-build.sh clears it when v10-libs.py cannot verify
+# libs.txt, because an unverifiable list is exactly what this rewrite exists to
+# stop shipping.  A skipped stage is REPORTED as skipped: a phase that did not
+# run is not a phase that passed.
+set stage4 [lindex $argv 5]
+if {$stage4 eq ""} { set stage4 1 }
 
 v10_deadline 21600
 
@@ -90,11 +96,31 @@ v10_sh "mkdir /n; mkdir $N; mkdir $OURS; mkdir $MK" 120
 must "the tape mounts"        [expr {[v10_try "/etc/nafsmnt 10.0.2.2 $tport $N    0" "mounted on" 900] != 0}]
 must "our overlay mounts"     [expr {[v10_try "/etc/nafsmnt 10.0.2.2 $oport $OURS 1" "mounted on" 900] != 0}]
 must "the build lists mount"  [expr {[v10_try "/etc/nafsmnt 10.0.2.2 $mport $MK   2" "mounted on" 900] != 0}]
-must "the tape is readable"   [expr {[v10_try "test -s $N/src/cmd/sed/sed.c && echo RD\$OK" "RD-ok" 300] != 0}]
+must "the tape is readable"   [expr {[v10_try "test -s $N/src/cmd/sed/sed0.c && echo RD\$OK" "RD-ok" 300] != 0}]
 must "the lists are readable" [expr {[v10_try "test -s $MK/tc.order && echo TC\$OK" "TC-ok" 300] != 0}]
 
 # ============================ STAGE 1: the filesystems, and a compiler ======
 puts "\n===== STAGE 1: mount the blank, install the toolchain into it =====\n"
+
+# THE BUILDER'S OWN libc.a MUST HAVE A CURRENT TABLE OF CONTENTS, or every link
+# in this stage fails and the errors name the wrong thing.  V10's ld getfile()
+# returns 3 -- stale -- when the archive's mtime is newer than __.SYMDEF's, and
+# then makes ONE sequential pass instead of `while (ldrand()) continue;', so any
+# symbol defined behind its reference is simply never found.  Measured on the
+# 2026-08-22 run: archive mtime 2026-08-21 21:48 against a SYMDEF of 2026-08-16,
+# and nine of thirteen components died on `Undefined: _memcpy' with memcpy.o
+# sitting in the archive, 104 bytes of perfectly good code.
+#
+# Every one of those compiles SUCCEEDED.  Only the links failed, and ld printed
+# `table of contents for archive is out of date; rerun ranlib(1)' above each --
+# the fix named in its own diagnostic, and already a rule in CLAUDE.md: anything
+# that copies an archive must re-ranlib it at the destination, because cp alone
+# bumps the mtime and demotes a good archive.
+#
+# This mutates the BUILDER, which is a clone and is discarded; it puts nothing
+# on the new image, so rule 1 is untouched.
+must "the builder's libc.a has a current table of contents" \
+    [expr {[v10_try "/usr/bin/ranlib /lib/libc.a && echo RL\$OK" "RL-ok" 900] != 0}]
 
 v10_sh "rm -f /dev/ra1a /dev/ra1c" 60
 v10_sh "/etc/mknod /dev/ra1a b 7 $RMINOR; /etc/mknod /dev/ra1c b 7 $UMINOR" 300
@@ -115,7 +141,12 @@ must "and the new /usr mounts in it" [expr {[v10_try "/etc/mount /dev/ra1c $MNT/
 # level and prints `File exists' rather than failing, which is right for an
 # additive pass.
 foreach d {bin etc lib dev tmp n} { v10_sh "mkdir $MNT/$d" 120 }
-foreach d {bin lib include games maps man doc adm tmp src} { v10_sh "mkdir $MNT/usr/$d" 120 }
+# `blit' IS IN THIS LIST BECAUSE cpio -pd DOES NOT MAKE THE DIRECTORY IT COPIES
+# INTO -- -d creates the directories that appear INSIDE the archive, and when the
+# destination is absent the failure is `cannot write in <...>' on stderr WITH A
+# ZERO EXIT STATUS.  The 2026-08-22 run copied none of the Blit tree and the only
+# sign was one assertion saying NO.
+foreach d {bin lib include games maps man doc adm tmp src blit} { v10_sh "mkdir $MNT/usr/$d" 120 }
 v10_sh "mkdir $MNT/usr/lib/lex" 120
 v10_sh "rm -rf $OBJ; mkdir $OBJ" 300
 
@@ -185,11 +216,29 @@ v10_run "while read nm dir dest; do if $MNT/bin/cmp -s $MNT/\$dest $OBJ/s3/\$des
 v10_run "echo S3DIFF; if test -s $OBJ/s3.diff; then cat $OBJ/s3.diff; fi; echo S3DIFFEND" "S3DIFFEND" 600
 
 # ============================ STAGE 4: the libraries =======================
-puts "\n===== STAGE 4: the libraries, into the image =====\n"
-v10_sh "rm -f $OBJ/libs.bad" 120
-v10_run "sed -e '/^#/d' -e '/^\$/d' $MK/libs.txt | while read nm dir bld arch rest; do mkdir $OBJ/L\$nm; if (cd $OBJ/L\$nm; make -f $MK/libs.mk \$A2 \$B2 \$C2V LIB=\$nm install > m.log 2>&1); then echo \$nm ok; else echo \$nm >> $OBJ/libs.bad; fi; done; echo S4END" \
-        "S4END" 14400
-v10_run "echo S4BAD; if test -s $OBJ/libs.bad; then cat $OBJ/libs.bad; fi; echo S4BADEND" "S4BADEND" 600
+# NOT RUN, AND THE REASON IS RECORDED RATHER THAN THE STAGE QUIETLY OMITTED.
+# Two independent faults, either of which is fatal on its own:
+#
+#   libs.mk does not exist.  mkdep.py has never emitted it -- the library build
+#   is v10/mk/gen/libsc.sh, a guest-side script with its own argument list, not
+#   a per-library makefile.  This stage was written against a design that was
+#   superseded and has never run.
+#
+#   v10-libs.py cannot --check.  It shares v10-world.py's header-resolution
+#   model and the world rewrite changed that module's shape, so libs.txt on
+#   disk cannot be shown current.
+#
+# Wiring libsc.sh in is stage 4's own work and it is done with stages 1-3
+# proven, not before.  -B must be $MNT/lib/ when it happens: libsc.sh's own
+# header calls its bprefix "stage 1's passes, e.g. /usr/s1/lib/", which is the
+# BUILDER's -- pointing it there would break rule 3 in the one place nobody
+# would look.
+if {$stage4} {
+    note "stage 4: libraries -- NOT WIRED (libs.mk was never generated)" 0
+} else {
+    note "stage 4: libraries -- NOT RUN (v10-libs.py cannot verify libs.txt)" 0
+}
+puts "\n===== STAGE 4: SKIPPED -- see the note above =====\n"
 
 # ============================ STAGE 5: the kernel ==========================
 puts "\n===== STAGE 5: the kernel =====\n"
@@ -231,8 +280,11 @@ note "/etc/fstab is V10's colon format, from source" \
     [expr {[v10_try "test `grep -c ':' $MNT/etc/fstab` = 2 && echo FS\$OK" "FS-ok" 600] != 0}]
 note "/etc/mtab ships empty" \
     [expr {[v10_try "test ! -s $MNT/etc/mtab && echo MB\$OK" "MB-ok" 600] != 0}]
-note "the gettys are enabled" \
-    [expr {[v10_try "test `grep -c '^1' $MNT/etc/ttys` = 8 && echo TY\$OK" "TY-ok" 600] != 0}]
+# EIGHT GETTYS, COUNTED AS GETTYS.  `grep -c ^1' answers NINE on a correct file,
+# because /etc/ttys enables the console line too -- so the assertion failed on a
+# file that was right.  Count what the note actually claims.
+note "the eight gettys are enabled" \
+    [expr {[v10_try "test `grep -c '^1.tty0' $MNT/etc/ttys` = 8 && echo TY\$OK" "TY-ok" 600] != 0}]
 
 # ------------------------------------------------------- what must be there ---
 v10_sh "rm -f $OBJ/bp.bad" 120

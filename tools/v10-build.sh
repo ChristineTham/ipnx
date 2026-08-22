@@ -10,11 +10,11 @@
 #
 # THE THREE RULES IT EXISTS TO KEEP.
 #
-#   1  THE SOURCE CONTAINS EVERYTHING.  work/v10 (the TUHS tarballs), v10/src
-#      (our patches and captures) and v10/mk/gen (the generated build
-#      description).  Nothing else -- not the builder's filesystem, not the
-#      Eighth Edition, not a previous golden, not a file a harness writes
-#      inline.
+#   1  THE SOURCE CONTAINS EVERYTHING.  v10/source (all six TUHS archives,
+#      54,111 files, IN THE REPOSITORY), v10/src (our patches) and
+#      v10/mk/gen (the generated build description).  Nothing else -- not the
+#      builder's filesystem, not the Eighth Edition, not a previous golden,
+#      not a file a harness writes inline.
 #
 #   2  NO STAGING TREE.  $(DESTDIR) is the new image, mounted, for the whole
 #      run.  The generated makefiles were written for this -- init.mk says
@@ -47,19 +47,37 @@ TPORT="${TPORT:-9330}"; OPORT="${OPORT:-9331}"; MPORT="${MPORT:-9332}"
 
 # ------------------------------------------------------------- the inputs ---
 [[ -e "$BUILDER" ]]       || { echo "v10-build: no $BUILDER"; exit 1; }
-[[ -d "$ROOT/work/v10" ]] || { echo "v10-build: no work/v10 -- run tools/v10-import.py"; exit 1; }
+[[ -d "$ROOT/v10/source" ]] || { echo "v10-build: no v10/source -- run tools/v10-source.sh"; exit 1; }
 [[ -d "$ROOT/v10/src" ]]  || { echo "v10-build: no v10/src"; exit 1; }
 
 # EVERY GENERATED LIST MUST BE CURRENT.  A stale list is a build that installs
 # something nobody chose, which is the whole class of fault this rewrite is
 # about.  Each of these has a --check that compares its output with what it
 # would generate now.
-for g in v10-overlay.py v10-tapebins.py v10-where.py v10-proto.py v10-world.py \
-         v10-libs.py v10-prebuilt.py; do
+#
+# A GENERATOR THAT CANNOT ANSWER IS NAMED, NOT DROPPED FROM THE LIST.  Deleting
+# a check that has started failing is how a stale list gets shipped: the loop
+# goes green and nobody learns that one question stopped being asked.  A broken
+# generator gates the stage that CONSUMES its output instead, and says so.
+STAGE4_OK=1
+for g in v10-overlay.py v10-tapebins.py v10-proto.py v10-world.py \
+         v10-libs.py v10-prebuilt.py v10-headers.py v10-plan.py; do
     [[ -f "$ROOT/tools/$g" ]] || continue
-    python3 "$ROOT/tools/$g" --check >/dev/null 2>&1 || {
-        echo "v10-build: tools/$g reports its output stale -- regenerate it"; exit 1; }
+    if python3 "$ROOT/tools/$g" --check >/dev/null 2>&1; then continue; fi
+    if [[ "$g" == v10-libs.py ]]; then
+        # KNOWN, AND SCOPED TO STAGE 4.  v10-libs.py shares v10-world.py's
+        # header-resolution model, and the world rewrite (2026-08-22) changed
+        # that module's shape: sources(), machine_dirs(), includes_of() and
+        # resolve() no longer exist, so --check dies in inventory().  libs.txt
+        # on disk predates the rewrite and CANNOT be verified current, so
+        # stage 4 does not run.  Stages 1-3 do not read it.
+        echo "v10-build: tools/v10-libs.py cannot --check (world rewrite) -- STAGE 4 DISABLED"
+        STAGE4_OK=0
+        continue
+    fi
+    echo "v10-build: tools/$g reports its output stale -- regenerate it"; exit 1
 done
+export STAGE4_OK
 python3 "$ROOT/v10/mk/mkdep.py" --check >/dev/null 2>&1 || {
     echo "v10-build: v10/mk/mkdep.py reports the makefiles stale"; exit 1; }
 
@@ -77,7 +95,7 @@ echo "== building netfsd =="
 PIDS=()
 trap 'for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done' EXIT
 serve() { "$NETFSD" -p "$1" -v "$2" > "$ROOT/work/netfs-build-$3.log" 2>&1 & PIDS+=($!); }
-serve "$TPORT" "$ROOT/work/v10"      tape
+serve "$TPORT" "$ROOT/v10/source"    tape
 serve "$OPORT" "$ROOT/v10/src"       ours
 serve "$MPORT" "$ROOT/v10/mk/gen"    mk
 sleep 1
@@ -108,7 +126,7 @@ dd if=/dev/zero of="$OUT" bs=1 count=0 seek=456228864 2>/dev/null
 rm -f "$CLONE"
 cp -c "$BUILDER" "$CLONE" 2>/dev/null || cp "$BUILDER" "$CLONE"
 
-expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$TPORT" "$OPORT" "$MPORT" 2>&1 | tee "$LOG"
+expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$TPORT" "$OPORT" "$MPORT" "$STAGE4_OK" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------- the boot block ---
@@ -120,7 +138,7 @@ if [[ $rc -eq 0 ]]; then
         echo "v10-build: a simulator is still running -- NOT writing the boot block"
         rc=1
     else
-        dd if="$ROOT/work/v10/src/lsys/boot/bb/4kb" of="$OUT" \
+        dd if="$ROOT/v10/source/src/lsys/boot/bb/4kb" of="$OUT" \
            bs=512 count=1 conv=notrunc 2>/dev/null
         n=$(dd if="$OUT" bs=512 count=1 2>/dev/null | tr -d '\0' | wc -c | tr -d ' ')
         echo "== boot block: $n of 512 bytes non-zero =="
