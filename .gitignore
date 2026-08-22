@@ -50,4 +50,4 @@ __pycache__/
 # tapes) out of git; they are not about the tape's own contents, and without
 # this exception the extract silently loses nine files.
 !v10/source/**
-v10/READ
+v10/READ.jsonl

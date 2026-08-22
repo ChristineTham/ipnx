@@ -34,6 +34,7 @@ WHAT EACH KIND OF FILE SAYS ABOUT ITSELF
 
 import argparse
 import collections
+import json
 import os
 import re
 import sys
@@ -43,7 +44,10 @@ TREE = os.path.join(ROOT, "v10", "source")
 # NOT INSIDE THE TAPE.  Writing the report into v10/source makes the
 # tree grow by one entry, so the next run reads 54,329 and the count
 # that is supposed to be a constant drifts with its own output.
-OUT = os.path.join(ROOT, "v10", "READ")
+# JSON LINES, because the plan is generated FROM these facts and a
+# human-shaped summary cannot carry an object list.  One record per
+# file, every file, no sampling.
+OUT = os.path.join(ROOT, "v10", "READ.jsonl")
 
 INC = re.compile(r"^[ \t]*#[ \t]*include[ \t]*([<\"])([^>\"]+)[>\"]", re.M)
 MAIN = re.compile(r"^[ \t]*(?:int[ \t]+|void[ \t]+)?main[ \t]*\(", re.M)
@@ -53,6 +57,20 @@ SHNAME = re.compile(r"^\.SH\s+NAME\s*\n(.*?)(?=^\.SH|\Z)", re.M | re.S)
 RULE = re.compile(r"^([^\s:=#][^:=]*):([^=].*|)$", re.M)
 
 MAGIC_AOUT = (0o407, 0o410, 0o413, 0o405, 0o560)
+
+# A DEFINITION IS A NAME AT COLUMN ZERO FOLLOWED BY A PARAMETER LIST, which is
+# K&R C's shape and this whole tape is K&R.  An ANSI prototype ends in `;' and
+# is a declaration, not a definition -- counting those would make every header
+# look like it defined the world.
+DEFN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(([^;{]*)\)[ \t]*"
+                  r"(?:\n[^;{]*)?\{", re.M)
+CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(")
+# Not calls.  `if (' and `while (' look exactly like one to a regex.
+C_KEYWORDS = {"if", "while", "for", "switch", "return", "sizeof", "do",
+              "else", "case", "defined", "struct", "union", "enum", "int",
+              "char", "long", "short", "float", "double", "void", "unsigned",
+              "signed", "static", "extern", "register", "typedef", "const",
+              "volatile", "goto", "break", "continue", "default"}
 
 
 def read_file(path):
@@ -92,7 +110,7 @@ def read_file(path):
         return f
     f["kind"] = "text"
     f["lines"] = text.count("\n") + 1
-    f["first"] = text.split("\n", 1)[0][:120]
+    f["first"] = text.split("\n", 1)[0][:200]
 
     name = os.path.basename(path)
     if text.startswith("#!"):
@@ -108,6 +126,7 @@ def read_file(path):
         sh = SHNAME.search(text)
         if sh:
             f["names"] = man_names(sh.group(1))
+            f["desc"] = man_desc(sh.group(1))
         return f
 
     # -- source
@@ -115,6 +134,16 @@ def read_file(path):
         f["kind"] = "source"
         f["main"] = bool(MAIN.search(text))
         f["includes"] = [(b, h) for b, h in INC.findall(text)]
+        # WHAT THIS FILE DEFINES AND WHAT IT CALLS.  This is the difference
+        # between reading a file and looking at it: a program's object list and
+        # its -l flags are DERIVABLE from the source, and deriving them is the
+        # only way to build a command whose makefile is missing, wrong, or
+        # written for another machine -- which on this tape is common.  The
+        # tape's own makefiles name libraries that exist nowhere in it
+        # (-lbsd, -lport, -lsocket), so they cannot be the authority either.
+        f["defines_fn"] = sorted(set(DEFN.findall(text)))
+        called = set(CALL.findall(text))
+        f["calls"] = sorted(called - set(f["defines_fn"]) - C_KEYWORDS)
         return f
     if name.endswith((".h", ".def")):
         f["kind"] = "header"
@@ -129,8 +158,48 @@ def read_file(path):
         return f
     if "interp" in f or name.endswith(".sh"):
         f["kind"] = "script"
+        f["cmdish"] = bool(re.search(r"\$[0-9*@]|\bexec\b|\bcase\b", text))
         return f
+
+    # -- A TEXT FILE STILL SAYS WHAT IT IS, and discarding that is how 6,072
+    # files came to be READ and then have no verdict.  These are the tape's
+    # data: troff macro packages, terminal descriptions, dictionaries, fonts,
+    # tables and READMEs.  What they say about themselves:
+    f["form"] = text_form(name, text)
     return f
+
+
+ROFF = re.compile(r"^\.(?:de|ds|nr|so|TH|SH|PP|if|ie|tr|na|ad)\b", re.M)
+TERMCAP = re.compile(r"^[a-z0-9|.-]+:\\?\s*$", re.M)
+CFRAG = re.compile(r"^[ \t]*(?:#\s*(?:define|include|ifdef)|struct\s|"
+                   r"static\s|extern\s)", re.M)
+
+
+def text_form(name, text):
+    """What a text file states it is, read from its content.
+
+    The tape's data is not labelled by suffix -- tmac.an has no extension that
+    says `troff macros', and a terminal description looks like nothing else.
+    Reading is what tells them apart, and the verdict a file gets depends on
+    it: a macro package is INSTALLED beside troff, a README is not.
+    """
+    head = text[:4000]
+    low = name.lower()
+    if ROFF.search(head):
+        return "roff"
+    if low.startswith(("readme", "read.me")) or low == "notes":
+        return "readme"
+    if low.startswith("makefile") or low.startswith("mkfile"):
+        return "buildfile"
+    if TERMCAP.search(head) and ":" in head and "\\" in head:
+        return "termcap"
+    if CFRAG.search(head):
+        return "cfragment"
+    if re.match(r"^[0-9]+\s", head) or re.match(r"^[A-Za-z]+\t", head):
+        return "table"
+    if all(len(l) < 40 for l in head.split("\n")[:30] if l.strip()):
+        return "wordlist"
+    return "text"
 
 
 def man_names(block):
@@ -149,6 +218,23 @@ def man_names(block):
         if w and re.match(r"^[A-Za-z0-9_][A-Za-z0-9_.+=-]*$", w):
             out.append(w)
     return out
+
+
+def man_desc(block):
+    """The English a manual page gives itself.
+
+    `ls, lc \\(mi list contents of directory' -- everything after the roff
+    minus sign IS the description, written by the people who wrote the
+    program.  It is the only prose on the tape that says what a command does,
+    and it is better than anything a scanner could infer.
+    """
+    line = " ".join(l.strip() for l in block.strip().split("\n")
+                    if not l.startswith("."))
+    parts = re.split(r"\\\(mi|\\-|\s+-\s+|\s+\\\(em\s+", line, maxsplit=1)
+    if len(parts) < 2:
+        return ""
+    d = re.sub(r"\\f[A-Z0-9]|\\&|\\\(\w\w", "", parts[1]).strip()
+    return re.sub(r"\s+", " ", d)[:150]
 
 
 def ar_members(raw):
@@ -253,19 +339,9 @@ def main(argv):
 
     with open(OUT, "w") as fh:
         for rel in sorted(facts):
-            f = facts[rel]
-            bits = [rel, f.get("kind", "?")]
-            if f.get("main"):
-                bits.append("main")
-            if f.get("names"):
-                bits.append("names=" + ",".join(f["names"]))
-            if f.get("section"):
-                bits.append("sec=" + str(f["section"]))
-            if f.get("members"):
-                bits.append("members=%d" % len(f["members"]))
-            if f.get("empty_text"):
-                bits.append("EMPTY")
-            fh.write("\t".join(bits) + "\n")
+            f = dict(facts[rel])
+            f["path"] = rel
+            fh.write(json.dumps(f, sort_keys=True) + "\n")
     print("\n   -> %s" % os.path.relpath(OUT, ROOT))
     return 0
 
