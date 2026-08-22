@@ -31,6 +31,11 @@ set IMG   [lindex $argv 0]
 set BLANK [lindex $argv 1]
 set vport [lindex $argv 2]
 set pport [lindex $argv 3]
+# ONE STAGE PER RUN.  Each depends on the last -- stage 2 compiles with the
+# passes stage 1 installed, stage 6 links against stage 4's libraries -- so
+# running them together hides which one failed and wastes the boot.
+set STAGE [lindex $argv 4]
+if {$STAGE eq ""} { set STAGE 1 }
 
 set SIM   "$ROOT/work/opensimh/BIN/vax780"
 set ROM   "$ROOT/v10/source/src/lsys/boot/star/uda"
@@ -258,12 +263,11 @@ sh "rm -rf $OBJ; mkdir $OBJ" 300
 # a makefile nobody generated.
 puts "\n===== the plan, stage by stage =====\n"
 
-foreach st {1 2 4 5 6} {
-    puts "\n----- stage $st -----\n"
-    set ok [run "sh $BLD $st $N $OURS $PLAN $OBJ $MNT /bin/cc /lib/ > /tmp/s$st.log 2>&1; sed -e '/^PLAN/!d' /tmp/s$st.log; echo PEND" \
-                "PEND" 14400]
-    note "stage $st ran to its end marker" $ok
-}
+puts "\n----- STAGE $STAGE -----\n"
+set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT /bin/cc /lib/ > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PEND" \
+            "PEND" 14400]
+note "stage $STAGE ran to its end marker" $ok
+run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILEND" "SFAILEND" 900
 
 note "the image has a C compiler" \
     [try "test -s $MNT/bin/cc && test -s $MNT/lib/ccom && echo CC\$OK" "CC-ok" 600]

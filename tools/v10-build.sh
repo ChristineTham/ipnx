@@ -24,8 +24,13 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GOLD="$ROOT/work/v10gold"
-BUILDER="$GOLD/${1:-ipnx-v10-made.img.pre-k16}"
+# ONE STAGE PER RUN: bash tools/v10-build.sh <stage> [builder]
+STAGE="${1:-1}"
+BUILDER="$GOLD/${2:-ipnx-v10-made.img.pre-k16}"
 OUT="$GOLD/${V10_OUT:-v10-golden.img}"
+# THE BLANK IS MADE ONCE, AT STAGE 1.  Later stages build ONTO the disk stage 1
+# started, so recreating it would throw away the toolchain they compile with.
+MAKEBLANK=$([[ "$STAGE" == 1 ]] && echo yes || echo no)
 CLONE="$GOLD/build-builder.img"
 LOG="$ROOT/work/v10-build.log"
 NETFSD="$ROOT/netfs/.build/release/netfsd"
@@ -39,8 +44,8 @@ VPORT="${VPORT:-9340}"; PPORT="${PPORT:-9341}"
 
 # THE PLAN MUST BE CURRENT.  A stale plan is a build that installs something
 # nobody chose, which is the whole class of fault this rewrite is about.
-python3 "$ROOT/tools/v10-scan.py" --check >/dev/null 2>&1 || {
-    echo "v10-build: docs/v10-plan.md is stale -- run tools/v10-scan.py"; exit 1; }
+python3 "$ROOT/tools/v10-plan.py" --check >/dev/null 2>&1 || {
+    echo "v10-build: docs/v10-plan.md is stale -- run tools/v10-plan.py"; exit 1; }
 
 # TWO SIMULATORS MUST NEVER RUN AT ONCE.  Match the process NAME, never the
 # command line: `pgrep -f vax780' matches the waiter's own arguments, so a
@@ -75,10 +80,15 @@ done
 # recreating from /dev/zero is about REUSE -- mkbitfs does not clear data
 # blocks, so a reused file leaves the last run's contents in what the new
 # filesystem calls free space.  A fresh sparse file has no previous contents.
-echo "== making a blank RA81 (456 MB, sparse) =="
-rm -f "$OUT"
-dd if=/dev/zero of="$OUT" bs=1 count=0 seek=456228864 2>/dev/null
-[[ $(stat -f%z "$OUT") == 456228864 ]] || { echo "v10-build: blank is the wrong size"; exit 1; }
+if [[ "$MAKEBLANK" == yes ]]; then
+    echo "== stage 1: making a blank RA81 (456 MB, sparse) =="
+    rm -f "$OUT"
+    dd if=/dev/zero of="$OUT" bs=1 count=0 seek=456228864 2>/dev/null
+    [[ $(stat -f%z "$OUT") == 456228864 ]] || { echo "v10-build: blank is the wrong size"; exit 1; }
+else
+    echo "== stage $STAGE: building onto the existing $OUT =="
+    [[ -e "$OUT" ]] || { echo "v10-build: no $OUT -- run stage 1 first"; exit 1; }
+fi
 
 # THE BUILDER IS CLONED, because booting mounts and mounting rewrites the
 # superblock -- a clean, successful, properly halted run still leaves the image
@@ -88,7 +98,7 @@ rm -f "$CLONE"
 cp -c "$BUILDER" "$CLONE" 2>/dev/null || cp "$BUILDER" "$CLONE"
 
 rm -f "$LOG"
-expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" 2>&1 | tee "$LOG"
+expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" "$STAGE" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------- the boot block ---
