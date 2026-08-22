@@ -287,8 +287,24 @@ def closure(start, idx, extra, seen):
         d = os.path.dirname(p)
         for kind, name in INC.findall(text):
             if name.startswith("/"):
-                q = os.path.join(TREE, name.lstrip("/"))
-                if not os.path.exists(q):
+                # AN ABSOLUTE INCLUDE NAMES A PATH THE BUILD CREATES.  Five
+                # programs write #include "/usr/jerq/include/jioctl.h", and
+                # the build installs milligan/jerq/include there -- so the
+                # header is present at compile time and reporting it missing
+                # is the same error as measuring /usr/include without
+                # inc.extra.
+                q = None
+                for pre, real in (("/usr/jerq/include/",
+                                   "milligan/jerq/include"),
+                                  ("/usr/include/", "include")):
+                    if name.startswith(pre):
+                        q = os.path.join(TREE, real, name[len(pre):])
+                        break
+                if q is None:
+                    q = os.path.join(TREE, name.lstrip("/"))
+                if os.path.exists(q):
+                    stack.append(q)
+                else:
                     bad.append((p, name, "absolute"))
                 continue
             q = resolve(name, kind, d, idx, extra)
@@ -297,6 +313,76 @@ def closure(start, idx, extra, seen):
             else:
                 stack.append(q)
     return bad
+
+
+def inc_extra():
+    """{header: source} that the build installs into /usr/include first.
+
+    THE SCAN MUST HONOUR THIS OR IT MEASURES THE WRONG MACHINE.  inc.extra
+    is applied by every harness before anything compiles, so a header listed
+    there is present at compile time -- reporting it as blocking is the same
+    error as the app's "it is in the golden, it will arrive on Reset".
+    """
+    out = {}
+    for r in rows("inc.extra"):
+        if len(r) >= 3:
+            out[r[0]] = r[2]
+    return out
+
+
+def blocked(idx=None, apply_extra=True):
+    """{program: (unit, [headers it cannot resolve])} for the planned build.
+
+    THE DATA.  phase_headers displays this; tools/v10-headers.py consumes it.
+    One statement, two consumers -- a list that appears twice will disagree,
+    and an assertion comparing a list with itself is not an assertion.
+    """
+    idx = idx or build_index()
+    jerq = os.path.join(TREE, "milligan", "jerq", "include")
+    # apply_extra=False FOR THE GENERATOR.  tools/v10-headers.py both reads
+    # this and writes inc.extra, so subtracting inc.extra here would make each
+    # run drop whatever the previous run added -- the list erased itself, and
+    # stdlib.h and stddef.h vanished from a file that had just installed them.
+    have = set(inc_extra()) if apply_extra else set()
+    out = {}
+    for r in rows("world.prog"):
+        if len(r) < 8 or r[7] not in ("v10", "milligan"):
+            continue
+        name, d, objs, how = r[0], r[1], r[4], r[5]
+        base = os.path.join(TREE, d)
+        # THE UNIT'S OWN SUBTREE IS ON -I, because the tape compiles in-tree:
+        # cmd/bas wants "bas.h" and cmd/vi "retrofit.h", each beside a source
+        # one directory over.  Without this they read as missing system
+        # headers, which is what put dev.h, libv.h, tokens.h and trace.h into
+        # a list of things to install into /usr/include.
+        extra = [base, os.path.dirname(base.rstrip("/"))]
+        if d.startswith("milligan/"):
+            extra += [jerq, os.path.join(base, "proto")]
+        SUF = (".c", ".y", ".l", ".s", ".e", ".f")
+        stems = [os.path.basename(o)[:-2] for o in objs.split()
+                 if o.endswith(".o") and not o.startswith("/") and "*" not in o]
+        if not stems or how == "Admin/Mk":
+            stems = [name]
+        mine = []
+        for st in stems:
+            for e in SUF:
+                q = os.path.join(base, st + e)
+                if os.path.exists(q):
+                    mine.append(q)
+                    break
+        miss = set()
+        for p in mine:
+            for _, nm, _k in closure(p, idx, extra, set()):
+                # `#include "*** Must define PD_MACH ***"' is the tape's
+                # poor-man's #error, not a header.
+                if "*" in nm or " " in nm:
+                    continue
+                miss.add(nm)
+        miss -= {"y.tab.h", "y.debug", "lex.yy.c"}
+        miss -= have
+        if miss:
+            out[name] = (d, sorted(miss))
+    return out
 
 
 def phase_headers(v):
@@ -314,62 +400,26 @@ def phase_headers(v):
     that cannot be built.  CLAUDE.md records that exact trap costing three
     optimistic measurements in a row.
     """
-    idx = build_index()
-    jerq = os.path.join(TREE, "milligan", "jerq", "include")
-    files = {}
-    for r in rows("world.files"):
-        if len(r) >= 6 and r[3] == "compiled":
-            files.setdefault(r[1], []).append(r[0])
-
-    blocked, ok, why = [], 0, collections.Counter()
-    for r in rows("world.prog"):
-        if len(r) < 8 or r[7] not in ("v10", "milligan"):
-            continue
-        name, d, objs, how = r[0], r[1], r[4], r[5]
-        base = os.path.join(TREE, d)
-        extra = [jerq] if d.startswith("milligan/") else []
-        # A PROGRAM'S SOURCES ARE ITS OWN, NOT ITS DIRECTORY'S.  src/cmd holds
-        # 209 loose programs in one directory, so scanning "every compiled
-        # file in the unit" charged each of them with all 209 -- which is why
-        # sys/charges.h and sys/dumpl.h appeared to block 209 programs each.
-        SUF = (".c", ".y", ".l", ".s", ".e", ".f")
-        mine = []
-        stems = [os.path.basename(o)[:-2] for o in objs.split()
-                 if o.endswith(".o") and not o.startswith("/") and "*" not in o]
-        if not stems or how == "Admin/Mk":
-            stems = [name]
-        for st in stems:
-            for e in SUF:
-                q = os.path.join(base, st + e)
-                if os.path.exists(q):
-                    mine.append(q)
-                    break
-        miss = set()
-        for p in mine:
-            for _, nm, _k in closure(p, idx, extra, set()):
-                miss.add(nm)
-        # yacc and lex write these; they are not missing, they are not made yet
-        miss -= {"y.tab.h", "y.debug", "lex.yy.c"}
-        if miss:
-            blocked.append((name, d, sorted(miss)))
-            for m in miss:
-                why[m] += 1
-        else:
-            ok += 1
-
-    out = ["programs the plan builds: %d" % (ok + len(blocked)),
-           "   compile-ready              %d" % ok,
-           "   blocked on a header        %d" % len(blocked), ""]
-    out.append("the headers that block them, most first:")
-    for nm, n in why.most_common(20):
+    total = sum(1 for r in rows("world.prog")
+                if len(r) >= 8 and r[7] in ("v10", "milligan"))
+    bad = blocked()
+    why = collections.Counter()
+    for _, (d, miss) in bad.items():
+        for m in miss:
+            why[m] += 1
+    out = ["programs the plan builds: %d" % total,
+           "   compile-ready              %d" % (total - len(bad)),
+           "   blocked on a header        %d" % len(bad),
+           "   (%d headers are installed first, from inc.extra)" % len(inc_extra()),
+           "",
+           "the headers that block them, most first:"]
+    for nm, n in why.most_common():
         out.append("   %-26s %4d programs" % (nm, n))
     out.append("")
     out.append("blocked programs:")
-    for name, d, miss in blocked[:40]:
+    for name, (d, miss) in sorted(bad.items()):
         out.append("   %-16s %-34s %s" % (name, d, " ".join(miss[:4])))
-    if len(blocked) > 40:
-        out.append("   ... and %d more" % (len(blocked) - 40))
-    return ok + len(blocked), out
+    return total, out
 
 
 # ------------------------------------------------------------- 4  5620 ---
