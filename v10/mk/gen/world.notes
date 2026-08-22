@@ -46,6 +46,445 @@ blit/src/tek4014	no link rule recognised in makefile
 blit/src/term	no link rule recognised in makefile
 blit/src/twid	no link rule recognised in makefile
 include	no build file
+milligan/jerq/demo/src	no link rule recognised in makefile
+milligan/jerq/demo/src/asteroids	no link rule recognised in makefile
+milligan/jerq/demo/src/cent	no link rule recognised in makefile
+milligan/jerq/demo/src/fence	no link rule recognised in makefile
+milligan/jerq/demo/src/pengo	no link rule recognised in makefile
+milligan/jerq/demo/src/sapengo	no link rule recognised in makefile
+milligan/jerq/demo/src/swar	no link rule recognised in makefile
+milligan/jerq/icon/16x16	no build file
+milligan/jerq/icon/face48	no build file
+milligan/jerq/icon/large	no build file
+milligan/jerq/icon/texture	no build file
+milligan/jerq/sgs/ar	no link rule recognised in makefile
+milligan/jerq/sgs/as	no link rule recognised in makefile
+milligan/jerq/sgs/comp	no link rule recognised in makefile
+milligan/jerq/sgs/compress	no link rule recognised in makefile
+milligan/jerq/sgs/dis	no link rule recognised in makefile
+milligan/jerq/sgs/inc/sdpsrc/hi	no build file
+milligan/jerq/sgs/inc/sdpsrc/lo	no build file
+milligan/jerq/sgs/ld	no link rule recognised in makefile
+milligan/jerq/sgs/libld	no link rule recognised in makefile
+milligan/jerq/sgs/libsdp	no link rule recognised in makefile
+milligan/jerq/sgs/optim	no link rule recognised in makefile
+milligan/jerq/sgs/size	no link rule recognised in makefile
+milligan/jerq/sgs/strip	no link rule recognised in makefile
+milligan/jerq/src	no link rule recognised in makefile
+milligan/jerq/src/32ld	no link rule recognised in makefile
+milligan/jerq/src/Xjplot/xplot	no build file
+milligan/jerq/src/brush	no link rule recognised in makefile
+milligan/jerq/src/brush/new	no link rule recognised in makefile
+milligan/jerq/src/cip	no link rule recognised in makefile
+milligan/jerq/src/face	no link rule recognised in makefile
+milligan/jerq/src/font	no link rule recognised in makefile
+milligan/jerq/src/jf	no link rule recognised in makefile
+milligan/jerq/src/jim	no link rule recognised in makefile
+milligan/jerq/src/jim/frame	no link rule recognised in makefile
+milligan/jerq/src/jim/term	no link rule recognised in makefile
+milligan/jerq/src/jplot/host	no build file
+milligan/jerq/src/jraw	no link rule recognised in makefile
+milligan/jerq/src/jterm	no link rule recognised in makefile
+milligan/jerq/src/lens	no link rule recognised in makefile
+milligan/jerq/src/lib/%43	no link rule recognised in makefile
+milligan/jerq/src/lib/%43/old	no build file
+milligan/jerq/src/lib/c	no link rule recognised in makefile
+milligan/jerq/src/lib/c/junk	no build file
+milligan/jerq/src/lib/c/old	no build file
+milligan/jerq/src/lib/j	no build file
+milligan/jerq/src/lib/j/drek	no build file
+milligan/jerq/src/lib/j/old	no link rule recognised in makefile
+milligan/jerq/src/lib/jj	no link rule recognised in makefile
+milligan/jerq/src/lib/layer	no link rule recognised in makefile
+milligan/jerq/src/lib/mj	no build file
+milligan/jerq/src/lib/mj/old	no build file
+milligan/jerq/src/lib/olayer	no link rule recognised in makefile
+milligan/jerq/src/lib/pot	no link rule recognised in makefile
+milligan/jerq/src/lib/sys	no link rule recognised in makefile
+milligan/jerq/src/lib/sys/old	no build file
+milligan/jerq/src/menudrop	no link rule recognised in makefile
+milligan/jerq/src/mux	no link rule recognised in makefile
+milligan/jerq/src/mux/oterm	no link rule recognised in makefile
+milligan/jerq/src/mux/oterm/frame	no link rule recognised in makefile
+milligan/jerq/src/mux/proto	no link rule recognised in makefile
+milligan/jerq/src/mux/term	no link rule recognised in makefile
+milligan/jerq/src/mux/term/frame	no link rule recognised in makefile
+milligan/jerq/src/pads/doc	no build file
+milligan/jerq/src/pads/host	no link rule recognised in makefile
+milligan/jerq/src/pads/term	no link rule recognised in makefile
+milligan/jerq/src/paint	no link rule recognised in makefile
+milligan/jerq/src/ped/dped	no link rule recognised in makefile
+milligan/jerq/src/pi/term	no link rule recognised in makefile
+milligan/jerq/src/proof	no link rule recognised in makefile
+milligan/jerq/src/proof/host	no link rule recognised in makefile
+milligan/jerq/src/proof/term	no link rule recognised in makefile
+milligan/jerq/src/sam	no link rule recognised in makefile
+milligan/jerq/src/sam/term	no link rule recognised in makefile
+milligan/jerq/src/standalone	no link rule recognised in makefile
+milligan/jerq/src/sysmon/old	no build file
+milligan/jerq/src/sysmon/test	no build file
+milligan/jerq/src/tek4014	no link rule recognised in makefile
+milligan/jerq/src/thinkblt	no link rule recognised in makefile
+milligan/jerq/src/twid	no link rule recognised in makefile
+milligan/jerq/src/xcip	no link rule recognised in makefile
+secombe/asm.libm	no link rule recognised in makefile
+secombe/cmd	no build file
+secombe/cmd/2500	no link rule recognised in mkfile
+secombe/cmd/PDP11/crt	no build file
+secombe/cmd/PDP11/fpp/aux	no build file
+secombe/cmd/PDP11/fpp/old	no build file
+secombe/cmd/adb/11v	no link rule recognised in makefile
+secombe/cmd/adb/68v	no link rule recognised in makefile
+secombe/cmd/adb/comm	no link rule recognised in makefile
+secombe/cmd/adb/conf	no link rule recognised in makefile
+secombe/cmd/adb/cray	no link rule recognised in makefile
+secombe/cmd/adb/g	no link rule recognised in makefile
+secombe/cmd/adb/null	no link rule recognised in makefile
+secombe/cmd/adb/seq	no link rule recognised in makefile
+secombe/cmd/adb/v7	no build file
+secombe/cmd/adb/v8	no build file
+secombe/cmd/ansi	no link rule recognised in mkfile
+secombe/cmd/as	no link rule recognised in makefile
+secombe/cmd/asd++	no link rule recognised in makefile
+secombe/cmd/backup.old	no link rule recognised in mkfile
+secombe/cmd/basic/basic/PW	no build file
+secombe/cmd/c2	no link rule recognised in makefile
+secombe/cmd/ccom/common	no build file
+secombe/cmd/ccom/vax/tests	no build file
+secombe/cmd/cflow	no link rule recognised in makefile
+secombe/cmd/cfront/cfront	no link rule recognised in makefile
+secombe/cmd/cfront/cfront2.00	no link rule recognised in makefile
+secombe/cmd/cfront/libC/bignum	no link rule recognised in makefile
+secombe/cmd/cfront/libC/complex	no link rule recognised in makefile
+secombe/cmd/cfront/libC/generic	no link rule recognised in makefile
+secombe/cmd/cfront/libC/iostream	no build file
+secombe/cmd/cfront/libC/iostream.cpio	no build file
+secombe/cmd/cfront/libC/misc	no link rule recognised in makefile
+secombe/cmd/cfront/libC/new	no link rule recognised in makefile
+secombe/cmd/cfront/libC/oiostream	no build file
+secombe/cmd/cfront/libC/ooiostream	no build file
+secombe/cmd/cfront/libC/otask	no link rule recognised in makefile
+secombe/cmd/cfront/libC/task	no link rule recognised in makefile
+secombe/cmd/cfront/libstring	no link rule recognised in makefile
+secombe/cmd/cfront/ocfront	no link rule recognised in makefile
+secombe/cmd/cfront/ooptcfront/demo	no build file
+secombe/cmd/cfront/optcfront	no link rule recognised in makefile
+secombe/cmd/cfront/ptcfront	no link rule recognised in makefile
+secombe/cmd/cfront/xptcfront	no link rule recognised in makefile
+secombe/cmd/config	no link rule recognised in makefile
+secombe/cmd/cref	no build file
+secombe/cmd/dag	no link rule recognised in makefile
+secombe/cmd/dict	no link rule recognised in makefile
+secombe/cmd/diff	no link rule recognised in mkfile
+secombe/cmd/dist/cmd	no link rule recognised in mkfile
+secombe/cmd/dist/lib	no link rule recognised in mkfile
+secombe/cmd/dist/v10	no link rule recognised in mkfile
+secombe/cmd/dump	no link rule recognised in makefile
+secombe/cmd/efl/efixsrc	no link rule recognised in mkfile
+secombe/cmd/egrep	no link rule recognised in mkfile
+secombe/cmd/error	no link rule recognised in makefile
+secombe/cmd/ex/termlib	no link rule recognised in makefile
+secombe/cmd/f2c	no link rule recognised in makefile
+secombe/cmd/f2c/doc	no link rule recognised in makefile
+secombe/cmd/f2c/misc	no build file
+secombe/cmd/f77/old	no build file
+secombe/cmd/gre	no link rule recognised in makefile
+secombe/cmd/gre/regress.d	no link rule recognised in makefile
+secombe/cmd/hoc	no link rule recognised in makefile
+secombe/cmd/imscan	no link rule recognised in makefile
+secombe/cmd/join	no link rule recognised in mkfile
+secombe/cmd/kasb	no link rule recognised in makefile
+secombe/cmd/lcc/c	no link rule recognised in makefile
+secombe/cmd/lcc/etc	no link rule recognised in makefile
+secombe/cmd/lcc/gen0	no link rule recognised in makefile
+secombe/cmd/lcc/gen2	no link rule recognised in makefile
+secombe/cmd/lcc/gen2/mc	no link rule recognised in makefile
+secombe/cmd/lcc/gen2/mc-sun	no build file
+secombe/cmd/lcc/gen2/mc-sun/tst	no build file
+secombe/cmd/lcc/gen2/mips	no link rule recognised in makefile
+secombe/cmd/lcc/gen2/mips-iris	no build file
+secombe/cmd/lcc/gen2/mips-iris/tst	no build file
+secombe/cmd/lcc/gen2/sparc	no link rule recognised in makefile
+secombe/cmd/lcc/gen2/sparc-sun	no build file
+secombe/cmd/lcc/gen2/sparc-sun/tst	no build file
+secombe/cmd/lcc/gen2/vax	no link rule recognised in makefile
+secombe/cmd/lcc/gen2/vax-v9	no build file
+secombe/cmd/lcc/gen3	no link rule recognised in makefile
+secombe/cmd/lcc/gen3/tst	no build file
+secombe/cmd/lcc/ph	no link rule recognised in mkfile
+secombe/cmd/lcc/port.bak	no build file
+secombe/cmd/lcc/tst	no link rule recognised in makefile
+secombe/cmd/lcomp	no link rule recognised in makefile
+secombe/cmd/learn/lib/lib/C	no build file
+secombe/cmd/lex/old	no build file
+secombe/cmd/lfactor	no build file
+secombe/cmd/lint	no link rule recognised in makefile
+secombe/cmd/lp	no link rule recognised in mkfile
+secombe/cmd/man	no link rule recognised in makefile
+secombe/cmd/map/export/map.cpio/libmap	no link rule recognised in makefile
+secombe/cmd/map/libmap	no link rule recognised in makefile
+secombe/cmd/mk/export	no link rule recognised in makefile
+secombe/cmd/mk/export/fio	no link rule recognised in makefile
+secombe/cmd/mk/export/libc	no link rule recognised in makefile
+secombe/cmd/mk/export/math	no link rule recognised in makefile
+secombe/cmd/mk/export.proto/fio	no link rule recognised in makefile
+secombe/cmd/mk/export.proto/libc	no link rule recognised in makefile
+secombe/cmd/mk/export.proto/math	no link rule recognised in makefile
+secombe/cmd/monk/cmd	no link rule recognised in makefile
+secombe/cmd/monk/cmd/demonk	no link rule recognised in makefile
+secombe/cmd/monk/cmd/index	no link rule recognised in makefile
+secombe/cmd/monk/cmd/monk	no link rule recognised in makefile
+secombe/cmd/monk/cmd/monkmerge	no link rule recognised in makefile
+secombe/cmd/movie/oldstuff	no build file
+secombe/cmd/netnews/cvt	no build file
+secombe/cmd/netnews/src	no link rule recognised in makefile
+secombe/cmd/netnews/uucp	no build file
+secombe/cmd/nupas	no build file
+secombe/cmd/nupas/4bsd	no link rule recognised in makefile
+secombe/cmd/nupas/attin	no link rule recognised in makefile
+secombe/cmd/nupas/common	no link rule recognised in makefile
+secombe/cmd/nupas/ipc	no link rule recognised in makefile
+secombe/cmd/nupas/libc	no link rule recognised in makefile
+secombe/cmd/nupas/mips	no link rule recognised in makefile
+secombe/cmd/nupas/ns	no link rule recognised in makefile
+secombe/cmd/nupas/print	no link rule recognised in makefile
+secombe/cmd/nupas/s5	no link rule recognised in makefile
+secombe/cmd/nupas/s5.3k	no link rule recognised in makefile
+secombe/cmd/nupas/send	no link rule recognised in makefile
+secombe/cmd/nupas/sgi	no link rule recognised in makefile
+secombe/cmd/nupas/smtp	no link rule recognised in makefile
+secombe/cmd/nupas/sun4bsd	no link rule recognised in makefile
+secombe/cmd/nupas/v10	no link rule recognised in makefile
+secombe/cmd/odist/ape/Future	no build file
+secombe/cmd/odist/opkg	no link rule recognised in mkfile
+secombe/cmd/odist/pax/ship	no build file
+secombe/cmd/odist/pax/src/cmd/pax	no link rule recognised in makefile
+secombe/cmd/odist/pax/src/lib/libodelta	no link rule recognised in makefile
+secombe/cmd/odist/pax/src/lib/libx/comp	no build file
+secombe/cmd/odist/pax/src/lib/libx/dir	no build file
+secombe/cmd/odist/pax/src/lib/libx/hash	no build file
+secombe/cmd/odist/pax/src/lib/libx/misc	no build file
+secombe/cmd/odist/pax/src/lib/libx/port	no build file
+secombe/cmd/odist/pax/src/lib/libx/preroot	no build file
+secombe/cmd/odist/pax/src/lib/libx/re	no build file
+secombe/cmd/odist/pax/src/lib/libx/sfio	no build file
+secombe/cmd/odist/pax/src/lib/libx/stdio	no build file
+secombe/cmd/odist/pax/src/lib/libx/string	no build file
+secombe/cmd/odist/pax/src/lib/libx/tm	no build file
+secombe/cmd/odist/pax/src/lib/libx/vec	no build file
+secombe/cmd/odist/src.tar/ape/Future	no build file
+secombe/cmd/odist/src.tar/pkg	no link rule recognised in mkfile
+secombe/cmd/ops	no link rule recognised in makefile
+secombe/cmd/pcc1/mip	no build file
+secombe/cmd/pcc1/pcc	no link rule recognised in makefile
+secombe/cmd/pcc1/pcc/VMS	no build file
+secombe/cmd/pic	no link rule recognised in makefile
+secombe/cmd/picasso	no link rule recognised in makefile
+secombe/cmd/pico/framebuffers	no build file
+secombe/cmd/poly	no link rule recognised in makefile
+secombe/cmd/post.src/common	no build file
+secombe/cmd/post.src/download	no build file
+secombe/cmd/post.src/dpost	no build file
+secombe/cmd/post.src/dpost.utf	no build file
+secombe/cmd/post.src/misc	no build file
+secombe/cmd/post.src/picpack	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/common	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/download	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/dpost	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/dpost.utf	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/misc	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/picpack	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postbgi	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postdaisy	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postdmd	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postgif	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postio	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postmd	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postprint	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/postreverse	no build file
+secombe/cmd/post.src/post.src.cpio/post.src/posttek	no build file
+secombe/cmd/post.src/postbgi	no build file
+secombe/cmd/post.src/postdaisy	no build file
+secombe/cmd/post.src/postdmd	no build file
+secombe/cmd/post.src/postgif	no build file
+secombe/cmd/post.src/postio	no build file
+secombe/cmd/post.src/postmd	no build file
+secombe/cmd/post.src/postprint	no build file
+secombe/cmd/post.src/postreverse	no build file
+secombe/cmd/post.src/posttek	no build file
+secombe/cmd/postscript/common	no build file
+secombe/cmd/postscript/download	no build file
+secombe/cmd/postscript/dpost	no build file
+secombe/cmd/postscript/misc	no build file
+secombe/cmd/postscript/picpack	no build file
+secombe/cmd/postscript/postbgi	no build file
+secombe/cmd/postscript/postdaisy	no build file
+secombe/cmd/postscript/postdmd	no build file
+secombe/cmd/postscript/postgif	no build file
+secombe/cmd/postscript/postio	no build file
+secombe/cmd/postscript/postmd	no build file
+secombe/cmd/postscript/postprint	no build file
+secombe/cmd/postscript/postreverse	no build file
+secombe/cmd/postscript/posttek	no build file
+secombe/cmd/prefer/libux3	no link rule recognised in makefile
+secombe/cmd/prefer/misc	no link rule recognised in makefile
+secombe/cmd/prefer/pref	no link rule recognised in makefile
+secombe/cmd/ps	no link rule recognised in mkfile
+secombe/cmd/qsnap	no link rule recognised in makefile
+secombe/cmd/rarepl	no link rule recognised in mkfile
+secombe/cmd/sed	no link rule recognised in makefile
+secombe/cmd/server	no link rule recognised in makefile
+secombe/cmd/sh	no link rule recognised in mkfile
+secombe/cmd/sml/lib/mlyacc	no build file
+secombe/cmd/sml/lib/twig	no build file
+secombe/cmd/sml/src/lex	no build file
+secombe/cmd/sort	no link rule recognised in makefile
+secombe/cmd/spell	no link rule recognised in makefile
+secombe/cmd/spitbol/cint	no build file
+secombe/cmd/strip	no link rule recognised in makefile
+secombe/cmd/sum	no link rule recognised in mkfile
+secombe/cmd/sum/old	no build file
+secombe/cmd/tbl/tbl.cpio	no build file
+secombe/cmd/tp	no link rule recognised in makefile
+secombe/cmd/troff/Old/catversion	no build file
+secombe/cmd/troff/Old/catversion/term	no build file
+secombe/cmd/troff/ancient.nroff/fonts.d	no build file
+secombe/cmd/troff/ancient.nroff/macros.d	no link rule recognised in makefile
+secombe/cmd/troff/ancient.nroff/terms.d	no link rule recognised in makefile
+secombe/cmd/troff/devaps	no build file
+secombe/cmd/troff/devi10	no build file
+secombe/cmd/twig/examples	no build file
+secombe/cmd/u9fs	no link rule recognised in makefile
+secombe/cmd/udemon	no build file
+secombe/cmd/units	no link rule recognised in makefile
+secombe/cmd/units/old	no build file
+secombe/cmd/upas/4bsd	no link rule recognised in makefile
+secombe/cmd/upas/attin	no link rule recognised in makefile
+secombe/cmd/upas/common	no link rule recognised in makefile
+secombe/cmd/upas/cray	no link rule recognised in makefile
+secombe/cmd/upas/libc	no link rule recognised in makefile
+secombe/cmd/upas/mips	no build file
+secombe/cmd/upas/ns	no link rule recognised in makefile
+secombe/cmd/upas/print	no link rule recognised in makefile
+secombe/cmd/upas/s5	no link rule recognised in makefile
+secombe/cmd/upas/s5.3k	no link rule recognised in makefile
+secombe/cmd/upas/send	no link rule recognised in makefile
+secombe/cmd/upas/sgi	no link rule recognised in makefile
+secombe/cmd/upas/smtp	no link rule recognised in makefile
+secombe/cmd/upas/sun4bsd	no link rule recognised in makefile
+secombe/cmd/upas/v10	no link rule recognised in makefile
+secombe/cmd/usgmake	no link rule recognised in makefile
+secombe/cmd/uucp/unused	no build file
+secombe/cmd/uudiff	no build file
+secombe/cmd/view2d/Old	no link rule recognised in makefile
+secombe/cmd/view2d/Old/metheus	no build file
+secombe/cmd/view2d/coloriz	no link rule recognised in makefile
+secombe/cmd/view2d/term	no link rule recognised in makefile
+secombe/cmd/vsw	no link rule recognised in mkfile
+secombe/cmd/weather	no build file
+secombe/cmd/worm	no link rule recognised in mkfile
+secombe/cmd/worm/oscsi	no link rule recognised in mkfile
+secombe/cmd/worm/oscsi/generic	no build file
+secombe/cmd/worm/oscsi/osanity	no link rule recognised in mkfile
+secombe/cmd/worm/oscsi/scsi	no build file
+secombe/cmd/worm/oscsi/scsi.cpio	no link rule recognised in mkfile
+secombe/cmd/worm/oscsi/scsi.cpio/generic	no build file
+secombe/cmd/worm/oscsi/scsi.cpio/osanity	no link rule recognised in mkfile
+secombe/cmd/worm/oscsi/scsi.cpio/scsi	no build file
+secombe/cmd/worm/oscsi/scsi.cpio/sony	no build file
+secombe/cmd/worm/oscsi/scsi.cpio/wren	no build file
+secombe/cmd/worm/oscsi/sony	no build file
+secombe/cmd/worm/oscsi/wren	no build file
+secombe/cmd/worm/scsi	no link rule recognised in mkfile
+secombe/cmd/worm/scsi/generic	no build file
+secombe/cmd/worm/scsi/osanity	no link rule recognised in mkfile
+secombe/cmd/worm/scsi/scsi	no build file
+secombe/cmd/worm/scsi/scsi.cpio	no link rule recognised in mkfile
+secombe/cmd/worm/scsi/scsi.cpio/generic	no build file
+secombe/cmd/worm/scsi/scsi.cpio/osanity	no link rule recognised in mkfile
+secombe/cmd/worm/scsi/scsi.cpio/scsi	no build file
+secombe/cmd/worm/scsi/scsi.cpio/sony	no build file
+secombe/cmd/worm/scsi/scsi.cpio/wren	no build file
+secombe/cmd/worm/scsi/sony	no build file
+secombe/cmd/worm/scsi/wren	no build file
+secombe/cmd/yacc	no link rule recognised in makefile
+secombe/dk/cmd/pupu.1.2	no build file
+secombe/dk/libc	no link rule recognised in makefile
+secombe/games	no build file
+secombe/games/adv	no build file
+secombe/games/boggle	no build file
+secombe/games/doctor	no link rule recognised in makefile
+secombe/games/mille	no link rule recognised in makefile
+secombe/ipc/internet/htable	no link rule recognised in makefile
+secombe/ipc/libipc	no link rule recognised in mkfile
+secombe/ipc/mgrs	no link rule recognised in mkfile
+secombe/ipc/mgrs/4.3gate	no link rule recognised in makefile
+secombe/ipc/mgrs/authmgr	no link rule recognised in makefile
+secombe/ipc/mgrs/common	no link rule recognised in mkfile
+secombe/ipc/mgrs/svcmgr	no link rule recognised in mkfile
+secombe/ipc/mgrs/tcpmgr	no link rule recognised in mkfile
+secombe/ipc/mgrs/tpcmgr	no link rule recognised in makefile
+secombe/lbin/Mail	no link rule recognised in makefile
+secombe/lbin/libjobs	no link rule recognised in makefile
+secombe/libF77	no link rule recognised in mkfile
+secombe/libF77/notused	no build file
+secombe/libF77/old	no link rule recognised in makefile
+secombe/libI77	no link rule recognised in mkfile
+secombe/libI77/d	no build file
+secombe/libI77/notused	no build file
+secombe/libI77/old	no link rule recognised in makefile
+secombe/libI77/old1	no build file
+secombe/libc/csu	no build file
+secombe/libc/fio	no link rule recognised in mkfile
+secombe/libc/gen	no build file
+secombe/libc/gen/tmp	no build file
+secombe/libc/math	no build file
+secombe/libc/stdio	no link rule recognised in makefile
+secombe/libc/stdio/ostdio	no link rule recognised in mkfile
+secombe/libc/sys	no build file
+secombe/libcbt	no link rule recognised in makefile
+secombe/libcc	no link rule recognised in makefile
+secombe/libdbm	no link rule recognised in makefile
+secombe/libj	no link rule recognised in makefile
+secombe/libl	no link rule recognised in makefile
+secombe/libm	no link rule recognised in makefile
+secombe/libmp	no link rule recognised in makefile
+secombe/libnm	no link rule recognised in makefile
+secombe/libpicfile	no link rule recognised in mkfile
+secombe/libplot/lib4014	no link rule recognised in makefile
+secombe/libplot/lib5620	no link rule recognised in makefile
+secombe/libplot/libpen	no link rule recognised in makefile
+secombe/libplot/libplot/x	no build file
+secombe/libplot/libtr	no link rule recognised in makefile
+secombe/libplot/oldplot	no build file
+secombe/libsdb	no link rule recognised in makefile
+secombe/libtermlib	no link rule recognised in makefile
+secombe/liby	no link rule recognised in makefile
+secombe/local	no build file
+secombe/sys/boot/naut	no link rule recognised in mkfile
+secombe/sys/boot/star	no link rule recognised in mkfile
+secombe/sys/boot/uvax	no link rule recognised in mkfile
+secombe/sys/fs	no link rule recognised in mkfile
+secombe/sys/inet	no link rule recognised in mkfile
+secombe/sys/io	no link rule recognised in mkfile
+secombe/sys/lib	no build file
+secombe/sys/md	no link rule recognised in mkfile
+secombe/sys/ml	no link rule recognised in mkfile
+secombe/sys/os	no link rule recognised in mkfile
+secombe/sys/vm	no link rule recognised in mkfile
+sellers/man/adm	no build file
+sellers/man/man0	no build file
+sellers/man/man1	no build file
+sellers/vol2/Faces/How/src	no build file
+sellers/vol2/Ucds	no link rule recognised in mkfile
+sellers/vol2/anim	no link rule recognised in makefile
+sellers/vol2/grap	no link rule recognised in makefile
+sellers/vol2/index	no link rule recognised in mkfile
+sellers/vol2/index/tools	no build file
+sellers/vol2/index/tools/xsed	no build file
+sellers/vol2/lex	no link rule recognised in mkfile
+sellers/vol2/ms	no link rule recognised in mkfile
+sellers/vol2/uucp	no link rule recognised in mkfile
 src/630/lib	no build file
 src/630/src	no link rule recognised in makefile
 src/asm.libm	no link rule recognised in makefile
@@ -114,6 +553,7 @@ src/cmd/f2c	no link rule recognised in makefile
 src/cmd/f2c/doc	no link rule recognised in makefile
 src/cmd/f2c/misc	no build file
 src/cmd/f77/old	no build file
+src/cmd/gcc/gnucpp.cpio	no build file
 src/cmd/gre	no link rule recognised in makefile
 src/cmd/gre/regress.d	no link rule recognised in makefile
 src/cmd/hoc	no link rule recognised in makefile
@@ -169,6 +609,7 @@ src/cmd/lfactor	no build file
 src/cmd/lint	no link rule recognised in makefile
 src/cmd/lp	no link rule recognised in mkfile
 src/cmd/man	no link rule recognised in makefile
+src/cmd/map/export/map.cpio/libmap	no link rule recognised in makefile
 src/cmd/map/libmap	no link rule recognised in makefile
 src/cmd/matlab/pyxis	no link rule recognised in makefile
 src/cmd/matlab/src	no build file
@@ -223,6 +664,8 @@ src/cmd/odist/pax/src/lib/libx/stdio	no build file
 src/cmd/odist/pax/src/lib/libx/string	no build file
 src/cmd/odist/pax/src/lib/libx/tm	no build file
 src/cmd/odist/pax/src/lib/libx/vec	no build file
+src/cmd/odist/src.tar/ape/Future	no build file
+src/cmd/odist/src.tar/pkg	no link rule recognised in mkfile
 src/cmd/ops	no link rule recognised in makefile
 src/cmd/osh	no link rule recognised in mkfile
 src/cmd/oworm	no link rule recognised in mkfile
@@ -245,6 +688,21 @@ src/cmd/post.src/dpost	no build file
 src/cmd/post.src/dpost.utf	no build file
 src/cmd/post.src/misc	no build file
 src/cmd/post.src/picpack	no build file
+src/cmd/post.src/post.src.cpio/post.src/common	no build file
+src/cmd/post.src/post.src.cpio/post.src/download	no build file
+src/cmd/post.src/post.src.cpio/post.src/dpost	no build file
+src/cmd/post.src/post.src.cpio/post.src/dpost.utf	no build file
+src/cmd/post.src/post.src.cpio/post.src/misc	no build file
+src/cmd/post.src/post.src.cpio/post.src/picpack	no build file
+src/cmd/post.src/post.src.cpio/post.src/postbgi	no build file
+src/cmd/post.src/post.src.cpio/post.src/postdaisy	no build file
+src/cmd/post.src/post.src.cpio/post.src/postdmd	no build file
+src/cmd/post.src/post.src.cpio/post.src/postgif	no build file
+src/cmd/post.src/post.src.cpio/post.src/postio	no build file
+src/cmd/post.src/post.src.cpio/post.src/postmd	no build file
+src/cmd/post.src/post.src.cpio/post.src/postprint	no build file
+src/cmd/post.src/post.src.cpio/post.src/postreverse	no build file
+src/cmd/post.src/post.src.cpio/post.src/posttek	no build file
 src/cmd/post.src/postbgi	no build file
 src/cmd/post.src/postdaisy	no build file
 src/cmd/post.src/postdmd	no build file
@@ -286,6 +744,7 @@ src/cmd/spitbol/cint	no build file
 src/cmd/strip	no link rule recognised in makefile
 src/cmd/sum	no link rule recognised in mkfile
 src/cmd/sum/old	no build file
+src/cmd/tbl/tbl.cpio	no build file
 src/cmd/tp	no link rule recognised in makefile
 src/cmd/troff/Old/catversion	no build file
 src/cmd/troff/Old/catversion/term	no build file
@@ -328,12 +787,24 @@ src/cmd/worm/oscsi	no link rule recognised in mkfile
 src/cmd/worm/oscsi/generic	no build file
 src/cmd/worm/oscsi/osanity	no link rule recognised in mkfile
 src/cmd/worm/oscsi/scsi	no build file
+src/cmd/worm/oscsi/scsi.cpio	no link rule recognised in mkfile
+src/cmd/worm/oscsi/scsi.cpio/generic	no build file
+src/cmd/worm/oscsi/scsi.cpio/osanity	no link rule recognised in mkfile
+src/cmd/worm/oscsi/scsi.cpio/scsi	no build file
+src/cmd/worm/oscsi/scsi.cpio/sony	no build file
+src/cmd/worm/oscsi/scsi.cpio/wren	no build file
 src/cmd/worm/oscsi/sony	no build file
 src/cmd/worm/oscsi/wren	no build file
 src/cmd/worm/scsi	no link rule recognised in mkfile
 src/cmd/worm/scsi/generic	no build file
 src/cmd/worm/scsi/osanity	no link rule recognised in mkfile
 src/cmd/worm/scsi/scsi	no build file
+src/cmd/worm/scsi/scsi.cpio	no link rule recognised in mkfile
+src/cmd/worm/scsi/scsi.cpio/generic	no build file
+src/cmd/worm/scsi/scsi.cpio/osanity	no link rule recognised in mkfile
+src/cmd/worm/scsi/scsi.cpio/scsi	no build file
+src/cmd/worm/scsi/scsi.cpio/sony	no build file
+src/cmd/worm/scsi/scsi.cpio/wren	no build file
 src/cmd/worm/scsi/sony	no build file
 src/cmd/worm/scsi/wren	no build file
 src/cmd/yacc	no link rule recognised in makefile

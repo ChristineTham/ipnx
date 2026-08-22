@@ -66,7 +66,18 @@ ASUF = (".s",)
 
 # Trees whose programs are not V10's.  Labelled, surveyed, and marked -- the
 # plan decides whether to build them, not this.
-FOREIGN = (("src/history/", "ix"), ("src/630/", "630"))
+# SIX ROOTS, ONE PER ARCHIVE, PLUS TWO TREES INSIDE src/ THAT ARE NOT V10's.
+# A LABEL, not a filter: everything is surveyed and what gets BUILT is the
+# plan's decision.  src and secombe are both /usr/src from different machines,
+# so a unit exists in both and the two are NOT merged -- secombe is a second
+# witness to the same question, which is exactly what settled which compiler
+# built each libc member.
+FOREIGN = (("src/history/", "ix"), ("src/630/", "630"),
+           ("secombe/", "secombe"), ("milligan/", "milligan"),
+           ("sellers/", "sellers"), ("blit/", "blit"),
+           ("include/", "include"))
+ROOTS = ("v10", "ix", "630", "secombe", "milligan", "sellers", "blit",
+         "include")
 
 
 def tree_of(rel):
@@ -76,16 +87,21 @@ def tree_of(rel):
     return "v10"
 
 
+def cmd_root(rel):
+    """Is this the loose-programs directory of some root?  <root>/cmd."""
+    return rel in ("src/cmd", "secombe/cmd")
+
+
 # ------------------------------------------------------- Admin, the oracle ---
 
-def admin():
+def admin(base=None):
     """{name: install directory} from cmd/Admin, plus the -O list.
 
     Admin/dest is a shell script and this is its `if' chain, in its order.
     Read rather than reimplemented: the order matters (a name in both
     binfiles and etcfiles goes to /bin) and it is stated there, not here.
     """
-    base = os.path.join(SRC, "cmd", "Admin")
+    base = base or os.path.join(SRC, "cmd", "Admin")
     dest, large = {}, set()
     for f, d in (("binfiles", "/bin"), ("etcfiles", "/etc"),
                  ("libfiles", "/lib"), ("ulibfiles", "/usr/lib")):
@@ -303,7 +319,7 @@ def classify_files(dp, rel, fs, found, m, text, isunit=True):
                 rows.append((f, rel, ext, "compiled", "-", "leftover .o"))
             elif f in named:
                 rows.append((f, rel, ext, "compiled", "-", "named by build"))
-            elif rel == "src/cmd":
+            elif cmd_root(rel):
                 rows.append((f, rel, ext, "compiled", base, "Admin/Mk"))
             elif len(found) == 1 and not owner:
                 rows.append((f, rel, ext, "compiled", found[0][0],
@@ -358,7 +374,7 @@ def survey():
         # LOOSE FILES UNDER cmd/ ARE PROGRAMS IN THEIR OWN RIGHT -- Admin/Mk's
         # rule, and the reason `cmd/ld.c' and `cmd/cc.c' were missed for weeks
         # (they are loose files, not cmd/ld/ and cmd/cc/ directories).
-        if rel == "src/cmd":
+        if cmd_root(rel):
             for f in srcs + gsrc + asrc:
                 b = os.path.splitext(f)[0]
                 if b in {p[0] for p in found}:
@@ -446,8 +462,9 @@ def main(argv):
     idir = collections.Counter(p[2] for p in progs)
     print("v10-world: %s" % os.path.relpath(SRC, ROOT))
     print("   units (a directory with buildable source, at ANY depth)")
-    for t in ("v10", "ix", "630"):
-        print("      %-5s %5d units   %5d programs" % (t, by[t], ptree[t]))
+    for t in ROOTS:
+        if by[t] or ptree[t]:
+            print("      %-9s %5d units   %5d programs" % (t, by[t], ptree[t]))
     print("   programs %d, by how the tape states them" % len(progs))
     for k, v in how.most_common():
         print("      %-12s %5d" % (k, v))
