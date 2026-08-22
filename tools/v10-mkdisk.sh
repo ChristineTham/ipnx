@@ -20,6 +20,37 @@ for fn in no_overlap v10_clone; do
     }
 done
 
+# ---------------------------------------------------------------- REFUSAL ---
+# THIS BUILD INHERITS, AND UNTIL IT DOES NOT IT MUST NOT RUN.
+#
+# tools/v10-mkdisk.exp assembles the disk by copying the BUILDER's own
+# filesystem --
+#
+#	foreach d {bin etc lib dev}           { cd /$d;     find . | cpio -pd ... }
+#	foreach d {bin lib include jerq blit} { cd /usr/$d; find . | cpio -pd ... }
+#
+# -- and overlays the build on top.  Measured with tools/v10-manifest.py
+# against the disk it last produced: 33 files have NO source but the builder's
+# own /bin, /etc, /lib and /usr/lib, and 12 more are inherited although the
+# build could name where they come from.
+#
+# That is how the EIGHTH Edition's tab-separated /etc/fstab reached a Tenth
+# Edition disk, how two stale /etc/mtab records propagated, and how neither was
+# noticed: nobody ever chose either.  Correcting a file where it is WRITTEN
+# cannot reach a disk that inherits it.
+#
+# The fix is in docs/v10-bootstrap.md: install from a named source, never copy
+# a directory.  V10_ALLOW_INHERIT=1 runs it anyway, knowingly.
+if [ "${V10_ALLOW_INHERIT:-0}" != "1" ]; then
+    echo "v10-mkdisk: REFUSING TO RUN -- this build inherits from the builder."
+    echo "   33 files on the disk it last made have no source but the builder's"
+    echo "   own /bin, /etc, /lib and /usr/lib; 12 more need not be inherited."
+    echo "   See docs/v10-bootstrap.md and v10/mk/gen/manifest.txt."
+    echo "   V10_ALLOW_INHERIT=1 to override."
+    exit 1
+fi
+
+
 GOLD="${1:-ipnx-v10-ra81.img.stage1.k102.k7.k13}"
 # THE OUTPUT IS A NEW FILE, NAMED PER RUN, AND NEVER THE GOLDEN.
 #
@@ -39,7 +70,6 @@ GOLD="${1:-ipnx-v10-ra81.img.stage1.k102.k7.k13}"
 # be the golden is a separate, deliberate `cp' after the run has been checked.
 BLANK="$ROOT/work/v10gold/${V10_OUT:-v10-built.img}"
 TPORT="${TPORT:-9290}"; OPORT="${OPORT:-9291}"; MPORT="${MPORT:-9292}"
-DPORT="${DPORT:-9293}"
 
 # THE LAYOUT, IN THE UNITS ra_sizes[] ACTUALLY USES, CONVERTED ONCE HERE.
 #
@@ -103,75 +133,25 @@ echo "== building netfsd =="
 echo "== creating a blank RA81 =="
 rm -f "$BLANK" "$BLANK.id"
 dd if=/dev/zero of="$BLANK" bs=512 count=891072 2>/dev/null
-
-# THE 5620 DISTRIBUTION, EXTRACTED FROM V8's GOLDEN.  A real V10 site installed
-# the DMD 5620 software from its OWN tape into /usr/jerq -- the terminal software
-# is edition-independent, which is why V8's golden carries it and V10's tarball
-# has no jerq tree at all.  So this is not a cross-edition transplant of
-# somebody's build products; it is the 5620 tape being installed on a second
-# machine, exactly as it was in 1985.
+# NO EIGHTH EDITION.  This block extracted /jerq, /net and /dict off
+# work/myv8/rp07new with tools/v8extract.py, and the guest copied them onto the
+# disk from a fourth netfs share.
 #
-# It comes off the V8 golden because that is where the BUILT files are: V8
-# carries /usr/jerq (365 files in carry.txt, 1,248 more in fromgold.txt --
-# 1,613, which is what v8extract reads) and has never compiled it.
-DIST="$ROOT/work/v8dist"
-if [[ ! -s "$DIST/jerq/bin/3cc" || ! -s "$DIST/blit/.v8extract" ]]; then
-    echo "== extracting the 5620 + Blit distribution from the V8 golden =="
-    rm -rf "$DIST"
-    # /usr/jerq IS AN INTERIM EXCEPTION, AND IT HAS AN EXPIRY CONDITION.
-    #
-    # The rule is: no Eighth Edition BINARY unless there is no source.  For the
-    # 5620 userland the V10 tape has neither -- measured, not assumed:
-    #
-    #   src/630/src/muxterm   WE32100 COFF 0560, but its .data carries 1024x768
-    #                         twice and no 800x1024 and no Bitmap at 0x700000.
-    #                         It is the 630 MTG s, a 1024x768 terminal.
-    #   blit/                 68000 (magic 0407) -- the original Blit.
-    #   history/ix/src/jerq   76 files: 32ld/, mux/, lib/.  Host side only, and
-    #                         IX besides.
-    #   3cc 3as 3ld           ABSENT.  The tape documents them in man9/3cc.9
-    #                         and ships none of the eight.
-    #
-    # V8 DOES have source -- v8/jerq/src 777 files, v8/jerq/sgs 272 files -- so
-    # the rule says build it, and that is a phase of its own: the SGS has never
-    # been compiled by anyone, V8 s own build carries 366 jerq files rather than
-    # building them.  Until that phase lands, V8 s built binaries are carried
-    # and this comment is the record of why.
-    #
-    # WHEN THE SGS BUILDS, DELETE THIS.
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /jerq "$DIST/jerq" || exit 1
-    # /usr/blit COMES FROM THE TAPE, NOT FROM V8.  work/v10/blit is the v10blit
-    # tarball -- 1,369 files, with bin/, mbin/, lib/, font/ and src/ -- so
-    # carrying V8's copy would be importing another edition's build of a tree
-    # this one ships.  That is the exact failure this carry exists to avoid.
-    rm -rf "$DIST/blit"; mkdir -p "$DIST"
-    cp -R "$ROOT/work/v10/blit" "$DIST/blit" || exit 1
-    # /usr/net is vismon's and face's data -- `friends', `people', the face
-    # database -- and both of those programs are in the 5620 distribution just
-    # installed, so it travels with them.  /usr/dict is the spelling word list,
-    # which V10's tape does not carry in any form (searched for words, hlist*
-    # and hstop across all 25,682 files) and which is pure data: no edition owns
-    # a dictionary.
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /net  "$DIST/net"  || exit 1
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /dict "$DIST/dict" || exit 1
-fi
-# `3cc' IS THE CHECK, and its SIZE is the check within the check: on
-# case-insensitive APFS `3CC' overwrites `3cc' and leaves a 2,322-byte shell
-# script wearing the compiler's name.  v8extract escapes the collision now, but
-# a stale tree from before it did would pass a mere `test -s'.
-sz=$(stat -f%z "$DIST/jerq/bin/3cc" 2>/dev/null || echo 0)
-[[ "$sz" == "14336" ]] || {
-    echo "v10-mkdisk: $DIST/jerq/bin/3cc is $sz bytes, expected 14336 --"
-    echo "v10-mkdisk: a case-collided extraction.  rm -rf $DIST and re-run."
-    exit 1
-}
+# It is gone because carrying V8 content is STAGE 9, and stage 9 has not been
+# done.  A disk built now ships no /usr/jerq, so V10's own `mux' is present and
+# fails at _32ld("/usr/jerq/lib/muxterm").  That is the honest state: the V10
+# tape has no 5620 userland and no 3cc, V8 has both in source, and building
+# them is a phase of its own.
+#
+# When stage 9 does happen, the files are CAPTURED INTO v10/src with their
+# provenance, not read off an image at build time -- the source must contain
+# everything needed to make a golden.
 
 PIDS=()
 serve() { "$NETFSD" -p "$1" -v "$2" > "$ROOT/work/netfs-$3.log" 2>&1 & PIDS+=($!); }
 serve "$TPORT" "$ROOT/work/v10"      mktree
 serve "$OPORT" "$ROOT/v10/src"       mkours
 serve "$MPORT" "$ROOT/v10/mk/gen"    mkmk
-serve "$DPORT" "$DIST"               mkdist
 sleep 1
 for pid in "${PIDS[@]}"; do
     kill -0 "$pid" 2>/dev/null || { echo "netfsd died"; tail -5 "$ROOT"/work/netfs-mk*.log; exit 1; }
@@ -284,7 +264,7 @@ def hostcost(root_dir):
     for dirpath, dirnames, filenames in os.walk(root_dir):
         blocks += 1                                     # the directory itself
         for fn in filenames:
-            if fn in (".v8extract", "CASEMAP"):
+            if fn in ("CASEMAP",):
                 continue                                # not copied to the guest
             try:
                 blocks += cost(os.path.getsize(os.path.join(dirpath, fn)))
@@ -328,7 +308,7 @@ dd if="$ROOT/work/v10/src/lsys/boot/bb/4kb" of="$BLANK" \
 
 echo "== V10 builds a disk on $(basename "$BLANK") =="
 expect "$ROOT/tools/v10-mkdisk.exp" "$IMG" "$BLANK" "$TPORT" "$OPORT" "$MPORT" \
-    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" "$DPORT" 2>&1 | tee "$LOG"
+    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # THE HOST READS WHAT THE GUEST WROTE, because a full V10 filesystem SLEEPS rather

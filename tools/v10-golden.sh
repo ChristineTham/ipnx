@@ -136,9 +136,25 @@ EOF
 echo "== $(grep -c '^/etc/mknod' "$SCRATCH/mkdev.sh") device nodes =="
 
 # the /etc files proto-etc lists that are not already written above
+# COLON-SEPARATED, WHICH IS V10's FORMAT.  This was tab-separated -- the
+# EIGHTH Edition's layout -- and V10's getfsent splits on `:', so every lookup
+# against it failed.  Almost nothing notices, which is why it survived: /etc/rc
+# mounts /usr by explicit path and never consults fstab.  The one caller that
+# does is df's root lookup (cmd/df.c readtab()):
+#
+#	mtab[0].file[0] = '/';
+#	/* cheap hack because root isn't in mtab */
+#	if ((fsp = getfsfile(mtab[0].file)) != NULL)
+#		strcpy(mtab[0].spec, fsp->fs_spec);
+#
+# On NULL, mtab[0].spec is left empty; an empty path stats as the current
+# directory, which is not a block device, so dfree() falls to its last branch
+# and prints ": can't find filesystem" against a perfectly healthy root.
+#
+# The five fields are struct fstab: spec, file, then ftype/flags/passno.
 cat > "$SCRATCH/etc/fstab" <<'EOF'
-/dev/ra0a	/	rw	1 1
-/dev/ra0c	/usr	rw	1 2
+/dev/ra0a:/:rw:1:1
+/dev/ra0c:/usr:rw:1:2
 EOF
 : > "$SCRATCH/etc/mtab"
 : > "$SCRATCH/etc/utmp"

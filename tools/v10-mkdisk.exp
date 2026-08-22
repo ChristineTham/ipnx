@@ -104,7 +104,6 @@ set UBLKS [lindex $argv 7]
 set UPART [lindex $argv 8]
 # APPENDED, NOT INSERTED: the five positional arguments above are indexed by
 # number in this file and in tools/v10-mkdisk.sh, so a new one goes on the end.
-set dport [lindex $argv 9]
 
 # THE MINOR, COMPUTED.  BITFS|unit|part, and the disk is attached as rq1 because
 # `ipnx780.m' configures `ra 0' and `ra 1' and stops -- its own comment says "ra
@@ -157,16 +156,14 @@ v10_sh "OK=-ok" 120
 
 # The three shares, on three device numbers -- neta.h's `server may be using
 # several', and nadomount() gives EBUSY for a repeat.
-v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk; mkdir /n/dist" 120
+v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk" 120
 set sh1 [v10_try "/etc/nafsmnt 10.0.2.2 $tport /n/tree 0" "mounted on" 900]
 set sh2 [v10_try "/etc/nafsmnt 10.0.2.2 $oport /n/ours 1" "mounted on" 900]
 set sh3 [v10_try "/etc/nafsmnt 10.0.2.2 $mport /n/mk   2" "mounted on" 900]
-set sh4 [v10_try "/etc/nafsmnt 10.0.2.2 $dport /n/dist 3" "mounted on" 900]
 note "the tape mounts over TCP (no courier disk in this run)" $sh1
 note "our overlay mounts"                                    $sh2
 note "and the generated makefiles mount"                     $sh3
-note "and the 5620 distribution mounts"                      $sh4
-set shares [expr {$sh1 && $sh2 && $sh3 && $sh4}]
+set shares [expr {$sh1 && $sh2 && $sh3}]
 
 if {!$shares} {
     note "mkbitfs builds from the share" 0
@@ -294,9 +291,28 @@ if {$mounted} {
     # copied files may be unreachable even though the file is perfectly good.
     # tools/v10-golden.exp records the same ordering for the same reason.
     v10_sh "cp /unix $MP/unix" 1800
-    foreach d {bin etc lib dev} {
-        v10_sh "cd /$d; find . -print | cpio -pd $MP/$d > /dev/null 2>&1" 3600
-    }
+    # THE INHERITANCE IS DELETED.  This was
+    #
+    #	foreach d {bin etc lib dev} {
+    #	    v10_sh "cd /$d; find . -print | cpio -pd $MP/$d ..."
+    #	}
+    #
+    # -- the builder's own root copied onto the new disk.  THERE IS NO
+    # INHERITANCE: everything is derived from source where source exists, and a
+    # file scooped off the machine that happened to have it is the absence of a
+    # decision rather than a third kind of provenance.
+    #
+    # It is how the EIGHTH Edition's tab-separated /etc/fstab reached a Tenth
+    # Edition disk, how two stale /etc/mtab records propagated, and how neither
+    # was noticed: nobody ever chose either.  Measured with
+    # tools/v10-manifest.py against the disk this produced, 33 files had no
+    # source but the builder's own /bin, /etc, /lib and /usr/lib -- every one of
+    # them something a phase had already built and installed somewhere this
+    # build does not read.
+    #
+    # What replaces it is in docs/v10-bootstrap.md: /dev from proto-dev, the
+    # toolchain from stages 1 and 2, the libraries from v10-libs, the commands
+    # from tapebins.txt and the staged root, and /etc WRITTEN.
     # WHAT /usr CARRIES, AND WHAT IT DELIBERATELY DOES NOT.
     #
     #   bin      the tape's 40 prebuilt commands plus find/cpio/wc/yacc, which
@@ -323,9 +339,15 @@ if {$mounted} {
     #                              directory itself must not ship: a /usr/w10 on
     #                              a shipped disk is a build artefact wearing a
     #                              system path.
-    foreach d {bin lib include jerq blit} {
-        v10_sh "cd /usr/$d; find . -print | cpio -pd $MP/usr/$d > /dev/null 2>&1" 3600
-    }
+    # AND THE /usr HALF OF IT, deleted for the same reason.  This was
+    #
+    #	foreach d {bin lib include jerq blit} {
+    #	    v10_sh "cd /usr/$d; find . -print | cpio -pd $MP/usr/$d ..."
+    #	}
+    #
+    # /usr/include and /usr/jerq and /usr/blit are all installed below from the
+    # tape and the distribution tree; /usr/bin and /usr/lib are the build's own
+    # products and must come from the phases that built them.
 
     # ---------------- the DMD 5620 distribution, and the Blit's -------------
     #
@@ -345,9 +367,6 @@ if {$mounted} {
     # `-u' so the distribution wins over the empty include tree copied above,
     # and the destinations already exist from the mkdir loop -- cpio -pd does
     # NOT create its destination.
-    foreach d {jerq blit} {
-        v10_sh "cd /n/dist/$d; find . -print | cpio -pdu $MP/usr/$d > /dev/null 2>&1" 3600
-    }
     note "the 5620 userland installs into /usr/jerq" \
         [v10_try "test -s $MP/usr/jerq/bin/3cc && test -s $MP/usr/jerq/bin/mux && echo JQ\$OK" \
             "JQ-ok" 900]
@@ -384,9 +403,6 @@ if {$mounted} {
         [v10_try "test -d $MP/usr/include/sys && echo IH\$OK" "IH-ok" 900]
 
     # ---------------- vismon's data, and a dictionary ---------------------
-    foreach d {net dict} {
-        v10_sh "cd /n/dist/$d; find . -print | cpio -pd $MP/usr/$d > /dev/null 2>&1" 3600
-    }
     note "vismon's data and the word list install" \
         [v10_try "test -s $MP/usr/dict/words && echo DW\$OK" "DW-ok" 900]
 
@@ -452,6 +468,29 @@ if {$mounted} {
     # another machine's mount table.  Truncated rather than removed: /etc/mtab must
     # EXIST for mount to append to it.
     v10_sh "cat /dev/null > $MP/etc/mtab" 300
+
+    # AND THE COPIED /etc/fstab IS IN THE EIGHTH EDITION'S FORMAT, which is a
+    # defect the whole chain has carried from tools/v10-golden.sh.  V10's
+    # getfsent splits on `:'; the file was tab-separated, so every lookup
+    # against it failed.  Almost nothing notices -- /etc/rc mounts /usr by
+    # explicit path and never reads fstab -- but cmd/df.c's readtab() does:
+    #
+    #	mtab[0].file[0] = '/';
+    #	/* cheap hack because root isn't in mtab */
+    #	if ((fsp = getfsfile(mtab[0].file)) != NULL)
+    #		strcpy(mtab[0].spec, fsp->fs_spec);
+    #
+    # On NULL that leaves mtab[0].spec empty, an empty path stats as the
+    # current directory, and dfree() falls through to
+    # ": can't find filesystem" against a healthy root.
+    #
+    # Written here rather than only in v10-golden.sh because /etc is COPIED
+    # from the builder, so fixing the source alone would need the whole chain
+    # rebuilt from K6 before any disk saw it.
+    v10_sh "echo '/dev/ra0a:/:rw:1:1' > $MP/etc/fstab" 300
+    v10_sh "echo '/dev/ra0c:/usr:rw:1:2' >> $MP/etc/fstab" 300
+    note "/etc/fstab is in V10's colon format, not V8's" \
+        [v10_try "test `grep -c ':' $MP/etc/fstab` = 2 && echo FS\$OK" "FS-ok" 600]
     # AND THE GETTYS ARE TURNED ON, because the golden ships with all eight OFF
     # and a machine with no terminal is not a machine anyone can use.  The
     # golden's /etc/ttys is

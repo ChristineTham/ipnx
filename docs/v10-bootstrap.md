@@ -1,226 +1,283 @@
-# Bootstrapping a Tenth Edition golden image from a clean checkout
+# Bootstrapping a Tenth Edition golden image
 
-Every step, in order, from `git clone` to a bootable `v10-golden.img`.  Each
-row names the tool that does it, what it consumes, what it produces, and how
-the result is checked.  Nothing here is a phase number: the K labels were
-experiments, and an experiment label is not a build stage.
+One pass, from a blank disk to a finished one, with the new image mounted
+throughout and every stage installing into it. Stage by stage, file by file.
+Every list quoted here is generated and lives in `v10/mk/gen`; this document
+names them, it is not their source.
 
-## What a clean checkout has, and nothing else
+## The three rules
 
-	work/v10src.tar.bz2        TUHS      the Tenth Edition source tape
-	work/v10blit.tar.bz2       TUHS      the terminal distribution
-	work/r70include.tar        TUHS      V10's /usr/include, reconstructed 1997
-	v10/ tools/ netfs/ libsimh/  repo    generators, harnesses, the emulator
+**1. THE SOURCE CONTAINS EVERYTHING NEEDED TO MAKE A GOLDEN.  THERE ARE NO
+DEPENDENCIES ANYWHERE ELSE.**
 
-**There is no Eighth Edition in this procedure.**  This is a V10 bootstrap: the
-tape is the only source of bytes, and every stage after the first runs on V10
-itself.
+	work/v10             the TUHS tarballs, unpacked and hash-verified,
+	                     25,682 files.  Never edited.
+	v10/src              our patches and captured files, each derived from
+	                     a named upstream file with a stated sha256.
+	v10/mk, v10/mk/gen   the build description, generated, all --check.
 
-## The one problem a V10 bootstrap has to solve
+Not the builder's filesystem, not the Eighth Edition, not a previous golden,
+not a file a harness writes inline.
 
-TUHS ships V10 as three tarballs.  **No bootable V10 media survived** — that is
-what this project exists to fix — so there is nothing to boot, and therefore
-nothing that can write the first V10 filesystem.
+**2. THERE IS NO STAGING TREE.  THE BUILD INSTALLS INTO THE NEW IMAGE.**
 
-An earlier version of this plan solved that by booting the Eighth Edition and
-letting it host the assembly, on the strength of V10's binaries running on a V8
-kernel.  That works and it is not a bootstrap: it makes a V10 disk a function of
-a V8 disk.
+The new disk is mounted for the whole run and `$(DESTDIR)` is that mount. The
+generated makefiles already work this way:
 
-**The first disk is built on the host, from the tape.**  `tools/v10fs.py`
-already reads a V10 filesystem well enough to extract nine binaries
-byte-identical to the tape's own copies — through `itod`, `itoo`, the vax arm of
-`l3tol`, the 3-versus-4-byte address split, `NADDR`, `NSHIFT` and `NMASK`, all
-of which must be right at once for `as` at 57,203 bytes to come out whole.
-Writing is that format inverted.
+	init.mk    install:  -mkdir $(DESTDIR)/etc ; cp init $(DESTDIR)/etc/init
+	ls.mk      install:  -mkdir $(DESTDIR)/bin ; cp ls   $(DESTDIR)/bin/ls
+	worldc.sh  DEST=$7   ... if test -d $DEST$pdest ; cp $prog $DEST$pdest/
 
-**The circularity this avoids is real and is named in CLAUDE.md**: a reader used
-to build a tree *and* to bless it approves its own mistakes.  So the writer is
-never the judge — **the boot is**.  If a single field is wrong, V10's kernel
-does not mount the disk.
+Nothing is built somewhere and copied afterwards, so there is no second step in
+which provenance can be lost. `/usr/w10` stops existing: a staged root is what
+made 33 files arrive on a disk without anyone choosing them.
+
+**3. AND THE NEW TOOLCHAIN RUNS ON THE NEW IMAGE.**
+
+Once stage 1 has installed the passes into the mounted image, stage 2 compiles
+with *those* — `cc -B$MNT/lib/` — not with the builder's. By stage 3 the image
+is compiling itself. The builder supplies a running kernel and nothing else;
+every byte on the finished disk was put there by a tool that was already on it
+or by the tape.
 
 ---
 
-## Stage 0 — materialise the inputs
+## Stage 0 — materialise
 
-	tools/v10-import.py               ->  work/v10/               15 s
-	libsimh/build-xcframework.sh      ->  work/opensimh/BIN/vax780
-	( cd netfs && swift build -c release )
+	tools/v10-import.py        work/v10/  <- v10src, v10blit, r70include
+	                           25,682 files; --verify re-checks every hash
 
-`work/v10/` is **the master**: `src/` from v10src, `blit/` from v10blit,
-`include/` from r70include, with `CASEMAP` recording the 373 paths that differ
-from another only by case.  `--verify` re-checks every hash.
+## Stage 1 — mount the blank, install the toolchain into it
 
-**Check:** `tools/v10-import.py --verify` re-checks every hash in ~15 s.
+	blank         sparse:  dd if=/dev/zero of=IMG bs=1 count=0 seek=456228864
+	              NOT count=891072, which allocates 456 MB of real zeros
+	filesystems   V10's own /etc/mkbitfs, run from the builder
+	                root  1,280 blocks on partition a   (ra_sizes, in SECTORS)
+	                /usr 30,752 blocks on partition c   (= MAXSMALL)
+	mount         $MNT -- and it stays mounted for the whole pass
 
-## Stage 1 — the generators (host-side, seconds, all have `--check`)
+V10's own `ccom`, `as` and `libc.a` are on the tape as linked VAX binaries and
+run on a V8 kernel (`tools/v10-probe.sh`, 9/9), so only the passes with no
+binary must be built. **`tc.order`** — 7 components; the third column is the
+install path *inside the new image*:
 
-Nothing here boots anything.  These turn the master into build description.
+	yacc    cmd/yacc          usr/bin/yacc
+	cpp     cmd/cpp           lib/cpp
+	ccom    cmd/ccom/vax      lib/ccom
+	as      cmd/as            bin/as
+	c2      cmd/c2            lib/c2
+	ld      cmd               bin/ld
+	cc      cmd               bin/cc
 
-	tools/v10-where.py        install paths, from V10's manual and its makefiles
-	tools/v10-overlay.py      v10/src/ -- our named patches, each with a reason
-	tools/v10-world.py --write  world.{units,link,prog,script,alias,gen,drop}
-	tools/v10-libs.py --write   which library holds which member
-	tools/v10-prebuilt.py     prebuilt.txt -- the 57 oracle binaries
-	tools/v10-tapebins.py     tapebins.txt -- ALL 435 linked binaries
-	tools/v10-proto.py        proto-dev -- 463 device nodes
-	tools/v10-uda750.py       the boot ROM
-	v10/mk/mkdep.py           the makefiles V10 never had
+**`buildtools.ord`** — 4 more, because stage 2 *is* an archive and stage 3 *is*
+a byte comparison, and neither tool is on the golden:
 
-**Check:** every one takes `--check` and fails on drift.  A stage that boots a
-machine refuses to start if any of these is stale.
+	ar   cmd  bin/ar      cmp  cmd  bin/cmp
+	tail cmd  usr/bin/tail  ed cmd  bin/ed
 
-## Stage 2 — `v10-reference.img`: the first V10 disk, built on the host
+**`shutdown.order`** — 2, because a machine that cannot halt cleanly corrupts
+its disk:
 
-	tools/v10-mkfs.py                                          seconds
+	halt cmd  etc/halt    sleep cmd usr/bin/sleep
 
-NEW, and the only genuinely new tool this plan needs.  It writes a V10
-filesystem directly into an image file, using the constants `tools/v10fs.py`
-already reads with: `lsys/sys/ino.h` (64-byte dinode), `lsys/sys/dir.h`
-(DIRSIZ 14, so 16 bytes), `NADDR` 13, `itod`/`itoo`, `fsbtodb = b*8`, and
-`cmd/mkbitfs.c` for the free-block bitmap.
+At the end of this stage the new image has a compiler.
 
-Two filesystems, at the offsets `lsys/io/ra.c` gives **in sectors**:
+## Stage 2 — libc, compiled by the image's own passes
 
-	a   10240 sectors at      0    5 MB   root
-	b   20480 sectors at  10240   10 MB   swap
-	c  249848 sectors at  30720  122 MB   /usr
+	cc -B$MNT/lib/ -t02p        the passes stage 1 just installed
 
-Installed: the tape's boot block (`lsys/boot/star/uda`), the tape's own kernel,
-**all 435 linked binaries** from `tapebins.txt`, r70's headers, `/dev` from
-`proto-dev`, and `/etc` config.
+**`libc.ord`** — 260 members in the tape's own archive order, read off Bell
+Labs' `libc.a` rather than recomputed, because the golden has neither `lorder`
+nor `tsort`. The makefile builds from `$(OBJS)` in that order, not `ar cr
+libc.a *.o`, which is the shell's alphabetical glob and a different archive.
 
-**Check, and it is the load-bearing one in this whole procedure:** boot it.  It
-must reach `login:` and run a copied binary.  A filesystem written by a tool
-nobody has exercised is a guess until a 1990 kernel mounts it — and V10's
-`iinit` panics rather than limping, so the check cannot pass by accident.
+**`libc.drop`** — one named exclusion:
 
-## Stage 3 — the toolchain: V10 compiles its own C
+	setupshares.o
 
-	tools/v10-stage1.sh      yacc cpp ccom as c2 ld cc, ar cmp tail ed ln
-	tools/v10-stage2.sh      libc -- 260 of 261 members
-	tools/v10-stage3.sh      the fixpoint: stage 3 rebuilds itself byte-identical
+`<sys/share.h>`'s `struct sh_consts` is printed in no manual page and referenced
+in neither kernel tree, and `L_GETCOSTS` has the *kernel* write through that
+pointer, so a guessed size corrupts the caller's stack. `libc_from_tape()` still
+asserts all 261 against the archive and the mkfile: subtracted, not hidden.
 
-Stage 1 matters for one reason: the tape's `cpp`, `c2` and `ld` have no binary,
-so they must be built — and until this runs, they were built by *V8's* cc.
-After it, no binary on the machine was built by the Eighth Edition.
+It was excluded for a second reason worth keeping — three stage-2 assertions
+were gated on it and could **never** pass, and a check that cannot pass is
+camouflage. A permanently-NO line is what a missing `atof.o` hid behind for a
+week.
 
-`setupshares` is a **named exclusion** (`LIBC_DROP`), not a shortfall:
-`<sys/share.h>` is printed nowhere and reconstructible from nothing.
+**One compiler, and that is the work.** Measured over all 261:
 
-**Check:** stage 3 is self-reproducing — 7 components, each byte-identical to
-what its own output builds.
+	cc alone                        246 of 261
+	lcc alone                       202 of 261
+	cc + lcc, the tape's mixture    246 of 261
+	cc alone, after the repairs     260 of 261    <- what we build
+
+`LIBC_LCC` is empty. lcc must not be reinstated to close a member: its prebuilt
+driver passes `-undef` to a cpp that rejects it, so those members become empty
+objects that exit 0 — a loud failure beats a silent hole. Two limits found on
+the way, neither a compiler problem: `<shares.h>` exists on no surviving machine
+and was reconstructed from the tape's own `lnode(5)` then checked against Bell
+Labs' object code; and `stdio/iolib.h` has no branch for a V10 VAX, so nine
+printf/scanf members failed under *both* compilers and are named patches.
+
+Two installs, and the distinction is load-bearing: `$(TOOLDIR)/lib/libc.a` is
+what the compiler links against while the pass runs; `$(DESTDIR)/lib/libc.a` is
+what ships.
+
+## Stage 3 — rebuild the toolchain on the new libc
+
+The test the whole bootstrap exists to pass, and now it happens **on the image**:
+stage 3 compiles `tc.order`'s seven components with the image's own passes
+against the image's own libc, and stage 3b compiles them again with stage 3's
+output. Each must be byte-identical to what its own output built.
+
+	components reproducing themselves    7
+	components that do not               0
+
+7 differ / 0 same against stage 1 is the expected result, not a failure: stage 1
+linked the tape's archive and stage 3 links ours.
+
+After this the image is self-hosting. Nothing later needs the builder's tools.
 
 ## Stage 4 — the libraries
 
-	tools/v10-libs.sh        26 libraries, 500 members
+**`libs.txt`** — 27 rows, one per library, with member counts:
 
-**Check:** every archive's member list against the manifest, by count, and
-`ar t` rather than "an archive appeared" — `ar cr` accepts names that do not
-exist and `ranlib` blesses the result.
+	libF77 113   libI77 33   libcbt 8   libcc 4   libcurses 35   libdbm 1 ...
+	500 members across 26 archives; libc is stage 2's
 
-## Stage 5 — our kernel
+Installed into `$(DESTDIR)/usr/lib` under every `-l` name each answers to.
+`libl.a`/`libln.a` and `libtermcap.a`/`libtermlib.a` are one archive under two
+names, which the tape itself does.
 
-	tools/v10-kernel.sh      the ipnx780 config
+## Stage 5 — the kernel
 
-The tape's `seki` kernel cannot do what the rest of the bootstrap needs: it
-configures `netafs 0`/`netbfs 0` and no Interlan.  Ours adds the card, the
-netfs stream-head fix, stream pipes (`cdev 18 pt`), and the 780 devices.
+Our `ipnx780` config: the Interlan, the netfs stream-head fix, stream pipes
+(`cdev 18 pt`), the 780 devices. `kobj.order`'s fourth column says whether an
+object comes from `v10/src` or from the tape's archives — they read from
+different roots.
 
-**Check:** the link must report **no undefined symbols** — V10's `ld` writes
-its output anyway and clears the execute bits, so "a kernel file appeared" is
-not evidence.
+The link must report **no undefined symbols**: V10's `ld` writes its output
+anyway and clears the execute bits, so "a kernel file appeared" is not evidence.
 
-## Stage 6 — networking, and the machine is finished
+`/unix` goes down **first** among the image's files — `lsys/boot/README` requires
+it in the filesystem at the front of the boot device, at most singly indirect.
 
-	tools/v10-netboot.sh     /dev/il0 /dev/ip6 /dev/ip17, dipconfig,
-	                         tcpconfig, nafsmnt, and /etc/rc to bring it up
+## Stage 6 — the world
 
-	==> v10-build.img        THE BUILD MACHINE.  Never written again.
+	world.units   427     world.link    349     world.prog   206
+	world.script   45     world.alias    22     world.drop  (what is not built,
+	                                                         and why)
 
-This is the counterpart of V8's `rp07v8.net`.  From here on, a build runs *on*
-this machine and writes to a *separate* disk — which is what stops the image
-name becoming a changelog.
+Compiled in-tree, because V10's cpp cannot resolve a quoted include for an
+out-of-tree source and `-I` does not help. `worldc.sh` takes the destination as
+its seventh argument, so this installs into the mounted image directly.
 
-**Check:** halt, boot again, and mount a share.  A machine that only networks
-during the run that configured it is not configured.
+`bootpath.order` (24) and `disktools.ord` (7) name what has to be present for
+the disk to boot and for a machine to build the next one:
 
-## Stage 7 — build the world
+	init getty login mount umount mkfs fsck icheck sync date stty cat
+	cp mv rm mkdir echo find chmod ls cpio grep wc ln
 
-	tools/v10-link.sh        compile, link, install to a STAGED ROOT
+## Stage 7 — the tape's own files, and the tables
 
-Every unit under `cmd/ games/ lbin/ dregs/ local/ ipc/`, compiled in-tree
-(V10's cpp cannot resolve a quoted include for an out-of-tree source, and `-I`
-does not help), linked per the tape's own rules, installed to `/usr/w10`.
+	tapebins.txt  428 linked binaries the tape ships, at their install paths
+	              7 ix binaries excluded with reasons: ix is a DIFFERENT
+	              operating system built on V10, and its own README says the
+	              tree is "shorn of most material that may be copied bodily
+	              from research unix"
+	man           the tape's 1,521 manual files
+	include       r70's headers
+	blit          the tape's own terminal distribution, 1,369 files
+	proto-dev     463 device nodes, generated from the tape's lsys/lib/tab
+	proto-etc     9 files, content in v10/src/etc:
+	                passwd group ttys rc motd fstab mtab utmp profile
+	              mtab and utmp ship EMPTY -- a fresh system has nothing
+	              mounted and nobody logged in
+	boot block    dd if=lsys/boot/bb/4kb of=IMG bs=512 count=1 conv=notrunc
+	              host-side, after the guest halts; guest-side writes fail
 
-Never over the machine's own `/bin` — the 46 prebuilt binaries are the oracle,
-and installing over them destroys the only comparison we have.
+`/etc/fstab` is in **V10's colon format** — `/dev/ra0a:/:rw:1:1`. It was
+tab-separated, which is the Eighth Edition's, and V10's `getfsent` splits on
+`:`. Almost nothing notices, because `/etc/rc` mounts `/usr` by explicit path
+and never reads fstab; the one caller that does is `df`'s root lookup, which
+prints `": can't find filesystem"` against a perfectly healthy root.
 
-**Check:** the reported measurement is **how much of the tape we failed to
-build, and why**, per unit, with the compiler's own diagnostic.  Not "is it a
-superset of V8" — that question invites carrying V8 files to answer it.
+## Stage 8 — verify
 
-## Stage 8 — assemble the golden
+`tools/v10-manifest.py` against the finished disk. **Any file whose only source
+is the builder is a build failure**, not a note. That check would have caught
+the V8-format `fstab`, the duplicate `mtab` records and the ix binaries the
+first time, because none of the three was ever chosen.
 
-	tools/v10-mkdisk.sh      a BLANK disk, filled in provenance order
+## Stage 9 — the Eighth Edition — NOT DONE
 
-	1  our build       what V10 compiled from the tape          preferred
-	2  the tape        Bell Labs' binary, where we cannot build it
-	3  generated       /dev, from proto-dev
-	4  config          /etc/ttys /etc/passwd /etc/rc motd -- OURS, and marked
+Nothing is carried from V8. The extraction that pulled `/jerq`, `/net` and
+`/dict` off `work/myv8/rp07new` at build time is removed, with the netfs share
+that served it.
 
-The golden is **binaries and configuration**.  Source ships on a separate disk,
-as V10 always mounted it.  `/usr/man` is the tape's own 1,521 files;
-`/usr/include` is r70's; the terminal trees come from `blit/` and the master.
+So a disk built now ships **no `/usr/jerq`**, and V10's own `mux` — which this
+build compiles, IX excised — fails at `_32ld("/usr/jerq/lib/muxterm")`. That is
+the honest state. The V10 tape has no 5620 userland and no `3cc`, measured:
 
-**Check:** boot the disk it just built.  Host-side, a manifest naming the rung
-for every path.
+	src/630/src/muxterm   WE32100 COFF 0560, but its .data holds 1024x768
+	                      twice, no 800x1024, no Bitmap at 0x700000 -- the
+	                      630 MTG's, a different terminal
+	blit/                 68000, magic 0407
+	history/ix/src/jerq   76 files, host side only, and IX besides
+	3cc 3as 3ld           absent; documented in man9/3cc.9, shipped nowhere
 
-## Stage 9 — report what the tape did not give us
+V8 has both in source — `jerq/src` 777 files, `jerq/sgs` 272 — so the rule says
+build them, and that is a phase of its own: the SGS has never been compiled by
+anyone, and V8's own build carries 366 jerq files rather than building them.
 
-	python3 tools/v10-unbuilt.py
-
-The bootstrap ends by naming its own gaps: every unit in the master that did
-not compile, did not link, or produced nothing to install, with the compiler's
-own diagnostic beside it.
-
-**Check:** the list must SHRINK between runs.  A list that grows is the
-measurement telling you the build went backwards.
-
-Comparing the result against the Eighth Edition is a **separate question**, and
-a legitimate one — it is what `tools/v8v10-diff.py` is for.  It is not part of
-this bootstrap, and nothing it reports may be answered by copying a V8 file
-onto a V10 disk.
+When stage 9 happens the files are **captured into `v10/src`** with their
+provenance, not read off an image at build time.
 
 ---
 
-## Rules the procedure depends on
+## What the last measurement found
 
-- **Run every harness against a clone, never a golden.**  Booting a disk mounts
-  it and mounting rewrites the superblock.
-- **Two simulators must never run at once.**  `source tools/norun.sh;
-  no_other_sims` — running `bash tools/norun.sh` defines functions and exits 0,
-  which reads exactly like a pass.
-- **Never leave a machine inconsistent.**  `cd /; sync; sync` then the
-  edition's own halt; V10's kernel does not sync on halt and V8's does.
-- **The simulator is a property of the image.**  `v10_select_machine` reads the
-  banner off `/unix`; a 780 kernel on a vax750 panics on hardware that is not
-  there.
-- **A component list that appears twice will disagree.**  Every list is
-  generated once and read, never restated in a harness.
+`tools/v10-manifest.py` against the disk built before these rules — 6,025 files,
+by the source whose bytes they match:
 
-## Naming
+	tape                    3,029        builder + tape          431
+	tape + v8                 774        staged root             276
+	v8                      1,308        BUILDER ONLY             33
+	builder+tape+v8            93        written by the build      5
+	builder+scratch+…          72        overlay/stage1/scratch    4
 
-Role, edition, one suffix.  No device type, no history in the filename.
+The 33 were 26 libraries plus `/bin/ld`, `/lib/ld`, `/lib/cpp`, `/lib/crt0.o`
+and `/lib/libc.a` — each one something a phase had built and installed into the
+*builder*, which the disk build then scooped up. Installing into `$(DESTDIR)`
+removes the category entirely; there is nothing left to adjudicate.
 
-	v10-reference.img   built on the host from the tape     (was ipnx-v10-ra81.img)
-	v10-build.img       the build machine                   (was …k102.k7.k13)
-	v10-golden.img      what we ship                        (was ipnx-v10-made.img)
-	v10-source.img      the source disk, mounted separately (was ipnx-v10-src.img)
+The 5 written by the build were `/etc/motd`, `rc`, `ttys`, `utmp`, `whoami` —
+the only files whose bytes existed nowhere else, so they could not be reviewed,
+diffed or regenerated. They are now in `v10/src/etc`.
 
-## Total
+## Two hazards the geometry imposes
 
-Nine stages.  Stages 0 and 1 are host-side and take under a minute.  Stages
-2–8 each boot a machine; the long ones are the world build and the assembly.
-Every stage is a pure function of the stage before it plus the master, and no
-stage edits its input.
+**Source does not fit beside `/usr`.** `ra_sizes[]`, in 512-byte sectors:
+
+	a  0       .. 10,240    root       d  280,568 .. 530,416   128 MB
+	b  10,240  .. 30,720    swap       e  530,416 .. 780,264   128 MB
+	c  30,720  .. 280,568   /usr       g  30,720  .. 780,264   CONTAINS c
+	                                   h  0       .. 891,072   CONTAINS a,b,c
+
+`d` and `e` are the only partitions that do not overlap `c`, 128 MB each and not
+joinable, against 243 MB of source. So source ships on a second spindle:
+`tools/v10-srcdisk10.sh`, whole-drive partition h, 111,384 blocks, with the
+tape's `src/` at the top so it mounts as `/usr/src` holding `cmd/` and `lsys/`
+directly — not `/usr/src/src`.
+
+`h` is safe there and not on a boot disk: a whole-drive filesystem contains
+partition `b`, so `swap ra 01 20480` writes swap through blocks 10,240–30,720 of
+live data. The source disk is `rq1`, carries no swap and is never booted.
+
+**The builder must never write to the golden's path.** `v10-mkdisk.sh` line 24
+was `BLANK=…/ipnx-v10-made.img` — the golden's own path — and `rm -f "$BLANK"`
+plus a `dd` run before the guest does anything. A run killed a minute in on
+2026-08-22 left a partial disk where the golden was, and because no V10 image
+had ever been committed there was no way back. Cloning does not help: the clone
+rule protects an image from a *boot*; this was destroyed by output redirection.
