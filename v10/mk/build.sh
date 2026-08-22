@@ -611,6 +611,11 @@ do
 	esac
 	OO=`echo $objs | sed -e 's|[^ ]*/||g'`
 	rm -f $name
+	# THE LINK COMMAND ITSELF, because `Undefined: _main' with 22 of 23
+	# objects resolved cannot be diagnosed from the error: it says main.o
+	# contributed nothing, and only the command line says whether it was
+	# there at all.
+	echo "P: link $name <- $OO $LL"
 	( $CC -o $name $OO $LL 2>&1 ; echo "LDST=$?" ) | sed -e 40q > l.log
 	lst=`sed -e '/^LDST=/!d' -e 's/LDST=//' -e 1q l.log`
 	# `word displacement overflow' IS THE OPTIMISER, NOT THE PROGRAM.  -Od2
@@ -634,7 +639,12 @@ do
 			then	$CC -O -c $stem.c > /dev/null 2>&1
 			fi
 		done
-		( $CC -o $name $OO $LL 2>&1 ; echo "LDST=$?" ) | sed -e 40q > l.log
+		# THE LINK COMMAND ITSELF, because `Undefined: _main' with 22 of 23
+	# objects resolved cannot be diagnosed from the error: it says main.o
+	# contributed nothing, and only the command line says whether it was
+	# there at all.
+	echo "P: link $name <- $OO $LL"
+	( $CC -o $name $OO $LL 2>&1 ; echo "LDST=$?" ) | sed -e 40q > l.log
 		lst=`sed -e '/^LDST=/!d' -e 's/LDST=//' -e 1q l.log`
 	fi
 	# THREE TESTS, because V10's ld WRITES ITS OUTPUT FILE even when symbols
