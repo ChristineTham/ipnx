@@ -956,7 +956,34 @@ errlst.o: %(src)s/gen/errlst.c $(TOOLS)
 # distribution tape installed into /usr/jerq, which is the shape of what V8's
 # golden has and V10's has not.  So this restores V9-era source onto a V10
 # system, which is exactly what the surviving tree offers.
-MUX_DIR = "history/ix/src/jerq/mux"
+# RETRACTED: THE 5620 SOURCE IS V10's OWN, NOT IX's.  Everything above was
+# reasoned from Dan Cross's v10src alone, where the only surviving mux really
+# is IX's.  TUHS carries a SECOND V10 distribution -- Norman_v10 -- whose
+# milligan.gz was "originally rooted at /usr, i.e. directory jerq in the
+# archive was /usr/jerq" (its own README).  It IS the separate 5620
+# distribution tape this comment predicted, and it holds:
+#
+#	jerq/sgs     272 files   3cc.c 3nm.c 32reloc.c as/ ar/ ld/ optim/
+#	jerq/src    1503 files   src/mux (mux.c + proto/), src/32ld
+#	jerq/src/lib             c j jj layer mj sys pot -- the WE32100
+#	                         libraries, in source
+#	jerq/mbin     58 files   prebuilt .m binaries, as an oracle
+#
+# So the excision goes with the tree it was excising.  Measured before
+# switching, not assumed:
+#
+#	JTOOB JLABEL JPEX   0 files in milligan, 2/1/1 in IX -- V10's own
+#	                    5620 tree never uses them, so the three invented
+#	                    values in our jioctl.h are retired
+#	JMUX                12 files in milligan; JMPX appears in NO file
+#	                    anywhere -- so our "JMUX is JMPX under an older
+#	                    name" alias was inverted, guessing at a name the
+#	                    tape states plainly
+#
+# And V10's own build is SIMPLER than IX's: `mux: mux.o $(POBJS)', six
+# objects, no lib.a, and 32ld is a separate program in src/32ld.
+MUX_ROOT = os.path.join(ROOT, "v10/source/milligan/jerq")
+MUX_DIR = "src/mux"
 
 # The seven objects, READ OFF THE MKFILE'S OWN $LL and in its order:
 #
@@ -974,9 +1001,10 @@ MUX_DIR = "history/ix/src/jerq/mux"
 # was Bell Labs' idiom for sharing one build among mux/tmux/smux (plain,
 # -DTRACING and -DPSTATISTICS); we build one variant.  Stated rather than
 # silent, because it IS a difference from the recipe on the tape.
-# `mux.o' IS NOT HERE -- it is in MUX_OURS, because the mux.c that gets compiled
-# is v10/src's patched copy with IX excised, not the tape's.
+# `mux.o' IS HERE NOW.  It used to live in MUX_OURS because the mux.c compiled
+# was v10/src's patched copy with IX excised; V10's own mux.c needs no patch.
 MUX_OBJS = [
+    ("mux.o",      "mux.c"),
     ("pcheck.o",   "proto/pcheck.c"),
     ("pinit.o",    "proto/pinit.c"),
     ("precv.o",    "proto/precv.c"),
@@ -1019,10 +1047,12 @@ MUX_OBJS = [
 # a program for a V10 kernel however old its source is.
 #
 # fields: installed name, provenance, path within it
+# NO EXTRA HEADERS EITHER.  The three COFF headers below were for 32ld, taken
+# from the 630 MTG's include tree because IX's mux directory held 32ld.c and
+# nothing provided them; milligan carries jerq/include (46 headers) and its own
+# src/32ld, and every include of both mux.c and 32ld.c resolves against them --
+# checked transitively by tools/v10-scan.py, phase 5620.
 MUX_INC = [
-    ("aouthdr.h",   "tape", "630/3binc/aouthdr.h"),
-    ("filehdr.h",   "tape", "630/3binc/filehdr.h"),
-    ("scnhdr.h",    "tape", "630/3binc/scnhdr.h"),
     # NO IX HEADERS.  sys/label.h, sys/pex.h and sys/jlabel.h used to be
     # installed here from history/ix/include.  They are gone because the thing
     # that needed them is gone: v10/src/.../mux.c is a patched copy with IX's
@@ -1077,10 +1107,9 @@ MUX_INC = [
 # binary contains no IX code at all.
 MUX_IX_DIR = None
 MUX_IX = []
-MUX_OURS = [
-    ("mux.o",  "mux.c"),       # both are v10/src copies with IX excised: mux.c
-    ("32ld.o", "32ld.c"),      # loses pex/labels, 32ld.c loses the label check
-]
+# NOTHING OF OURS IN THE 5620 BUILD ANY MORE.  Both entries were patched copies
+# of IX files; V10's own tree needs neither.
+MUX_OURS = []
 
 MUX_UNREACHED = {
     "sys/xtproto.h": "behind #ifdef XT; the mkfile never defines XT",
@@ -1130,19 +1159,17 @@ def mux_closure(path, jerq, seen=None, chain=()):
     if path in seen or not os.path.exists(path):
         return seen
     seen[path] = True
-    d = os.path.join(SRC, MUX_DIR)
+    d = os.path.join(MUX_ROOT, MUX_DIR)
     proto = os.path.join(d, "proto")
     own = os.path.dirname(path)
     for kind, raw in mkgen.INCLUDE.findall(open(path, "rb").read()):
         name = raw.decode("ascii", "replace")
         if name in MUX_UNREACHED:
             continue
-        # A QUOTED INCLUDE IS SEARCHED IN THE TAPE'S mux DIRECTORY TOO, because
-        # two of these sources are OURS -- v10/src copies of mux.c and 32ld.c
-        # with IX excised -- and their siblings (msgs.h, mpxstats.h, proto/*)
-        # are still the tape's.  The build compiles in-tree, so both sets land
-        # in one directory on the guest; the resolver has to model that or it
-        # raises on a header that will in fact be there.
+        # A QUOTED INCLUDE IS SEARCHED IN THE mux DIRECTORY TOO.  The build
+        # compiles in-tree, so everything lands in one directory on the guest
+        # and the resolver has to model that or it raises on a header that
+        # will in fact be there.
         cands = [os.path.join(own, name), os.path.join(d, name)] if kind == b'"' else []
         cands += [os.path.join(proto, name)]
         if name in jerq:
@@ -1163,9 +1190,9 @@ def mux_closure(path, jerq, seen=None, chain=()):
 
 
 def emit_mux():
-    d = os.path.join(SRC, MUX_DIR)
+    d = os.path.join(MUX_ROOT, MUX_DIR)
     if not os.path.isdir(d):
-        sys.exit("mkdep: no %s -- run tools/v10-import.py" % d)
+        sys.exit("mkdep: no %s -- run tools/v10-source.sh" % d)
     jerq = mux_jerq_map()
     for name, prov, rel in MUX_INC:
         p = os.path.join(SRC if prov == "tape" else OURS, rel)
@@ -1188,7 +1215,7 @@ def emit_mux():
     # macro can be pointed at such a mount without regenerating anything.
     srcdir = "$(MUXSRC)"
     ixdir  = None          # no IX objects any more; see MUX_IX above
-    ourdir = os.path.join(OURS, MUX_DIR)
+    ourdir = os.path.join(OURS, MUX_DIR)      # empty now; MUX_OURS is []
     jerqpaths = {v: k for k, v in jerq.items()}
 
     # THREE SOURCE ROOTS NOW, and a dependency naming the wrong one is a rule make
@@ -1237,20 +1264,26 @@ def emit_mux():
 # v10/mk/gen/mux.inc names the rest.
 JERQINC = /usr/jerq/include
 
-# mux is compiled from v10/src, not from the tape: the copy there has IX's
-# labels and process exclusion excised.  See MUX_IX in v10/mk/mkdep.py.
-MUXOURS = $(OURS)/%s
+# NOTHING OF OURS IN THIS BUILD.  MUXOURS used to point at v10/src copies of
+# mux.c and 32ld.c with IX excised; V10's own 5620 tree needs neither.
+MUXOURS = $(OURS)
 
-# THE MUX SOURCE DIRECTORY, AS A MACRO, SO IT CAN BE A SHALLOW MOUNT.
+# THE 5620 SOURCE ROOT IS A DIFFERENT ARCHIVE FROM $(SRC).
 #
-# netfs walks from the mount root and charges a round trip per path component --
-# 80%% of this build's traffic, measured.  The default below is correct when the
-# whole tarball is served at $(SRC); a harness that instead serves
-# %s directly can pass MUXSRC=/n/mux and pay two
-# components instead of eight.  Nothing else in this file changes.
-MUXSRC  = $(SRC)/%s
+# $(SRC) is v10src, rooted at /usr/src.  The 5620 code is milligan, rooted at
+# /usr -- so its mux is /usr/jerq/src/mux and NOT a subdirectory of /usr/src.
+# Defaulting MUXSRC to $(SRC)/src/mux would name /n/v10/src/src/mux, which is
+# nothing, and make would answer `Don't know how to make' for every object at
+# once.
+#
+# netfs walks from the mount root and charges a round trip per path component
+# -- 80%% of this build's traffic, measured -- so a harness that serves the
+# mux directory directly can pass MUXSRC=/n/mux and pay two components
+# instead of eight.  Nothing else in this file changes.
+JERQSRC = /n/v10jerq
+MUXSRC  = $(JERQSRC)/%s
 
-""" % (len(MUX_INC), MUX_DIR, MUX_DIR, MUX_DIR))
+""" % (len(MUX_INC), MUX_DIR))
     out.append("OBJS = " + " ".join(o for o, _ in MUX_OBJS + MUX_IX + MUX_OURS)
                + "\n")
     out.append("\nall: mux\n")

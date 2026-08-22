@@ -4,6 +4,3 @@
 # /usr/include: these are the NINTH edition's path convention.
 #
 # fields: installed-name  tape|ours  path-within
-aouthdr.h	tape	630/3binc/aouthdr.h
-filehdr.h	tape	630/3binc/filehdr.h
-scnhdr.h	tape	630/3binc/scnhdr.h
