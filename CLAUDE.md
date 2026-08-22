@@ -2903,6 +2903,68 @@ Check it with one command, host-side, in about two seconds:
 python3 tools/v8v10-diff.py --all
 ```
 
+## THE SOURCE IS IN THE REPOSITORY, AND IT IS THE WHOLE TAPE (2026-08-22)
+
+`v10/source` is **54,111 files**, committed: all six V10 archives extracted
+file by file, with our 46 patches applied on top. It is what the build reads.
+Nothing is excluded at extraction time, because **a file that is not extracted
+cannot be analysed, counted or diffed — it can only be remembered, and
+remembering is what has been wrong every time** (145 library sources "absent"
+inside `.c.a` archives; 10 `cmd` units never surveyed; 435 binaries reported as
+296). The judgements live in `v10/source/MANIFEST` as data beside the tree.
+
+	src        28,858   Dan Cross's v10src        BUILD
+	secombe    16,389   a second /usr/src         WITNESS, not built
+	milligan    3,792   /usr, i.e. /usr/jerq      BUILD -> the 5620
+	sellers     2,899   the manuals               INSTALL
+	blit        1,839   the 68000 Blit            parked
+	include       336   r70's /usr/include        INSTALL
+
+**Each archive keeps its own root and they are never merged.** `src` and
+`secombe` are both `/usr/src` from different machines, so merging would pick
+one file per path and call the result "the tape". Measured: 16,272 shared
+files, **16,110 identical**, 162 different — of which 29 are our patches, 76
+are objects inside unpacked archives, and **57 are genuine**, clustered in
+`cmd/map`, `cmd/sort`, `cmd/sed`, `cmd/egrep`. secombe adds nothing to libc
+(`only in secombe 0`) and its `libc/mkfile` is byte-identical, `LCCARGS` and
+all — **so it does not solve the mixed-compiler problem**; what it lacks is
+549 leftover objects and the prebuilt `libc.a`, which are the *oracle*.
+
+**What `tar` alone could not do**, each found by the per-path verify and none
+visible from tar's exit status — case collisions at **any** path component
+(`lib/c` the C library against `lib/C` the C++ one: `c` wins, `C` becomes
+`%43`, and every file under `c` has a unique basename, so a basename rule
+leaves all sixteen inside the directory tar happened to name `C`); a directory
+sitting on a file's name (`vol2/index/junk` beside `vol2/index/Junk/`); hard
+links (`games/sail/makefile` is one inode with `Makefile`, and a
+case-insensitive staging directory holds only one of the two names, so tar
+fails on the link and writes **neither**); `os.path.realpath()` **cannot report
+a case mismatch** — it echoes back the case it was given, so it said "c" about
+a directory named "C" and the rename never fired, and the parent's own listing
+is the only witness; `.lstrip("./")` strips a **character set**, so
+`./.profile` became `profile`; and `ar` preserves a member's mode, three of
+which are `0000`, so `git add` died with *"unable to index file"* and staged
+**nothing** — one file in 54,111.
+
+**Build readiness is a command, not a memory** — `python3 tools/v10-scan.py`:
+
+	extract   45,680 archive members                       MISSING 0
+	inputs    949 targets; 14 objects unsourced in EITHER distribution
+	          (BSD's rogind/rshd/tcpd, RT-11, sml, 11c) -- ignorable
+	headers   655 planned programs: 597 ready, 58 blocked
+	5620      all ten components; mux.c and 32ld.c resolve every include
+
+The 58 are another system's interface (BSD sockets, System V
+`termio`/`sysmacros`, POSIX `unistd`, cfront's C++, the 3B, CRAY, MIPS, Mach),
+and two of those are settled **by the tape's own manual rather than by
+judgement**: `sys/ioctl.h` is Berkeley, since V10's `ioctl(2)` SYNOPSIS is
+`#include <sys/filio.h>` and the only page naming `<sys/ioctl.h>` is
+`jobs(3j)`; and `sys/time.h` cannot be served by r70's `time.h`, which is
+`struct tm` with **zero** mentions of `timeval`.
+
+**Next: `tools/v10-build.sh` still reads `work/v10` and has never been run.**
+Rewiring it to `v10/source` plus `v10/mk/gen/plan.txt` is the remaining step.
+
 ## Status / next step
 
 **Track A is complete** (A1–A3, all 2026-08-09) — see
