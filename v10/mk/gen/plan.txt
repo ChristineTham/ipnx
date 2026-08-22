@@ -41,7 +41,7 @@
 /bin/as	1 toolchain	build	cmd/as/as	tc.order	# also claimed by: world.link:cmd/as, tapebins.txt:cmd/as/as
 /bin/at	6 world	build	at (at)	world.prog
 /bin/cat	6 world	build	cmd/cat	world.link
-/bin/cc	1 toolchain	build	cmd/cc	tc.order	# also claimed by: world.link:cmd/cc
+/bin/cc	1 toolchain	build	cmd/cc  [ours: v10/src/cmd/cc.c]	tc.order	# also claimed by: world.link:cmd/cc  [ours: v10/src/cmd/cc.c]
 /bin/chmod	6 world	build	cmd/chmod	world.link
 /bin/cmp	1 buildtools	build	cmd/cmp	buildtools.ord	# also claimed by: world.link:cmd/cmp
 /bin/cp	6 world	build	cmd/cp	world.link
@@ -64,7 +64,7 @@
 /bin/make	6 world	build	cmd/make	world.link	# also claimed by: tapebins.txt:cmd/make/make
 /bin/mkdir	6 world	build	cmd/mkdir	world.link
 /bin/mt	6 world	build	cmd/mt	world.link
-/bin/mv	6 world	build	cmd/mv	world.link
+/bin/mv	6 world	build	cmd/mv  [ours: v10/src/cmd/mv.c]	world.link
 /bin/newgrp	6 world	build	cmd/newgrp	world.link
 /bin/nice	6 world	build	cmd/nice	world.link
 /bin/nm	6 world	build	cmd/nm	world.link
@@ -561,15 +561,15 @@
 /etc/dmesg	6 world	build	cmd/dmesg	world.link	# also claimed by: tapebins.txt:cmd/dmesg
 /etc/dskcpy	6 world	build	cmd/dskcpy	world.link
 /etc/dump	6 world	build	cmd/dump	world.link
-/etc/fsck	6 world	build	cmd/fsck	world.link
+/etc/fsck	6 world	build	cmd/fsck  [ours: v10/src/cmd/fsck.c]	world.link
 /etc/fstab	7 etc	config	v10/src/etc/fstab	proto-etc
 /etc/getty	6 world	build	cmd/getty	world.link
 /etc/group	7 etc	config	v10/src/etc/group	proto-etc
 /etc/halt	1 shutdown	build	cmd/halt	shutdown.order	# also claimed by: world.link:cmd/halt
 /etc/icheck	6 world	build	cmd/icheck	world.link
 /etc/init	6 world	build	cmd/init	world.link
-/etc/login	6 world	build	cmd/login	world.link
-/etc/mkbitfs	6 world	build	cmd/mkbitfs	world.link
+/etc/login	6 world	build	cmd/login  [ours: v10/src/cmd/login.c]	world.link
+/etc/mkbitfs	6 world	build	cmd/mkbitfs  [ours: v10/src/cmd/mkbitfs.c]	world.link
 /etc/mkfs	6 world	build	cmd/mkfs	world.link
 /etc/mknod	6 world	build	cmd/mknod	world.link
 /etc/motd	7 etc	config	v10/src/etc/motd	proto-etc
@@ -600,7 +600,7 @@
 /lib/ccom	1 toolchain	build	cmd/ccom/vax/ccom	tc.order	# also claimed by: tapebins.txt:cmd/cyntax/cyn/ccom
 /lib/cpp	1 toolchain	build	cmd/cpp/cpp	tc.order	# also claimed by: world.link:cmd/cpp, tapebins.txt:cmd/lcc/ph/cpp
 /lib/crt0.o	2 libc	build	libc/csu	libc.mk
-/lib/libc.a	2 libc	build	libc/mkfile, 260 members in the tape's order	libc.ord
+/lib/libc.a	2 libc	build	libc/mkfile, 260 members in the tape's order, 21 from v10/src	libc.ord
 /unix	5 kernel	build	lsys, ipnx780.m	kobj.order
 /usr/bin/-DMAIN	6 world	build	gre (gre)	world.prog
 /usr/bin/11as	7 tape	copy	cmd/PDP11/11as/11as	tapebins.txt
@@ -1200,7 +1200,7 @@
 /usr/bin/tape	6 world	build	cmd/tape	world.link
 /usr/bin/tbl	6 world	build	cmd/tbl	world.link	# also claimed by: tapebins.txt:cmd/tbl/tmp/tbl
 /usr/bin/tc	7 tape	copy	cmd/monk/cmd/tc	tapebins.txt
-/usr/bin/tcpconfig	7 tape	copy	ipc/internet/tcpconfig	tapebins.txt
+/usr/bin/tcpconfig	7 tape	copy	ipc/internet/tcpconfig  [ours: v10/src/ipc/internet/tcpconfig.c]	tapebins.txt
 /usr/bin/tcpgate	7 tape	copy	ipc/mgrs/gate/tcpgate	tapebins.txt
 /usr/bin/tcpmgr	7 tape	copy	ipc/mgrs/tcpmgr/tcpmgr	tapebins.txt
 /usr/bin/tee	6 world	build	cmd/tee	world.link	# also claimed by: tapebins.txt:cmd/learn/lib/lib/tee

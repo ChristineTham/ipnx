@@ -1,0 +1,461 @@
+# dir	why no program was derived -- recorded, never dropped
+blit/demo/src	no link rule recognised in makefile
+blit/demo/src/alphabet	no link rule recognised in makefile
+blit/demo/src/asteroids	no link rule recognised in makefile
+blit/demo/src/smiley	no link rule recognised in makefile
+blit/demo/src/swar	no link rule recognised in makefile
+blit/doc	no link rule recognised in makefile
+blit/m/libc/crt	no link rule recognised in makefile
+blit/m/libc/csu	no build file
+blit/m/libf	no link rule recognised in makefile
+blit/m/scj	no build file
+blit/m/src	no link rule recognised in makefile
+blit/m/src/cpp	no link rule recognised in makefile
+blit/m/src/mas	no link rule recognised in makefile
+blit/m/src/mc2	no link rule recognised in makefile
+blit/m/src/mld	no link rule recognised in makefile
+blit/src	no build file
+blit/src/68ld	no link rule recognised in makefile
+blit/src/cip	no link rule recognised in makefile
+blit/src/font	no link rule recognised in makefile
+blit/src/jf	no link rule recognised in makefile
+blit/src/jim	no link rule recognised in makefile
+blit/src/jim/frame	no link rule recognised in makefile
+blit/src/joff	no link rule recognised in makefile
+blit/src/joff/term	no link rule recognised in makefile
+blit/src/kbd	no link rule recognised in makefile
+blit/src/layer	no link rule recognised in makefile
+blit/src/libj	no link rule recognised in makefile
+blit/src/libmj	no link rule recognised in makefile
+blit/src/life	no build file
+blit/src/mpx	no link rule recognised in makefile
+blit/src/mpx/proto	no link rule recognised in makefile
+blit/src/mpx/term	no link rule recognised in makefile
+blit/src/mux	no link rule recognised in makefile
+blit/src/mux/proto	no link rule recognised in makefile
+blit/src/mux/term	no link rule recognised in makefile
+blit/src/mux/term/frame	no link rule recognised in makefile
+blit/src/ompx	no link rule recognised in makefile
+blit/src/ompx/sys	no build file
+blit/src/ompx/sys/4.2bsd	no build file
+blit/src/pads/host	no link rule recognised in makefile
+blit/src/pads/term	no link rule recognised in makefile
+blit/src/proof/term	no link rule recognised in makefile
+blit/src/sys	no link rule recognised in makefile
+blit/src/tek4014	no link rule recognised in makefile
+blit/src/term	no link rule recognised in makefile
+blit/src/twid	no link rule recognised in makefile
+include	no build file
+src/630/lib	no build file
+src/630/src	no link rule recognised in makefile
+src/asm.libm	no link rule recognised in makefile
+src/cmd	no build file
+src/cmd/2500	no link rule recognised in mkfile
+src/cmd/PDP11/crt	no build file
+src/cmd/PDP11/fpp/aux	no build file
+src/cmd/PDP11/fpp/old	no build file
+src/cmd/adb/11v	no link rule recognised in makefile
+src/cmd/adb/68v	no link rule recognised in makefile
+src/cmd/adb/comm	no link rule recognised in makefile
+src/cmd/adb/conf	no link rule recognised in makefile
+src/cmd/adb/cray	no link rule recognised in makefile
+src/cmd/adb/g	no link rule recognised in makefile
+src/cmd/adb/null	no link rule recognised in makefile
+src/cmd/adb/seq	no link rule recognised in makefile
+src/cmd/adb/v7	no build file
+src/cmd/adb/v8	no build file
+src/cmd/adb/vax	no link rule recognised in makefile
+src/cmd/ansi	no link rule recognised in mkfile
+src/cmd/as	no link rule recognised in makefile
+src/cmd/asd++	no link rule recognised in makefile
+src/cmd/backup.old	no link rule recognised in mkfile
+src/cmd/basic/basic/PW	no build file
+src/cmd/bison	no link rule recognised in makefile
+src/cmd/c2	no link rule recognised in makefile
+src/cmd/ccom/common	no build file
+src/cmd/ccom/vax/tests	no build file
+src/cmd/cflow	no link rule recognised in makefile
+src/cmd/cfront/cfront	no link rule recognised in makefile
+src/cmd/cfront/cfront2.00	no link rule recognised in makefile
+src/cmd/cfront/libC/bignum	no link rule recognised in makefile
+src/cmd/cfront/libC/complex	no link rule recognised in makefile
+src/cmd/cfront/libC/generic	no link rule recognised in makefile
+src/cmd/cfront/libC/iostream	no build file
+src/cmd/cfront/libC/misc	no link rule recognised in makefile
+src/cmd/cfront/libC/new	no link rule recognised in makefile
+src/cmd/cfront/libC/oiostream	no build file
+src/cmd/cfront/libC/ooiostream	no build file
+src/cmd/cfront/libC/otask	no link rule recognised in makefile
+src/cmd/cfront/libC/task	no link rule recognised in makefile
+src/cmd/cfront/libstring	no link rule recognised in makefile
+src/cmd/cfront/ocfront	no link rule recognised in makefile
+src/cmd/cfront/ooptcfront/demo	no build file
+src/cmd/cfront/optcfront	no link rule recognised in makefile
+src/cmd/cfront/ptcfront	no link rule recognised in makefile
+src/cmd/cfront/xptcfront	no link rule recognised in makefile
+src/cmd/config	no link rule recognised in makefile
+src/cmd/cp	no link rule recognised in makefile
+src/cmd/cref	no build file
+src/cmd/cyntax/cem	no link rule recognised in makefile
+src/cmd/cyntax/cyn	no link rule recognised in makefile
+src/cmd/cyntax/sets	no link rule recognised in makefile
+src/cmd/dag	no link rule recognised in makefile
+src/cmd/dict	no link rule recognised in makefile
+src/cmd/diff	no link rule recognised in mkfile
+src/cmd/dist/cmd	no link rule recognised in mkfile
+src/cmd/dist/lib	no link rule recognised in mkfile
+src/cmd/dist/v10	no link rule recognised in mkfile
+src/cmd/dump	no link rule recognised in makefile
+src/cmd/efl/efixsrc	no link rule recognised in mkfile
+src/cmd/egrep	no link rule recognised in mkfile
+src/cmd/error	no link rule recognised in makefile
+src/cmd/ex/termlib	no link rule recognised in makefile
+src/cmd/f2c	no link rule recognised in makefile
+src/cmd/f2c/doc	no link rule recognised in makefile
+src/cmd/f2c/misc	no build file
+src/cmd/f77/old	no build file
+src/cmd/gre	no link rule recognised in makefile
+src/cmd/gre/regress.d	no link rule recognised in makefile
+src/cmd/hoc	no link rule recognised in makefile
+src/cmd/icon/pi/pil	no link rule recognised in makefile
+src/cmd/icon/setup/amdahl_uts	no build file
+src/cmd/icon/setup/att3b20	no build file
+src/cmd/icon/setup/att3b5	no build file
+src/cmd/icon/setup/common	no build file
+src/cmd/icon/setup/hp9000	no build file
+src/cmd/icon/setup/pc_pcix	no build file
+src/cmd/icon/setup/pc_xenix_smm	no build file
+src/cmd/icon/setup/pdp11_bsd	no build file
+src/cmd/icon/setup/pdp11_v7	no build file
+src/cmd/icon/setup/pyramid_bsd	no build file
+src/cmd/icon/setup/ridge	no build file
+src/cmd/icon/setup/rtpc	no build file
+src/cmd/icon/setup/sun	no build file
+src/cmd/icon/setup/unixpc	no build file
+src/cmd/icon/setup/vax_4.1bsd	no build file
+src/cmd/icon/setup/vax_bsd	no build file
+src/cmd/icon/setup/vax_sysv	no build file
+src/cmd/icon/src/icont	no build file
+src/cmd/icon/src/iconx	no build file
+src/cmd/icon/src/link	no build file
+src/cmd/icon/src/tran	no build file
+src/cmd/imscan	no link rule recognised in makefile
+src/cmd/join	no link rule recognised in mkfile
+src/cmd/kasb	no link rule recognised in makefile
+src/cmd/lcc/c	no link rule recognised in makefile
+src/cmd/lcc/etc	no link rule recognised in makefile
+src/cmd/lcc/gen0	no link rule recognised in makefile
+src/cmd/lcc/gen2	no link rule recognised in makefile
+src/cmd/lcc/gen2/mc	no link rule recognised in makefile
+src/cmd/lcc/gen2/mc-sun	no build file
+src/cmd/lcc/gen2/mc-sun/tst	no build file
+src/cmd/lcc/gen2/mips	no link rule recognised in makefile
+src/cmd/lcc/gen2/mips-iris	no build file
+src/cmd/lcc/gen2/mips-iris/tst	no build file
+src/cmd/lcc/gen2/sparc	no link rule recognised in makefile
+src/cmd/lcc/gen2/sparc-sun	no build file
+src/cmd/lcc/gen2/sparc-sun/tst	no build file
+src/cmd/lcc/gen2/vax	no link rule recognised in makefile
+src/cmd/lcc/gen2/vax-v9	no build file
+src/cmd/lcc/gen3	no link rule recognised in makefile
+src/cmd/lcc/gen3/tst	no build file
+src/cmd/lcc/ph	no link rule recognised in mkfile
+src/cmd/lcc/port.bak	no build file
+src/cmd/lcc/tst	no link rule recognised in makefile
+src/cmd/lcomp	no link rule recognised in makefile
+src/cmd/learn/lib/lib/C	no build file
+src/cmd/lex/old	no build file
+src/cmd/lfactor	no build file
+src/cmd/lint	no link rule recognised in makefile
+src/cmd/lp	no link rule recognised in mkfile
+src/cmd/man	no link rule recognised in makefile
+src/cmd/map/libmap	no link rule recognised in makefile
+src/cmd/matlab/pyxis	no link rule recognised in makefile
+src/cmd/matlab/src	no build file
+src/cmd/mk/export	no link rule recognised in makefile
+src/cmd/mk/export/fio	no link rule recognised in makefile
+src/cmd/mk/export/libc	no link rule recognised in makefile
+src/cmd/mk/export/math	no link rule recognised in makefile
+src/cmd/mk/export.proto/fio	no link rule recognised in makefile
+src/cmd/mk/export.proto/libc	no link rule recognised in makefile
+src/cmd/mk/export.proto/math	no link rule recognised in makefile
+src/cmd/monk/cmd	no link rule recognised in makefile
+src/cmd/monk/cmd/demonk	no link rule recognised in makefile
+src/cmd/monk/cmd/index	no link rule recognised in makefile
+src/cmd/monk/cmd/monk	no link rule recognised in makefile
+src/cmd/monk/cmd/monkmerge	no link rule recognised in makefile
+src/cmd/movie/oldstuff	no build file
+src/cmd/netnews/cvt	no build file
+src/cmd/netnews/src	no link rule recognised in makefile
+src/cmd/netnews/uucp	no build file
+src/cmd/nupas	no build file
+src/cmd/nupas/4bsd	no link rule recognised in makefile
+src/cmd/nupas/attin	no link rule recognised in makefile
+src/cmd/nupas/common	no link rule recognised in makefile
+src/cmd/nupas/ipc	no link rule recognised in makefile
+src/cmd/nupas/libc	no link rule recognised in makefile
+src/cmd/nupas/mips	no link rule recognised in makefile
+src/cmd/nupas/ns	no link rule recognised in makefile
+src/cmd/nupas/print	no link rule recognised in makefile
+src/cmd/nupas/s5	no link rule recognised in makefile
+src/cmd/nupas/s5.3k	no link rule recognised in makefile
+src/cmd/nupas/send	no link rule recognised in makefile
+src/cmd/nupas/sgi	no link rule recognised in makefile
+src/cmd/nupas/smtp	no link rule recognised in makefile
+src/cmd/nupas/sun4bsd	no link rule recognised in makefile
+src/cmd/nupas/v10	no link rule recognised in makefile
+src/cmd/oasd++	no link rule recognised in makefile
+src/cmd/oasd++/hack	no build file
+src/cmd/odist/ape/Future	no build file
+src/cmd/odist/opkg	no link rule recognised in mkfile
+src/cmd/odist/pax/ship	no build file
+src/cmd/odist/pax/src/cmd/pax	no link rule recognised in makefile
+src/cmd/odist/pax/src/lib/libodelta	no link rule recognised in makefile
+src/cmd/odist/pax/src/lib/libx/comp	no build file
+src/cmd/odist/pax/src/lib/libx/dir	no build file
+src/cmd/odist/pax/src/lib/libx/hash	no build file
+src/cmd/odist/pax/src/lib/libx/misc	no build file
+src/cmd/odist/pax/src/lib/libx/port	no build file
+src/cmd/odist/pax/src/lib/libx/preroot	no build file
+src/cmd/odist/pax/src/lib/libx/re	no build file
+src/cmd/odist/pax/src/lib/libx/sfio	no build file
+src/cmd/odist/pax/src/lib/libx/stdio	no build file
+src/cmd/odist/pax/src/lib/libx/string	no build file
+src/cmd/odist/pax/src/lib/libx/tm	no build file
+src/cmd/odist/pax/src/lib/libx/vec	no build file
+src/cmd/ops	no link rule recognised in makefile
+src/cmd/osh	no link rule recognised in mkfile
+src/cmd/oworm	no link rule recognised in mkfile
+src/cmd/oworm/oscsi	no link rule recognised in mkfile
+src/cmd/oworm/sanity	no link rule recognised in mkfile
+src/cmd/oworm/scsi	no link rule recognised in mkfile
+src/cmd/pascal/libpc	no link rule recognised in makefile
+src/cmd/pascal/pc0	no link rule recognised in makefile
+src/cmd/pcc1/mip	no build file
+src/cmd/pcc1/pcc	no link rule recognised in makefile
+src/cmd/pcc1/pcc/VMS	no build file
+src/cmd/pic	no link rule recognised in makefile
+src/cmd/picasso	no link rule recognised in makefile
+src/cmd/pico/framebuffers	no build file
+src/cmd/poly	no link rule recognised in makefile
+src/cmd/post	no link rule recognised in mkfile
+src/cmd/post.src/common	no build file
+src/cmd/post.src/download	no build file
+src/cmd/post.src/dpost	no build file
+src/cmd/post.src/dpost.utf	no build file
+src/cmd/post.src/misc	no build file
+src/cmd/post.src/picpack	no build file
+src/cmd/post.src/postbgi	no build file
+src/cmd/post.src/postdaisy	no build file
+src/cmd/post.src/postdmd	no build file
+src/cmd/post.src/postgif	no build file
+src/cmd/post.src/postio	no build file
+src/cmd/post.src/postmd	no build file
+src/cmd/post.src/postprint	no build file
+src/cmd/post.src/postreverse	no build file
+src/cmd/post.src/posttek	no build file
+src/cmd/postscript/common	no build file
+src/cmd/postscript/download	no build file
+src/cmd/postscript/dpost	no build file
+src/cmd/postscript/misc	no build file
+src/cmd/postscript/picpack	no build file
+src/cmd/postscript/postbgi	no build file
+src/cmd/postscript/postdaisy	no build file
+src/cmd/postscript/postdmd	no build file
+src/cmd/postscript/postgif	no build file
+src/cmd/postscript/postio	no build file
+src/cmd/postscript/postmd	no build file
+src/cmd/postscript/postprint	no build file
+src/cmd/postscript/postreverse	no build file
+src/cmd/postscript/posttek	no build file
+src/cmd/prefer/libux3	no link rule recognised in makefile
+src/cmd/prefer/misc	no link rule recognised in makefile
+src/cmd/prefer/pref	no link rule recognised in makefile
+src/cmd/ps	no link rule recognised in mkfile
+src/cmd/qsnap	no link rule recognised in makefile
+src/cmd/rarepl	no link rule recognised in mkfile
+src/cmd/sed	no link rule recognised in makefile
+src/cmd/server	no link rule recognised in makefile
+src/cmd/sh	no link rule recognised in mkfile
+src/cmd/sml/lib/mlyacc	no build file
+src/cmd/sml/lib/twig	no build file
+src/cmd/sml/src/lex	no build file
+src/cmd/sort	no link rule recognised in makefile
+src/cmd/spell	no link rule recognised in makefile
+src/cmd/spitbol/cint	no build file
+src/cmd/strip	no link rule recognised in makefile
+src/cmd/sum	no link rule recognised in mkfile
+src/cmd/sum/old	no build file
+src/cmd/tp	no link rule recognised in makefile
+src/cmd/troff/Old/catversion	no build file
+src/cmd/troff/Old/catversion/term	no build file
+src/cmd/troff/ancient.nroff/fonts.d	no build file
+src/cmd/troff/ancient.nroff/macros.d	no link rule recognised in makefile
+src/cmd/troff/ancient.nroff/terms.d	no link rule recognised in makefile
+src/cmd/troff/devaps	no build file
+src/cmd/troff/devi10	no build file
+src/cmd/twig/examples	no build file
+src/cmd/u9fs	no link rule recognised in makefile
+src/cmd/udemon	no build file
+src/cmd/units	no link rule recognised in makefile
+src/cmd/units/old	no build file
+src/cmd/upas/4bsd	no link rule recognised in makefile
+src/cmd/upas/attin	no link rule recognised in makefile
+src/cmd/upas/common	no link rule recognised in makefile
+src/cmd/upas/cray	no link rule recognised in makefile
+src/cmd/upas/libc	no link rule recognised in makefile
+src/cmd/upas/mips	no build file
+src/cmd/upas/ns	no link rule recognised in makefile
+src/cmd/upas/print	no link rule recognised in makefile
+src/cmd/upas/s5	no link rule recognised in makefile
+src/cmd/upas/s5.3k	no link rule recognised in makefile
+src/cmd/upas/send	no link rule recognised in makefile
+src/cmd/upas/sgi	no link rule recognised in makefile
+src/cmd/upas/smtp	no link rule recognised in makefile
+src/cmd/upas/sun4bsd	no link rule recognised in makefile
+src/cmd/upas/v10	no link rule recognised in makefile
+src/cmd/usgmake	no link rule recognised in makefile
+src/cmd/uucp/unused	no build file
+src/cmd/uudiff	no build file
+src/cmd/view2d/Old	no link rule recognised in makefile
+src/cmd/view2d/Old/metheus	no build file
+src/cmd/view2d/coloriz	no link rule recognised in makefile
+src/cmd/view2d/term	no link rule recognised in makefile
+src/cmd/vsw	no link rule recognised in mkfile
+src/cmd/weather	no build file
+src/cmd/worm	no link rule recognised in mkfile
+src/cmd/worm/oscsi	no link rule recognised in mkfile
+src/cmd/worm/oscsi/generic	no build file
+src/cmd/worm/oscsi/osanity	no link rule recognised in mkfile
+src/cmd/worm/oscsi/scsi	no build file
+src/cmd/worm/oscsi/sony	no build file
+src/cmd/worm/oscsi/wren	no build file
+src/cmd/worm/scsi	no link rule recognised in mkfile
+src/cmd/worm/scsi/generic	no build file
+src/cmd/worm/scsi/osanity	no link rule recognised in mkfile
+src/cmd/worm/scsi/scsi	no build file
+src/cmd/worm/scsi/sony	no build file
+src/cmd/worm/scsi/wren	no build file
+src/cmd/yacc	no link rule recognised in makefile
+src/dk/cmd/pupu.1.2	no build file
+src/dk/libc	no link rule recognised in makefile
+src/dregs	no build file
+src/games	no build file
+src/games/adv	no build file
+src/games/boggle	no build file
+src/games/doctor	no link rule recognised in makefile
+src/games/mille	no link rule recognised in makefile
+src/history/ix/src/cmd/adb/comm	no link rule recognised in makefile
+src/history/ix/src/cmd/adb/conf	no link rule recognised in makefile
+src/history/ix/src/cmd/adb/v8	no build file
+src/history/ix/src/cmd/adb/vax	no link rule recognised in makefile
+src/history/ix/src/cmd/asd++	no link rule recognised in makefile
+src/history/ix/src/cmd/chuck	no link rule recognised in makefile
+src/history/ix/src/cmd/old	no build file
+src/history/ix/src/cmd/ps	no link rule recognised in mkfile
+src/history/ix/src/jerq/32ld	no link rule recognised in makefile
+src/history/ix/src/jerq/mux/proto	no link rule recognised in makefile
+src/history/ix/src/jerq/mux/term	no link rule recognised in makefile
+src/history/ix/src/jerq/mux/term/frame	no link rule recognised in makefile
+src/history/ix/src/libc	no link rule recognised in mkfile
+src/history/ix/src/libipc	no link rule recognised in mkfile
+src/history/ix/sys/fs	no link rule recognised in mkfile
+src/history/ix/sys/io	no link rule recognised in mkfile
+src/history/ix/sys/jak	no link rule recognised in mkfile
+src/history/ix/sys/md	no link rule recognised in mkfile
+src/history/ix/sys/ml	no link rule recognised in mkfile
+src/history/ix/sys/os	no link rule recognised in mkfile
+src/history/ix/sys/vm	no link rule recognised in mkfile
+src/ipc/internet/htable	no link rule recognised in makefile
+src/ipc/libipc	no link rule recognised in mkfile
+src/ipc/mgrs	no link rule recognised in mkfile
+src/ipc/mgrs/4.3gate	no link rule recognised in makefile
+src/ipc/mgrs/authmgr	no link rule recognised in makefile
+src/ipc/mgrs/common	no link rule recognised in mkfile
+src/ipc/mgrs/svcmgr	no link rule recognised in mkfile
+src/ipc/mgrs/tcpmgr	no link rule recognised in mkfile
+src/ipc/mgrs/tpcmgr	no link rule recognised in makefile
+src/lbin/Mail	no link rule recognised in makefile
+src/lbin/libjobs	no link rule recognised in makefile
+src/libF77	no link rule recognised in mkfile
+src/libF77/notused	no build file
+src/libF77/old	no link rule recognised in makefile
+src/libI77	no link rule recognised in mkfile
+src/libI77/d	no build file
+src/libI77/notused	no build file
+src/libI77/old	no link rule recognised in makefile
+src/libI77/old1	no build file
+src/libc/csu	no build file
+src/libc/fio	no link rule recognised in mkfile
+src/libc/gen	no build file
+src/libc/gen/tmp	no build file
+src/libc/math	no build file
+src/libc/stdio	no link rule recognised in makefile
+src/libc/stdio/ostdio	no link rule recognised in mkfile
+src/libc/sys	no build file
+src/libcbt	no link rule recognised in makefile
+src/libcc	no link rule recognised in makefile
+src/libdbm	no link rule recognised in makefile
+src/libj	no link rule recognised in makefile
+src/libl	no link rule recognised in makefile
+src/libm	no link rule recognised in makefile
+src/libmp	no link rule recognised in makefile
+src/libnm	no link rule recognised in makefile
+src/libpicfile	no link rule recognised in mkfile
+src/libplot/lib4014	no link rule recognised in makefile
+src/libplot/lib5620	no link rule recognised in makefile
+src/libplot/libpen	no link rule recognised in makefile
+src/libplot/libplot/x	no build file
+src/libplot/libtr	no link rule recognised in makefile
+src/libplot/oldplot	no build file
+src/libsdb	no link rule recognised in makefile
+src/libtermlib	no link rule recognised in makefile
+src/liby	no link rule recognised in makefile
+src/local	no build file
+src/lsys/astro	no link rule recognised in mkfile
+src/lsys/boot/naut	no link rule recognised in mkfile
+src/lsys/boot/star	no link rule recognised in mkfile
+src/lsys/boot/uvax	no link rule recognised in mkfile
+src/lsys/fs	no link rule recognised in mkfile
+src/lsys/inet	no link rule recognised in mkfile
+src/lsys/io	no link rule recognised in mkfile
+src/lsys/md	no link rule recognised in mkfile
+src/lsys/mercury	no link rule recognised in mkfile
+src/lsys/misc	no link rule recognised in mkfile
+src/lsys/ml	no link rule recognised in mkfile
+src/lsys/os	no link rule recognised in mkfile
+src/lsys/phone	no link rule recognised in mkfile
+src/lsys/t	no link rule recognised in mkfile
+src/lsys/vm	no link rule recognised in mkfile
+src/man/adm	no build file
+src/man/man0	no build file
+src/man/man1	no build file
+src/sys/astro	no link rule recognised in mkfile
+src/sys/boot/naut	no link rule recognised in mkfile
+src/sys/boot/star	no link rule recognised in mkfile
+src/sys/boot/uvax	no link rule recognised in mkfile
+src/sys/fs	no link rule recognised in mkfile
+src/sys/inet	no link rule recognised in mkfile
+src/sys/io	no link rule recognised in mkfile
+src/sys/lib	no build file
+src/sys/md	no link rule recognised in mkfile
+src/sys/mercury	no link rule recognised in mkfile
+src/sys/mhd	no link rule recognised in mkfile
+src/sys/misc	no link rule recognised in mkfile
+src/sys/ml	no link rule recognised in mkfile
+src/sys/os	no link rule recognised in mkfile
+src/sys/phone	no link rule recognised in mkfile
+src/sys/t	no link rule recognised in mkfile
+src/sys/toronto	no link rule recognised in mkfile
+src/sys/vm	no link rule recognised in mkfile
+src/vol2/Faces/How	no build file
+src/vol2/Faces/How/src	no build file
+src/vol2/Ucds	no link rule recognised in mkfile
+src/vol2/anim	no link rule recognised in makefile
+src/vol2/grap	no link rule recognised in makefile
+src/vol2/index	no link rule recognised in mkfile
+src/vol2/index/tools	no build file
+src/vol2/index/tools/xsed	no build file
+src/vol2/lex	no link rule recognised in mkfile
+src/vol2/ms	no link rule recognised in mkfile
+src/vol2/uucp	no link rule recognised in mkfile
