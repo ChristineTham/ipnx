@@ -127,8 +127,22 @@ python3 tools/v10fs.py prov  work/v10gold/ipnx-v10-ra81.img:a   # tape's vs ours
 ```
 
 ```bash
+# Can the image be built from what is in the repository?  Five phases, ~2 min
+python3 tools/v10-scan.py            # --only extract|secombe|inputs|headers|5620
+```
+
+`extract` 45,680 archive members, 0 missing · `secombe` 16,110 of 16,272
+shared files identical · `inputs` 949 targets, 14 objects with no source in
+either distribution (BSD's rogind/rshd/tcpd, RT-11, sml, 11c) · `headers` 655
+planned programs, **597 compile-ready, 58 blocked** on another system's
+interface · `5620` all ten components of V10's own jerq present, `mux.c` and
+`32ld.c` resolve every include.
+
+```bash
 # Regenerate the V10 build metadata (all have --check; all are host-side)
-tools/v10-where.py        # install paths, from V10's manual + V8's measurements
+tools/v10-headers.py      # inc.extra -- which variant of a header pcc2 can read
+tools/v10-world.py        # the survey: every file's role and the witness for it
+tools/v10-plan.py         # docs/v10-plan.md -- 1,165 paths, file by file
 tools/v10-overlay.py      # v10/src/ -- our corrections, derived from the tarball
 tools/v10-world.py --write  # world.{units,link,prog,script,alias,gen,drop}
 tools/v10-proto.py        # v10/mk/gen/proto-dev -- 466 device nodes

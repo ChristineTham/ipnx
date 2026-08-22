@@ -25,7 +25,7 @@ whose only source is the machine that built the image is a build failure, and
 
 | root | files | role |
 |---|---:|---|
-| `src` | 28,858 | **BUILD.** Dan Cross's `v10src` — the tree stages 1–3 are proven against and our 49 patches are written for. |
+| `src` | 28,857 | **BUILD.** Dan Cross's `v10src` — the tree stages 1–3 are proven against and our 49 patches are written for. |
 | `milligan` | 3,792 | **BUILD into `/usr/jerq`.** The 5620 distribution: `jerq/sgs` is the cross-compiler (`3cc`), `jerq/src/lib` the WE32100 libraries, `jerq/src/mux` muxterm. Closes rung 8. |
 | `include` | 336 | **INSTALL to `/usr/include`.** r70's reconstruction. |
 | `sellers` | 2,899 | **INSTALL to `/usr/man`, `/usr/src/vol2`.** The manuals. |

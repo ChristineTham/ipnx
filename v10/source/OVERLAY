@@ -15,9 +15,6 @@ add	src/etc/rc.pre	-
 add	src/etc/ttys	-
 add	src/etc/utmp	-
 add	src/etc/whoami	-
-patch	src/history/ix/src/jerq/mux/32ld.c	afd84395e5194a02
-patch	src/history/ix/src/jerq/mux/mux.c	c445a58c5f77050e
-add	src/include/jioctl.h	-
 add	src/include/shares.h	-
 add	src/include/sys/lnode.h	-
 patch	src/ipc/internet/dipconfig.c	9721692578711305

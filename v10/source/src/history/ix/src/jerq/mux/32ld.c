@@ -8,7 +8,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/label.h>
 
+extern int	untrusted;
 extern int	booted;
 
 #define	MAXPKTSIZE	128		/* Efficient size for system */
@@ -46,6 +48,7 @@ char	*s;
 	char c = 0;
 	struct stat statbuf;
 	int	i;
+	struct label lab;
 
 	packsiz = min(120, speed/2);
 	dmd_ai(); 			/* right rom ? */
@@ -54,6 +57,10 @@ char	*s;
 	if (obj < 0)
 		quit( "cannot open download");
 	fstat(obj, &statbuf);
+	if (fgetflab(obj, &lab) == -1)
+		quit( "cannot get label download");
+	if (lab.lb_t == 0 && lab.lb_u == 0)
+		untrusted++;
 
 	(void)Read ((char * )&fileheader, sizeof(struct filehdr ));
 	if (fileheader.f_magic != FBOMAGIC)        /* FBOMAGIC is 0560 */

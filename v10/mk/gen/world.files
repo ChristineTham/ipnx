@@ -45913,7 +45913,6 @@ vmsched.c	src/history/ix/sys/vm	.c	not compiled	-	no witness -- see world.notes
 vmsubr.c	src/history/ix/sys/vm	.c	not compiled	-	no witness -- see world.notes
 vmswap.c	src/history/ix/sys/vm	.c	not compiled	-	no witness -- see world.notes
 vmsys.c	src/history/ix/sys/vm	.c	not compiled	-	no witness -- see world.notes
-jioctl.h	src/include	.h	header	-	-
 shares.h	src/include	.h	header	-	-
 lnode.h	src/include/sys	.h	header	-	-
 TODO	src/ipc	-	data	-	-

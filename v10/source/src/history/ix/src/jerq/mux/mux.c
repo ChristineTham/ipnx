@@ -6,6 +6,8 @@
 #include <sys/stream.h>
 #include <sys/ttyio.h>
 #include <sys/filio.h>
+#include <sys/label.h>
+#include <sys/pex.h>
 #include <libc.h>
 #include <signal.h>
 #include <errno.h>
@@ -32,7 +34,11 @@ struct layer {
 	char		bchan;		/* holding area for blocked data */
 	char		bcount;
 	char		bbuf[MAXPKTDSIZE];
+	struct label	lab;		/* label of pipe */
+	short		state;		/* BS_XXX: kind of pexity */
+	short		cap;		/* caps of pex partner */
 };
+enum {BS_NORM, BS_PEX, BS_BOOT};	/* BS_BOOT means pexed boot */
 
 #define	NLAYERS	16		/* Same as in jerq itself */
 #define	NSELFD	20		/* Maximum file descriptors for 'select' */
@@ -57,6 +63,9 @@ struct tchars	tcharssave;
 struct ttychars	ttychars;
 struct ttychars zerochars;
 short		booted;
+struct label	label;
+int		siglab;
+int		untrusted;
 extern int	receive();
 extern int	creceive();
 void		dosig();
@@ -73,6 +82,7 @@ extern int	errno;
 extern int	sys_nerr;
 extern int	strlen();
 extern int	write();
+extern int	catchsiglab();
 
 struct{
 	short	speed;
@@ -121,6 +131,7 @@ main(argc, argv)
 {
 	register int n;
 	char cmdline[64];
+	int savlab_t, savlab_u;
 	progname=argv[0];
 #ifdef	TRACING
 	tracefd=fopen(tracefile, "w");
@@ -136,6 +147,20 @@ main(argc, argv)
 	for(n=0; n<NOFILE; n++)
 		nochk(n,0);
 
+	getplab(&label,(struct label*)0);
+	trace("getplab %s\n",labtoa(&label));
+	savlab_t = label.lb_t;
+	savlab_u = label.lb_u;
+	if(fgetflab(0,&label)<0)
+		quit("can't fgetflab 0");
+	trace("fgetflab 0: %s\n",labtoa(&label));
+	label.lb_t = savlab_t;
+	label.lb_u = savlab_u;
+	label.lb_fix = F_FROZEN;
+	trace("setplab %s\n",labtoa(&label));
+	if(setplab(&label,(struct label*)0)<0)
+		quit("can't setplab");
+	label.lb_t = label.lb_u = 0;
 
 	for(n=1; n<argc; n++) {
 		if(strcmp(argv[n], "-L")==0)
@@ -157,6 +182,10 @@ main(argc, argv)
 	if(n!=argc) {
 		n = service(argc-1, argv+1);
 		return n;
+	}
+	if(pex(0,-1,0)!=0) {
+		untrusted++;
+		unpex(0,-1);
 	}
 	if(ioctl(1, JMUX, 0)!=-1)
 		quit("already muxing");
@@ -180,6 +209,7 @@ main(argc, argv)
 	ioctl(0, TIOCSETP, &sttymodes);
 	devmodes.flags|=F8BIT;
 	ioctl(0, TIOCSDEV, &devmodes);
+	signal(SIGLAB, catchsiglab);
 	signal(SIGPIPE, (int (*)())1);
 	for(n=0; n<NSPEEDS; n++)
 		if(speeds[n].speed<=devmodes.ospeed)
@@ -245,7 +275,9 @@ scan()
 	}else for(fd=0, bit=1; fd<NSELFD; fd++, bit<<=1)
 		if(bit&rdfd.fds_bits[0]){
 			while((n=read(fd, buf, sizeof buf))==-1)
-				if(errno!=EINTR)
+				if(errno==ECONC) {
+					 pexfix(fd);
+				}else if(errno!=EINTR)
 					return -1;
 				else{
 					trace("read error, errno=%d\n", errno);
@@ -362,6 +394,8 @@ unpack(fd, bp, n)
 	if(n<=0)
 		mp->type=M_HANGUP;
 	else {
+		if(siglab)
+			checklabs();
 		if(layer[fd].more>0){
 			layer[fd].more-=n;
 			return sendchars(fd, bp, n);
@@ -433,10 +467,18 @@ unpack(fd, bp, n)
 			size=sizeof(struct winsize)+sizeof(int);
 			break;
 		case JTOOB:
+			/* panic: fait accompli */
+			if(jboot(fd,BS_BOOT,BS_PEX))
+				quit("call the cops: did untrusted download to multilevel muxterm");
 			size = 0;
 			break;
 		case JBOOT:
 		case JZOMBOOT:
+			/* we have a chance to nip it in bud */
+			if(jboot(fd,BS_PEX,BS_BOOT)) {
+				fatal(fd, "averted untrusted download to multilevel muxterm\n");
+				return 1;
+			}
 			/* fall thru */
 		case JTERM:
 		case JEXIT:
@@ -532,6 +574,25 @@ sendioctl(fd, cmd)
 	ioctlvec[0]=cmd;
 	ioctlvec[1]=layer[fd].chan;
 	if(psend_hold(0, ioctlvec, sizeof ioctlvec, fd)!=-1)
+		unblock(fd);
+}
+sendlabel(fd,lab)
+struct label *lab;
+{
+	unsigned char ctlvec[2+LABSIZ];
+	ctlvec[0]=JLABEL; 
+	ctlvec[1]=layer[fd].chan;
+	memcpy(ctlvec+2,lab->lb_bits,LABSIZ);
+	if(psend_hold(0, ctlvec, sizeof ctlvec, fd)!=-1)
+		unblock(fd);
+}
+sendpex(fd,state)
+{
+	char p[3];
+	p[0] = JPEX;
+	p[1]=layer[fd].chan;
+	p[2] = state;
+	if(psend_hold(0, p, sizeof p, fd)!=-1)
 		unblock(fd);
 }
 int
@@ -652,6 +713,10 @@ receive(l, s, cc)
 			layer[i].busy=1;
 			layer[i].chan=l;
 			layer[i].ttydev = devsave;
+			layer[i].state=BS_NORM;
+			sendlabel(i,&label);
+			layer[i].lab = label;
+			layer[i].cap = 0;
 			ttyset(i, &ttychars);
 			trace("new fd %d ", i);
 			trace("layer %d ", l);
@@ -756,6 +821,8 @@ wrmesgb(fd, cp, n)
 	i=n;
 	while(i--)
 		*bp++=*cp++;
+	if(siglab)
+		checklabs();
 	write(fd, wrbuf, MSGHLEN+n);
 }
 delim(fd)
@@ -781,6 +848,16 @@ doshell()
 	}
 	slave=fp[0];
 	fd=fp[1];
+	label.lb_fix = F_RIGID;
+	if(fsetflab(fd, &label)<0) {
+		ifdeftracing(struct label lab);
+		trace("can't set RIGID, errno=%d\n", errno);
+		ifdeftracing(fgetflab(fd,&lab));
+		trace("pipelab %s\n", labtoa(&lab));
+		ifdeftracing(getplab(&lab));
+		trace("proclab %s\n", labtoa(&lab));
+		return -1;
+	}
 	trace("pipe %d\n", fd);
 	if(ioctl(fd, FIOPUSHLD, &mesg_ld) == -1){
 		trace("FIOPUSHLD fails, errno=%d\n", errno);
@@ -798,6 +875,7 @@ doshell()
 		dup(slave); dup(slave); dup(slave); dup(slave);
 		close(slave);
 		ioctl(0, TIOCSPGRP, 0);
+		signal(SIGLAB, (int (*)())0);
 		signal(SIGPIPE, (int (*)())0);
 		execlp(shell, shell, 0);
 		perror(shell);
@@ -877,10 +955,141 @@ service(argc, argv)
 	return 1;
 }
 
+flatbottom() {
+	register struct layer *p;
+
+	for(p=layer;p<&layer[NSELFD]; p++)
+		if(p->busy && !labEQ(&p->lab, &label) 
+		   && p->state != BS_PEX) {
+			trace(" flatbot %d", layer-p);
+			trace(" [lab %s]", labtoa(&p->lab));
+			return 0;
+		}
+	return 1;
+}
+
+jboot(fd,oldstate,newstate)
+{
+	register struct layer *p = &layer[fd];
+
+	trace("jboot %d", fd);
+	trace(" os=%d", oldstate);
+	trace(" ns=%d", newstate);
+	trace(" ps=%d", p->state);
+	trace(" pcap=%o", p->cap);
+	if(untrusted==0 && p->state==oldstate && (p->cap&T_EXTERN)) {
+		p->state = newstate;
+		trace(" rv 0\n", 0);
+		return 0;
+	} else if(flatbottom()) {
+		untrusted = 1;
+		trace(" rv 1\n", 0);
+		for(p=layer;p<&layer[NSELFD];p++)
+			if(p->busy)
+				sendpex(p-layer,0);
+		return 0;
+	} else {
+		trace(" rv -1\n", 0);
+		return -1;
+	}
+}
 
 
+pexfix(fd) {
+	register struct layer *p = &layer[fd];
+	int pex;
+	struct pexclude x;
 
+	if(ioctl(fd,FIOQX,&x)==1) {
+		if(x.newnear==FIONPX && untrusted==0)
+			ioctl(fd, FIOPX, &x);
+		else
+			ioctl(fd, FIONPX, &x);
+	}
+	if(untrusted==0 && x.farpid>0 && x.farcap) 
+		pex = BS_PEX;
+	else
+		pex = BS_NORM;
+	p->cap = (pex==BS_PEX)?x.farcap:0;
 
+	trace("pexfix(%d)", fd);
+	trace(" ps=%d", p->state);
+	trace(" pcap=%o", p->cap);
+	trace(" fcap=%o", x.farcap);
+	trace(" newpex %d\n", pex);
+
+	switch(p->state) {
+	case BS_NORM:
+	case BS_PEX:
+		p->state = pex;
+		sendpex(fd,pex==BS_PEX);
+		break;
+	case BS_BOOT:
+		if(jboot(fd, BS_BOOT, BS_BOOT)) {
+			fatal(fd, "foiled untrusted download to multilevel muxterm\n");
+		}
+		break;
+	}
+	trace("pexfix2(%d)", fd);
+	trace(" ut=%d", untrusted);
+	trace(" farpid=%d", x.farpid);
+	trace(" ns=%d\n", p->state);
+}
+
+catchsiglab()
+{
+	siglab = 1;
+}
+checklabs()
+{
+	int i, bit, nseen;
+	trace("checklabs\n", (char*)0);
+	siglab = 0;
+	do {
+		unsigned readfds = ~0;
+		unsigned writefds = ~0;
+		int nfds = unsafe(NSELFD, &readfds, &writefds);
+		if(nfds<0)
+			quit("unsafe failed");
+		trace("unsafe nfds=%d", nfds);
+		trace(" rdfds=%o", readfds);
+		trace(" wrfds=%o\n", writefds);
+		nseen = 0;
+		for(i=0, bit=1; nseen<nfds && i<NSELFD; i++, bit<<=1) {
+			if(!FD_ISSET(i,(*(fd_set*)&readfds)) ||
+			   !layer[i].busy)
+				continue;
+			if(i==0) 
+				quit("terminal label changed");
+			trace("label change %d\n", i);
+			labchange(i);
+			nseen++;
+		}
+	} while(nseen);
+}
+labchange(fd)
+{
+	struct label lab;
+	fgetflab(fd,&lab);
+	if(!labLE(&layer[fd].lab, &lab)) {
+		if(untrusted)
+			fatal(fd, "illegal untrusted window downgrade\n");
+		else {
+			sendioctl(fd, JTERM);
+			chitchat(fd, "sanitized window downgrade\n");
+			sendlabel(fd,&lab);
+		}
+	}
+	else if(!labEQ(&layer[fd].lab, &lab)) {
+		if(untrusted)
+			fatal(fd, "Label change in untrusted terminal\n");
+		else
+			sendlabel(fd,&lab);
+	}
+	layer[fd].lab = lab;
+	trace("labch %d",  fd);
+	trace(" %s\n", labtoa(&lab));
+}
 chitchat(fd,s)
 char *s;
 {
