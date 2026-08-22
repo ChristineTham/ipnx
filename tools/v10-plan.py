@@ -1,34 +1,39 @@
 #!/usr/bin/env python3
-"""The file-by-file plan: every path on the golden, and how it gets there.
+"""The file-by-file plan for a Tenth Edition golden image.
 
 	tools/v10-plan.py [--check]
 
-Writes two files from one computation:
+Writes docs/v10-plan.md (to read) and v10/mk/gen/plan.txt (to build from).
+Every path that will exist on the image gets a row saying WHERE IT COMES FROM
+and HOW IT GETS THERE.  There is no `inherit' method and there never will be:
+a file whose only source is the machine that built the image is a build
+failure, and tools/v10-manifest.py fails the build on one.
 
-	docs/v10-plan.md        the plan, to read
-	v10/mk/gen/plan.txt     the same rows, tab-separated, for the build
+WHICH ROOT SUPPLIES WHAT.  v10/source holds six archives, never merged, and
+only some of them build.  Each decision is stated with its reason, because
+"we only ever used this one" is not a reason:
 
-One row per destination path:
+	v10 (src)   BUILD.  Dan Cross's v10src -- the tree stages 1-3 are
+	            already proven against, and the one our 49 patches are
+	            written for.
+	milligan    BUILD into /usr/jerq.  The 5620 distribution: jerq/sgs is
+	            the cross-compiler (3cc), jerq/src/lib the WE32100
+	            libraries, jerq/src/mux muxterm.  This is what rung 8 was
+	            blocked on and it closes the terminal half.
+	include     INSTALL to /usr/include.  r70's reconstruction, already
+	            the measured default for V10 source.
+	sellers     INSTALL to /usr/man and /usr/src/vol2.  The manuals.
+	secombe     WITNESS, not built.  A second /usr/src from a different
+	            machine: where our bytes differ from src's, secombe is a
+	            third opinion -- the same role the 46 prebuilt binaries
+	            play.  Building it would mean choosing one file per path
+	            and calling the result "the tape".
+	blit        PARKED.  The 68000 Blit, not the 5620 dmd_core emulates.
+	ix          PARKED.  A different operating system built on V10.
+	630         PARKED.  The 630 MTG, a different terminal.
 
-	path <TAB> stage <TAB> method <TAB> source <TAB> list
-
-WHY GENERATED.  A plan written by hand goes stale the first time a unit starts
-building, and a plan quoted from memory is how this project put ix binaries and
-an Eighth Edition fstab on a Tenth Edition disk.  Every row here comes from a
-list in v10/mk/gen that some other generator produced from the tape.
-
-METHODS, AND THE DISTINCTION THAT MATTERS:
-
-	build    compiled from source by the stage named, installed by its
-	         makefile's `install:' target into $(DESTDIR) -- the new image.
-	copy     the tape ships it and nothing can build it; copied from the
-	         netfs share.
-	mknod    a device node, from the generated table.
-	config   content lives in v10/src/etc.
-	tree     a whole directory copied from the tape.
-
-There is no `inherit'.  If a row cannot name a source it is a defect in the
-plan, not a file to scavenge off the builder.
+A PARKED ROOT IS STILL EXTRACTED AND STILL SURVEYED.  Parking is a statement
+about what the image carries, not about what the repository knows.
 """
 
 import argparse
@@ -38,283 +43,207 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GEN = os.path.join(ROOT, "v10", "mk", "gen")
+TREE = os.path.join(ROOT, "v10", "source")
+
+BUILD_ROOTS = {"v10": "src", "milligan": "milligan"}
+PARKED = {"secombe": "a second /usr/src -- a WITNESS, not a build source",
+          "blit": "the 68000 Blit, not the 5620 this project emulates",
+          "ix": "a different operating system, built on V10",
+          "630": "the 630 MTG, a different terminal"}
 
 
-def rows(name, ncol=None):
-    """Data rows of a generated list, split on tabs, comments dropped."""
+def rows(name):
     p = os.path.join(GEN, name)
     if not os.path.exists(p):
         return []
     out = []
-    for line in open(p, errors="replace"):
-        line = line.split("#")[0].rstrip("\n")
-        if not line.strip():
+    for line in open(p):
+        if line.startswith("#") or not line.strip():
             continue
-        f = line.split("\t") if "\t" in line else line.split()
-        if ncol and len(f) < ncol:
-            continue
-        out.append(f)
+        # THE GENERATED FILES ARE NOT ALL TAB-SEPARATED.  libs.txt is
+        # space-separated and a blind split("\t") gives it ONE field, so a
+        # `len(r) >= 4' guard drops all 27 libraries in silence -- the plan
+        # printed no stage 4 at all and read like a design decision.
+        line = line.rstrip("\n")
+        out.append(line.split("\t") if "\t" in line else line.split())
     return out
 
 
-def norm(d, name=None):
-    """`usr/bin/yacc' or `/usr/bin' + name -> an absolute path."""
-    d = d.strip()
-    if name is not None:
-        d = d.rstrip("/") + "/" + name
-    return "/" + d.lstrip("/")
+def plan():
+    """[(installed path, method, source, stage, note)] -- the whole image."""
+    out = []
 
+    # ---- stage 1: the toolchain, built first and used by everything after
+    for r in rows("tc.order"):
+        if len(r) >= 3:
+            out.append(("/" + r[2], "build", "src/" + r[1], "1",
+                        "the toolchain; stage 3 rebuilds it on the new libc"))
 
-# OUR SOURCE OVERRIDES THE TAPE'S, and the plan has to say which files those
-# are or it is describing a build that does not happen.  v10/src holds patched
-# copies -- each derived from a named upstream file with a stated sha256 -- and
-# worldc.sh already prefers them; our five one-line corrections were worth
-# three commands that would otherwise not compile.
-#
-# REIMPORTING CANNOT LOSE THEM: tools/v10-import.py writes only to work/v10,
-# the pristine tape, and v10/src is a different tree.  That separation is what
-# lets v10/MANIFEST keep asserting the tarball is unaltered.
-def overlay_index():
-    """What v10/src overrides, keyed by (top-level tree, stem).
+    # ---- stage 2: libc, compiled by stage 1's passes into the new image
+    out.append(("/lib/libc.a", "build", "src/libc", "2",
+                "%d members in the tape's own archive order (libc.ord); "
+                "setupshares is a named exclusion" % len(rows("libc.ord"))))
 
-    KEYED BY TREE AS WELL AS NAME, because a bare basename match is wrong:
-    v10/src/libc/stdio/printf.c is a LIBC MEMBER, and matching it against the
-    command `printf' claimed the plan built /usr/bin/printf from our source
-    when it does not.  A command in cmd/ is only overridden by something in
-    v10/src/cmd/."""
-    root = os.path.join(ROOT, "v10", "src")
-    out = {}
-    for dp, _, fs in os.walk(root):
-        for f in fs:
-            if f == "PATCHES.md":
-                continue
-            rel = os.path.relpath(os.path.join(dp, f), root)
-            top = rel.split(os.sep)[0]
-            out[(top, f)] = rel
-            out[(top, os.path.splitext(f)[0])] = rel
+    # ---- stage 4: the other libraries
+    for r in rows("libs.txt"):
+        if len(r) >= 4:
+            out.append(("/usr/lib/" + r[3], "build", "src/" + r[1], "4",
+                        "%s members" % (r[4] if len(r) > 4 else "?")))
+
+    # ---- stage 5: every program the survey found, in the roots we build
+    prog = rows("world.prog")
+    for r in prog:
+        if len(r) < 8:
+            continue
+        name, d, inst, libs, objs, how, cflags, tree = r[:8]
+        if tree not in BUILD_ROOTS:
+            continue
+        st = "5" if tree == "v10" else "6"
+        note = how if libs in ("-", "") else "%s, %s" % (how, libs)
+        out.append((inst.rstrip("/") + "/" + name, "build", d, st, note))
+
+    # ---- stage 7: the device nodes, from the generated table
+    for r in rows("proto-dev"):
+        if len(r) >= 5:
+            out.append(("/dev/" + r[0], "mknod", "v10/mk/gen/proto-dev", "7",
+                        "%s major %s minor %s mode %s" % (r[1], r[2], r[3], r[4])))
+
+    # ---- stage 7: /etc, from OUR source, never captured off the builder
+    for r in rows("proto-etc"):
+        if len(r) >= 3:
+            out.append(("/etc/" + r[0], "copy", "v10/src/etc/" + r[0], "7",
+                        "mode %s -- %s" % (r[1], r[2])))
+
+    # ---- stage 7: the headers
+    inc = os.path.join(TREE, "include")
+    if os.path.isdir(inc):
+        n = sum(len(f) for _, _, f in os.walk(inc))
+        out.append(("/usr/include/**", "tree", "include/", "7",
+                    "%d files -- r70's reconstruction, the measured default "
+                    "for V10 source" % n))
+
+    # ---- stage 8: the manuals
+    sel = os.path.join(TREE, "sellers")
+    if os.path.isdir(sel):
+        for sub, dest in (("man", "/usr/man"), ("vol2", "/usr/src/vol2")):
+            d = os.path.join(sel, sub)
+            if os.path.isdir(d):
+                n = sum(len(f) for _, _, f in os.walk(d))
+                out.append((dest + "/**", "tree", "sellers/" + sub, "8",
+                            "%d files" % n))
     return out
 
 
-def libc_ours(over):
-    """How many libc members come from our source rather than the tape's."""
-    return sorted({rel for (top, _), rel in over.items() if top == "libc"})
+MD_HEAD = """# The Tenth Edition golden image, file by file
 
+Generated by `tools/v10-plan.py` from the survey in `v10/mk/gen/`. Do not
+edit; change the survey or the generator.
 
-def build():
-    plan = {}          # path -> (stage, method, source, list)
-    over = overlay_index()
+## The three rules
 
-    def mark(source, name, tree="cmd"):
-        """Note where our own copy supersedes the tape's, within one tree."""
-        rel = over.get((tree, name))
-        return source if rel is None else "%s  [ours: v10/src/%s]" % (source, rel)
+1. **The source contains everything.** `v10/source` — the six V10 archives
+   extracted file by file, with our 49 patches applied on top — is the only
+   input. Not the builder's filesystem, not the Eighth Edition, not a previous
+   golden, not a file a harness types in.
+2. **No staging tree.** `$(DESTDIR)` is the new image, mounted, for the whole
+   run. The generated makefiles were written for this: `init.mk` says
+   `cp init $(DESTDIR)/etc/init`.
+3. **The new toolchain runs on the new image.** After stage 1 the passes are
+   on the image and stage 2 compiles with `cc -B$MNT/lib/`. By stage 3 the
+   image compiles itself. The builder supplies a running kernel and nothing
+   else.
 
-    def put(path, stage, method, source, lst):
-        # FIRST WRITER WINS, and a collision is reported rather than resolved:
-        # two lists claiming one path is a question for whoever wrote them.
-        if path in plan:
-            plan[path][4].append("%s:%s" % (lst, source))
-            return
-        plan[path] = [stage, method, source, lst, []]
+**There is no `inherit` method in this plan and there never will be.** A file
+whose only source is the machine that built the image is a build failure, and
+`tools/v10-manifest.py` fails the build on one.
 
-    # -- stage 1: the toolchain, and the tools stages 2/3 and a disk build need
-    for lst, stage in (("tc.order", "1 toolchain"),
-                       ("buildtools.ord", "1 buildtools"),
-                       ("shutdown.order", "1 shutdown")):
-        for f in rows(lst, 3):
-            put(norm(f[2]), stage, "build",
-                mark("%s/%s" % (f[1], f[0]), f[0]), lst)
+## Which archive supplies what
 
-    # -- stage 2: libc.  260 members become two installed files.
-    n = len(rows("libc.ord", 1))
-    ours = libc_ours(over)
-    put("/lib/libc.a", "2 libc", "build",
-        "libc/mkfile, %d members in the tape's order, %d from v10/src"
-        % (n, len(ours)), "libc.ord")
-    put("/lib/crt0.o", "2 libc", "build", "libc/csu", "libc.mk")
-
-    # -- stage 4: the libraries
-    for f in rows("libs.txt", 4):
-        put("/usr/lib/" + f[3], "4 libraries", "build",
-            "%s (%s members)" % (f[1], f[4] if len(f) > 4 else "?"), "libs.txt")
-
-    # -- stage 5: the kernel
-    put("/unix", "5 kernel", "build", "lsys, ipnx780.m", "kobj.order")
-
-    # -- stage 6: the world.  world.link is name/dir/authority/-; world.prog
-    #    names the programs inside multi-main units; aliases are second names.
-    for f in rows("world.link", 2):
-        put(norm(f[1], f[0]), "6 world", "build",
-            mark("cmd/%s" % f[0], f[0]), "world.link")
-    # world.prog is `name unit unitdir dest libs objects...' -- the
-    # destination is the FOURTH field.  Using the third gives paths like
-    # /../games/atc/atc, because the third is the unit's directory relative
-    # to cmd/.
-    for f in rows("world.prog", 4):
-        put(norm(f[3], f[0]), "6 world", "build",
-            mark("%s (%s)" % (f[2], f[1]), f[0]), "world.prog")
-    # `name dir unitdir src' -- a shell script, copied rather than compiled.
-    for f in rows("world.script", 4):
-        put(norm(f[1], f[0]), "6 world", "copy", "cmd/%s/%s" % (f[2], f[3]),
-            "world.script")
-    # `alias dir target' -- a hard link, which is how the tape itself does it:
-    # V8's nlink>1 shows edit=ex=vi=view is ONE inode with four names, so
-    # building ex closes four of these.
-    for f in rows("world.alias", 3):
-        put(norm(f[1], f[0]), "6 world", "link",
-            "a second name for %s" % f[2], "world.alias")
-
-    # -- stage 7: the tape's own binaries
-    for f in rows("tapebins.txt", 3):
-        top = f[1].split("/")[0]
-        put(norm(f[2], f[0]), "7 tape", "copy", mark(f[1], f[0], top), "tapebins.txt")
-
-    # -- stage 7: the device table
-    for f in rows("proto-dev", 4):
-        put("/dev/" + f[0], "7 dev", "mknod",
-            "%s %s %s" % (f[1], f[2], f[3]), "proto-dev")
-
-    # -- stage 7: the configuration
-    for f in rows("proto-etc", 2):
-        put("/etc/" + f[0], "7 etc", "config", "v10/src/etc/" + f[0], "proto-etc")
-
-    # -- stage 7: whole trees from the tape
-    for dest, src in (("/usr/man", "src/man"),
-                      ("/usr/include", "include"),
-                      ("/usr/blit", "blit")):
-        put(dest + "/...", "7 tape", "tree", src, "(whole tree)")
-
-    return plan
-
-
-def render(plan):
-    bystage = collections.Counter()
-    bymethod = collections.Counter()
-    for p, v in plan.items():
-        bystage[v[0]] += 1
-        bymethod[v[1]] += 1
-    out = ["# The file-by-file plan: every path on the golden, and how it gets there.",
-           "#",
-           "# Generated by tools/v10-plan.py from the lists in v10/mk/gen.  Do not",
-           "# edit: a plan written by hand goes stale the first time a unit starts",
-           "# building.",
-           "#",
-           "# fields: path<TAB>stage<TAB>method<TAB>source<TAB>list",
-           "#",
-           "# method:  build  compiled from source, installed by its makefile's",
-           "#                 install: target into $(DESTDIR) -- the new image",
-           "#          copy   the tape ships it and nothing can build it",
-           "#          link   a second name for a binary already built",
-           "#          mknod  a device node from the generated table",
-           "#          config content lives in v10/src/etc",
-           "#          tree   a whole directory from the tape",
-           "#",
-           "# There is no `inherit'.  A path with no source is a defect in the plan.",
-           "#",
-           "# by stage:"]
-    for k in sorted(bystage):
-        out.append("#   %-16s %5d" % (k, bystage[k]))
-    out.append("# by method:")
-    for k, v in bymethod.most_common():
-        out.append("#   %-16s %5d" % (k, v))
-    out.append("#   %-16s %5d" % ("TOTAL", len(plan)))
-    out.append("")
-    for p in sorted(plan):
-        stage, method, source, lst, dups = plan[p]
-        row = "%s\t%s\t%s\t%s\t%s" % (p, stage, method, source, lst)
-        if dups:
-            row += "\t# also claimed by: " + ", ".join(dups[:3])
-        out.append(row)
-    return "\n".join(out) + "\n", bystage, bymethod
-
-
-def markdown(plan, bystage, bymethod):
-    """The same rows, grouped by directory, as a document."""
-    bydir = collections.defaultdict(list)
-    for path in sorted(plan):
-        stage, method, source, lst, dups = plan[path]
-        parts = path.split("/")
-        d = "/".join(parts[:3]) if len(parts) > 3 and parts[1] == "usr" \
-            else ("/" + parts[1] if len(parts) > 2 else "/")
-        bydir[d].append((path, stage, method, source, lst, dups))
-
-    o = ["# The file-by-file plan",
-         "",
-         "Every path on the golden, and how it gets there. **Generated by",
-         "`tools/v10-plan.py`** from the lists in `v10/mk/gen` — a plan written by",
-         "hand goes stale the first time a unit starts building, and a plan quoted",
-         "from memory is how this project put ix binaries and an Eighth Edition",
-         "`fstab` on a Tenth Edition disk.",
-         "",
-         "`docs/v10-bootstrap.md` is the procedure; this is its manifest.",
-         "",
-         "## Methods",
-         "",
-         "| method | meaning |",
-         "|---|---|",
-         "| `build` | compiled from source by the stage named, installed by its makefile's `install:` target into `$(DESTDIR)` — the new image |",
-         "| `copy` | the tape ships it and nothing can build it |",
-         "| `link` | a second name for a binary already built, as a hard link |",
-         "| `mknod` | a device node, from the generated table |",
-         "| `config` | content lives in `v10/src/etc` |",
-         "| `tree` | a whole directory from the tape |",
-         "",
-         "**There is no `inherit`.** A path with no source is a defect in this plan,",
-         "not a file to scavenge off the machine that happens to have it.",
-         "",
-         "## Totals",
-         "",
-         "| stage | paths |    | method | paths |",
-         "|---|---:|---|---|---:|"]
-    st = sorted(bystage.items())
-    me = bymethod.most_common()
-    for i in range(max(len(st), len(me))):
-        a = "`%s` | %d" % st[i] if i < len(st) else " | "
-        b = "`%s` | %d" % me[i] if i < len(me) else " | "
-        o.append("| %s |  | %s |" % (a, b))
-    o.append("| **total** | **%d** |  |  |  |" % len(plan))
-    o.append("")
-
-    for d in sorted(bydir):
-        rowsd = bydir[d]
-        o.append("## `%s` — %d paths" % (d, len(rowsd)))
-        o.append("")
-        o.append("| path | stage | method | source |")
-        o.append("|---|---|---|---|")
-        for path, stage, method, source, lst, dups in rowsd:
-            note = "" if not dups else "  ⚠ also claimed by %s" % dups[0]
-            o.append("| `%s` | %s | `%s` | `%s`%s |" % (path, stage, method, source, note))
-        o.append("")
-    return "\n".join(o) + "\n"
+| root | files | role |
+|---|---:|---|
+"""
 
 
 def main(argv):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="v10/mk/gen/plan.txt")
-    ap.add_argument("--md",  default="docs/v10-plan.md")
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
-    plan = build()
-    text, bystage, bymethod = render(plan)
-    md = markdown(plan, bystage, bymethod)
-    dest = os.path.join(ROOT, a.out)
-    mdest = os.path.join(ROOT, a.md)
+
+    p = plan()
+    p.sort(key=lambda r: (r[3], r[0]))
+
+    txt = os.path.join(GEN, "plan.txt")
+    md = os.path.join(ROOT, "docs", "v10-plan.md")
+    body = "# path\tmethod\tsource\tstage\tnote\n"
+    body += "".join("\t".join(r) + "\n" for r in p)
+
     if a.check:
-        for f, want in ((dest, text), (mdest, md)):
-            cur = open(f).read() if os.path.exists(f) else ""
-            if cur != want:
-                sys.stderr.write("v10-plan: %s is out of date\n" % f)
-                return 1
-        print("v10-plan: up to date (%d paths)" % len(plan))
+        if not os.path.exists(txt) or open(txt).read() != body:
+            print("v10-plan: v10/mk/gen/plan.txt is stale")
+            return 1
+        print("v10-plan: current (%d paths)" % len(p))
         return 0
-    open(dest, "w").write(text)
-    open(mdest, "w").write(md)
-    print("v10-plan: %d paths -> %s and %s" % (len(plan), a.md, a.out))
+
+    open(txt, "w").write(body)
+
+    # the markdown
+    counts = {}
+    for r in ("src", "blit", "include", "secombe", "milligan", "sellers"):
+        d = os.path.join(TREE, r)
+        counts[r] = sum(len(f) for _, _, f in os.walk(d)) if os.path.isdir(d) else 0
+    out = [MD_HEAD]
+    role = {"src": "**BUILD.** Dan Cross's `v10src` — the tree stages 1–3 are "
+                   "proven against and our 49 patches are written for.",
+            "milligan": "**BUILD into `/usr/jerq`.** The 5620 distribution: "
+                        "`jerq/sgs` is the cross-compiler (`3cc`), "
+                        "`jerq/src/lib` the WE32100 libraries, "
+                        "`jerq/src/mux` muxterm. Closes rung 8.",
+            "include": "**INSTALL to `/usr/include`.** r70's reconstruction.",
+            "sellers": "**INSTALL to `/usr/man`, `/usr/src/vol2`.** The manuals.",
+            "secombe": "**WITNESS, not built.** A second `/usr/src` from a "
+                       "different machine — a third opinion where our bytes "
+                       "differ, the role the 46 prebuilt binaries play.",
+            "blit": "**PARKED.** The 68000 Blit, not the 5620 `dmd_core` "
+                    "emulates."}
+    for r in ("src", "milligan", "include", "sellers", "secombe", "blit"):
+        out.append("| `%s` | %s | %s |\n" % (r, format(counts[r], ","), role[r]))
+    out.append("\n`src/history` (ix, 882 files) and `src/630` (1,098) are "
+               "parked inside `src`: a different operating system and a "
+               "different terminal. **A parked root is still extracted and "
+               "still surveyed** — parking says what the image carries, not "
+               "what the repository knows.\n")
+
+    bystage = collections.OrderedDict()
+    for r in p:
+        bystage.setdefault(r[3], []).append(r)
+    names = {"1": "Stage 1 — the toolchain",
+             "2": "Stage 2 — libc",
+             "4": "Stage 4 — the other libraries",
+             "5": "Stage 5 — the commands",
+             "6": "Stage 6 — /usr/jerq, the 5620",
+             "7": "Stage 7 — /dev, /etc, /usr/include",
+             "8": "Stage 8 — the manuals"}
+    out.append("\n## What lands on the image: %s paths\n\n" % format(len(p), ","))
+    out.append("| stage | paths |\n|---|---:|\n")
     for k in sorted(bystage):
-        print("   %-16s %5d" % (k, bystage[k]))
-    print("   %s" % ("-" * 22))
-    for k, v in bymethod.most_common():
-        print("   %-16s %5d" % (k, v))
+        out.append("| %s | %s |\n" % (names.get(k, k), format(len(bystage[k]), ",")))
+
+    for k in sorted(bystage):
+        rs = bystage[k]
+        out.append("\n## %s\n\n%s paths.\n\n" % (names.get(k, k),
+                                                 format(len(rs), ",")))
+        out.append("| installed path | method | source | note |\n|---|---|---|---|\n")
+        for path, method, src, _, note in rs:
+            out.append("| `%s` | %s | `%s` | %s |\n"
+                       % (path, method, src, note.replace("|", "\\|")))
+    open(md, "w").write("".join(out))
+
+    print("v10-plan: %d paths -> docs/v10-plan.md, v10/mk/gen/plan.txt" % len(p))
+    for k in sorted(bystage):
+        print("   %-34s %5d" % (names.get(k, k), len(bystage[k])))
+    meth = collections.Counter(r[1] for r in p)
+    print("   methods: %s" % ", ".join("%s %d" % kv for kv in meth.most_common()))
+    assert "inherit" not in meth, "there is no inherit method"
     return 0
 
 
