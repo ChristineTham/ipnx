@@ -1,0 +1,58 @@
+#!/usr/bin/env expect
+# Boot the disk the build made, and see how far it gets.
+#
+#	expect tools/v10-tryboot.exp <image>
+#
+# THIS IS THE ONLY TEST THAT MATTERS.  Every stage so far has asserted its own
+# output -- 12 of 12, 260 members, 13 of 13 -- and none of that says the disk
+# is a system.  /etc/init execs /bin/sh by absolute path, /etc/rc mounts /usr,
+# and getty opens a tty: a disk can pass every build assertion and stop dead
+# after autoconfig with the CPU idle, which is what happened to V8's stage 8.
+set timeout 900
+log_user 1
+set ROOT [file normalize [file dirname [file dirname [info script]]]]
+set IMG  [lindex $argv 0]
+set SIM  "$ROOT/work/opensimh/BIN/vax780"
+set ROM  "$ROOT/v10/source/src/lsys/boot/star/uda"
+
+set cfg "/tmp/v10boot.[pid].conf"
+set fh [open $cfg w]
+puts $fh "set noasynch"
+puts $fh "set cpu 8m"
+puts $fh "set dz enable"
+puts $fh "set dz lines=8"
+puts $fh "set tto 7b"
+puts $fh "set rq0 ra81"
+puts $fh "attach rq0 [file tail $IMG]"
+close $fh
+
+cd [file dirname $IMG]
+spawn $SIM $cfg
+expect -timeout 120 -- "sim>" {} timeout { puts "\nNO PROMPT"; exit 2 }
+send "load -o $ROM FA00\r"
+expect -timeout 60 -- "sim>" {} timeout {}
+foreach c {"dep sp 200" "dep r1 0" "dep r3 0" "dep r5 0"} {
+    send "$c\r"; expect -timeout 30 -- "sim>" {} timeout {}
+}
+send "run FA02\r"
+
+# MARK PARITY: getty sends its first banner with bit 7 set, so the plain string
+# "login:" can miss the whole line.  `ogin' survives either way.
+set got none
+expect -timeout 600 \
+    -- "ogin"    { set got login } \
+    -- "panic:"  { set got panic } \
+    -- "unix"    { set got kernel } \
+    timeout      { set got timeout }
+if {$got eq "kernel"} {
+    expect -timeout 480 -- "ogin" { set got login } -- "panic:" { set got panic } timeout { set got kernel }
+}
+puts "\n===== TRYBOOT: $got ====="
+catch { send "\005" }
+catch { expect -timeout 30 -- "sim>" {} timeout {} }
+catch { send "quit\r" }
+catch { expect -timeout 30 -- eof {} timeout {} }
+catch { close }
+catch { wait -nowait }
+file delete $cfg
+exit 0
