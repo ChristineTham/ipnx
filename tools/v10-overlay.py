@@ -42,6 +42,41 @@ DOC = os.path.join(OUT, "PATCHES.md")
 # site fails rather than making two changes.
 EDITS = [
     dict(
+        path="lsys/lib/tab",
+        sha="ed106412b3ae23f948985e2f6ec654b72b3211f6bbbd431d85c6b272e4bb6b30",
+        title="lsys/lib/tab: enable `cdev 18 pt', the stream-pipe device (K17)",
+        why="""\
+V8's `/dev/pt/pt00`..`pt63` are **not** pseudo-ttys, which is why sixty-four
+device names read for months as V8 hardware V10 lacks. V8's own `cdevsw` says
+what they are:
+
+	/*sp*/	nodev,	nodev,	nodev,	nodev,	/*18*/
+		nodev,	nulldev,	&spinfo,
+
+`spinfo` is the **stream pipe** (`v8/usr/sys/dev/spipe.c`), and V10 ships the
+same driver as `lsys/io/spipe.c`, exporting
+`struct cdevsw spcdev = cstrinit(&spinfo)`. mkconf's own catalogue already
+knows how to configure it -- `lsys/lib/devs` line 64:
+
+	pt	sp	count	data struct queue *spipes; inc sys/stream.h;
+
+So the driver is present, the config catalogue is present, and the **table
+entry is commented out with a question**: `# cdev 18 pt   # remove?`. Nobody
+answered the question and nobody removed the driver.
+
+Uncommenting it is a deviation of exactly the kind the authenticity rule
+allows -- the tape cannot run as-is (every one of those nodes opens with
+ENXIO), it is one named line, and the tape's *own other two files* are the
+evidence that this is the state the tree was heading for rather than an
+invention of ours. `ipnx780.m` gains `pt 64`, which is V8's own count.
+
+**K7 reads this copy rather than the tape's** (`mkconf -t $TB`) and asserts
+the enabled line **by content**: a stale overlay is precisely what an
+existence test would fail to notice.""",
+        edits=[("# cdev 18\tpt\t# remove?",
+                "cdev 18\tpt\t\t# ipnx: STREAM PIPES -- see PATCHES.md", 1)],
+    ),
+    dict(
         path="libc/stdio/printf.c",
         sha="0e79acc3ba7378d31b6ded487907194cc9c6a498bd9b47e06da03d7fb2fac86f",
         title="printf.c: an ANSI definition pcc2 cannot parse (B2.2c)",
@@ -1779,7 +1814,7 @@ def main():
     # NO ORPHAN PRUNING HERE, AND THE ATTEMPT IS WORTH RECORDING.  `v10/src' is
     # NOT wholly generated: it is a MIX of this script's patched copies and
     # hand-maintained ADDITIONS that build() knows nothing about --
-    # `cmd/nafsmnt.c', `include/jioctl.h', `libplot/libpen/openpl.c' and
+    # `cmd/nafsmnt.c', `include/jioctl.h', `libplot/libpen/openpl.c',
     # `lsys/astro/ipnx780.m', which is our 780 kernel config.  A prune of
     # "everything build() does not produce" deleted all four in one run.  They
     # were committed, so `git checkout -- v10/src/' restored them, which is the

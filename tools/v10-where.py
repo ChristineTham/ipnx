@@ -213,9 +213,32 @@ MK = {
 }
 
 
+# THE COMMANDS ARE NOT ALL UNDER cmd/.  K16's audit found 170 command names on
+# the V8 golden and not on V10's; fifty-one of them are in these four trees and
+# were never surveyed, so their absence was being read as a fact about the tape
+# rather than about the search.  tools/v10-world.py gained the same roots for
+# the same reason -- a negative established by searching one directory is a
+# fact about that directory.
+#
+# The v8 oracle answers all of them, and it is the RIGHT oracle here: these are
+# Berkeley programs V8 also carries, so "where does the Eighth Edition put it"
+# is a measurement off a real disk rather than an inference from a manual that
+# does not document games at all.  It says /usr/games for the twenty games,
+# /bin for csh, /usr/bin for xstr, Mail and rcp.
+EXTRA_ROOTS = ("games", "lbin", "dregs", "local", "ipc/bin")
+
+
 def commands():
-    """Every command V10 has source for: loose cmd/*.c plus cmd/*/ dirs."""
-    cmd = os.path.join(V10SRC, "cmd")
+    """Every command V10 has source for: loose *.c plus */ dirs, five roots."""
+    names = set()
+    for rel in ("cmd",) + EXTRA_ROOTS:
+        root = os.path.join(V10SRC, rel)
+        if os.path.isdir(root):
+            names |= _commands_under(root)
+    return sorted(names)
+
+
+def _commands_under(cmd):
     names = set()
     for f in os.listdir(cmd):
         p = os.path.join(cmd, f)
@@ -234,7 +257,7 @@ def commands():
                     names.add(f)
             except OSError:
                 pass
-    return sorted(names)
+    return names
 
 
 def build():

@@ -12,28 +12,39 @@
 #
 2500 /usr/bin default -lipc
 2621 /usr/bin default -
+2rx /usr/bin default -
 300 /usr/bin default -
+300@dregs /usr/bin default -
 300s /usr/bin default -
 4014 /usr/bin default -
 450 /usr/bin default -
 512restor /usr/bin default -
+OLDdkcc /usr/bin default -lipc
 ac /etc man -
 accton /etc v8 -
 adb /usr/bin default -
+adv /usr/bin default -
 agh /usr/bin default -
+allrestor /usr/bin default -
+ana /usr/bin default -
 ansi /usr/bin default -
 apply /usr/bin v8 -
 apsend /usr/lib mkfile -
 ar /bin v8 -
 arcv /usr/bin default -
 arff /bin v8 -
+arithmetic /usr/games v8 -
 as /bin mk -
 asa /usr/bin v8 -
 ascii /usr/bin v8 -
+back /usr/games v8 -
 bad144 /usr/bin default -
+banner /usr/games v8 -
 basename /usr/bin v8 -
 bcd /usr/games v8 -
+bcd@games /usr/bin default -
 bcp /usr/bin mkfile -
+bellcat /usr/bin default -
 bigcore /usr/bin default -
 bison /usr/bin default -
 books /usr/bin default -
@@ -42,6 +53,7 @@ c2 /lib mk -
 cal /usr/bin v8 -
 calendar2 /usr/lib v8 -
 call /usr/bin default -
+canfield /usr/games v8 -
 cat /bin v8 -
 cc /bin v8 -
 charge /usr/bin default -
@@ -55,12 +67,15 @@ cmp /bin v8 -
 col /usr/bin v8 -
 comm /usr/bin v8 -
 compat /usr/bin v8 -
+con /usr/bin default -
 config /etc mkfile -ll
 coreid /usr/bin v8 -
 cp /bin v8 -
 cpio /usr/bin v8 -
 cpp /lib mk -
 cron /etc man -
+crypt /usr/games man -
+csh /bin v8 -
 ct /usr/bin v8 -lc -lipc
 ctags /usr/bin v8 -
 cu /usr/bin v8 -
@@ -73,6 +88,7 @@ dblbuf /usr/bin default -
 dcheck /etc v8 -
 dd /bin v8 -
 deroff /usr/bin v8 -
+des /usr/bin default -
 df /bin v8 -
 diction /usr/bin default -ll
 diff3 /usr/lib mkfile -
@@ -82,6 +98,7 @@ dis /usr/bin default -
 dkname /usr/bin default -
 dkstat /usr/bin default -
 dmesg /etc man -
+doctor /usr/bin default -
 dskcpy /etc v8 -
 du /bin v8 -
 dump /etc mkfile -
@@ -99,16 +116,22 @@ expr /usr/bin default -
 factor /usr/bin v8 -lm
 false /bin v8 -
 fcopy /usr/bin default -
+festoon /usr/games v8 -
 fgrep /usr/bin v8 -
 file /usr/bin v8 -
 find /usr/bin v8 -
 findo /usr/bin default -
+fish /usr/games v8 -
+fix /usr/bin default -
+fix-n /usr/bin default -
 flcopy /usr/bin default -
 flex /usr/bin default -
 fmt /usr/bin v8 -
 fold /usr/bin v8 -
+fortune /usr/games v8 -
 fsck /etc man -
 fsplit /usr/bin v8 -
+ftp /usr/bin default -
 getopt /usr/bin v8 -
 getty /etc man -
 getuid /usr/bin v8 -
@@ -118,6 +141,8 @@ grep /bin v8 -
 groups /usr/bin default -
 halt /etc v8 -
 hang /usr/bin v8 -
+hangman /usr/games v8 -
+hanoi /usr/games v8 -
 head /usr/bin default -
 hideblock /usr/bin default -
 hoc /usr/bin mkfile -lm
@@ -127,6 +152,8 @@ id /usr/bin v8 -
 ideal /usr/bin default -ll -lm
 idiff /usr/bin v8 -
 idle /usr/bin default -
+ilstat /usr/bin default -
+imp /usr/bin default -
 imscan /usr/bin default -
 init /etc man -
 iostat /bin v8 -
@@ -148,8 +175,10 @@ logdir /usr/bin default -
 login /etc man -
 logtty /usr/bin default -
 look /usr/bin v8 -
+loopback /usr/bin default -
 ls /bin v8 -
 m4 /usr/bin v8 -
+mailx /usr/bin default -
 make /bin mkfile -
 makekey /usr/lib man -
 man /usr/bin v8 -
@@ -163,6 +192,7 @@ mkdir /bin v8 -
 mkfs /etc man -
 mknod /etc man -
 mkstr /usr/bin v8 -
+morse /usr/bin default -
 mount /etc man -
 mt /bin v8 -
 mv /bin v8 -
@@ -174,14 +204,19 @@ newgrp /bin v8 -
 news /usr/bin v8 -
 nice /bin v8 -
 nm /bin v8 -
+nrogin /usr/bin default -
+nrx /usr/bin default -
+ntelnet /usr/bin default -
 number /usr/bin v8 -
 numdate /usr/bin mkfile -
 nupas /usr/bin default -
+ocon /usr/bin default -
 od /bin v8 -
 ofsck /usr/bin default -
 oops /bin v8 -
 osh /usr/bin default -
 p /usr/bin mkfile -
+pacman /usr/bin default -ltermlib -lcurses
 paper /usr/bin default -
 passwdx /usr/bin default -
 paste /usr/bin v8 -
@@ -190,6 +225,7 @@ pic /usr/bin v8 -
 pico /usr/bin mkfile -lfb
 plot /usr/bin v8 -l2621 -l4014 -ltr -lpen -lram
 pp /usr/bin mkfile -ll
+ppt /usr/games v8 -
 pr /bin v8 -
 pret /usr/bin mkfile -lln
 primes /usr/bin v8 -lm
@@ -200,27 +236,43 @@ prof /usr/bin default -
 prof.old /usr/bin default -
 ps /bin mkfile -
 pstat /etc man -
+psych /usr/bin default -
 pti /usr/bin default -
 ptx /usr/bin v8 -
+pull /usr/bin default -
 punct /usr/bin default -ll
+push /usr/bin default -
 pwd /bin v8 -
+qns /usr/bin default -
+quiz /usr/games v8 -
 quot /etc man -
+rain /usr/bin default -ltermlib
 random /usr/bin v8 -
 ranlib /usr/bin v8 -
 ratfor /usr/bin v8 -ly
+rcp /usr/bin v8 -
 readslow /usr/bin v8 -
 reboot /etc v8 -
 reccp /usr/bin default -
 reloc /usr/bin default -
 renice /etc v8 -
 restor /etc v8 -
+restor@local /usr/bin default -
 rev /usr/bin v8 -
 revpag /usr/bin v8 -
 rm /bin v8 -
 rmdir /bin v8 -
+rnd /usr/bin default -
+rogin /usr/bin default -
+rogue /usr/games v8 -
+rot /usr/bin default -
 rscan /usr/bin default -
+rsh /usr/bin default -
+rx /usr/bin default -
 sa /etc man -
 savecore /etc man -
+say /usr/games v8 -
+scriptcon /usr/bin default -
 sdb /usr/bin mkfile -
 sed /usr/bin mkfile -
 seq /usr/bin v8 -
@@ -254,8 +306,10 @@ tape /usr/bin v8 -
 tar /bin v8 -
 tbl /usr/bin mkfile -
 tee /usr/bin v8 -
+telnet /usr/bin default -
 telno /usr/bin default -
 test /bin v8 -
+thanks /usr/games v8 -
 time /bin v8 -
 tk /usr/bin v8 -
 touch /usr/bin v8 -
@@ -265,6 +319,7 @@ tr /usr/bin v8 -
 trace /usr/bin mkfile -
 track /usr/bin default -
 treesum /usr/bin default -
+trek /usr/bin default -lm
 true /bin v8 -
 tsort /usr/bin v8 -
 tty /usr/bin v8 -
@@ -279,6 +334,7 @@ uniq /usr/bin v8 -
 units /usr/bin mkfile -
 update /etc v8 -
 usgmake /usr/bin default -
+uucpsrv /usr/bin default -
 uudecode /usr/bin v8 -
 uuencode /usr/bin v8 -
 v7 /usr/bin default -
@@ -290,21 +346,29 @@ vpr /usr/bin default -
 wall /etc man -
 wc /usr/bin v8 -
 who /bin v8 -
+word_clout /usr/bin default -lm
+worm@games /usr/bin default -
 write /bin v8 -
+wump /usr/bin default -
 wwv /usr/bin default -
 xargs /usr/bin default -
 xd /usr/bin default -
+xpush /usr/bin default -
 xref /usr/bin default -ll
+xstr /usr/bin v8 -
 yacc /usr/bin mk -
 yes /usr/bin default -
 zero /usr/bin default -
 #
+# SKIPPED Mail       2 main() functions -- a subsystem, not a program: fmt.c main.c
 # SKIPPED PDP11      7 main() functions -- a subsystem, not a program: 11cc.c 11ld.c 11nm.c 11ranlib.c 11reloc.c 11size.c 11strip.c
 # SKIPPED asd        5 main() functions -- a subsystem, not a program: asdrcv.c inspkg.c mkpkg.c seal.c unseal.c
 # SKIPPED asd++      4 main() functions -- a subsystem, not a program: cdaemon.c dkinstall.c mkspool.c udaemon.c
 # SKIPPED at         2 main() functions -- a subsystem, not a program: at.c atrun.c
+# SKIPPED atc        2 main() functions -- a subsystem, not a program: atc.c sread.c
 # SKIPPED awk        2 main() functions -- a subsystem, not a program: main.c maketab.c
 # SKIPPED backup.old 31 main() functions -- a subsystem, not a program: absolute.c bcp.c bgrep.c block.c blog.c bpush.c conv.c copies.c dbupdate.c fcheck.c fetch.c fileupd.c iprint.c juke0.c jukeserver.c logger.c logtrim.c mklock.c notdone.c rcv.c remnotdone.c startclient.c startmunge.c stats.c sum.c sweep.c verify.c wfetch.c wormserver.c wormupd.c wormy.c
+# SKIPPED boggle     2 main() functions -- a subsystem, not a program: boggle.c comp.c
 # SKIPPED btree      11 main() functions -- a subsystem, not a program: btadd.c btbuild.c btcat.c btcreat.c btdelete.c btdiag.c btexer.c btran.c btreport.c btsquash.c bttest.c
 # SKIPPED calendar   3 main() functions -- a subsystem, not a program: calendar1.c calendar2.c calendar4.c
 # SKIPPED cb         3 main() functions -- a subsystem, not a program: cb.c ocb.c oocb.c
@@ -330,11 +394,14 @@ zero /usr/bin default -
 # SKIPPED face       2 main() functions -- a subsystem, not a program: faces.c scaffold.c
 # SKIPPED gcc        12 main() functions -- a subsystem, not a program: cccp.c cexp.c gcc.c gencodes.c genconfig.c genemit.c genextract.c genflags.c genoutput.c genpeep.c genrecog.c toplev.c
 # SKIPPED gre        4 main() functions -- a subsystem, not a program: htest.c lt1.c main.c refile.c
+# SKIPPED kermit     3 main() functions -- a subsystem, not a program: ckcmai.c ckutio.c ckwart.c
 # SKIPPED lcomp      6 main() functions -- a subsystem, not a program: 5bb.c bb.c lprint.c lsub.c syscore.c sysprof.c
 # SKIPPED learn      3 main() functions -- a subsystem, not a program: lcount.c learn.c tee.c
+# SKIPPED libjobs    no main() in any .c -- not a program
 # SKIPPED lint       2 main() functions -- a subsystem, not a program: lint1.c lint2.c
 # SKIPPED lp         6 main() functions -- a subsystem, not a program: file.c ipcopen.c lpdaemon.c lpsend.c olpdaemon.c prtoserva.c
 # SKIPPED matlab     no main() in any .c -- not a program
+# SKIPPED mille      2 main() functions -- a subsystem, not a program: mille.c table.c
 # SKIPPED mk         2 main() functions -- a subsystem, not a program: glob.c main.c
 # SKIPPED movie      8 main() functions -- a subsystem, not a program: fdevelop.c host.c newer.c ohost.c oterm.c sunhost.c sunterm.c term.c
 # SKIPPED netnews    11 main() functions -- a subsystem, not a program: batch.c caesar.c checknews.c expire.c inews.c readnews.c recmail.c recnews.c sendnews.c unbatch.c uurec.c
@@ -348,9 +415,11 @@ zero /usr/bin default -
 # SKIPPED post       2 main() functions -- a subsystem, not a program: main.c post.c
 # SKIPPED post.src   no main() in any .c -- not a program
 # SKIPPED postscript no main() in any .c -- not a program
+# SKIPPED pupu       2 main() functions -- a subsystem, not a program: dkcc.c pupu.c
 # SKIPPED qsnap      17 main() functions -- a subsystem, not a program: %51snap.c Q2snap.c beep.c foo.c ibic.c junk.c qbright.c qcal.c qdump.c qlevel.c qprep.c qreset.c qreso.c qsnap.c qstatus.c qt.c qtest.c
 # SKIPPED rarepl     2 main() functions -- a subsystem, not a program: rarct.c rarepl.c
 # SKIPPED refer      7 main() functions -- a subsystem, not a program: deliv1.c hunt1.c inv1.c mkey1.c refer1.c what1.c what4.c
+# SKIPPED sail       4 main() functions -- a subsystem, not a program: driver1.c info.c player1.c sail.log.c
 # SKIPPED server     2 main() functions -- a subsystem, not a program: Oserver.c server.c
 # SKIPPED sign       4 main() functions -- a subsystem, not a program: enroll.c resign.c sign.c verify.c
 # SKIPPED sort/      the second generation of `sort'; mkdep.py builds the loose .c

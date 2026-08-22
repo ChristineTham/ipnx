@@ -429,6 +429,138 @@ def build_objects(d):
     return out
 
 
+LINK_O = re.compile(r'-o\s+([A-Za-z_0-9.+-]+)')
+TOKEN = re.compile(r'[A-Za-z_0-9./+-]+')
+LIB_F = re.compile(r'-l[A-Za-z0-9_]+')
+IMPLICIT = re.compile(r'^([A-Za-z_0-9.+-]+):\s*([A-Za-z_0-9.+-]+\.[co])\s*$')
+
+
+def link_recipes(d):
+    """{program: ([object basenames], [-l flags])} from the unit's own rules.
+
+    A `cmd/' DIRECTORY IS NOT NECESSARILY A COMMAND: 71 of the 427 units carry
+    more than one main().  cmd/worm has 22 programs in it, cmd/qsnap 17,
+    cmd/uucp 11.  world.link names all of them and builds none, because linking
+    a unit's objects together fails on `multiply defined _main' and the obvious
+    repair is worse than the skip -- pairing each main with ALL the unit's other
+    objects would give cmd/awk a `maketab' carrying the whole of awk, since ld
+    pulls in every .o it is named.
+
+    WHICH OBJECTS BELONG TO WHICH PROGRAM IS IN THE UNIT'S OWN MAKEFILE, and
+    nothing else can answer it.  Two witnesses, both the tape's, in order:
+
+      explicit   a recipe line linking by name --  `cc -o pack pack.o',
+                 `cc -o decrypt decrypt.o $(OBJS)'.  Macros are expanded, so
+                 descrypt's shared $(OBJS) reaches both of its programs.
+
+      implicit   a target line naming exactly one source and no recipe --
+                 cmd/PDP11's `11cc:   11cc.c', which lets make's built-in rule
+                 do the link.  That is the cmd/docgen shape CLAUDE.md already
+                 records: `docgen: docgen.c' produces no docgen.o anywhere, so
+                 a test that demanded an object would drop the program the unit
+                 is named after.
+
+    Anything with neither witness is left out rather than guessed at, exactly as
+    out_of_build() refuses rather than dropping half a unit's sources.
+
+    OBJECTS ARE BASENAMES because that is where they land: cc.c's setsuf()
+    returns the basename, so `cc -c vax/hello.c' writes ./hello.o -- the same
+    property that makes the whole out-of-tree build work.
+    """
+    out = {}
+    for d0 in [d] + machine_dirs(d):
+        for b in BUILD_FILES:
+            path = os.path.join(d0, b)
+            if not os.path.isfile(path):
+                continue
+            text = read(path)
+            macros = macros_of(text)
+            joined = text.replace("\\\n", " ")
+            for line in joined.splitlines():
+                if line.startswith("\t"):
+                    e = expand(line.strip(), macros)
+                    m = LINK_O.search(e)
+                    if not m:
+                        continue
+                    prog = m.group(1)
+                    if "." in prog or prog.startswith("$"):
+                        continue
+                    objs, seen = [], set()
+                    for t in TOKEN.findall(e):
+                        if not t.endswith((".o", ".c")):
+                            continue
+                        base = os.path.basename(t)
+                        base = base[:-2] + ".o"
+                        if base not in seen:
+                            seen.add(base)
+                            objs.append(base)
+                    if objs and prog not in out:
+                        out[prog] = (objs, sorted(set(LIB_F.findall(e))))
+                else:
+                    m = IMPLICIT.match(expand(line.strip(), macros))
+                    if not m:
+                        continue
+                    prog, src = m.group(1), m.group(2)
+                    if prog in out or "." in prog:
+                        continue
+                    if not os.path.isfile(os.path.join(d0, src)):
+                        continue
+                    out[prog] = ([os.path.basename(src)[:-2] + ".o"], [])
+            # ------------------------------------------- witness 3: a.out ---
+            # THE TAPE'S DOMINANT IDIOM FOR A DIRECTORY UNIT'S MAIN PROGRAM,
+            # and the first two witnesses miss every one of them.  cmd/awk,
+            # cmd/troff and cmd/ex all build `a.out' and then NAME it in the
+            # install rule:
+            #
+            #   a.out:  awk.g.o awk.lx.o $(OFILES) $(ALLOC) awk.h
+            #   install:        a.out
+            #           cp a.out /usr/bin/awk
+            #
+            # So the program's NAME comes from the cp destination and its
+            # OBJECTS from the a.out target -- and the destination DIRECTORY
+            # comes from the same line, which is the tape stating where its own
+            # product goes.  v10-where.py already reads install rules this way
+            # (`mk_paths'), and it outranks where.txt for exactly that reason.
+            #
+            # Prerequisites are filtered to .o because the list carries headers
+            # too: awk's `a.out' depends on awk.h, which is a dependency and not
+            # a member of the link.
+            aout = None
+            for line in joined.splitlines():
+                mm = re.match(r'^a\.out:\s*(.*)$', line)
+                if mm:
+                    e = expand(mm.group(1), macros)
+                    aout = []
+                    for t in TOKEN.findall(e):
+                        if t.endswith((".o", ".c")):
+                            b = os.path.basename(t)[:-2] + ".o"
+                            if b not in aout:
+                                aout.append(b)
+                    break
+            if aout:
+                for line in joined.splitlines():
+                    if not line.startswith("\t"):
+                        continue
+                    e = expand(line.strip(), macros)
+                    mm = re.match(r'^(?:-\s*)?(?:cp|mv)\s+a\.out\s+(\S+)\s*$', e)
+                    if not mm:
+                        continue
+                    dest = mm.group(1)
+                    if "$" in dest or "/" not in dest:
+                        continue
+                    prog = os.path.basename(dest)
+                    if prog in out or prog == "a.out":
+                        continue
+                    out[prog] = (aout, [])
+                    AOUT_DIR[(d, prog)] = os.path.dirname(dest)
+    return out
+
+
+# Where an `a.out' unit's own install rule puts the program -- the tape stating
+# the destination, which outranks where.txt's inference.
+AOUT_DIR = {}
+
+
 def out_of_build(u):
     """Sources in the unit's directory that its own build does not use.
 
@@ -650,6 +782,7 @@ class Unit(object):
         self.drop = []                # sources the unit's own build does not use
         self.dropwhy = []             # and where the guards refused to drop
         self.made = set()             # headers the generators WRITE
+        self.local = set()            # unit-local files an #include names
 
     @property
     def ok(self):
@@ -850,6 +983,35 @@ def scan(unit):
             seen.add(key)
             unit.includes.append(key)
             where = resolve(header, bracket, dirs, unit.root, unit.made)
+            # A UNIT-LOCAL INCLUDE WITH NO RECOGNISED SUFFIX NEVER REACHED THE
+            # GUEST, AND THAT IS WHAT "V10's cpp CANNOT FIND A QUOTED INCLUDE"
+            # ACTUALLY WAS.  `sources()' collects .c, .h, .s and the generator
+            # suffixes, and world_cpio() copies exactly that -- so `cmd/f77/defs',
+            # `cmd/neqn/e.def', `cmd/cflow/manifest' and `cmd/trace/trace.d' were
+            # simply not on the courier disk.  The build then failed with
+            #
+            #	./data.c: 2: Can't find include file defs
+            #
+            # which reads as a compiler defect and is a missing FILE.  It was
+            # diagnosed as a cpp include-path fault and the in-tree fix left it
+            # exactly as it was -- the run that tested the hypothesis refuted it,
+            # which is why the hypothesis was written down as one.
+            #
+            # Recorded here rather than in world_cpio(), because scan() is where
+            # the resolution actually happens and a second search would be a
+            # second answer to the same question.
+            if bracket == '"' and where:
+                for d in dirs:
+                    cand = os.path.join(d, header)
+                    if os.path.isfile(cand):
+                        unit.local.add(cand)
+                        break
+                else:
+                    if unit.root and os.path.isdir(unit.root):
+                        for base, _d, files in os.walk(unit.root):
+                            if header in files:
+                                unit.local.add(os.path.join(base, header))
+                                break
             if where is None or where.startswith("FOREIGN"):
                 # A FOREIGN hit is not a resolution -- see resolve().  It is
                 # recorded so the reason is visible, and still counts against
@@ -877,8 +1039,49 @@ def overlay_paths():
     return out
 
 
+# THE COMMANDS ARE NOT ALL UNDER cmd/, AND SURVEYING ONLY cmd/ REPORTED THAT
+# ABSENCE AS A PROPERTY OF THE TAPE.  K16's audit found 170 command names on
+# the V8 golden and not on V10's, and fifty-one of them are here rather than
+# missing: the games, the Berkeley shell and mailer, `xstr', `rcp'.  Same shape
+# as "the 5620's compiler is not on the tape", which was a fact about ONE tree
+# stated about the project -- a negative established by searching one directory
+# is a fact about that directory.
+#
+#	games     40 entries, ~20 loose .c plus atc/ mille/ rogue/ sail/ trek/
+#	lbin      Mail, csh, kermit, mailx -- the Berkeley userland V8 carries
+#	dregs     xstr (V8 has it in /usr/ucb) and 300
+#	local     restor variants
+#	ipc/bin   rcp, and the rest of the Datakit/Internet userland
+#
+# NOTHING ELSE IN THE FORMAT CHANGES, which is why this is cheap: `world.units'
+# names a directory relative to cmd/ and worldc.sh computes `SD=$UD/$dir' with
+# UD=$SRC/src/cmd, so a unit rooted at src/games/atc emits `../games/atc' and
+# the guest reaches it with no new field and no new code.
+EXTRA_ROOTS = ("games", "lbin", "dregs", "local", "ipc/bin")
+
+
+def units_under(base, rel, loose_names, over, units):
+    """Collect units from one root, exactly as cmd/ is collected."""
+    for n in sorted(os.listdir(base)):
+        p = os.path.join(base, n)
+        if os.path.isfile(p) and n.endswith(".c"):
+            u = Unit(n[:-2], "file", [p], root=base)
+            u.overlay = os.path.join(rel, n) in over
+            units.append(u)
+        elif os.path.isdir(p) and n not in NOT_A_COMMAND:
+            paths = sources(p)
+            for md in machine_dirs(p):
+                paths += sources(md)
+            if not paths:
+                continue
+            u = Unit(n + "/" if n in loose_names else n, "dir", paths, root=p)
+            u.overlay = any(x.startswith(os.path.join(rel, n) + os.sep)
+                            for x in over)
+            units.append(u)
+
+
 def inventory():
-    """Every command unit under cmd/, classified."""
+    """Every command unit under cmd/ and the four other program roots."""
     if not os.path.isdir(CMD):
         sys.exit("v10-world: no %s -- run tools/v10-import.py" % CMD)
     over = overlay_paths()
@@ -911,6 +1114,24 @@ def inventory():
             u.overlay = any(x.startswith(os.path.join("cmd", n) + os.sep)
                             for x in over)
             units.append(u)
+    # THE OTHER ROOTS, and a name that already exists under cmd/ is REPORTED
+    # rather than silently shadowed.  `ed' and `sort' taught this once already:
+    # two generations of one command under one name made each count the other.
+    # A cross-root collision is the same fault between trees, so the second one
+    # is suffixed with its root -- visible in every file the guest reads.
+    seen = set(u.name for u in units)
+    for rel in EXTRA_ROOTS:
+        base = os.path.join(SRC, rel)
+        if not os.path.isdir(base):
+            continue
+        loose = set(n[:-2] for n in os.listdir(base)
+                    if n.endswith(".c") and os.path.isfile(os.path.join(base, n)))
+        before = len(units)
+        units_under(base, rel, loose, over, units)
+        for u in units[before:]:
+            if u.name in seen:
+                u.name = "%s@%s" % (u.name, rel.replace("/", "-"))
+            seen.add(u.name)
     for u in units:
         scan(u)
     return units
@@ -1170,6 +1391,12 @@ def world_cpio(units):
     for u in units:
         for p in u.paths:
             want.add(os.path.relpath(p, CMD))
+        # AND EVERY UNIT-LOCAL FILE AN #include NAMES, whatever it is called.
+        # `sources()' knows .c, .h, .s and the generator suffixes; the tape also
+        # uses `defs', `defines', `e.def', `manifest' and `trace.d', and without
+        # these five lines they never reached the guest.  See scan().
+        for p in sorted(u.local):
+            want.add(os.path.relpath(p, CMD))
     # The generators' data files -- see GEN_DATA.  Added by name and checked to
     # exist, because a manifest naming a file the tape does not have makes cpio
     # fail for the whole set rather than for that one entry.
@@ -1209,7 +1436,13 @@ def world_units(units):
     ]
     for u in sorted(units, key=lambda x: x.name):
         srcs = csources(u)
-        d = "." if u.kind == "file" else os.path.relpath(u.root, CMD)
+        # `.' MEANS "a loose .c directly under cmd/" AND NOTHING ELSE.  A loose
+        # .c under one of the OTHER roots also has kind "file", and giving it
+        # `.' made worldc.sh compute SD=$UD/. and then compile
+        # `./../games/arithmetic.c' from a directory holding cmd/ -- twenty-five
+        # units failed with `0: No source file'.  The root is what distinguishes
+        # them: cmd/'s loose files have none, the other roots' do.
+        d = "." if u.root is None else os.path.relpath(u.root, CMD)
         if not srcs:
             # A unit whose ONLY source is a grammar -- cmd/expr is expr.y and a
             # header, cmd/ipa is ipa_trans.lex.  These had no row at all, so the
@@ -1438,6 +1671,474 @@ def world_link(units):
     return "\n".join(out) + "\n"
 
 
+_V8WHERE = {}
+
+
+def v8_where():
+    """{command: directory} measured off the real Eighth Edition disk.
+
+    v8/mk/where.txt, written by tools/harvest-paths.sh.  It is INFERENCE for
+    V10 and the row that uses it says so -- but for a Berkeley program both
+    editions carry it is the strongest evidence there is, and it is the only
+    oracle that distinguishes /bin from /usr/bin, which matters because /usr is
+    a separate filesystem.  Tab-separated, and reading it with a space
+    separator finds nothing at all.
+    """
+    if _V8WHERE:
+        return _V8WHERE
+    p = os.path.join(ROOT, "v8", "mk", "where.txt")
+    if os.path.exists(p):
+        for line in read(p).splitlines():
+            if not line or line.startswith("#"):
+                continue
+            f = line.split()
+            if len(f) >= 2 and f[1].startswith("/"):
+                _V8WHERE[f[0]] = f[1]
+    return _V8WHERE
+
+
+INSTALL_CP = re.compile(r'^(?:-\s*)?(?:cp|mv)\s+([A-Za-z_0-9./+-]+)\s+(/[A-Za-z_0-9./+=-]+)\s*$')
+INSTALL_LN = re.compile(r'^(?:-\s*)?ln\s+(/[A-Za-z_0-9./+=-]+)\s+(/[A-Za-z_0-9./+=-]+)\s*$')
+
+
+def install_rules(d):
+    """([(src, dest)] copies, [(from, to)] links) from the unit's install rules.
+
+    THE TAPE STATES WHAT ITS PRODUCT IS CALLED AND WHERE IT GOES, in the same
+    two lines, and both halves are load-bearing.  cmd/equal's whole install rule:
+
+	cp a.out /usr/bin/=
+	ln /usr/bin/= /usr/bin/==
+	ln /usr/bin/= /usr/bin/=p
+	ln /usr/bin/= /usr/bin/==p
+
+    The unit is `equal' and the program is `='; without reading this the build
+    installs /usr/bin/equal, which is not a command anybody can run, and three
+    more names are silently lost.  v10-where.py's mk_paths() already reads the
+    cp half for directories -- this reads the NAME and the ln lines too.
+
+    THE SOURCE TOKEN MUST BE THE PRODUCT'S NAME, which is what separates an
+    install from a backup: cmd/sh/makefile:37 is `mv /bin/sh /bin/osh; cp sh
+    /bin/sh; strip /bin/sh' on one line, and a scanner reading destinations
+    alone answers /bin/osh.  Hence the anchored, single-pair form.
+    """
+    cps, lns = [], []
+    for d0 in [d] + machine_dirs(d):
+        for b in BUILD_FILES:
+            path = os.path.join(d0, b)
+            if not os.path.isfile(path):
+                continue
+            text = read(path)
+            macros = macros_of(text)
+            for line in text.replace("\\\n", " ").splitlines():
+                if not line.startswith("\t"):
+                    continue
+                e = expand(line.strip(), macros)
+                if "$" in e:
+                    continue
+                m = INSTALL_CP.match(e)
+                if m:
+                    cps.append((m.group(1), m.group(2)))
+                    continue
+                m = INSTALL_LN.match(e)
+                if m:
+                    lns.append((m.group(1), m.group(2)))
+    return cps, lns
+
+
+# /usr/new IS DELIBERATELY NOT HERE.  cmd/ex's makefile has TWO install rules,
+# `install' and `ninstall', and the second puts ex and its aliases in Berkeley's
+# "new commands" directory -- which is on nobody's PATH here.  Dropping it lets
+# the V8 measurement answer instead, and V8 keeps edit/ex/vi/view in /usr/bin as
+# one inode with four names.  The tape has two answers; this picks the one the
+# Eighth Edition actually shipped, and says so rather than editing the makefile.
+# `/usr/bin/WWB' IS A COMMAND DIRECTORY, and leaving it out cost 23 names.
+# The Writer's Workbench is 25 shell scripts in cmd/wwb/, the tape's own install
+# rules put them in /usr/bin/WWB (`cp wwb.sh /usr/bin/WWB/wwb'), and the V8
+# golden has exactly that directory with 23 files in it.  This list was five
+# entries chosen to keep man pages and style(1) data out of a list of commands,
+# and it also silently rejected every WWB row -- the residue that made the disk
+# fall short of a path-by-path superset by 23 of its 27 files.  The tape names
+# the directory; that is the evidence, and a filter has to admit it.
+BINDIRS = ("/bin", "/usr/bin", "/etc", "/usr/games", "/usr/ucb", "/usr/bin/WWB")
+
+# NEVER INSTALL A PROGRAM OVER A CONFIGURATION FILE, AND `passwd' IS WHY.
+#
+# `v8/mk/where.txt' has TWO rows for it -- `/bin' (the command) and `/etc' (the
+# password FILE, which harvest-paths.sh recorded because it is a regular file in
+# a directory the harvest walks).  v8_where() takes one, and it took `/etc'.  So
+# world.script emitted
+#
+#	passwd /etc . passwd.sh
+#
+# and the disk shipped V10's `cmd/passwd.sh' AS `/etc/passwd'.  The machine
+# booted, printed its motd, reached `login:' -- and root had a password, because
+# the password file was a shell script.  Nothing else failed; the whole disk was
+# unusable and the only symptom was one prompt.
+#
+# The protected set is `proto-etc''s own first column, which already exists and
+# is exactly the right list: "the tables and the empty files a machine needs to
+# come up".  Restated here as a constant only because proto-etc is generated by
+# a different tool; the names are checked against it by --check.
+CONFIG_FILES = ("passwd", "group", "ttys", "rc", "motd", "fstab", "mtab",
+                "utmp", "profile")
+
+
+def split_dest(src, dest):
+    """(directory, name) for `cp <src> <dest>' -- is dest a file or a dir?
+
+    THE TWO SHAPES ARE NOT DISTINGUISHABLE BY SYNTAX and getting it backwards
+    invents commands: `cp diff /bin' read as a rename produces a program called
+    `bin' installed in `/', which is exactly what the first version of this
+    emitted -- along with `bin /usr' from `cp 11size ${BINDIR}'.
+
+    The rule is the tape's own convention: a destination is a FILE when its
+    last component is the source's name with one suffix stripped, which is what
+    `cp cflow.sh /usr/bin/cflow' and `cp lint.sh /usr/bin/lint' do, and a
+    DIRECTORY otherwise.  Wrong-way failure is the safe one -- a file treated as
+    a directory produces a row whose destination does not exist and the harness
+    says so, where a directory treated as a file produces a plausible command
+    nobody asked for.
+    """
+    base = os.path.basename(src)
+    stem = base.rsplit(".", 1)[0] if "." in base else base
+    tail = os.path.basename(dest)
+    if tail in (base, stem):
+        return os.path.dirname(dest), tail
+    return dest, base
+
+
+def is_script(path):
+    """Is this a shell script rather than data or a man page?
+
+    Not "is it text": the first version of this test accepted anything without
+    a NUL and duly filed `bcp.1', `dict.d', `macs.tr' and lex's `ncform' as
+    commands.  A script is a #! line or a file whose opening lines carry shell
+    syntax -- V10's own scripts mostly have no #! at all (cmd/where.sh opens
+    with `echo -n `cat /etc/whoami``), which is why the second test exists.
+    """
+    try:
+        head = open(path, "rb").read(600)
+    except OSError:
+        return False
+    if b"\0" in head or head[:2] == b"\x7f\x45":
+        return False
+    if head.startswith(b"#!"):
+        return True
+    text = head.decode("latin-1")
+    if re.match(r'^\.[A-Za-z][A-Za-z]\b', text):        # a troff man page
+        return False
+    hits = sum(1 for w in ("echo", "PATH=", "for ", "case ", "if ", "exec ",
+                           "trap ", "shift", "$1", "${", "`")
+               if w in text)
+    return hits >= 2
+
+
+def built_names(units):
+    """Every command name the build already produces -- world.link + world.prog.
+
+    An alias for one of these would install a second, wrong copy over it.
+    """
+    names = set()
+    for line in world_link(units).splitlines():
+        if line and not line.startswith("#"):
+            names.add(line.split()[0])
+    for line in world_prog(units).splitlines():
+        if line and not line.startswith("#"):
+            names.add(line.split()[0])
+    return names
+
+
+def world_script(units):
+    """Shell scripts the tape installs -- commands with no object file at all.
+
+    EIGHT COMMAND NAMES ARE SCRIPTS AND NOTHING WOULD EVER HAVE BUILT THEM.
+    `spell', `cflow', `lint', `calendar', `wwb', `bundle', `where' and
+    `monksample' are sh, so they carry no main(), link_recipes() finds no rule,
+    and world_link() files them under "no main() in any .c -- not a program".
+    All eight are on the V8 golden and all eight are in V10's own tree.
+
+    The witness is the tape's own install rule -- `cp <file> <path>' where the
+    file is a script -- and the destination must be a COMMAND directory.  That
+    second filter is not tidiness: without it this emitted eighty rows, most of
+    them man pages and style(1) data files, and a list that includes `dict.d'
+    is not a list of commands however carefully the rest of it was derived.
+
+    Four fields, no tail: name, destination directory, unit directory, source.
+    """
+    out = [
+        "# Shell scripts the tape installs, with no object file to build.",
+        "#",
+        "# Generated by tools/v10-world.py; check with --check.  Read as",
+        "# `while read name dir unitdir src' -- four fields, no tail.  unitdir",
+        "# and src are relative to src/cmd, the base worldc.sh already uses.",
+        "#",
+    ]
+    seen = set()
+    for u in sorted(units, key=lambda x: x.name):
+        if u.kind != "dir" or not u.root:
+            continue
+        cps, _ = install_rules(u.root)
+        d = os.path.relpath(u.root, CMD)
+        for src, dest in cps:
+            if src.endswith((".c", ".o", ".a")) or src == "a.out" or "/" in src:
+                continue
+            path = os.path.join(u.root, src)
+            if not os.path.isfile(path) or not is_script(path):
+                continue
+            dd, name = split_dest(src, dest)
+            if dd not in BINDIRS or name in seen:
+                continue
+            if name in CONFIG_FILES:
+                sys.stderr.write("v10-world: NOT installing %s as %s/%s -- that "
+                                 "is a configuration file\n" % (src, dd, name))
+                continue
+            seen.add(name)
+            out.append("%s %s %s %s" % (name, dd, d, src))
+    # LOOSE SCRIPTS UNDER cmd/, which have no unit directory and so no makefile
+    # to read.  cmd/cflow.sh and cmd/where.sh are the tape's own `<name>.sh'
+    # convention; where the Eighth Edition carries the stripped name, that is
+    # the measurement that says where it goes.
+    for f in sorted(os.listdir(CMD)):
+        if not f.endswith(".sh"):
+            continue
+        name = f[:-3]
+        d = v8_where().get(name)
+        if not d or d not in BINDIRS or name in seen:
+            continue
+        if name in CONFIG_FILES:
+            sys.stderr.write("v10-world: NOT installing %s as %s/%s -- that is "
+                             "a configuration file\n" % (f, d, name))
+            continue
+        if not is_script(os.path.join(CMD, f)):
+            continue
+        seen.add(name)
+        out.append("%s %s . %s" % (name, d, f))
+    out.append("# %d scripts" % len(seen))
+    return "\n".join(out) + "\n"
+
+
+def world_alias(units, built=()):
+    """Commands that are additional NAMES for a binary, not separate binaries.
+
+    MEASURED, TWICE, AND THE TWO SOURCES ANSWER DIFFERENT HALVES.
+
+      the tape   `ln /usr/bin/= /usr/bin/==' in cmd/equal's install rule.  V10
+                 stating its own aliases, so it outranks anything inferred.
+
+      the disk   V8's own inodes, read with tools/v8fs.py: any regular file in
+                 a command directory with nlink > 1, grouped by inode.  This is
+                 a MEASUREMENT and not a convention, and it settles a cluster
+                 that had been read as five separate missing commands:
+
+                     edit = ex = vi = view      one binary, four names
+                     2 = 3 = 4 = 5 = 6          one file, five names
+                     uncompress = zcat          one binary
+                     more = p = pg              one binary
+                     rogue = rogue52            one binary
+
+                 So V10 building `ex' closes four names, not one.  A hard link
+                 is the filesystem stating the fact.
+
+    THREE REFUSALS, each of which produced a wrong row first:
+      * an alias equal to its own target in the same directory -- `ex /usr/bin
+        ex', from the tape linking a name to itself through a macro;
+      * an alias for a name something already BUILDS.  cmd/descrypt builds
+        `decrypt' from its own objects and world.prog has the row; an alias
+        would install a second, wrong `decrypt' over it;
+      * a destination outside the command directories, which is how twelve man
+        pages (`zcat.1', `atob.1') arrived in a list of commands.
+
+    Three fields, no tail: alias, directory, target basename.
+    """
+    out = [
+        "# Additional names for a binary -- hard links, not separate programs.",
+        "#",
+        "# Generated by tools/v10-world.py; check with --check.  Read as",
+        "# `while read alias dir target' -- three fields, no tail.  The harness",
+        "# links dir/target to dir/alias and reports a target it cannot find.",
+        "#",
+    ]
+    rows, seen = [], set()
+
+    def take(alias, d, target, how):
+        if alias in seen or alias in built:
+            return
+        if d not in BINDIRS or (alias == target):
+            return
+        if alias in CONFIG_FILES:
+            return
+        seen.add(alias)
+        rows.append((alias, d, target, how))
+
+    for u in sorted(units, key=lambda x: x.name):
+        if u.kind != "dir" or not u.root:
+            continue
+        _, lns = install_rules(u.root)
+        for src, dst2 in lns:
+            take(os.path.basename(dst2), os.path.dirname(dst2),
+                 os.path.basename(src), "tape")
+    for group in v8_link_groups():
+        target = group[0]
+        for a in group[1:]:
+            take(os.path.basename(a), os.path.dirname(a),
+                 os.path.basename(target), "v8")
+    for a, d, t, how in sorted(rows):
+        out.append("%s %s %s" % (a, d, t))
+    out.append("# %d aliases (%d from the tape's own ln rules, %d measured off "
+               "the V8 golden's inodes)"
+               % (len(rows), sum(1 for r in rows if r[3] == "tape"),
+                  sum(1 for r in rows if r[3] == "v8")))
+    return "\n".join(out) + "\n"
+
+
+_V8LINKS = []
+V8IMG = os.path.join(ROOT, "work", "myv8", "rp07new")
+BINDIRS8 = ("/bin", "/usr/bin", "/etc", "/usr/games", "/usr/ucb")
+
+
+def v8_link_groups():
+    """[[path, ...]] -- V8 binaries sharing an inode, longest-named first."""
+    if _V8LINKS:
+        return _V8LINKS
+    if not os.path.exists(V8IMG):
+        return []
+    import importlib.util
+    import collections
+    sp = importlib.util.spec_from_file_location(
+        "v8fs", os.path.join(ROOT, "tools", "v8fs.py"))
+    m = importlib.util.module_from_spec(sp)
+    sp.loader.exec_module(m)
+    by = collections.defaultdict(list)
+    for part, pre in (("a", ""), ("f", "/usr")):
+        fs = m.V8FS(V8IMG, part)
+        for path, ip in fs.walk("/"):
+            if ip.kind == "-" and ip.nlink > 1:
+                by[(part, ip.num)].append(pre + path)
+    for k in sorted(by):
+        g = sorted(x for x in by[k] if x.rpartition("/")[0] in BINDIRS8)
+        if len(g) > 1:
+            # THE TARGET IS THE ONE WE ARE LIKELIEST TO BUILD, and picking it
+            # by name rather than arbitrarily matters: `ex' is a unit in V10's
+            # tree and `edit', `vi', `view' are not, so the group must resolve
+            # to ex.  Shortest name first is the wrong rule (it would pick
+            # `2' over `6' harmlessly but `p' over `more' unhelpfully); the
+            # right one is "a name V10 has source for", falling back to the
+            # first alphabetically so the file is deterministic either way.
+            known = [x for x in g
+                     if os.path.isdir(os.path.join(CMD, os.path.basename(x)))
+                     or os.path.isfile(os.path.join(CMD,
+                                                    os.path.basename(x) + ".c"))]
+            head = known[0] if known else g[0]
+            _V8LINKS.append([head] + [x for x in g if x != head])
+    return _V8LINKS
+
+
+def world_prog(units):
+    """One row per PROGRAM inside a multi-main unit, from the tape's own rules.
+
+    THE PHASE world_link() DEFERRED.  Its comment says so outright -- "which
+    objects belong to which program is in each unit's own makefile, and writing
+    those out is mkdep.py-scale work ... so they are named, with the count, and
+    left for the phase that generates a makefile per program."  This is that
+    phase, and it does not generate makefiles: it reads the ones the tape has.
+
+    K16's audit is why it could not wait any longer.  Of the 170 command names
+    the V8 golden has and V10's did not, about forty are programs inside these
+    units -- the eight-piece PDP-11 cross-toolchain in cmd/PDP11, `awk', `troff',
+    `ex', `dc', `cb', `at', `csh', `unpack', `encrypt'/`decrypt', the asd
+    package tools, `rogue' and `mille'.  Every one of them has source here and a
+    link rule that names it.
+
+    FIVE FIELDS AND A TAIL: program, unit, directory, destination, -l flags,
+    then the objects.  The flags are comma-joined into ONE token so the tail
+    stays one kind of thing -- v8's destdirs.txt held two kinds told apart by a
+    leading tab and the 1985 shell split on IFS before the marker was seen, and
+    458 files became empty directories.  A `-' means none.
+
+    A unit with several main()s and NO recognisable link rule is recorded as
+    such rather than guessed at, exactly as out_of_build() refuses rather than
+    dropping half a unit's sources: pairing each main with all the unit's
+    objects would give cmd/awk a `maketab' carrying the whole of awk.
+    """
+    dst = where()
+    out = [
+        "# Every program inside a multi-main unit: which objects, and where.",
+        "#",
+        "# Generated by tools/v10-world.py; check with --check.  Read by the",
+        "# guest as `while read prog unit dir dest libs objs' -- the OBJECTS are",
+        "# the tail and the -l flags are one comma-joined token.",
+        "#",
+        "# 71 of the units carry more than one main(): a cmd/ directory is not",
+        "# necessarily a command.  world.link names them and builds none; this",
+        "# file is what lets them be built, and every row comes from a rule in",
+        "# the unit's own makefile -- see link_recipes() for the three witnesses.",
+        "#",
+    ]
+    # A ROW WHOSE OBJECT LIST IS INCOMPLETE IS STILL EMITTED, and that is a
+    # choice.  25 of the 206 name something the compile loop will not produce:
+    # a bare `.o' where a macro did not expand (`cc -o refer $(OBJS)' with OBJS
+    # defined in an included file), a generated object under the makefile's own
+    # name rather than the generator's (`awk.g.o' for yacc's y.tab.o), or one a
+    # helper program writes (awk's `proctab.o', made by running ./maketab).
+    #
+    # They stay because a link that fails is VISIBLE and a row that was silently
+    # dropped is not -- and because the carry list is measured off the staged
+    # root, so a program that does not link is picked up from the Eighth Edition
+    # instead of being lost from both sides.  `awk' is the only one of the 25
+    # that is among K16's 170 missing names, and that is how it gets there.
+    unknown, nprog = [], 0
+    for u in sorted(units, key=lambda x: x.name):
+        if u.kind != "dir" or u.name.endswith("/"):
+            continue
+        if len(u.mainskept) <= 1:
+            continue
+        recs = link_recipes(u.root)
+        d = os.path.relpath(u.root, CMD)
+        if not recs:
+            unknown.append("# NO RULE  %-14s %d main()s, no -o / implicit / "
+                           "a.out rule: %s"
+                           % (u.name, len(u.mainskept),
+                              " ".join(sorted(u.mainskept))))
+            continue
+        ulibs = set("-l" + x for x in link_libs(u))
+        for prog in sorted(recs):
+            objs, plibs = recs[prog]
+            dd, how = dst.get(prog, (None, None))
+            if how in (None, "default"):
+                # THE ORACLES IN ORDER OF AUTHORITY, and the order matters
+                # here in a way it does not for a unit.  where.txt only names
+                # UNITS, so a program inside one -- `11cc', `unpack',
+                # `encrypt', `sread' -- has no row at all and falls through.
+                #
+                #  1. where.txt when it speaks on real authority (mk/man/v8)
+                #  2. the unit's own `cp a.out' destination
+                #  3. v8/mk/where.txt, measured off a real Eighth Edition disk
+                #  4. /usr/bin, recorded as ours
+                #
+                # 2 IS BELOW 1 BECAUSE A UNIT CAN HAVE TWO INSTALL RULES and
+                # this scanner takes the first: cmd/ex has `ninstall' before
+                # `install', so its cp says /usr/new -- Berkeley's "new
+                # commands" directory -- while where.txt's v8 row says
+                # /usr/bin, which is where the Eighth Edition actually keeps
+                # ex and where PATH will find it.
+                dd = AOUT_DIR.get((u.root, prog)) or v8_where().get(prog) \
+                    or DEST_DEFAULT
+            ll = sorted(set(plibs) | ulibs)
+            out.append("%s %s %s %s %s %s"
+                       % (prog, u.name, d, dd, ",".join(ll) or "-",
+                          " ".join(objs)))
+            nprog += 1
+    if unknown:
+        out.append("#")
+        out.extend(unknown)
+    out.append("# %d programs in %d multi-main units; %d units had no rule."
+               % (nprog, nprog and len(set(r.split()[1] for r in out
+                                           if r and not r.startswith("#"))),
+                  len(unknown)))
+    return "\n".join(out) + "\n"
+
+
 # The survey's guest half.  Generated rather than hand-written because it has
 # to live in v10/mk/gen/ to reach the source disk, and everything in there is
 # generated and --check'd; a hand-edited file among them is one mkdep.py could
@@ -1589,25 +2290,103 @@ do
 		echo "$N $name"
 		continue
 	fi
+	cd $OBJ
 	SD=$UD/$dir
 	ok=y
-	rm -f u.log
-	# EVERY GENERATED FILE GOES, AT THE TOP OF EVERY UNIT.  y.tab.h is
-	# written into $OBJ and $OBJ is not emptied between units, so one unit's
-	# grammar header would sit there satisfying the NEXT unit's
-	# `#include "y.tab.h"' with another program's token numbers -- compiling
-	# cleanly, and wrong.  That is the flattering direction again: it would
-	# have raised the count.  Cleaning here rather than after the unit means
-	# it also holds on the paths that `continue'.
-	rm -f y.tab.c y.tab.h prevy.tab.h x.tab.h lex.yy.c
 	# The four units that need more than the unit dir, common/ and vax/ --
 	# adb/comm, f77/alt, mk/export, nupas/attin.  Absent from world.incs is
 	# the usual case and adds nothing.
+	rm -f sub.lst
+	echo common >> sub.lst
+	echo vax >> sub.lst
 	XI=""
 	for x in `sed -e "/^$name /!d" -e "s/^$name //" $SRC/mk/world.incs`
 	do
 		XI="$XI -I$SD/$x"
+		echo $x >> sub.lst
 	done
+	# --------------------------------------------------- IN-TREE, K17 ------
+	# THE BUILD IS IN-TREE, which is what the tape's own mkfiles do
+	# (`INCL = $PDIR', relative) and what K15 needed for `mux': V10's cpp did
+	# not resolve a QUOTED include for an out-of-tree source there, with -I on
+	# the command line and netfsd's trace showing it never looked.
+	#
+	# IT IS *NOT* WHAT WAS WRONG WITH THIS SURVEY, AND THE RUN THAT TESTED
+	# THAT SAID SO.  Thirty-four units failed like this:
+	#
+	#	/n/v10/src/cmd/f77/data.c: 2: Can't find include file defs
+	#	/n/v10/src/cmd/neqn/diacrit.c: 3: Can't find include file e.def
+	#
+	# and the diagnosis was that cpp could not find them.  It was wrong.
+	# Building in-tree changed the message to `./data.c: 2: Can't find
+	# include file defs' and nothing else, because `defs' WAS NOT ON THE
+	# COURIER DISK: `sources()' collects .c, .h, .s and the generator
+	# suffixes, `world_cpio()' copies exactly that, and the tape also writes
+	# headers called `defs', `defines', `e.def', `manifest' and `trace.d'.
+	# A missing FILE, reported as a compiler defect.  scan() records
+	# unit-local includes by name now, whatever they are called, and
+	# world.cpio carries them -- forty more files.
+	#
+	# Two things kept this cheap.  The counter-evidence was already in this
+	# project's own kernel build (K7 compiles `streamio.c' out-of-tree with a
+	# quoted `"sys/param.h"' and it resolves, every run), so the rule could
+	# not simply be "quoted includes ignore -I".  And the comment that stood
+	# here said, in as many words, that if the units still failed the
+	# diagnosis was wrong and this text had to be corrected rather than the
+	# fix defended.  They still failed.  This is that correction.
+	#
+	# The in-tree build STAYS, on its own merits: it is what the tape's
+	# mkfiles do, it is what K15 measured as necessary, and it removes a
+	# whole class of question about where a header is looked for.
+	#
+	# So the unit is copied to local disk and compiled there.  `cp f1 ... fn
+	# d' is V10's own (cmd/cp/cp.c: `r |= copy(...)' in a loop), so a
+	# directory in the glob fails that one copy and the rest still land --
+	# which is why this needs neither `find' nor `cpio', neither of which is
+	# on every image this runs against.
+	#
+	# ONE LEVEL OF SUBDIRECTORY IS ENOUGH, and that is measured: 111 of
+	# world.units' source paths carry a `/' and the deepest carries exactly
+	# one.  V10's mkdir makes one level, so this would silently copy nothing
+	# for a deeper tree -- hence the count rather than an assumption.
+	for f in $srcs
+	do
+		case "$f" in
+		*/*)	echo $f | sed -e 's|/.*||' >> sub.lst ;;
+		esac
+	done
+	rm -rf u
+	mkdir u
+	cp $SD/* u > /dev/null 2>&1
+	for x in `cat sub.lst`
+	do
+		if test -d $SD/$x
+		then
+			mkdir u/$x > /dev/null 2>&1
+			cp $SD/$x/* u/$x > /dev/null 2>&1
+		fi
+	done
+	# OUR OVERLAY WINS, and now by directory rather than file by file.
+	# Reading only the tape made this survey report `mv' as failing on
+	# `ROOTINO undefined' -- the exact one-line defect v10/src/cmd/mv.c was
+	# written to patch -- and the same for fsck, login, cc and mkbitfs.  A
+	# measurement that ignores the corrections measures a tree nobody builds.
+	cp $SRC/ours/cmd/$dir/* u > /dev/null 2>&1
+	cd u
+	# THE TAPE SHIPS LEFTOVER OBJECTS, and the link below is `cc -o $name
+	# *.o'.  Bell Labs' 1989 .o files sitting beside the source would be
+	# linked into our binary -- silently, and in the flattering direction,
+	# since they would resolve symbols our compile failed to produce.  They
+	# are evidence (the `.o beside the source' witness in world.drop) and
+	# never input.
+	rm -f *.o
+	rm -f u.log
+	# EVERY GENERATED FILE GOES, AT THE TOP OF EVERY UNIT.  A fresh `u' makes
+	# this redundant for the survey's own output, and NOT for the tape's: a
+	# unit that ships a stale y.tab.h beside its grammar would satisfy
+	# `#include "y.tab.h"' with the tape's token numbers rather than the ones
+	# yacc just produced.  Compiling cleanly, and wrong.
+	rm -f y.tab.c y.tab.h prevy.tab.h x.tab.h lex.yy.c
 	# ------------------------------------------------- yacc and lex first ---
 	# STEP ONE OF THE BUILD, WHICH THIS SURVEY USED TO SKIP.  Nine units
 	# reported `missing:y.tab.h' -- a header yacc writes -- and two more
@@ -1638,9 +2417,9 @@ do
 		# have no -o.  A build that wrote beside the source would change
 		# the source disk's id and the next stage would refuse it.
 		case "$tool" in
-		yacc)	( $YACC $gflags $SD/$gf 2>&1 ; echo "GST=$?" ) \
+		yacc)	( $YACC $gflags ./$gf 2>&1 ; echo "GST=$?" ) \
 				| sed -e 20q > g1.log ;;
-		*)	( $LEX $gflags $SD/$gf 2>&1 ; echo "GST=$?" ) \
+		*)	( $LEX $gflags ./$gf 2>&1 ; echo "GST=$?" ) \
 				| sed -e 20q > g1.log ;;
 		esac
 		gst=`sed -e '/^GST=/!d' -e 's/GST=//' -e 1q g1.log`
@@ -1724,11 +2503,10 @@ do
 		# v10/src/cmd/mv.c was written to patch and PATCHES.md records --
 		# and the same for fsck, login, cc and mkbitfs.  A measurement
 		# that ignores the corrections measures a tree nobody builds.
-		S=$SD/$f
-		if test -f $SRC/ours/cmd/$dir/$f
-		then
-			S=$SRC/ours/cmd/$dir/$f
-		fi
+		# LOCAL, because we are in-tree now -- see the copy above.  The
+		# overlay was copied over the tape's, so there is no per-file
+		# choice left to make here and no way for the two to disagree.
+		S=./$f
 		# -I. IS $OBJ, WHERE THE GENERATED HEADER IS.  It cannot shadow a
 		# unit's own file: cpp searches the including file's directory
 		# first for "..." regardless of -I order, so the eight units that
@@ -1786,8 +2564,79 @@ do
 				$SRC/mk/world.link`
 			if test -z "$DD"
 			then
-				echo "$ND $name" >> $OBJ/res.log
-				echo "$ND $name"
+				# ------------------------ MULTI-MAIN, K17 ------
+				# A cmd/ DIRECTORY IS NOT NECESSARILY A COMMAND:
+				# 71 units carry more than one main().  world.link
+				# names them and builds none, because linking all
+				# the objects together fails on `multiply defined
+				# _main' and pairing each main with ALL the unit's
+				# objects would give cmd/awk a `maketab' carrying
+				# the whole of awk.
+				#
+				# world.prog is the tape's own answer, one row per
+				# program: which objects, which -l flags, and where
+				# it installs.  206 programs in 60 units, including
+				# the eight-piece PDP-11 cross-toolchain, awk,
+				# troff, ex, dc, at, unpack, encrypt/decrypt and
+				# the games with their own directories.
+				#
+				# THE TALLY IS THE FILE res.log AND NOT A VARIABLE.
+				# `while read ... done < p.lst' carries an input
+				# redirection, so 1970s sh FORKS for it and a
+				# variable set inside is assigned in a dead child.
+				# That is the fault that had v10-libs report 26 of
+				# 26 libraries built while 42 members had not
+				# compiled.  Appends to a file are immune either
+				# way and need no theory about which shell forks.
+				rm -f p.lst
+				sed -e '/^#/d' -e "/^[^ ][^ ]* $name /!d" \
+					$SRC/mk/world.prog > p.lst
+				if test ! -s p.lst
+				then
+					echo "$ND $name" >> $OBJ/res.log
+					echo "$ND $name"
+					rm -f *.o
+					continue
+				fi
+				while read prog punit pdir pdest plibs pobjs
+				do
+					if test -z "$pobjs" ; then continue ; fi
+					PL=`echo $plibs | sed -e 's/,/ /g' -e 's/^-$//'`
+					rm -f $prog
+					( $CCL -o $prog $pobjs $PL 2>&1
+					  echo "LST=$?" ) | sed -e 30q > l1.log
+					lst=`sed -e '/^LST=/!d' -e 's/LST=//' -e 1q l1.log`
+					# THREE TESTS, because V10's ld writes its
+					# output file even when symbols are
+					# undefined -- it reports them and clears
+					# the execute bits, so `test -s' passes on
+					# a binary that cannot run.
+					sed -e '/Undefined/!d' -e 1q l1.log > lu.log
+					if test "$lst" = 0 -a -s $prog -a ! -s lu.log
+					then
+						echo "$L $prog" >> $OBJ/res.log
+						echo "$L $prog"
+						if test -d $DEST$pdest
+						then
+							if cp $prog $DEST$pdest/$prog
+							then
+								echo "$I $prog" >> $OBJ/res.log
+								echo "$I $prog"
+							else
+								echo "$IN $prog $DEST$pdest" >> $OBJ/res.log
+								echo "$IN $prog $DEST$pdest"
+							fi
+						else
+							echo "$IN $prog $DEST$pdest" >> $OBJ/res.log
+							echo "$IN $prog $DEST$pdest"
+						fi
+					else
+						echo "$LN $prog" >> $OBJ/res.log
+						echo "$LN $prog"
+						sed -e 3q l1.log
+					fi
+					rm -f $prog l1.log lu.log
+				done < p.lst
 				rm -f *.o
 				continue
 			fi
@@ -2088,6 +2937,9 @@ GENERATED = [
     ("world.link", lambda u, p: world_link(u)),
     ("world.drop", lambda u, p: world_drop(u)),
     ("inc.extra", lambda u, p: inc_extra()),
+    ("world.prog", lambda u, p: world_prog(u)),
+    ("world.script", lambda u, p: world_script(u)),
+    ("world.alias", lambda u, p: world_alias(u, built_names(u))),
     ("worldc.sh", lambda u, p: WORLDC),
 ]
 

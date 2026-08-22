@@ -8,5 +8,6 @@
 #
 adb comm
 f77 alt
+mailx hdr
 mk export
 nupas attin

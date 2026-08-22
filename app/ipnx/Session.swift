@@ -164,14 +164,16 @@ final class Session: ObservableObject, Identifiable {
     private let link: ConsoleLink?
     private let settings: Settings
     private var nudged = false
-    private var autoLoginDone = false
 
     init(line: Line, machine: Machine, dmd: Terminal5620?, settings: Settings) {
         self.line = line
         self.machine = machine
         self.dmd = line == .tty(0) ? dmd : nil
         self.settings = settings
-        self.readOnly = (line == .console)
+        // The console takes input like every other line.  It used to be
+        // locked read-only, which left a machine with no usable login at
+        // all once the tty01 auto-login harness was removed.
+        self.readOnly = false
         // The console rides the machine's own console socket; every tty gets
         // its own link to its own DZ listener.
         self.link = (line == .console || line == .tty(0)) ? nil : ConsoleLink()
@@ -268,112 +270,8 @@ final class Session: ObservableObject, Identifiable {
         nudged = true
         try? await Task.sleep(nanoseconds: 400_000_000)
         link.send([0x0d])
-        await autoLogin()
     }
 
-    /// `tty01` logs itself in. Gated on actually seeing the prompt, never on a
-    /// timer: a restored session comes back with a shell already running and
-    /// no `login:` will ever arrive, and typing `root` into a live shell is
-    /// not a harmless mistake.
-    ///
-    /// Neither account has a password by default, so the name is the whole
-    /// exchange (verified in work/myv8/config.log: `login: root` goes straight
-    /// to `#`).
-    ///
-    /// WHICH account is the point. root is needed exactly once — to create the
-    /// user — and after that this is somebody's machine, so it logs in as them
-    /// and they arrive in their own home directory with their own dotfiles and
-    /// their own umask. Coming up as root every time is a demo; the machine is
-    /// meant to be lived in. So: root only while `provisionedUser` is nil, and
-    /// on that one boot the provisioner hands the line back (below) so the
-    /// user's first session is already their own.
-    private func autoLogin() async {
-        guard line == .tty(1), !autoLoginDone, let link else { return }
-        guard settings.autoLoginRoot else { return }
-        guard await link.waitFor("login:", timeout: 20) else {
-            note("no login: prompt — leaving \(line.device) to the user")
-            return
-        }
-        autoLoginDone = true
-
-        // ROOT IS FOR ONCE, AND ONLY WHEN THERE IS SOMETHING ONLY ROOT CAN DO.
-        // Creating the account happens exactly once in the life of a disk, and
-        // /etc/dmdwide only needs rewriting when the screen preset actually
-        // changed -- it is a file on the disk and persists by itself. Any other
-        // boot must show the user ONE login, theirs, and nothing else. An
-        // earlier version of this ran the root pass unconditionally, so every
-        // single start replayed a root login, the account creation and a
-        // logout before handing over. That is wrong on a cold boot and absurd
-        // on a resumed one.
-        let wide = settings.activeScreen.romColumns > 88
-        let needsRoot = machine.provisionedUser == nil
-                     || !machine.screenMarkerMatches(wide: wide)
-        if needsRoot {
-            await rootPass(link, wide: wide)
-        }
-
-        let user = machine.provisionedUser
-        note("logging \(line.device) in as \(user ?? "root")")
-        link.send(Array("\(user ?? "root")\r".utf8))
-    }
-
-    /// The one root login, and only when `autoLogin` has decided it is owed.
-    /// Ends by handing the line back to getty so the caller can log the user
-    /// in on a fresh prompt, and wipes the view so none of it is the user's
-    /// problem. Clearing touches the VIEW only -- nothing is typed at the
-    /// guest, which matters because the far end here is getty reading a name.
-    private func rootPass(_ link: ConsoleLink, wide: Bool) async {
-        let creatingAccount = machine.provisionedUser == nil
-        link.send(Array("root\r".utf8))
-        if creatingAccount {
-            await provisionIfNeeded(link)              // waits for `#' itself
-        } else if await link.waitFor("#", timeout: 20) == false {
-            note("no root shell — skipping this boot")
-            return
-        }
-        if !machine.screenMarkerMatches(wide: wide) {
-            await syncScreenMarker(link)
-            machine.recordScreenMarker(wide: wide)
-        }
-        // FIRST BOOT ENDS THE PROCESS, IT DOES NOT HAND THE LINE BACK.
-        //
-        // Everything above ran as root, and its transcript stays in this
-        // terminal's scrollback whatever the screen is made to show. Clearing
-        // the view hides it from the screen and not from the scrollback, and a
-        // second login on one tty reads as something having gone wrong.
-        //
-        // So the machine is halted and the app restarts itself. The halt is
-        // the operator's shutdown — boot() flushes, waits for the I/O to drain
-        // and stops — so the new account is on the disk rather than in a
-        // buffer cache. The restart is a whole new PROCESS because SIMH cannot
-        // be run twice in one: its globals are never reinitialised and the
-        // second `simh_main` aborts inside sim_cancel.
-        //
-        // What comes back has never been root, has no provisioning to do, and
-        // shows the user one login: theirs.
-        if creatingAccount, machine.isProvisioned {
-            note("provisioned — halting, then restarting for a clean machine")
-            // The machine's own shutdown, in its own order: V10 needs an
-            // `umount -a' that V8 does not, because its kernel neither syncs nor
-            // unmounts and it then REFUSES to remount /usr.  See
-            // MachineSpec.shutdown.
-            for step in machine.spec.shutdown {
-                link.send(Array("\(step)\r".utf8))
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
-            }
-            // The kernel prints this once the disks are flushed and it is
-            // spinning at IPL 31 — an output-anchored marker, not a timer.
-            _ = await machine.waitForHalt(timeout: 60)
-            machine.relaunchProcess()
-            return
-        }
-
-        link.send(Array("exit\r".utf8))
-        if await link.waitFor("login:", timeout: 30) == false {
-            note("getty did not come back — \(line.device) may still be root")
-        }
-        view?.feed(byteArray: ArraySlice(Array("\u{1b}[3J\u{1b}[2J\u{1b}[H".utf8)))
-    }
 
     /// Tell the guest which 5620 screen it is talking to, so plain `mux`
     /// works and nobody has to remember `wmux`.
@@ -395,72 +293,6 @@ final class Session: ObservableObject, Identifiable {
         try? await Task.sleep(nanoseconds: 500_000_000)
         note(wide ? "5620 is Wide — mux will use muxterm.w"
                   : "5620 is Original — mux will use the stock muxterm")
-    }
-
-    /// First boot only: create the account that belongs to whoever is running
-    /// this copy. Runs here because this is the one place in the app that has
-    /// a *root shell* — the console is read-only behind a lock and has no
-    /// shell on it at all, which is worth stating because sending these to
-    /// the console instead types them into nothing and silently does nothing.
-    ///
-    /// Everything is proven by an output-anchored marker rather than by a
-    /// prompt: V8's tty echoes typed characters as they arrive and they
-    /// interleave *into* whatever is printing, so a `#` prompt matcher
-    /// matches the echo of the command being sent. The marker is spelled
-    /// through a shell variable so the echo carries `PROV$OK` and only the
-    /// result carries `PROV-ok`.
-    private func provisionIfNeeded(_ link: ConsoleLink) async {
-        guard !machine.isProvisioned else { return }
-        let user = Provisioner.v8Name(from: Provisioner.hostUserName)
-        let gecos = Provisioner.hostFullName
-
-        guard await link.waitFor("#", timeout: 20) else {
-            note("no root shell — account not created; will retry next boot")
-            return
-        }
-        // The marker variable itself, before anything that uses it.
-        link.send(Array("OK=-ok\r".utf8))
-        try? await Task.sleep(nanoseconds: 400_000_000)
-        for cmd in Provisioner.commands(user: user, gecos: gecos) {
-            link.send(Array("\(cmd)\r".utf8))
-            try? await Task.sleep(nanoseconds: 700_000_000)
-        }
-        link.send(Array("echo PROV$OK\r".utf8))
-        if await link.waitFor("PROV-ok", timeout: 15) {
-            await setPassword(link, user: user)
-            machine.markProvisioned(user)
-            note("account `\(user)' created, home /usr/\(user)")
-        } else {
-            // Deliberately NOT marked: a half-made account should be retried,
-            // and every command above is guarded so a second run is safe.
-            note("account creation unconfirmed — will retry next boot")
-        }
-    }
-
-    /// Optionally give the new account a password.
-    ///
-    /// V8's passwd(1) is interactive and there is no `--stdin`: it prompts,
-    /// reads with echo off, and asks again to confirm. Run as root it does
-    /// not ask for the old one, which is the only reason this is possible at
-    /// all without knowing a password we never set.
-    ///
-    /// Empty means none, which is the default. A personal machine emulating a
-    /// personal machine, on a disk its owner already holds, gains nothing
-    /// from a prompt with no recovery path — but some people want their
-    /// machine to feel like a machine, so the option exists.
-    private func setPassword(_ link: ConsoleLink, user: String) async {
-        let pw = settings.accountPassword
-        guard !pw.isEmpty else { return }
-        link.send(Array("passwd \(user)\r".utf8))
-        guard await link.waitFor("assword", timeout: 15) else {
-            note("passwd did not prompt — account left without one")
-            return
-        }
-        link.send(Array("\(pw)\r".utf8))
-        try? await Task.sleep(nanoseconds: 600_000_000)
-        link.send(Array("\(pw)\r".utf8))          // the confirmation
-        try? await Task.sleep(nanoseconds: 600_000_000)
-        note("password set for `\(user)'")
     }
 
     // MARK: Bytes

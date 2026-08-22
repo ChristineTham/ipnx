@@ -104,7 +104,6 @@ set UBLKS [lindex $argv 7]
 set UPART [lindex $argv 8]
 # APPENDED, NOT INSERTED: the five positional arguments above are indexed by
 # number in this file and in tools/v10-mkdisk.sh, so a new one goes on the end.
-set dport [lindex $argv 9]
 
 # THE MINOR, COMPUTED.  BITFS|unit|part, and the disk is attached as rq1 because
 # `ipnx780.m' configures `ra 0' and `ra 1' and stops -- its own comment says "ra
@@ -157,16 +156,14 @@ v10_sh "OK=-ok" 120
 
 # The three shares, on three device numbers -- neta.h's `server may be using
 # several', and nadomount() gives EBUSY for a repeat.
-v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk; mkdir /n/dist" 120
+v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk" 120
 set sh1 [v10_try "/etc/nafsmnt 10.0.2.2 $tport /n/tree 0" "mounted on" 900]
 set sh2 [v10_try "/etc/nafsmnt 10.0.2.2 $oport /n/ours 1" "mounted on" 900]
 set sh3 [v10_try "/etc/nafsmnt 10.0.2.2 $mport /n/mk   2" "mounted on" 900]
-set sh4 [v10_try "/etc/nafsmnt 10.0.2.2 $dport /n/dist 3" "mounted on" 900]
 note "the tape mounts over TCP (no courier disk in this run)" $sh1
 note "our overlay mounts"                                    $sh2
 note "and the generated makefiles mount"                     $sh3
-note "and the 5620 distribution mounts"                      $sh4
-set shares [expr {$sh1 && $sh2 && $sh3 && $sh4}]
+set shares [expr {$sh1 && $sh2 && $sh3}]
 
 if {!$shares} {
     note "mkbitfs builds from the share" 0
@@ -196,6 +193,20 @@ if {!$shares} {
     note "r70's remaining headers install" 0
     note "vismon's data and the word list install" 0
     note "the spool directories exist" 0
+    note "the stream-pipe nodes exist" 0
+    note "the file-descriptor nodes exist" 0
+    note "the Massbus disk nodes exist" 0
+    note "the Datakit and tape nodes exist" 0
+    note "the Eighth Edition's tables install" 0
+    note "the fortune database and quiz's subjects install" 0
+    note "the PDP-11 compiler passes install" 0
+    note "the empty spool directories arrive" 0
+    note "/etc/passwd is still a password file" 0
+    note "V10's own shell scripts install" 0
+    note "the Writer's Workbench installs into /usr/bin/WWB" 0
+    note "every script row copied" 0
+    note "vi, view and edit are ex" 0
+    note "root has a .profile that reaches the 5620 tools" 0
     note "lost+found exists on both filesystems" 0
     note "/etc/whoami names the machine" 0
     note "/etc/rc checks the filesystems on autoboot" 0
@@ -346,7 +357,6 @@ if {$mounted} {
     # and the destinations already exist from the mkdir loop -- cpio -pd does
     # NOT create its destination.
     foreach d {jerq blit} {
-        v10_sh "cd /n/dist/$d; find . -print | cpio -pdu $MP/usr/$d > /dev/null 2>&1" 3600
     }
     note "the 5620 userland installs into /usr/jerq" \
         [v10_try "test -s $MP/usr/jerq/bin/3cc && test -s $MP/usr/jerq/bin/mux && echo JQ\$OK" \
@@ -385,7 +395,6 @@ if {$mounted} {
 
     # ---------------- vismon's data, and a dictionary ---------------------
     foreach d {net dict} {
-        v10_sh "cd /n/dist/$d; find . -print | cpio -pd $MP/usr/$d > /dev/null 2>&1" 3600
     }
     note "vismon's data and the word list install" \
         [v10_try "test -s $MP/usr/dict/words && echo DW\$OK" "DW-ok" 900]
@@ -400,6 +409,113 @@ if {$mounted} {
     note "the spool directories exist" \
         [v10_try "test -d $MP/usr/spool/mail && test -d $MP/usr/spool/uucp && echo SP\$OK" \
             "SP-ok" 600]
+
+    # ---------------- what only the Eighth Edition has (K17) ---------------
+    #
+    # THE THIRD RUNG OF THE POLICY THIS PROJECT ALREADY HAS.  CLAUDE.md settles
+    # the shape one edition down -- a shipped disk carries "what V10 built, and
+    # the tape's binaries only where we cannot build the program".  K17 extends
+    # the same rule across the edition boundary, because it is the same
+    # question: our build where we have one, Bell Labs' V10 binary where we do
+    # not, and the Eighth Edition's file where NEITHER edition has source.
+    #
+    # hand: (what the V8 golden has) minus (what world.{link,prog,script,alias}
+    # produces) minus (what the V10 golden already has).  766 files -- 615 data,
+    # 49 script, 102 binary -- and the risk is confined to the third column.
+    # 112 of 128 syscall slots hold the same call at the same index in both
+    # editions, and the reverse direction is already proven at 9/9 by
+    # tools/v10-probe.sh, so a carried binary is a candidate rather than a
+    # guarantee.  The data and the scripts cannot fail at runtime at all, and
+    # they are most of it: /etc/services, /etc/termcap, the fortune database,
+    # quiz's subject files, 78 documents.
+    #
+    # `cpio -pd' WITHOUT `-u', deliberately and for the reason the header copy
+    # gives: an existing file is left alone, so anything V10 built or the tape
+    # supplied wins and only what is genuinely missing arrives.  The list
+    # already excludes both, so this is belt and braces on a decision that
+    # would be expensive to get wrong.
+    # `/etc/termcap', NOT `/usr/lib/termcap' -- and the first version of this
+    # assertion named the second, failed, and reported a correct disk as broken.
+    # copy is made from, so there was never any need to guess: assert what the
+    # manifest says will be there.  V8 keeps termcap in /etc; /usr/lib/termcap is
+    # the LIBRARY libtermlib installs under a second name, which is a different
+    # thing entirely and is why the confusion was available.
+    note "the Eighth Edition's tables install" \
+        [v10_try "test -s $MP/etc/services && test -s $MP/etc/termcap && echo V8T\$OK" \
+            "V8T-ok" 900]
+    note "the fortune database and quiz's subjects install" \
+        [v10_try "test -d $MP/usr/games/lib && test -s $MP/usr/lib/eign && echo V8G\$OK" \
+            "V8G-ok" 900]
+    note "the PDP-11 compiler passes install" \
+        [v10_try "test -s $MP/usr/lib/11c0 && test -s $MP/usr/lib/11libc.a && echo V8P\$OK" \
+            "V8P-ok" 900]
+    # EMPTY DIRECTORIES ARE PART OF THE CARRY, and a manifest of regular files
+    # cannot produce them -- a directory only appears as a side effect of holding
+    # a file.  uucp needs /usr/spool/uucp/.Log, .Sequence, .Status and ten more,
+    # all of them empty on the V8 golden.
+    note "the empty spool directories arrive" \
+        [v10_try "test -d $MP/usr/spool/uucp/.Log && test -d $MP/usr/spool/uucp/.Status && echo V8D\$OK" \
+            "V8D-ok" 900]
+
+    # ---------------- the scripts, which no compile would ever make --------
+    #
+    # EIGHT COMMAND NAMES ARE sh AND NOTHING WOULD HAVE BUILT THEM.  `spell',
+    # `cflow', `lint', `calendar', `struct', `style', `man', `where' carry no
+    # main(), so link_recipes() finds no rule and world_link() files them under
+    # "no main() in any .c -- not a program".  All of them are on the V8 golden
+    # and all of them are in V10's own tree; v10/mk/gen/world.script is the
+    # tape's own install rule saying which file goes where.
+    #
+    # THE SOURCE IS THE TAPE'S, not V8's -- these are V10's scripts, and that
+    # is the whole difference between restoring an edition and copying one.
+    v10_sh "cd $OBJ; rm -f sc.cnt" 300
+    # THE DESTINATION MAY NOT EXIST.  `/usr/bin/WWB' is a directory of its own --
+    # the tape's install rules say `cp wwb.sh /usr/bin/WWB/wwb' and the V8 golden
+    # has exactly that -- and V10's mkdir makes ONE level, which is all this
+    # needs since every parent is already there.  An existing directory prints
+    # `File exists' and the loop ignores it, so this is unconditional rather than
+    # guarded: a test would be a second statement of the same fact.
+    v10_run "sed -e '/^#/d' /n/mk/world.script | while read n d u f; do mkdir $MP\$d; done > /dev/null 2>&1; echo MDEND" "MDEND" 900
+    v10_run "sed -e '/^#/d' /n/mk/world.script | while read n d u f; do if cp /n/tree/src/cmd/\$u/\$f $MP\$d/\$n; then chmod 755 $MP\$d/\$n; else echo \$n >> $OBJ/sc.cnt; fi; done; echo SCEND" "SCEND" 1800
+    # A PROGRAM MUST NEVER LAND ON A CONFIGURATION FILE, and this run is why the
+    # assertion exists.  `v8/mk/where.txt' has TWO rows for `passwd' -- /bin for
+    # the command and /etc for the password FILE -- so world.script emitted
+    # `passwd /etc . passwd.sh' and the disk shipped V10's passwd.sh AS
+    # /etc/passwd.  The machine booted, printed its motd, reached `login:', and
+    # root had a password because the password file was a shell script.  One
+    # prompt was the entire symptom.  The generator refuses it now; this checks
+    # the ARTEFACT, because a generator guard and a disk are different things.
+    note "/etc/passwd is still a password file" \
+        [v10_try "sed -n '/^root:/p' $MP/etc/passwd" "root:" 600]
+    note "V10's own shell scripts install" \
+        [v10_try "test -s $MP/usr/bin/spell && test -s $MP/usr/bin/lint && echo SC\$OK" \
+            "SC-ok" 900]
+    note "the Writer's Workbench installs into /usr/bin/WWB" \
+        [v10_try "test -s $MP/usr/bin/WWB/wwb && test -s $MP/usr/bin/WWB/gram && echo WWB\$OK" \
+            "WWB-ok" 900]
+    note "every script row copied" \
+        [v10_try "test ! -f $OBJ/sc.cnt && echo SCA\$OK" "SCA-ok" 600]
+
+    # ---------------- the aliases, measured off V8's own inodes ------------
+    #
+    # A COMMAND CAN BE A SECOND NAME FOR A BINARY, and reading V8's `nlink > 1'
+    # settles a cluster that had been counted as five separate missing
+    # commands: edit = ex = vi = view is ONE inode with four names, and so are
+    # 2 = 3 = 4 = 5 = 6, uncompress = zcat, more = p = pg, rogue = rogue52.  So
+    # V10 building `ex' closes four names rather than one.  A hard link is the
+    # filesystem stating the fact, which is why this is a measurement and not a
+    # convention -- and the tape's own `ln /usr/bin/= /usr/bin/==' lines are
+    # read first, because V10 stating its own aliases outranks anything
+    # inferred from V8.
+    #
+    # A MISSING TARGET IS REPORTED, not skipped: an alias whose binary did not
+    # build is exactly the kind of quiet hole this whole phase exists to close.
+    v10_sh "cd $OBJ; rm -f al.cnt" 300
+    v10_run "sed -e '/^#/d' /n/mk/world.alias | while read a d t; do if test -f $MP\$d/\$t; then rm -f $MP\$d/\$a; ln $MP\$d/\$t $MP\$d/\$a; else echo \$a \$t >> $OBJ/al.cnt; fi; done; echo ALEND" "ALEND" 1800
+    note "vi, view and edit are ex" \
+        [v10_try "test -f $MP/usr/bin/vi && test -f $MP/usr/bin/view && echo AL\$OK" \
+            "AL-ok" 900]
+    v10_run "if test -f $OBJ/al.cnt; then cat $OBJ/al.cnt; fi; echo ALRPT" "ALRPT" 600
     # THE 203 COMMANDS V10 BUILT, OVER THE TAPE'S OWN BINARIES, AND THAT IS THE
     # AUTHENTIC CHOICE RATHER THAN THE CONVENIENT ONE.  The instinct is the
     # reverse -- keep Bell Labs' binary wherever one exists -- and CLAUDE.md
@@ -508,6 +624,79 @@ if {$mounted} {
     }
     note "the motd describes this disk, not the golden" \
         [v10_try "grep ipnx780 $MP/etc/motd > /dev/null && echo MD\$OK" "MD-ok" 600]
+
+    # ---------------- /dev, from the generated table (K17) -----------------
+    #
+    # THE COPY ABOVE BRINGS THE BUILDER'S OWN /dev, WHICH IS 80 NODES.  The V8
+    # golden has 426, and 425 of those names are legal on this kernel -- so the
+    # shipped disk gets the generated table rather than whatever the machine
+    # that made it happened to have.  tools/v10-proto.py derives it: the majors
+    # are V10's own (lsys/lib/tab, cross-checked against seki.c.c), and the
+    # NAMES come off the V8 golden with tools/v8fs.py because a real /dev is not
+    # formulaic -- V8 carries `ra20a', one node with a letter among seven with
+    # digits, which no rule could produce.
+    #
+    # `mknod' DOES NOT REPLACE AN EXISTING NODE -- it prints `File exists' and
+    # leaves the old one -- which is exactly right here: the builder's own nodes
+    # are already correct and this only adds what is missing.  It is also why a
+    # bad node outlives a fix, so the assertions below use `test -b'/`test -c'
+    # rather than `ls', because on V10 `ls' exits 0 for a file that is not there.
+    foreach d {fd pt dk} {
+        v10_sh "mkdir $MP/dev/$d" 120
+    }
+    v10_run "sed -e '/^#/d' /n/mk/proto-dev | while read n k mj mn md; do /etc/mknod $MP/dev/\$n \$k \$mj \$mn > /dev/null 2>&1; chmod \$md $MP/dev/\$n > /dev/null 2>&1; done; echo NDEND" "NDEND" 1800
+    note "the stream-pipe nodes exist" \
+        [v10_try "test -c $MP/dev/pt/pt00 && test -c $MP/dev/pt/pt63 && echo NP\$OK" \
+            "NP-ok" 600]
+    note "the file-descriptor nodes exist" \
+        [v10_try "test -c $MP/dev/fd/0 && test -c $MP/dev/fd/127 && echo NF\$OK" \
+            "NF-ok" 600]
+    note "the Massbus disk nodes exist" \
+        [v10_try "test -b $MP/dev/rp0a && test -c $MP/dev/rrp1h && echo NR\$OK" \
+            "NR-ok" 600]
+    note "the Datakit and tape nodes exist" \
+        [v10_try "test -c $MP/dev/dk/dk01 && test -b $MP/dev/mt1 && echo NK\$OK" \
+            "NK-ok" 600]
+
+    # ---------------- root's own profile (K17) -----------------------------
+    #
+    # V10's `/etc/profile' IS FOUR WORDS -- `PATH=/bin:/usr/bin:/etc' -- and this
+    # disk now has /usr/games and /usr/jerq/bin, which that PATH cannot reach.
+    # V8 solves the same problem with a `/.profile' (V8's own /etc/profile is
+    # empty), and this is that file adapted to what V10 actually carries.
+    #
+    # CONFIGURATION IS OURS, which is the same argument /etc/ttys and the motd
+    # are settled by: how many terminals this machine has, and what a login
+    # shell sets up, are properties of THIS machine rather than of the tape.
+    # Everything it names is on the disk and was checked host-side first: tty,
+    # stty, fortune, muxterm.w and mux.
+    #
+    # TERM BY LINE, because there is no TIOCGWINSZ and the guest cannot measure
+    # its own screen -- tty00 is the 5620, tty07 the wide vt100, the rest plain.
+    # MUXTERM is gated on /etc/dmdwide for the reason CLAUDE.md gives at length:
+    # muxterm.w hardcodes base 0x800000 and stock muxterm 0x700000, and the
+    # wrong one does not fail -- it runs, draws into the vacated address, and
+    # looks like a hang.
+    set prof {
+        {PATH=:/bin:/usr/bin:/etc:/usr/games:/usr/jerq/bin:/usr/bin/WWB}
+        {export PATH}
+        {case `tty` in}
+        {/dev/tty00)	TERM=dmd}
+        {	if test -f /etc/dmdwide}
+        {	then	MUXTERM=/usr/jerq/lib/muxterm.w; export MUXTERM}
+        {	fi ;;}
+        {/dev/tty07)	TERM=vt100w ;;}
+        {*)	TERM=vt100 ;;}
+        {esac}
+        {export TERM}
+        {stty erase ^H kill ^U intr ^C}
+    }
+    v10_sh "rm -f $MP/.profile" 120
+    foreach line $prof {
+        v10_sh "echo '$line' >> $MP/.profile" 300
+    }
+    note "root has a .profile that reaches the 5620 tools" \
+        [v10_try "sed -n '/jerq/p' $MP/.profile" "/usr/jerq/bin" 600]
 
     # ---------------- lost+found, on BOTH filesystems ----------------------
     #

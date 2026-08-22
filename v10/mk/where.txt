@@ -21,43 +21,55 @@
 #
 # fields: name<TAB>directory<TAB>source
 #
-# 5 transcribed from the tape's makefiles, 39 read from them, 23 from
-# the manual, 152 inferred from V8, 128 unresolved
+# 5 transcribed from the tape's makefiles, 39 read from them, 24 from
+# the manual, 172 inferred from V8, 171 unresolved
 #
 #
 # DISAGREES  at           makefile says /bin       V8 says /usr/bin
 #
 2500		--
 2621		--
+2rx		--
 300		--
 300s		--
 4014		--
 450		--
 512restor		--
+Mail		--
+OLDdkcc		--
 PDP11		--
 ac	/etc	man
 accton	/etc	v8
+adv		--
 agh		--
+allrestor		--
+ana		--
 ansi		--
 apply	/usr/bin	v8
 apsend	/usr/lib	mkfile
 ar	/bin	v8
 arcv		--
 arff	/bin	v8
+arithmetic	/usr/games	v8
 as	/bin	mk
 asa	/usr/bin	v8
 ascii	/usr/bin	v8
 asd	/etc	v8
 asd++		--
 at	/bin	mkfile
+atc	/usr/games	v8
 awk	/usr/bin	v8
+back	/usr/games	v8
 backup.old		--
 bad144		--
+banner	/usr/games	v8
 basename	/usr/bin	v8
 bcd	/usr/games	v8
 bcp	/usr/bin	mkfile
+bellcat		--
 bigcore		--
 bison		--
+boggle		--
 books		--
 btree		--
 byteyears	/usr/bin	v8
@@ -66,6 +78,7 @@ cal	/usr/bin	v8
 calendar	/usr/bin	mkfile
 calendar2	/usr/lib	v8
 call		--
+canfield	/usr/games	v8
 cat	/bin	v8
 cb	/usr/bin	mkfile
 cbt	/usr/bin	mkfile
@@ -87,6 +100,7 @@ comm	/usr/bin	v8
 compact		--
 compat	/usr/bin	v8
 compress	/usr/bin	v8
+con		--
 config	/etc	mkfile
 coreid	/usr/bin	v8
 cp	/bin	v8
@@ -94,6 +108,8 @@ cpio	/usr/bin	v8
 cpp	/lib	mk
 cref		--
 cron	/etc	man
+crypt	/usr/games	man
+csh	/bin	v8
 ct	/usr/bin	v8
 ctags	/usr/bin	v8
 cu	/usr/bin	v8
@@ -107,6 +123,7 @@ dc	/usr/bin	mkfile
 dcheck	/etc	v8
 dd	/bin	v8
 deroff	/usr/bin	v8
+des		--
 descrypt		--
 df	/bin	v8
 dict		--
@@ -142,16 +159,22 @@ face		--
 factor	/usr/bin	v8
 false	/bin	v8
 fcopy		--
+festoon	/usr/games	v8
 fgrep	/usr/bin	v8
 file	/usr/bin	v8
 find	/usr/bin	v8
 findo		--
+fish	/usr/games	v8
+fix		--
+fix-n		--
 flcopy		--
 flex		--
 fmt	/usr/bin	v8
 fold	/usr/bin	v8
+fortune	/usr/games	v8
 fsck	/etc	man
 fsplit	/usr/bin	v8
+ftp		--
 gcc		--
 getopt	/usr/bin	v8
 getty	/etc	man
@@ -163,6 +186,8 @@ grep	/bin	v8
 groups		--
 halt	/etc	v8
 hang	/usr/bin	v8
+hangman	/usr/games	v8
+hanoi	/usr/games	v8
 head		--
 hideblock		--
 hoc	/usr/bin	mkfile
@@ -172,11 +197,14 @@ id	/usr/bin	v8
 ideal		--
 idiff	/usr/bin	v8
 idle		--
+ilstat		--
+imp		--
 imscan		--
 init	/etc	man
 iostat	/bin	v8
 join	/usr/bin	mkfile
 kasb	/bin	mkfile
+kermit		--
 kill	/bin	v8
 labmake		--
 last	/usr/bin	v8
@@ -185,6 +213,7 @@ ld	/bin	v8
 learn		--
 lex	/usr/bin	mkfile
 lfactor		--
+libjobs		--
 library		--
 limiter		--
 lint		--
@@ -195,9 +224,11 @@ logdir		--
 login	/etc	man
 logtty		--
 look	/usr/bin	v8
+loopback		--
 lp		--
 ls	/bin	v8
 m4	/usr/bin	v8
+mailx		--
 make	/bin	mkfile
 makekey	/usr/lib	man
 man	/usr/bin	v8
@@ -205,12 +236,14 @@ map	/usr/maps	mkfile
 markbad		--
 mc	/usr/bin	v8
 mesg	/usr/bin	v8
+mille	/usr/games	v8
 mips		--
 mkbitfs	/etc	v8
 mkdir	/bin	v8
 mkfs	/etc	man
 mknod	/etc	man
 mkstr	/usr/bin	v8
+morse		--
 mount	/etc	man
 movie		--
 mt	/bin	v8
@@ -223,10 +256,14 @@ newgrp	/bin	v8
 news	/usr/bin	v8
 nice	/bin	v8
 nm	/bin	v8
+nrogin		--
+nrx		--
+ntelnet		--
 number	/usr/bin	v8
 numdate	/usr/bin	mkfile
 nupas		--
 oasd++		--
+ocon		--
 od	/bin	v8
 ofsck		--
 omovie		--
@@ -236,6 +273,7 @@ osh		--
 oworm		--
 p	/usr/bin	mkfile
 pack	/usr/bin	v8
+pacman		--
 paper		--
 passwdx		--
 paste	/usr/bin	v8
@@ -247,6 +285,7 @@ plot	/usr/bin	v8
 poly		--
 post		--
 pp	/usr/bin	mkfile
+ppt	/usr/games	v8
 pr	/bin	v8
 pret	/usr/bin	mkfile
 primes	/usr/bin	v8
@@ -257,16 +296,24 @@ prof		--
 prof.old		--
 ps	/bin	mkfile
 pstat	/etc	man
+psych		--
 pti		--
 ptx	/usr/bin	v8
+pull		--
 punct		--
+pupu		--
+push		--
 pwd	/bin	v8
+qns		--
 qsnap		--
+quiz	/usr/games	v8
 quot	/etc	man
+rain		--
 random	/usr/bin	v8
 ranlib	/usr/bin	v8
 rarepl	/etc	v8
 ratfor	/usr/bin	v8
+rcp	/usr/bin	v8
 readslow	/usr/bin	v8
 reboot	/etc	v8
 reccp		--
@@ -278,9 +325,18 @@ rev	/usr/bin	v8
 revpag	/usr/bin	v8
 rm	/bin	v8
 rmdir	/bin	v8
+rnd		--
+rogin		--
+rogue	/usr/games	v8
+rot		--
 rscan		--
+rsh		--
+rx		--
 sa	/etc	man
+sail	/usr/games	v8
 savecore	/etc	man
+say	/usr/games	v8
+scriptcon		--
 sdb	/usr/bin	mkfile
 sed	/usr/bin	mkfile
 seq	/usr/bin	v8
@@ -321,8 +377,10 @@ tape	/usr/bin	v8
 tar	/bin	v8
 tbl	/usr/bin	mkfile
 tee	/usr/bin	v8
+telnet		--
 telno		--
 test	/bin	v8
+thanks	/usr/games	v8
 time	/bin	v8
 tk	/usr/bin	v8
 touch	/usr/bin	v8
@@ -333,6 +391,7 @@ tr	/usr/bin	v8
 trace	/usr/bin	mkfile
 track		--
 treesum		--
+trek		--
 troff	/usr/bin	v8
 true	/bin	v8
 tsort	/usr/bin	v8
@@ -349,6 +408,7 @@ units	/usr/bin	mkfile
 update	/etc	v8
 usgmake		--
 uucp		--
+uucpsrv		--
 uudecode	/usr/bin	v8
 uudiff		--
 uuencode	/usr/bin	v8
@@ -364,13 +424,17 @@ wall	/etc	man
 wc	/usr/bin	v8
 weather		--
 who	/bin	v8
+word_clout		--
 worm	/usr/games	v8
 write	/bin	v8
+wump		--
 wwb	/usr/bin	v8
 wwv		--
 xargs		--
 xd		--
+xpush		--
 xref		--
+xstr	/usr/bin	v8
 yacc	/usr/bin	mk
 yes		--
 zero		--

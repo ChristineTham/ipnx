@@ -64,9 +64,28 @@ def resolve_collisions(rels):
     """
     import collections
     bydir = collections.defaultdict(lambda: collections.defaultdict(list))
+    # EVERY COMPONENT, NOT JUST THE LEAF.  A directory exists only implicitly --
+    # as a prefix of the files under it -- so registering leaves alone never
+    # compares it with anything.  `/usr/bin/WWB' (a directory, seen only as a
+    # component of /usr/bin/WWB/acro) and `/usr/bin/wwb' (a regular file) are
+    # siblings that differ by case, and on APFS the second write failed outright:
+    #
+    #	IsADirectoryError: .../work/v8dist/root/usr/bin/wwb
+    #
+    # which is the LOUD version of the failure this whole mechanism exists for --
+    # `3CC' overwriting `3cc' was the silent one.  stored() already walks
+    # components and renames each in turn, so it was built for this; it simply
+    # was not being told about the directories.
+    seen = set()
     for rel in rels:
-        parent, _, name = rel.rpartition("/")
-        bydir[parent][name.lower()].append(name)
+        parts = rel.split("/")
+        for i in range(len(parts)):
+            sub = "/".join(parts[:i + 1])
+            if sub in seen:
+                continue
+            seen.add(sub)
+            parent, _, name = sub.rpartition("/")
+            bydir[parent][name.lower()].append(name)
 
     renamed = {}                                        # (parent, name) -> stored
     rows = []

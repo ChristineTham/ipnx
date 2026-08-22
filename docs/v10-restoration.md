@@ -697,7 +697,19 @@ result.
    `stdarg.h` — picking which of the tape's four variants pcc2 can parse)
 4. ~~Core userland builds~~ — **done 2026-08-18**, `tools/v10-link.sh` 35/35: of 358
    units, 251 compile and **203 link and install** into a staged root. `mux`'s host
-   side is the exception and is discussed at rung 8
+   side is the exception and is discussed at rung 8.
+   **Widened by K17 (2026-08-22)** to answer K16's superset audit: the survey
+   covers **427** units across five roots rather than 358 under `cmd/` alone
+   (`games`, `lbin`, `dregs`, `local`, `ipc/bin` — fifty-one of the missing
+   command names were there and had never been looked at), a unit is built
+   **in-tree**, and `world.prog` links **206 programs inside the 60 multi-main
+   units** from the tape's own `-o`, implicit and `a.out` install rules. The
+   three defects that turned up are in
+   [docs/v10-log/2026-08-22.md](v10-log/2026-08-22.md) §10.5–10.9; the one worth
+   carrying is that the in-tree diagnosis was **wrong** and the run said so —
+   `defs`, `e.def`, `manifest` and `trace.d` were simply not on the courier
+   disk, because `sources()` knows `.c`, `.h` and `.s` and the tape also writes
+   headers with none of those suffixes
 5. ~~`star` kernel links~~ — **done 2026-08-17**, `tools/v10-kernel.sh` 20/20, and it
    is our own `ipnx780.m` rather than a Bell Labs machine
 6. ~~Boot block + filesystem image assemble~~ — **done 2026-08-19** (K14,

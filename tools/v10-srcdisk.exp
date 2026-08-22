@@ -329,6 +329,19 @@ note "ours: our 780 config" \
 note "mk: the makefiles" \
     [v8_try "cd /n/v10mk; find . -print | cpio -pd $M/mk && echo CP\$OK" "CP-ok" 600]
 
+# THE FOUR NEW ROOTS ARRIVE THROUGH `..' IN world.cpio, AND THAT NEEDED
+# ASSERTING RATHER THAN ASSUMING.  K17 surveys src/games, src/lbin, src/dregs,
+# src/local and src/ipc/bin as well as src/cmd, so their rows are written
+# relative to cmd/ -- `../games/back.c' -- and the copy is
+# `cd $V/cmd; cpio -pd $M/src/cmd'.  Whether cpio honours a `..' component or
+# normalises it away is exactly the sort of thing this project has been bitten
+# by: `cpio -pd' reports `cannot write in <dir>' ON STDERR WITH A ZERO EXIT
+# STATUS, so a copy that moved nothing looks like a copy that worked.  One file
+# from each root, by name.
+note "the four extra source roots arrived" \
+    [v8_try "test -s $M/src/games/back.c && test -s $M/src/lbin/csh/sh.c && test -s $M/src/dregs/xstr.c && echo XR\$OK" \
+        "XR-ok" 300]
+
 # --------------------------------------------------------------- assertions ---
 #
 # Content, not exit status: a cpio that copied nothing exits 0.

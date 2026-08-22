@@ -166,7 +166,24 @@ BOOTPATH = ["init", "getty", "login", "mount", "umount", "mkfs", "fsck",
             # duplicate: FSTOOLS builds `v10cpio' to run on the EIGHTH Edition
             # host, prefixed exactly so the two cannot be confused, while this
             # one is /bin/cpio on the Tenth Edition machine.
-            "find", "chmod", "ls", "cpio", "grep", "wc"]
+            #
+            # `ln' JOINED THEM IN K17, and it is the same class of omission.
+            # A shipped V10 needs `vi', `view' and `edit' to BE `ex' -- V8's
+            # own inodes say so (nlink 4, one binary) -- and `2 3 4 5 6' to be
+            # one file with five names.  Making those needs `ln' on the machine
+            # that assembles the disk, and the golden has none: the harness
+            # answered `ln: not found' with the copy loop reporting nothing,
+            # which is the shape of every other absent-tool failure here.
+            "find", "chmod", "ls", "cpio", "grep", "wc", "ln"]
+
+# THE SUBSET K13.1 BUILDS AND INSTALLS, as a GENERATED list rather than a second
+# copy in the harness.  `tools/v10-netboot.exp' carried
+# `set DISKTOOLS {find chmod ls cpio grep wc}' -- and when `ln' was added to
+# BOOTPATH the harness ignored it, while its own assertion ("every disk tool has
+# a row in bootpath.order") compared the two lists' LENGTHS and passed, because
+# both were six.  A component list that appears twice will disagree, silently,
+# and an assertion that compares a list with itself cannot notice.
+DISKTOOLS = ["find", "chmod", "ls", "cpio", "grep", "wc", "ln"]
 
 # The subset that MAKES a Tenth Edition filesystem, ported to run on the
 # Eighth Edition host.  Built from V10 source and nothing else: V8 has files
@@ -1315,6 +1332,30 @@ def component(name):
     return c, None
 
 
+# DRIVERS THE CONFIG NEEDS AND THE TAPE'S PREBUILT ARCHIVES DO NOT CONTAIN.
+#
+# K6/K7 compile only the generated conf.c and link the tape's per-subsystem
+# archives, so a driver whose object is absent from every archive cannot be
+# configured at all however good its source is -- `ld' answers `Undefined:
+# _spcdev' and then WRITES ITS OUTPUT ANYWAY, clearing the execute bits, so the
+# failure arrives as a kernel that is 80 KB larger and will not run.
+#
+# `lsys/io/spipe.c' is the case.  V8's /dev/pt/pt00..pt63 are stream pipes
+# (major 18 in V8's own cdevsw is `sp' with &spinfo, not a pty), V10 ships the
+# identical driver, mkconf's `devs' knows how to configure it -- and `ar t' over
+# all eight archives finds hp.y, te16.y, tu78.y, dn.y, kdi.y, fd.x and mba.y but
+# no spipe.  So it is compiled here by the same route the overlay objects take
+# and `ar r'd into the archive its siblings live in.
+#
+# THE SOURCE IS THE TAPE'S, UNPATCHED, which is why this cannot be an overlay
+# entry: v10/src/ holds files "derived from a named upstream file with one
+# stated substitution", and there is no substitution to state.  A verbatim copy
+# there would be a lie about what v10/src is.
+KERNEL_ADD = {
+    "lsys/io/spipe.c": "io.a",
+}
+
+
 def kernel_objects():
     """Which kernel objects does v10/src/ patch, and which archive holds each?
 
@@ -1349,7 +1390,20 @@ def kernel_objects():
             if obj not in members:
                 continue
             rel = os.path.relpath(os.path.join(dirpath, f), OURS)
-            rows.append((rel, obj, members[obj]))
+            rows.append((rel, obj, members[obj], "ours"))
+    for rel, arc in sorted(KERNEL_ADD.items()):
+        obj = os.path.basename(rel)[:-2] + ".x"
+        if obj in members:
+            # NOT AN ADDITION AFTER ALL, and saying so beats emitting a row
+            # that would `ar r' over a member the tape does supply.  A guard
+            # that cannot fire is indistinguishable from one with nothing to do,
+            # so this raises rather than skipping quietly.
+            raise SystemExit("mkdep: %s is already in %s -- KERNEL_ADD is "
+                             "for objects NO archive has" % (obj, members[obj]))
+        if not os.path.isfile(os.path.join(SRC, rel)):
+            raise SystemExit("mkdep: KERNEL_ADD names %s, which is not on the "
+                             "tape" % rel)
+        rows.append((rel, obj, arc, "tape"))
     return sorted(rows)
 
 
@@ -1466,6 +1520,9 @@ def main():
     put("shutdown.order",
         "".join("%s\t%s\t%s\n" % e
                 for e in entries if e[0] in SHUTDOWN))
+    put("disktools.ord",
+        "".join("%s\t%s\t%s\n" % e
+                for e in entries if e[0] in DISKTOOLS))
     put("buildtools.ord",
         "".join("%s\t%s\t%s\n" % e
                 for e in entries if e[0] in BUILDTOOLS))
@@ -1474,11 +1531,14 @@ def main():
     # by the passes before it, so this file is a sequence and not a set.
     tcorder = tcnames + [n for n in TOOLCHAIN_SIMPLE if n in dict(
         (e[0], e) for e in entries)]
-    # THE KERNEL OBJECTS OUR OVERLAY PATCHES.  Three columns: source under
-    # v10/src, the object name, the tape archive that owns it.  Empty when the
-    # overlay patches no kernel source, which is the normal state.
+    # THE KERNEL OBJECTS THE BUILD COMPILES ITSELF.  FOUR columns: source
+    # path, object name, the archive that owns it, and WHICH TREE the source
+    # comes from -- `ours' for a patched copy under v10/src, `tape' for a
+    # driver the prebuilt archives simply do not contain (see KERNEL_ADD).
+    # The fourth column exists because those two cases read from different
+    # roots and a harness that assumed one silently compiled the wrong file.
     put("kobj.order",
-        "".join("%s\t%s\t%s\n" % r for r in kernel_objects()))
+        "".join("%s\t%s\t%s\t%s\n" % r for r in kernel_objects()))
 
     put("tc.order",
         "".join("%s\t%s\t%s\n" % dict((e[0], e) for e in entries)[n]

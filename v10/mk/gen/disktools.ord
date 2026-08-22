@@ -1,0 +1,7 @@
+find	cmd	usr/bin/find
+chmod	cmd	bin/chmod
+ls	cmd	bin/ls
+cpio	cmd	usr/bin/cpio
+grep	cmd	bin/grep
+wc	cmd	usr/bin/wc
+ln	cmd	bin/ln

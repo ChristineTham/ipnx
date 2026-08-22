@@ -15,9 +15,10 @@ f=$(jq -r '.tool_input.file_path // empty')
 case "$f" in
   ""|*/work/*) exit 0 ;;
   */image/ipnx-v8-rp07.img.xz|*/image/ipnx-v8-rp07.img.xz.sha256) exit 0 ;;
+  */image/ipnx-v10-ra81.img.xz|*/image/ipnx-v10-ra81.img.xz.sha256) exit 0 ;;
   *.disk|*.dsk|*.tap|*.tape|*.tar.gz|*.tar.bz2|*.tgz|*.cpio|*.iso|*.img)
     cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Historical binary artifacts (*.disk, *.tap, *.img, tarballs) must not be written into the repo - build them under work/ (gitignored). The one exception is image/ipnx-v8-rp07.img.xz, which is written by tools/image-pack.py. See CLAUDE.md conventions."}}
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Historical binary artifacts (*.disk, *.tap, *.img, tarballs) must not be written into the repo - build them under work/ (gitignored). The exceptions are image/ipnx-v8-rp07.img.xz and image/ipnx-v10-ra81.img.xz, written by tools/image-pack.py. See CLAUDE.md conventions."}}
 JSON
     ;;
 esac

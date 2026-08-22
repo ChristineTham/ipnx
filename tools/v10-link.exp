@@ -177,6 +177,12 @@ v10_sh "rm -rf $W; mkdir $W" 300
 # and the loop ignores it, so the duplicates cost a few hundred failed mkdirs and
 # nothing else.  Add sort to the list with ar, cmp, tail, grep, wc, dd and find.
 v10_run "sed -e '/^#/d' -e 's/^\[^ \]* //' -e 's/ .*//' $K/world.link > /tmp/dests ; echo DL\$OK" "DL-ok" 600
+# AND world.prog's DESTINATIONS TOO (K17).  206 programs inside the 60
+# multi-main units install by their own rows, and their fourth field is a
+# directory world.link never names -- /usr/games for the twenty games, /bin for
+# `at'.  Without this the link succeeds and the install reports CNOINST for
+# every one of them, which reads as a link failure and is a missing mkdir.
+v10_run "sed -e '/^#/d' -e 's/^\[^ \]* \[^ \]* \[^ \]* //' -e 's/ .*//' $K/world.prog >> /tmp/dests ; echo DP\$OK" "DP-ok" 600
 note "the destination list is not empty" \
     [v10_try "test -s /tmp/dests && echo DE\$OK" "DE-ok" 300]
 # `mkdir -p' does not exist here, so each path is made a level at a time by

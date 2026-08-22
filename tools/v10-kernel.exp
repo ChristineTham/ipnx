@@ -107,8 +107,31 @@ v10_sh "rm -rf $K; mkdir /usr/obj; mkdir $K" 300
 note "a place to build" [v10_try "test -d $K && echo BD\$OK" "BD-ok" 120]
 # Paths as shell variables: CANBSIZ is 256 and the mkconf line would not fit.
 v10_sh "P=$S/lsys/lib; Q=$S/lsys; C=$N/ours/lsys/astro/$M.m" 120
+v10_sh "TB=$N/ours/lsys/lib/tab" 120
 note "the star tool-set is readable" \
     [v10_try "test -s \$P/conf.star && test -s \$P/devs && echo TS\$OK" "TS-ok" 300]
+
+# THE TAB IS OURS, AND IT IS THE ONE INPUT TO mkconf THAT IS.  V10's own
+# lsys/lib/tab carries `# cdev 18 pt   # remove?' -- the stream-pipe device
+# commented out -- while lsys/lib/devs still holds `pt sp count' and
+# lsys/io/spipe.c still exports spcdev.  V8's /dev/pt/pt00..pt63 are that
+# device (major 18 in V8's own cdevsw is `sp' with &spinfo, not a pty), so
+# 64 device names hung on one comment character.  Overlay, not an edit in
+# place: v10/src/lsys/lib/tab.
+#
+# ASSERTED BY CONTENT, not by existence, because a stale overlay is exactly
+# what this would fail to notice: grep for the enabled line.  V10's grep is
+# not on the golden, so `sed -n' does the work.
+note "our tab is on the share" \
+    [v10_try "test -s \$TB && echo TB\$OK" "TB-ok" 300]
+# `sed -n /pat/=' PRINTS LINE NUMBERS AND NOTHING FOR NO MATCH, so the loop
+# body runs only when the line is there -- and neither `grep' nor `wc' is on
+# every image this harness runs against (the golden has neither).  The token
+# is spelled through a shell variable so the tty's echo of the command cannot
+# put the literal answer in the transcript.
+note "our tab enables cdev 18 pt" \
+    [v10_try "S=X; for x in `sed -n '/^cdev 18/=' \$TB`; do S=PT\$OK; done; echo \$S" \
+        "PT-ok" 300]
 
 # ----------------------------------------------------------- 1. mkconf ------
 #
@@ -116,7 +139,7 @@ note "the star tool-set is readable" \
 #          conf.star $stem.m
 # conf.star carries the 780's standard table sizes; our .m carries the devices.
 set mk [v10_try \
-    "cd $K; if \$P/mkconf -t \$P/tab -l \$P/low.star -d \$P/devs -s $M.s.s -c $M.c.c \$P/conf.star \$C > mk.log 2>&1; then echo MK\$OK; fi" \
+    "cd $K; if \$P/mkconf -t \$TB -l \$P/low.star -d \$P/devs -s $M.s.s -c $M.c.c \$P/conf.star \$C > mk.log 2>&1; then echo MK\$OK; fi" \
     "MK-ok" 900]
 note "mkconf accepted our config" $mk
 if {!$mk} { v10_run "cd $K; cat mk.log; echo MKEND" "MKEND" 600 }
@@ -205,7 +228,13 @@ note "ranlib rebuilt every table of contents" \
 # `calls $n,_name' sequence asm.sed matches, so the substitution is plausible --
 # and it is CHECKED rather than assumed: the control below compiles an unchanged
 # member the same way and compares it with the tape's own object.
-set KOBJ [v10_rows kobj.order 3]
+# FOUR COLUMNS NOW, and the fourth is which TREE the source is in.  `ours' is a
+# patched copy under v10/src; `tape' is a driver the prebuilt archives do not
+# contain at all -- lsys/io/spipe.c, which `cdev 18 pt' needs and which `ar t'
+# over all eight archives does not find.  Reading it from the wrong root would
+# compile a file that is not there and report `No source file', or worse compile
+# the wrong generation of one that is.
+set KOBJ [v10_rows kobj.order 4]
 if {[llength $KOBJ] == 0} {
     note "no kernel objects in the overlay (nothing to replace)" 1
 } else {
@@ -215,6 +244,8 @@ if {[llength $KOBJ] == 0} {
         set src [lindex $r 0]
         set obj [lindex $r 1]
         set arc [lindex $r 2]
+        set from [lindex $r 3]
+        set croot [expr {$from eq "tape" ? "$S" : "$N/ours"}]
         set stem [file rootname [file tail $src]]
         # One pipeline, because a `cc -S' that fails still leaves a stale .s and
         # `as' would happily assemble the previous run's.
@@ -225,9 +256,9 @@ if {[llength $KOBJ] == 0} {
         # leaving a failure with no evidence at all.  mkdep.py's put() refuses a
         # generated name over 14; a name a harness builds at run time is outside
         # that guard, so it is fixed and short here.
-        set ok [v10_try "cd $K; rm -f $stem.s $obj kobj.log; cc -B$T1/lib/ -t02p \$KF -S $N/ours/$src > kobj.log 2>&1 && sed -f \$P/asm.sed < $stem.s | as -o $obj && test -s $obj && echo KC\$OK" \
+        set ok [v10_try "cd $K; rm -f $stem.s $obj kobj.log; cc -B$T1/lib/ -t02p \$KF -S $croot/$src > kobj.log 2>&1 && sed -f \$P/asm.sed < $stem.s | as -o $obj && test -s $obj && echo KC\$OK" \
                 "KC-ok" 1800]
-        note "our $obj compiles and assembles" $ok
+        note "$from $obj compiles and assembles" $ok
         if {!$ok} {
             v10_sh "sed -e 12q $K/kobj.log" 300
             set allobj 0

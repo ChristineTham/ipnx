@@ -138,13 +138,15 @@ note "/etc/nafsmnt installed" \
 # yacc cost a whole run to exactly that mistake (`/usr/s1/bin/yacc' against the
 # real `/usr/s1/usr/bin/yacc'), which is why tc.order's column is read and not
 # retyped.
-set DISKTOOLS {find chmod ls cpio grep wc}
-set toolrows {}
-foreach r [v10_rows bootpath.order 3] {
-    if {[lsearch -exact $DISKTOOLS [lindex $r 0]] >= 0} { lappend toolrows $r }
-}
-note "every disk tool has a row in bootpath.order" \
-    [expr {[llength $toolrows] == [llength $DISKTOOLS]}]
+# THE LIST IS GENERATED, NOT RESTATED.  This read
+# `set DISKTOOLS {find chmod ls cpio grep wc}' and compared its length with the
+# rows it matched -- a list compared with itself, which cannot fail.  When K17
+# added `ln' to BOOTPATH the harness ignored it and the assertion said ok, and
+# only a host-side `stat' of the finished image found /bin/ln absent.  A
+# component list that appears twice will disagree, silently.
+set toolrows [v10_rows disktools.ord 3]
+note "the disk tools have rows in disktools.ord" \
+    [expr {[llength $toolrows] > 0}]
 
 set alltools 1
 foreach r $toolrows {

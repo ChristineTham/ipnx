@@ -4,6 +4,9 @@
 	tools/v8v10-diff.py                 the functional summary
 	tools/v8v10-diff.py --paths         and the raw path diff, by directory
 	tools/v8v10-diff.py --commands      just the command names still missing
+	tools/v8v10-diff.py --libs         ... the library names
+	tools/v8v10-diff.py --devs         ... the device node names
+	tools/v8v10-diff.py --all          all three lists
 
 Reads both images with tools/v8fs.py and tools/v10fs.py; no simulator, about a
 second.  Root and /usr are walked separately and stitched, because both are two
@@ -121,16 +124,23 @@ def main(argv):
             tag = "partial"
         print("   %-18s V8 %5d   V10 %5d   %s" % (t, n8, n10, tag))
 
-    if "--commands" in argv or "--paths" in argv:
+    def names_block(label, s8, s10):
         print()
-        print("== command names on V8 and not on V10 (%d) ==" % len(c8 - c10))
+        print("== %s on V8 and not on V10 (%d) ==" % (label, len(s8 - s10)))
         line = "   "
-        for n in sorted(c8 - c10):
+        for n in sorted(s8 - s10):
             if len(line) + len(n) > 76:
                 print(line); line = "   "
             line += n + " "
         if line.strip():
             print(line)
+
+    if "--commands" in argv or "--paths" in argv or "--all" in argv:
+        names_block("command names", c8, c10)
+    if "--libs" in argv or "--all" in argv:
+        names_block("library names", l8, l10)
+    if "--devs" in argv or "--all" in argv:
+        names_block("device node names", d8, d10)
 
     if "--paths" in argv:
         import collections

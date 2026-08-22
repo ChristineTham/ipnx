@@ -1,0 +1,150 @@
+#!/usr/bin/env expect
+# Three things, and nothing else:
+#
+#	1. a filesystem, made on a BLANK disk by the current golden's own
+#	   /etc/mkbitfs -- V10 making a V10 filesystem
+#	2. the tape's binaries copied into it
+#	3. the good ipnx780 kernel installed as its /unix
+#
+#	expect tools/v10-newdisk.exp <golden> <blank> <tport> <mport>
+#
+# NOTHING IS COMPILED.  The current golden already carries /etc/mkbitfs, so
+# the filesystem is made by the Tenth Edition's own tool.
+
+set timeout 1200
+log_user 1
+set ROOT [file normalize [file dirname [file dirname [info script]]]]
+source "$ROOT/tools/v10drive.exp"
+
+set IMG    [lindex $argv 0]
+set TARGET [lindex $argv 1]
+
+# ra_sizes[] is in 512-byte SECTORS: a = 10240 sectors = 1280 blocks of 4096;
+# c = 249848 sectors, of which MAXSMALL = 30752 blocks keeps the free bitmap
+# inside the superblock.  Reading those as BLOCKS is the trap that made a
+# previous run ask mkbitfs for eight times the partition.
+set RBLKS 1280
+# /usr ON PARTITION g.  The whole tape is 252 MB and partition c holds 128,
+# so c cannot carry it; g is 749544 sectors = 93,693 blocks = 384 MB from the
+# SAME offset as c, and ends exactly where the next partition begins.  Above
+# MAXSMALL (30752 blocks) mkbitfs takes largefree() and puts the bitmap
+# outside the superblock -- K11 proved that at 111,384 blocks.
+set UBLKS 93693
+set tport  [lindex $argv 2]
+set mport  [lindex $argv 3]
+
+v10_deadline 5400
+set MP /mnt
+
+# 64 | (unit<<3) | part.  The target is rq1, so a = 72 and c = 74.  DERIVED,
+# because K11 hand-wrote 79, addressed unit 1 while the disk sat on rq2, and
+# nineteen assertions passed about a filesystem written over the wrong image.
+# 64 | (unit<<3) | part, with a=0 b=1 c=2 d=3 e=4 f=5 g=6 h=7.  The target is
+# rq1, so root (a) = 64|8|0 = 72 and /usr (g) = 64|8|6 = 78.
+set RMINOR 72
+set UMINOR 78
+
+set results {}
+proc note {name ok} { global results; lappend results [list $name $ok] }
+proc report {} {
+    global results
+    puts "\n===== A NEW V10 DISK: REFERENCE + TAPE + KERNEL ====="
+    set bad 0
+    foreach r $results {
+        puts [format "  %-54s %s" [lindex $r 0] [expr {[lindex $r 1] ? "ok" : "NO"}]]
+        if {![lindex $r 1]} { incr bad }
+    }
+    puts [format "===== %d/%d =====" [expr {[llength $results] - $bad}] [llength $results]]
+    return $bad
+}
+
+set IL [list "set il enable" "set il address=2013E800" "set il vector=E8" \
+             "attach il nat:"]
+
+v10_select_machine $IMG
+v10_boot $IMG [concat [list "set rq1 ra81" "attach rq1 $TARGET"] $IL]
+v10_login root
+v10_sh "PATH=/bin:/etc:/usr/bin; export PATH" 60
+v10_sh "OK=-ok" 60
+
+puts "\n===== REFERENCE + TAPE + KERNEL =====\n"
+
+v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/mk" 120
+note "the tape mounts"        [expr {[v10_try "/etc/nafsmnt 10.0.2.2 $tport /n/tree 0" "mounted on" 900] != 0}]
+note "the binary list mounts" [expr {[v10_try "/etc/nafsmnt 10.0.2.2 $mport /n/mk   1" "mounted on" 900] != 0}]
+
+set mounted [v10_try "test -s /n/tree/src/cmd/sed/sed && echo RD\$OK" "RD-ok" 300]
+note "the tape's binaries are readable off the share" [expr {$mounted != 0}]
+if {$mounted == 0} { report; v10_bail "no tape -- nothing below a mount can be asserted" }
+
+# ------------------- 1. V10 MAKES THE FILESYSTEM, with its own mkbitfs ---
+note "the golden carries /etc/mkbitfs (nothing is compiled)" \
+    [expr {[v10_try "test -s /etc/mkbitfs && echo MK\$OK" "MK-ok" 300] != 0}]
+
+v10_sh "/etc/mknod /dev/ra1a b 7 $RMINOR; /etc/mknod /dev/ra1g b 7 $UMINOR" 300
+note "the blank disk's device nodes exist" \
+    [expr {[v10_try "test -b /dev/ra1a && test -b /dev/ra1g && echo ND\$OK" "ND-ok" 300] != 0}]
+
+note "V10's own mkbitfs makes the ${RBLKS}-block root" \
+    [expr {[v10_try "/etc/mkbitfs /dev/ra1a $RBLKS && echo M1\$OK" "M1-ok" 1800] != 0}]
+note "V10's own mkbitfs makes the ${UBLKS}-block /usr" \
+    [expr {[v10_try "/etc/mkbitfs /dev/ra1g $UBLKS && echo M2\$OK" "M2-ok" 1800] != 0}]
+
+v10_sh "mkdir $MP" 120
+set mt [v10_try "/etc/mount /dev/ra1a $MP && echo MT\$OK" "MT-ok" 600]
+note "the new root mounts" [expr {$mt != 0}]
+v10_sh "mkdir $MP/usr" 120
+set mu [v10_try "/etc/mount /dev/ra1g $MP/usr && echo MU\$OK" "MU-ok" 600]
+note "and the new /usr mounts inside it" [expr {$mu != 0}]
+if {$mt == 0 || $mu == 0} { report; v10_bail "the new filesystems did not mount" }
+
+# ---------------------------------------------- 3. THE GOOD KERNEL ---
+v10_sh "cp /unix $MP/unix" 1800
+note "the good ipnx780 kernel is installed as /unix" \
+    [expr {[v10_try "test -s $MP/unix && echo UX\$OK" "UX-ok" 600] != 0}]
+
+# ---------------------------------------------- 2. THE TAPE'S BINARIES ---
+foreach d {bin etc lib} { v10_sh "mkdir $MP/$d" 120 }
+foreach d {bin lib games maps} { v10_sh "mkdir $MP/usr/$d" 120 }
+
+# The tally goes in a FILE: 1970s sh forks for a compound command carrying an
+# input redirection, so a variable set inside `while read ... done < file' is
+# set in a dead child and the verdict always reads zero.
+v10_sh "rm -f /tmp/ok /tmp/bad" 120
+v10_sh "sed -e '/^#/d' -e '/^\$/d' /n/mk/tapebins.txt > /tmp/tb" 300
+note "the binary list reached the machine" \
+    [expr {[v10_try "test -s /tmp/tb && echo TL\$OK" "TL-ok" 300] != 0}]
+
+puts "\n-- copying the tape's binaries, share -> the reference disk --\n"
+v10_run "while read n s d a; do if cp /n/tree/src/\$s $MP\$d/\$n; then echo . >> /tmp/ok; else echo \$n >> /tmp/bad; fi; done < /tmp/tb; echo CPEND" \
+        "CPEND" 3600
+v10_run "echo COPIED; wc -l < /tmp/ok; echo COPIEDEND" "COPIEDEND" 300
+v10_run "echo FAILED; if test -s /tmp/bad; then cat /tmp/bad; fi; echo FAILEDEND" "FAILEDEND" 600
+
+# ---------------------------- 2b. THE REST OF THE TAPE, excluding source ---
+# The tape is organised as source trees, so the installable content sits
+# inside them: r70's headers, the Blit distribution, the manual and Volume 2.
+# `cpio -pd' does NOT create its destination, so each mkdir comes first.
+# THE ENTIRE TAPE INTO /usr/src.  Not four selected trees: the whole thing --
+# src/ (the source tarball), blit/ (the terminal distribution) and include/
+# (r70's headers) -- 25,682 files, 252 MB, which is why /usr is on g.
+v10_sh "mkdir $MP/usr/src" 300
+v10_sh "cd /n/tree; find . -print | cpio -pd $MP/usr/src > /dev/null 2>&1" 7200
+note "the tape's source tree is on the disk" \
+    [expr {[v10_try "test -d $MP/usr/src/src/cmd && echo SR\$OK" "SR-ok" 900] != 0}]
+note "the manual is on the disk" \
+    [expr {[v10_try "test -d $MP/usr/src/src/man/man1 && echo MN\$OK" "MN-ok" 900] != 0}]
+note "r70's headers are on the disk" \
+    [expr {[v10_try "test -s $MP/usr/src/include/stdio.h && echo IH\$OK" "IH-ok" 900] != 0}]
+note "the Blit distribution is on the disk" \
+    [expr {[v10_try "test -d $MP/usr/src/blit/lib && echo BL\$OK" "BL-ok" 900] != 0}]
+
+note "a tape binary is on the new disk" \
+    [expr {[v10_try "test -s $MP/usr/bin/adb && echo AW\$OK" "AW-ok" 300] != 0}]
+v10_run "echo INV; ls $MP/bin | wc -l; ls $MP/usr/bin | wc -l; echo INVEND" "INVEND" 600
+
+v10_sh "cd /; sync" 300
+v10_sh "/etc/umount -a" 900
+v10_sh "sync" 300
+report
+v10_halt

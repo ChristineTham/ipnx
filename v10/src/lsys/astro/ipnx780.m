@@ -57,6 +57,38 @@
 #				dz11 is what we can drive.
 #	dz11 0 vec 0300		SIMH's DZ vector base (C0), not alice's 0320.
 #
+# WHAT K17 ADDED, AND WHY EACH IS A CAPABILITY RATHER THAN A NODE.  The K16
+# audit asked whether this machine is a functional superset of the V8 golden
+# and answered no in 382 device names.  Four of those groups were a config
+# line each, because V10 ships the driver and mkconf's own catalogue
+# (lsys/lib/devs) already knows it:
+#
+#	pt 64		STREAM PIPES, and V8's /dev/pt is NOT pseudo-ttys --
+#			major 18 in V8's own cdevsw is `sp' with &spinfo.
+#			V10 has lsys/io/spipe.c exporting spcdev, and
+#			lsys/lib/devs line 64 is `pt sp count'.  All that was
+#			missing is `cdev 18 pt' in tab, which V10 left
+#			commented `# remove?' -- see v10/src/lsys/lib/tab.
+#			64 nodes.
+#	mba 0 + hp	THE MASSBUS RP DISKS.  bdev 0 / cdev 4 in V10's own
+#			tab, driver lsys/io/hp.c in V10's own tree, and
+#			`hp hp mb ...' in lsys/lib/devs -- so the tape can
+#			configure it and no config on the tape does.  SIMH's
+#			vax780 puts RP on MBA0 at nexus 8 (vax780_defs.h:
+#			TR_MBA0 8), which is alice.m's own number.  This is
+#			what lets V10 read an RP07 -- the V8 golden's own
+#			disk -- so it is the one addition with a use beyond
+#			closing a name.  32 nodes.
+#	mba 1 + tm03	THE TAPE.  seki.m's own three lines (`mba', `tm03 0
+#	+ te16 0	mb', `te16 0 ctl 0 unit 0'), and SIMH's MBA1 carries
+#			exactly a TM03 (nexus 9 = TR_MBA1).  H_NOREWIND is 04
+#			in V8's mt.c, V10's te16.c and V10's tu78.c alike, so
+#			V8's own minors transfer untranslated.  12 nodes.
+#	dn11 0		THE AUTODIALER, configured-but-absent on the same
+#			argument kmc11b already is: autoconfig probes 0775200,
+#			finds nothing, carries on.  research.m's own line.
+#			1 node.
+#
 # netafs AND netbfs ARE NON-ZERO, AND THAT IS THE POINT OF THE 780.
 # alice and seki both configure `netafs 0' and `netbfs 0' -- the network
 # filesystem types compiled in with ZERO instances -- which is half of why
@@ -74,6 +106,21 @@ ms780 0	bus 0	tr 1
 ms780 1	bus 0	tr 2
 
 dw780 0	bus 0	tr 3	voff 0x200
+
+#
+# THE MASSBUS.  SIMH's vax780 has two adapters -- vax780_defs.h names them
+# TR_MBA0 8 and TR_MBA1 9, which are alice.m's own nexus numbers -- carrying
+# pdp11_rp.c (the RP disks) and pdp11_tu.c (a TM03/TE16 tape).  Both objects
+# are in libsimh's CMakeLists, so this works in the app and not only on the
+# desktop build.
+#
+mba 0	bus 0	tr 8
+hp 0	mb 0	drive 0
+hp 1	mb 0	drive 1
+
+mba 1	bus 0	tr 9
+tm03 0	mb 1	drive 0
+te16 0	ctl 0	unit 0
 
 #
 # The UDA50 at SIMH's standard address: unit 0 is the system disk, unit 1 the
@@ -96,12 +143,38 @@ ni1010a 0 ub 0	reg 0764000	vec 0350
 # on.  alice.m's own line, restored verbatim.
 kmc11b 0 ub 0	reg 0760200	vec 0600
 
+# The DN11 autodialer, on the same argument -- research.m's own line.
+dn11 0	ub 0	reg 0775200	vec 0430
+
+# AND THE DR-11C, WHICH IS NOT A DEVICE WE WANT BUT ONE THE OTHERS NEED.
+# `lsys/io/drbit.c' says so in its own header: "The routines in this driver are
+# not called through the normal device interface.  Instead, they are available
+# for other device drivers to use to send arbitrary information out on a
+# DR-11C."  So configuring hp, te16 or dn pulls drbit.y into the link, and it
+# then wants _drcnt, _drreg and _draddr -- which mkconf emits only for a
+# CONFIGURED device.  The link's own words:
+#
+#	Undefined:
+#	_drcnt
+#	_drreg
+#	_draddr
+#
+# Exactly the kmc11b case above, one device along, and the same answer:
+# configured-but-absent, so autoconfig probes 0767570, finds nothing, and
+# carries on.  research.m's and ssor.m's own line, verbatim.  `devs' gives it
+# no vector (`drbit dr ub vec 0 data caddr_t drreg'), so neither does this.
+drbit 0	ub 0	reg 0767570
+
 kdi	1
 drum	0
 console	0
 starcons 0
 mem	0
 stdio	0
+
+# STREAM PIPES.  V8's /dev/pt/pt00..pt63 are these, not pseudo-ttys, so 64
+# is V8's own number.  spopen() rejects a minor above spcnt.
+pt	64
 
 ttyld	128
 nttyld	32

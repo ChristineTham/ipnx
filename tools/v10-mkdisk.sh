@@ -23,7 +23,6 @@ done
 GOLD="${1:-ipnx-v10-ra81.img.stage1.k102.k7.k13}"
 BLANK="$ROOT/work/v10gold/ipnx-v10-made.img"
 TPORT="${TPORT:-9290}"; OPORT="${OPORT:-9291}"; MPORT="${MPORT:-9292}"
-DPORT="${DPORT:-9293}"
 
 # THE LAYOUT, IN THE UNITS ra_sizes[] ACTUALLY USES, CONVERTED ONCE HERE.
 #
@@ -97,39 +96,28 @@ dd if=/dev/zero of="$BLANK" bs=512 count=891072 2>/dev/null
 #
 # It comes off the V8 golden because that is where the BUILT files are: V8
 # carries /usr/jerq (365 files in carry.txt, 1,248 more in fromgold.txt --
-# 1,613, which is what v8extract reads) and has never compiled it.
-DIST="$ROOT/work/v8dist"
-if [[ ! -s "$DIST/jerq/bin/3cc" || ! -s "$DIST/blit/.v8extract" ]]; then
-    echo "== extracting the 5620 + Blit distribution from the V8 golden =="
-    rm -rf "$DIST"
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /jerq "$DIST/jerq" || exit 1
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /blit "$DIST/blit" || exit 1
-    # /usr/net is vismon's and face's data -- `friends', `people', the face
-    # database -- and both of those programs are in the 5620 distribution just
-    # installed, so it travels with them.  /usr/dict is the spelling word list,
-    # which V10's tape does not carry in any form (searched for words, hlist*
-    # and hstop across all 25,682 files) and which is pure data: no edition owns
-    # a dictionary.
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /net  "$DIST/net"  || exit 1
-    python3 "$ROOT/tools/v8extract.py" "$ROOT/work/myv8/rp07new:f" /dict "$DIST/dict" || exit 1
-fi
-# `3cc' IS THE CHECK, and its SIZE is the check within the check: on
-# case-insensitive APFS `3CC' overwrites `3cc' and leaves a 2,322-byte shell
-# script wearing the compiler's name.  v8extract escapes the collision now, but
-# a stale tree from before it did would pass a mere `test -s'.
-sz=$(stat -f%z "$DIST/jerq/bin/3cc" 2>/dev/null || echo 0)
-[[ "$sz" == "14336" ]] || {
-    echo "v10-mkdisk: $DIST/jerq/bin/3cc is $sz bytes, expected 14336 --"
-    echo "v10-mkdisk: a case-collided extraction.  rm -rf $DIST and re-run."
-    exit 1
-}
+# THE GENERATED LISTS ARE CHECKED BEFORE THE BOOT, not after, because the whole
+# point of `--check' is that it costs nothing and a stale list costs half an
+# world would silently carry V8's copy of something we now build.
+# what the build ACTUALLY produced -- measured off this very image's staged root
+# at /usr/w10 -- so checking it without naming the image compares against the
+# weaker row-derived list and reports a current file as stale.  The variable is
+# exported rather than passed, because the generator reads it from the
+# environment and a `--check' that differs from the `--write' beside it is worse
+# than no check at all.
+export V10_BUILDER="$ROOT/work/v10gold/$GOLD"
+for g in v10-world.py v10-tapebins.py v10-where.py v10-proto.py; do
+    python3 "$ROOT/tools/$g" --check >/dev/null 2>&1 \
+        || { echo "v10-mkdisk: tools/$g reports its output stale"
+             echo "   re-run that generator and try again."
+             exit 1; }
+done
 
 PIDS=()
 serve() { "$NETFSD" -p "$1" -v "$2" > "$ROOT/work/netfs-$3.log" 2>&1 & PIDS+=($!); }
 serve "$TPORT" "$ROOT/work/v10"      mktree
 serve "$OPORT" "$ROOT/v10/src"       mkours
 serve "$MPORT" "$ROOT/v10/mk/gen"    mkmk
-serve "$DPORT" "$DIST"               mkdist
 sleep 1
 for pid in "${PIDS[@]}"; do
     kill -0 "$pid" 2>/dev/null || { echo "netfsd died"; tail -5 "$ROOT"/work/netfs-mk*.log; exit 1; }
@@ -186,10 +174,26 @@ def cost(size):
 
 root, usr = m.Fs(img, "a"), m.Fs(img, "c")
 
-# The builder's own root, minus what K14 does not copy.  Device nodes occupy no
-# data blocks, which is why /dev is nearly free.
+# The builder's own root -- AND ONLY THE DIRECTORIES THE COPY ACTUALLY TAKES.
+# Device nodes occupy no data blocks, which is why /dev is nearly free.
+#
+# THIS WALKED ALL OF `/' AND OVER-COUNTED BY 178 BLOCKS.  The copy is
+# `foreach d {bin etc lib dev}' plus /unix; the builder's root also holds /tmp,
+# which K13 fills with build scratch -- 39 files and 554 KB, including second
+# copies of fsck, login, nafsmnt and dipconfig -- and /n, which is mount points.
+# Neither is copied, and counting them made a disk that fits by 62 blocks report
+# `1396 of 1280 (109% full) <-- DOES NOT FIT' and refuse to build.
+#
+# The host's model has to be what the guest does.  That is the same rule
+# inc.extra exists for, and the same one that had this survey resolving
+# stdlib.h against a machine which did not have it -- here it ran in the SAFE
+# direction, which is the only reason it cost a run rather than a hang.
+COPIED_ROOT = ("/bin", "/etc", "/lib", "/dev")
 have, base = {}, 0
 for p, ino in root.walk("/"):
+    top = "/" + p.strip("/").split("/")[0]
+    if p != "/unix" and top not in COPIED_ROOT:
+        continue
     k = ino["mode"] & m.IFMT
     if k == m.IFREG:
         base += cost(ino["size"]); have[p] = ino["size"]
@@ -242,7 +246,7 @@ def hostcost(root_dir):
     for dirpath, dirnames, filenames in os.walk(root_dir):
         blocks += 1                                     # the directory itself
         for fn in filenames:
-            if fn in (".v8extract", "CASEMAP"):
+            if fn in ("CASEMAP",):
                 continue                                # not copied to the guest
             try:
                 blocks += cost(os.path.getsize(os.path.join(dirpath, fn)))
@@ -252,12 +256,26 @@ def hostcost(root_dir):
     return blocks, files
 
 netadd = netfiles = 0
-for d in ("work/v8dist/jerq", "work/v8dist/blit", "work/v8dist/net",
-          "work/v8dist/dict", "work/v10/src/man", "work/v10/src/lsys",
+for d in ("work/v10dist/blit", "work/v10/src/man", "work/v10/src/lsys",
           "work/v10/include"):
     b, f = hostcost(d)
     netadd += b; netfiles += f
     print("   over netfs: %-24s %6d blocks, %5d files" % (d, b, f))
+
+# THE CARRY TREE LANDS IN BOTH FILESYSTEMS, so counting it all as /usr would
+# under-estimate ROOT -- and a fit check that over-estimates refuses a run that
+# would have worked, while one that under-estimates hangs the guest in alloc()'s
+# sleep with `file system full' every few seconds and no way to fail.  It is
+# laid out with absolute paths, so the first component says which side it is on.
+for top in ("bin", "etc", "lib"):
+    b, f = hostcost(os.path.join("work/v10dist/root", top))
+    radd += b; netfiles += f
+    print("   over netfs: %-24s %6d blocks, %5d files (root)"
+          % ("v10dist/root/" + top, b, f))
+b, f = hostcost("work/v10dist/root/usr")
+netadd += b; netfiles += f
+print("   over netfs: %-24s %6d blocks, %5d files (usr)"
+      % ("v10dist/root/usr", b, f))
 LOSTFOUND = 1                              # one block of preallocated slots
 
 OVER = 2                                   # block 0 and the superblock
@@ -286,7 +304,7 @@ dd if="$ROOT/work/v10/src/lsys/boot/bb/4kb" of="$BLANK" \
 
 echo "== V10 builds a disk on $(basename "$BLANK") =="
 expect "$ROOT/tools/v10-mkdisk.exp" "$IMG" "$BLANK" "$TPORT" "$OPORT" "$MPORT" \
-    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" "$DPORT" 2>&1 | tee "$LOG"
+    "$ROOTBLKS" "$ROOTPART" "$USRBLKS" "$USRPART" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # THE HOST READS WHAT THE GUEST WROTE, because a full V10 filesystem SLEEPS rather

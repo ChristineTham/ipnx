@@ -16,6 +16,7 @@ dag yacc parsedag.y y.tab.o -d
 dict lex oedread.l lex.yy.o 
 diction lex rewrite.l lex.yy.o 
 docgen lex otrans.l lex.yy.o 
+doctor lex doctor.l lex.yy.o 
 efl lex lex.l lex.yy.o 
 egrep yacc gram.y y.tab.o -d
 eqn yacc eqn.y y.tab.o -d

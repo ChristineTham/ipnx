@@ -128,25 +128,103 @@ do
 		echo "$N $name"
 		continue
 	fi
+	cd $OBJ
 	SD=$UD/$dir
 	ok=y
-	rm -f u.log
-	# EVERY GENERATED FILE GOES, AT THE TOP OF EVERY UNIT.  y.tab.h is
-	# written into $OBJ and $OBJ is not emptied between units, so one unit's
-	# grammar header would sit there satisfying the NEXT unit's
-	# `#include "y.tab.h"' with another program's token numbers -- compiling
-	# cleanly, and wrong.  That is the flattering direction again: it would
-	# have raised the count.  Cleaning here rather than after the unit means
-	# it also holds on the paths that `continue'.
-	rm -f y.tab.c y.tab.h prevy.tab.h x.tab.h lex.yy.c
 	# The four units that need more than the unit dir, common/ and vax/ --
 	# adb/comm, f77/alt, mk/export, nupas/attin.  Absent from world.incs is
 	# the usual case and adds nothing.
+	rm -f sub.lst
+	echo common >> sub.lst
+	echo vax >> sub.lst
 	XI=""
 	for x in `sed -e "/^$name /!d" -e "s/^$name //" $SRC/mk/world.incs`
 	do
 		XI="$XI -I$SD/$x"
+		echo $x >> sub.lst
 	done
+	# --------------------------------------------------- IN-TREE, K17 ------
+	# THE BUILD IS IN-TREE, which is what the tape's own mkfiles do
+	# (`INCL = $PDIR', relative) and what K15 needed for `mux': V10's cpp did
+	# not resolve a QUOTED include for an out-of-tree source there, with -I on
+	# the command line and netfsd's trace showing it never looked.
+	#
+	# IT IS *NOT* WHAT WAS WRONG WITH THIS SURVEY, AND THE RUN THAT TESTED
+	# THAT SAID SO.  Thirty-four units failed like this:
+	#
+	#	/n/v10/src/cmd/f77/data.c: 2: Can't find include file defs
+	#	/n/v10/src/cmd/neqn/diacrit.c: 3: Can't find include file e.def
+	#
+	# and the diagnosis was that cpp could not find them.  It was wrong.
+	# Building in-tree changed the message to `./data.c: 2: Can't find
+	# include file defs' and nothing else, because `defs' WAS NOT ON THE
+	# COURIER DISK: `sources()' collects .c, .h, .s and the generator
+	# suffixes, `world_cpio()' copies exactly that, and the tape also writes
+	# headers called `defs', `defines', `e.def', `manifest' and `trace.d'.
+	# A missing FILE, reported as a compiler defect.  scan() records
+	# unit-local includes by name now, whatever they are called, and
+	# world.cpio carries them -- forty more files.
+	#
+	# Two things kept this cheap.  The counter-evidence was already in this
+	# project's own kernel build (K7 compiles `streamio.c' out-of-tree with a
+	# quoted `"sys/param.h"' and it resolves, every run), so the rule could
+	# not simply be "quoted includes ignore -I".  And the comment that stood
+	# here said, in as many words, that if the units still failed the
+	# diagnosis was wrong and this text had to be corrected rather than the
+	# fix defended.  They still failed.  This is that correction.
+	#
+	# The in-tree build STAYS, on its own merits: it is what the tape's
+	# mkfiles do, it is what K15 measured as necessary, and it removes a
+	# whole class of question about where a header is looked for.
+	#
+	# So the unit is copied to local disk and compiled there.  `cp f1 ... fn
+	# d' is V10's own (cmd/cp/cp.c: `r |= copy(...)' in a loop), so a
+	# directory in the glob fails that one copy and the rest still land --
+	# which is why this needs neither `find' nor `cpio', neither of which is
+	# on every image this runs against.
+	#
+	# ONE LEVEL OF SUBDIRECTORY IS ENOUGH, and that is measured: 111 of
+	# world.units' source paths carry a `/' and the deepest carries exactly
+	# one.  V10's mkdir makes one level, so this would silently copy nothing
+	# for a deeper tree -- hence the count rather than an assumption.
+	for f in $srcs
+	do
+		case "$f" in
+		*/*)	echo $f | sed -e 's|/.*||' >> sub.lst ;;
+		esac
+	done
+	rm -rf u
+	mkdir u
+	cp $SD/* u > /dev/null 2>&1
+	for x in `cat sub.lst`
+	do
+		if test -d $SD/$x
+		then
+			mkdir u/$x > /dev/null 2>&1
+			cp $SD/$x/* u/$x > /dev/null 2>&1
+		fi
+	done
+	# OUR OVERLAY WINS, and now by directory rather than file by file.
+	# Reading only the tape made this survey report `mv' as failing on
+	# `ROOTINO undefined' -- the exact one-line defect v10/src/cmd/mv.c was
+	# written to patch -- and the same for fsck, login, cc and mkbitfs.  A
+	# measurement that ignores the corrections measures a tree nobody builds.
+	cp $SRC/ours/cmd/$dir/* u > /dev/null 2>&1
+	cd u
+	# THE TAPE SHIPS LEFTOVER OBJECTS, and the link below is `cc -o $name
+	# *.o'.  Bell Labs' 1989 .o files sitting beside the source would be
+	# linked into our binary -- silently, and in the flattering direction,
+	# since they would resolve symbols our compile failed to produce.  They
+	# are evidence (the `.o beside the source' witness in world.drop) and
+	# never input.
+	rm -f *.o
+	rm -f u.log
+	# EVERY GENERATED FILE GOES, AT THE TOP OF EVERY UNIT.  A fresh `u' makes
+	# this redundant for the survey's own output, and NOT for the tape's: a
+	# unit that ships a stale y.tab.h beside its grammar would satisfy
+	# `#include "y.tab.h"' with the tape's token numbers rather than the ones
+	# yacc just produced.  Compiling cleanly, and wrong.
+	rm -f y.tab.c y.tab.h prevy.tab.h x.tab.h lex.yy.c
 	# ------------------------------------------------- yacc and lex first ---
 	# STEP ONE OF THE BUILD, WHICH THIS SURVEY USED TO SKIP.  Nine units
 	# reported `missing:y.tab.h' -- a header yacc writes -- and two more
@@ -177,9 +255,9 @@ do
 		# have no -o.  A build that wrote beside the source would change
 		# the source disk's id and the next stage would refuse it.
 		case "$tool" in
-		yacc)	( $YACC $gflags $SD/$gf 2>&1 ; echo "GST=$?" ) \
+		yacc)	( $YACC $gflags ./$gf 2>&1 ; echo "GST=$?" ) \
 				| sed -e 20q > g1.log ;;
-		*)	( $LEX $gflags $SD/$gf 2>&1 ; echo "GST=$?" ) \
+		*)	( $LEX $gflags ./$gf 2>&1 ; echo "GST=$?" ) \
 				| sed -e 20q > g1.log ;;
 		esac
 		gst=`sed -e '/^GST=/!d' -e 's/GST=//' -e 1q g1.log`
@@ -263,11 +341,10 @@ do
 		# v10/src/cmd/mv.c was written to patch and PATCHES.md records --
 		# and the same for fsck, login, cc and mkbitfs.  A measurement
 		# that ignores the corrections measures a tree nobody builds.
-		S=$SD/$f
-		if test -f $SRC/ours/cmd/$dir/$f
-		then
-			S=$SRC/ours/cmd/$dir/$f
-		fi
+		# LOCAL, because we are in-tree now -- see the copy above.  The
+		# overlay was copied over the tape's, so there is no per-file
+		# choice left to make here and no way for the two to disagree.
+		S=./$f
 		# -I. IS $OBJ, WHERE THE GENERATED HEADER IS.  It cannot shadow a
 		# unit's own file: cpp searches the including file's directory
 		# first for "..." regardless of -I order, so the eight units that
@@ -325,8 +402,79 @@ do
 				$SRC/mk/world.link`
 			if test -z "$DD"
 			then
-				echo "$ND $name" >> $OBJ/res.log
-				echo "$ND $name"
+				# ------------------------ MULTI-MAIN, K17 ------
+				# A cmd/ DIRECTORY IS NOT NECESSARILY A COMMAND:
+				# 71 units carry more than one main().  world.link
+				# names them and builds none, because linking all
+				# the objects together fails on `multiply defined
+				# _main' and pairing each main with ALL the unit's
+				# objects would give cmd/awk a `maketab' carrying
+				# the whole of awk.
+				#
+				# world.prog is the tape's own answer, one row per
+				# program: which objects, which -l flags, and where
+				# it installs.  206 programs in 60 units, including
+				# the eight-piece PDP-11 cross-toolchain, awk,
+				# troff, ex, dc, at, unpack, encrypt/decrypt and
+				# the games with their own directories.
+				#
+				# THE TALLY IS THE FILE res.log AND NOT A VARIABLE.
+				# `while read ... done < p.lst' carries an input
+				# redirection, so 1970s sh FORKS for it and a
+				# variable set inside is assigned in a dead child.
+				# That is the fault that had v10-libs report 26 of
+				# 26 libraries built while 42 members had not
+				# compiled.  Appends to a file are immune either
+				# way and need no theory about which shell forks.
+				rm -f p.lst
+				sed -e '/^#/d' -e "/^[^ ][^ ]* $name /!d" \
+					$SRC/mk/world.prog > p.lst
+				if test ! -s p.lst
+				then
+					echo "$ND $name" >> $OBJ/res.log
+					echo "$ND $name"
+					rm -f *.o
+					continue
+				fi
+				while read prog punit pdir pdest plibs pobjs
+				do
+					if test -z "$pobjs" ; then continue ; fi
+					PL=`echo $plibs | sed -e 's/,/ /g' -e 's/^-$//'`
+					rm -f $prog
+					( $CCL -o $prog $pobjs $PL 2>&1
+					  echo "LST=$?" ) | sed -e 30q > l1.log
+					lst=`sed -e '/^LST=/!d' -e 's/LST=//' -e 1q l1.log`
+					# THREE TESTS, because V10's ld writes its
+					# output file even when symbols are
+					# undefined -- it reports them and clears
+					# the execute bits, so `test -s' passes on
+					# a binary that cannot run.
+					sed -e '/Undefined/!d' -e 1q l1.log > lu.log
+					if test "$lst" = 0 -a -s $prog -a ! -s lu.log
+					then
+						echo "$L $prog" >> $OBJ/res.log
+						echo "$L $prog"
+						if test -d $DEST$pdest
+						then
+							if cp $prog $DEST$pdest/$prog
+							then
+								echo "$I $prog" >> $OBJ/res.log
+								echo "$I $prog"
+							else
+								echo "$IN $prog $DEST$pdest" >> $OBJ/res.log
+								echo "$IN $prog $DEST$pdest"
+							fi
+						else
+							echo "$IN $prog $DEST$pdest" >> $OBJ/res.log
+							echo "$IN $prog $DEST$pdest"
+						fi
+					else
+						echo "$LN $prog" >> $OBJ/res.log
+						echo "$LN $prog"
+						sed -e 3q l1.log
+					fi
+					rm -f $prog l1.log lu.log
+				done < p.lst
 				rm -f *.o
 				continue
 			fi

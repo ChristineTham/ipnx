@@ -115,10 +115,19 @@ python3 tools/v10fs.py prov  work/v10gold/ipnx-v10-ra81.img:a   # tape's vs ours
 ```
 
 ```bash
-# Regenerate the V10 build metadata (all three have --check; all are host-side)
+# Regenerate the V10 build metadata (all have --check; all are host-side)
 tools/v10-where.py        # install paths, from V10's manual + V8's measurements
 tools/v10-overlay.py      # v10/src/ -- our corrections, derived from the tarball
+tools/v10-world.py --write  # world.{units,link,prog,script,alias,gen,drop}
+tools/v10-proto.py        # v10/mk/gen/proto-dev -- 466 device nodes
+tools/v10-fromv8.py       # what only the EIGHTH Edition has (766 files)
 v10/mk/mkdep.py           # v10/mk/gen/*.mk -- the makefiles V10 never had
+```
+
+```bash
+# Is the V10 golden a functional superset of the V8 one?  (host-side, ~2 s)
+python3 tools/v8v10-diff.py              # the summary, by NAME and by TREE
+python3 tools/v8v10-diff.py --commands   # just the command names still missing
 ```
 
 ```bash
@@ -464,6 +473,33 @@ Full spec: [docs/architecture.md](docs/architecture.md) · Phases:
     question for almost none of them. The exception is `/etc/login`, genuinely
     smaller in K10.3's build (text 22528 → 20480), which is the documented
     Share-scheduler removal.
+- **THE THREE RUNGS: V10's BUILD, THEN V10's TAPE, THEN V8's FILE** (K17,
+  2026-08-22, extending rung 10's decision one edition further). A shipped disk
+  carries *"what V10 built, and the tape's binaries only where we cannot build
+  the program"*, and the same question arises again where **neither** edition
+  has source. The answer is the same shape:
+
+	V10's build      world.{link,prog,script,alias} -- 94 of K16's 170 names
+	V10's tape       the 40 prebuilt commands we cannot build
+	V8's file        v10/mk/gen/fromv8.txt -- 766 files, where NEITHER has source
+
+  **A judgement that V8-specific artefacts should be LEFT OUT was proposed and
+  REJECTED** (Christine, 2026-08-22), and it was wrong on the facts as well:
+  it named V8's PDP-11 cross-toolchain as "another edition's build products"
+  when **V10 has its own `cmd/PDP11`** and `world.prog` builds seven of its
+  eight programs. "Functionally a superset" means every name, and the rungs are
+  how it is reached without pretending we built what we did not.
+  - **`fromv8.txt` is DERIVED, never listed by hand**: (what the V8 golden has)
+    minus (what the build produces) minus (what the V10 golden already has),
+    read off both images. A hand-written list goes stale the first time a unit
+    starts building.
+  - **The risk is confined to one column and is stated rather than hidden.**
+    615 of the 766 are data and 49 are scripts, neither of which can fail at
+    runtime. The 102 binaries are V8-built VAX a.out: 112 of 128 syscall slots
+    hold the same call at the same index in both editions, and the reverse
+    direction is proven 9/9 by `tools/v10-probe.sh` -- so a carried binary is a
+    **candidate, not a guarantee**. Slot 11 is the one that could bite (V7's
+    vestigial `exec` in V8, a 64-bit `lseek` in V10).
 - **V10 MUST STAY AUTHENTIC. This outranks convenience, tidiness and our own
   taste** (Christine, 2026-08-17). V10 is a restoration: the artefact is worth
   something because it is what Bell Labs left, not because it is what we would
@@ -890,6 +926,214 @@ at the old flat `v8/` is moved on first launch, never abandoned.
   byte stream and says so by leaving the flag clear. **The real fault was the other
   one** — `istread()` freeing a block whose tail the caller had not read yet, which
   the kernel itself reported as `neta: read -1 expected 48`.
+- **`/bin/ln` IS NOT ON THE V10 GOLDEN EITHER, and a shipped disk needs it to
+  BUILD.** Not to run: to assemble. `vi`, `view` and `edit` have to *be* `ex` --
+  V8's own inodes say so, `nlink` 4 on one binary -- and `2 3 4 5 6` have to be
+  one file with five names. The machine that makes the disk therefore needs
+  `ln`, and the golden answers `ln: not found` with the copy loop reporting
+  nothing, which is the shape of every other absent-tool failure here. Added to
+  `BOOTPATH` in `mkdep.py` beside `find chmod ls cpio grep wc`, so K13.1
+  installs it. **The standing rule still holds: on V10, assume a tool is absent
+  until `bootpath.order` or `prebuilt.txt` says otherwise** — and check the
+  IMAGE THE HARNESS ACTUALLY BOOTS, not a later one in the chain. `/bin/ln` is
+  on `ipnx-v10-made.img` and absent from `…stage1.k102.k7.k13`, which is the
+  builder; testing the wrong one said "present".
+- **`v10-mkdisk` COPIES THE BUILDER'S `/dev`, so the generated table has to be
+  applied ON TOP.** `proto-dev` is consumed by `tools/v10-golden.exp`, which
+  makes the *original* golden's `/dev` — nothing was applying it to the disk
+  K14/K16 assemble, so the shipped `/dev` was whatever the build machine
+  happened to have (80 nodes against the V8 golden's 426). `mknod` **does not
+  replace** an existing node — it prints `File exists` and leaves the old one --
+  which is exactly right for an additive pass, and is also why a bad node
+  outlives its fix. Assert with `test -b`/`test -c`, never `ls`: on V10 `ls`
+  exits 0 for a file that is not there.
+- **`pgrep -f <pattern>` MATCHES THE WAITER'S OWN COMMAND LINE, so a
+  wait-for-the-run loop waits for itself, for ever.**
+
+	until ! pgrep -f 'tools/v10-srcdisk.sh' >/dev/null; do sleep 30; done
+
+  contains the string `tools/v10-srcdisk.sh`, so `pgrep -f` finds the shell
+  running the loop and the condition is never false. Two such loops wait for
+  each other and neither ever fires; the run they were guarding simply never
+  starts, and it looks exactly like a slow build. Nothing was damaged -- the
+  loops are inert `sleep`s and no guest was running -- but the chained
+  `wait; then run the next phase' idiom silently did nothing for twenty minutes.
+  **`pgrep -f vax780` IS NOT THE FIX EITHER** -- a waiter that mentions `vax780`
+  self-matches exactly the same way, and a bare count then reads 2 with one
+  simulator running, which is the most alarming possible false positive here.
+  Two forms are safe: break the literal with a bracket
+  (`pgrep -f '[v]10-srcdisk.sh'`), or match the process NAME rather than the
+  command line -- **`pgrep -x vax780`**, which is the form `tools/app-check.sh`
+  already uses for `pgrep -x ipnx`. When a count looks wrong, print
+  `ps -o pid,ppid,command` before believing it.
+- **A COMPONENT LIST THAT APPEARS TWICE WILL DISAGREE — AND AN ASSERTION THAT
+  COMPARES A LIST WITH ITSELF CANNOT NOTICE.** The rule was already here, from
+  `tc.order`; K17 met it again and the *check* is the new part.
+  `tools/v10-netboot.exp` carried
+
+	set DISKTOOLS {find chmod ls cpio grep wc}
+
+  beside `mkdep.py`'s `BOOTPATH`, and its assertion was *"every disk tool has a
+  row in bootpath.order"* implemented as `llength $toolrows == llength
+  $DISKTOOLS` — the list matched against itself. Adding `ln` to `BOOTPATH` left
+  the harness building six tools and reporting **33/33**, and only a host-side
+  `stat` of the finished image found `/bin/ln` absent. `mkdep.py` emits
+  `disktools.ord` now and the harness reads it. *An assertion whose two sides
+  come from the same statement is not an assertion.*
+- **CHECK THE IMAGE THE HARNESS ACTUALLY BOOTS.** `/bin/ln` reads as present on
+  `ipnx-v10-made.img` and is absent from `…stage1.k102.k7.k13`, which is the
+  builder — so a `stat` against the wrong link in the chain said "present" about
+  a machine that did not have it. Same family as the `"$IMG:c"` zsh trap: the
+  tool told the truth about the thing it was pointed at.
+- **CONFIGURING ONE DEVICE CAN PULL IN A HELPER DRIVER YOU DID NOT ASK FOR, and
+  it fails at LINK time with three symbols and no device name.** Adding `hp`,
+  `te16` and `dn11` to `ipnx780.m` produced
+
+	Undefined:
+	_drcnt
+	_drreg
+	_draddr
+
+  which names no device at all. It is the **DR-11C**, and `lsys/io/drbit.c`
+  explains itself in its own header: *"The routines in this driver are not
+  called through the normal device interface. Instead, they are available for
+  other device drivers to use to send arbitrary information out on a DR-11C."*
+  So one of the three calls `drsetbit()`, `drbit.y` joins the link, and mkconf
+  emits `drcnt`/`draddr[]`/`drreg[]` only for a **configured** device. Fixed the
+  way `ipnx780.m` already fixes `kmc11b`: configured-but-absent, with
+  `research.m`'s own line. **`devs` is what says it takes no vector**
+  (`drbit dr ub vec 0 data caddr_t drreg`) -- read the catalogue, do not guess
+  the syntax.
+  - **`ar t` OVER THE ARCHIVES IS NOT ENOUGH; `__.SYMDEF` IS THE ANSWER.**
+    `tm03` is in no archive and `te16.c` calls `tm03init()`, which reads as the
+    next `spipe` -- and it is not: parsing `io.a`'s ranlib table shows
+    `_tm03init` **defined in `te16.y` itself**. A missing member name is a
+    question about symbols, and the archive answers it directly. One 20-line
+    dump saved a 22-minute rebuild.
+- **A DRIVER'S SOURCE BEING ON THE TAPE IS NOT ITS OBJECT BEING IN THE TAPE'S
+  ARCHIVE, and K6/K7 link archives.** `cdev 18 pt` needs `spcdev` from
+  `lsys/io/spipe.c`; the source is there, `devs` knows how to configure it, and
+  `ar t` over all eight of `lsys/lib/*.a` finds **hp.y, te16.y, tu78.y, dn.y,
+  kdi.y, fd.x** and `mba.y` in `bvax.a` — and **no spipe**. So the driver cannot
+  be configured however good its source is:
+
+	Undefined:
+	_spcdev
+
+  and then **`ld` wrote the kernel anyway** — 310,300 bytes against the previous
+  230,371, clearing the execute bits — so the run reported 21/22 and exit 0 over
+  a kernel that cannot boot. Third time this project has been bitten by V10's
+  `ld` writing its output with symbols undefined; the other two were stage 3's
+  `Undefined: _atof` and a diagnostic that "re-ran" a failed link and printed
+  success.
+  - **The fix is `KERNEL_ADD` in `v10/mk/mkdep.py`**, and `kobj.order` gained a
+    fourth column — `ours` for a patched copy under `v10/src`, `tape` for a
+    driver no archive contains. Those two read from **different roots**, and a
+    harness that assumed one would compile a file that is not there.
+  - **It cannot be an overlay entry**, and that is a rule about what `v10/src`
+    means rather than a preference: every file there is *"derived from a named
+    upstream file with a stated sha256 and one stated substitution"*, and there
+    is no substitution to state. A verbatim copy would be a lie about the tree.
+  - **`mkdep.py` raises rather than skipping** when a `KERNEL_ADD` object turns
+    out to be in an archive after all — a guard that quietly declines to fire is
+    indistinguishable from one with nothing to do.
+- **V10's cpp CANNOT RESOLVE A QUOTED INCLUDE FOR AN OUT-OF-TREE SOURCE, AND
+  `-I` DOES NOT HELP. THE BUILD MUST BE IN-TREE.** K15 met this building `mux`;
+  the world survey met it **thirty-four times** and every one was written up as
+  a fact about the tape:
+
+	/n/v10/src/cmd/f77/data.c: 2: Can't find include file defs
+	/n/v10/src/cmd/neqn/diacrit.c: 3: Can't find include file e.def
+
+  `defs` and `e.def` are **in** `cmd/f77` and `cmd/neqn`, and `-I$SD` was on the
+  command line for both. netfsd's trace settles what happens rather than why:
+  cpp **never looks** -- the name appears once in the whole trace and that once
+  is `make` stat'ing a prerequisite -- while an *angle-bracket* include in the
+  same run is searched for three times. The tape never meets it because every
+  mkfile compiles in the source directory (`INCL = $PDIR`, relative).
+  - **The fix is a local copy, and it needs no `find` and no `cpio`.**
+    `cp f1 ... fn d` is V10's own (`cmd/cp/cp.c`: `r |= copy(...)` in a loop),
+    so a directory in the glob fails that one copy and the rest still land --
+    which matters because neither tool is on every image a harness runs against.
+  - **One level of subdirectory is enough, and that is MEASURED**: 111 of
+    `world.units`' source paths carry a `/` and the deepest carries exactly one.
+    V10's `mkdir` makes one level, so a deeper tree would silently copy nothing.
+  - **Remove `*.o` after the copy.** The tape ships leftover 1989 objects beside
+    the source and the link is `cc -o $name *.o`; Bell Labs' objects would be
+    linked into our binary silently, and in the flattering direction, since they
+    resolve symbols our compile failed to produce.
+- **V8's `/dev/pt/*` IS NOT PSEUDO-TTYS -- major 18 is `sp`, STREAM PIPES, and
+  V10 ships the driver.** Sixty-four device names read for months as V8 hardware
+  V10 lacks. V8's own `cdevsw` says otherwise: slot 18 is `nodev ... &spinfo`,
+  and `spinfo` is `v8/usr/sys/dev/spipe.c`. V10 has the same driver as
+  `lsys/io/spipe.c` exporting `spcdev`, and **mkconf's own catalogue already
+  knows how to configure it** -- `lsys/lib/devs` line 64:
+
+	pt	sp	count	data struct queue *spipes; inc sys/stream.h;
+
+  The only thing missing was the table entry, and `lsys/lib/tab` carries it
+  **commented out, with a question**: `# cdev 18 pt   # remove?`. One comment
+  character. Overlay in `v10/src/lsys/lib/tab`, `pt 64` in `ipnx780.m`, and K7
+  reads our tab (`mkconf -t $TB`) and asserts the enabled line **by content**,
+  because a stale overlay is what an existence test would miss.
+- **THE COMMANDS ARE NOT ALL UNDER `cmd/`, and surveying only `cmd/` reported
+  that as a fact about the tape.** Fifty-one of K16's 170 missing names are in
+  four other roots -- the same shape as *"the 5620's compiler is not on the
+  tape"*, which was a fact about one tree stated about the project:
+
+	games     ~20 loose .c plus atc/ mille/ rogue/ sail/ trek/
+	lbin      Mail, csh, kermit, mailx -- the Berkeley userland V8 carries
+	dregs     xstr        local   restor variants      ipc/bin  rcp
+
+  **Nothing in the format had to change**: `world.units` names a directory
+  relative to `cmd/` and `worldc.sh` computes `SD=$UD/$dir` with
+  `UD=$SRC/src/cmd`, so a unit rooted at `src/games/atc` emits `../games/atc`
+  and the guest reaches it with no new field and no new code. Install paths come
+  from **V8's measured `where.txt`** -- the right oracle here, because V10's
+  manual does not document games at all and V8 says `/usr/games` for all twenty.
+- **A `cmd/` DIRECTORY'S PROGRAMS ARE IN ITS OWN MAKEFILE, AND THERE ARE THREE
+  WITNESSES.** 71 units carry more than one `main()`; `world.link` named them and
+  built none. `world.prog` builds 206 programs in 60 of them, and every row comes
+  from a rule the tape already has:
+
+	explicit   `cc -o pack pack.o' / `cc -o decrypt decrypt.o $(OBJS)'
+	implicit   `11cc:  11cc.c' -- one source, no recipe, make's built-in rule
+	a.out      THE DOMINANT IDIOM, which the first two miss entirely:
+
+	               a.out:  awk.g.o awk.lx.o $(OFILES) $(ALLOC) awk.h
+	               install:        a.out
+	                       cp a.out /usr/bin/awk
+
+  So the program's **name** comes from the cp destination and its **objects**
+  from the `a.out` target. That is what closes `awk`, `troff`, `ex`, `dc`, `cb`,
+  `at`, `csh`, `rogue`, `mille`, `unpack`, `encrypt`/`decrypt` and seven of the
+  eight PDP-11 cross-tools. Eleven units have no recognisable rule (`cmd/worm`'s
+  22 programs among them) and are **recorded as such rather than guessed at**:
+  pairing each `main` with all the unit's objects would give `cmd/awk` a
+  `maketab` carrying the whole of awk.
+  - **A unit can have TWO install rules and the scanner takes the first.**
+    `cmd/ex` has `ninstall` before `install`, so its cp says `/usr/new` --
+    Berkeley's "new commands" directory, on nobody's PATH -- while `where.txt`'s
+    v8 row says `/usr/bin`. The oracle order is where.txt (mk/man/v8) first,
+    then the unit's own cp, then V8's measurement, then `/usr/bin`.
+- **A COMMAND CAN BE A SECOND NAME FOR A BINARY, and `nlink > 1` on the V8 image
+  is the measurement that says so.** Read host-side with `tools/v8fs.py`, this
+  settled a cluster that had been counted as separate missing commands:
+
+	edit = ex = vi = view      ONE inode, four names
+	2 = 3 = 4 = 5 = 6          one file, five names
+	more = p = pg              one binary -- and V10 HAS cmd/p
+	uncompress = zcat          one binary
+	rogue = rogue52            one binary
+
+  So V10 building `ex` closes **four** names, not one. A hard link is the
+  filesystem stating the fact. The tape's own `ln /usr/bin/= /usr/bin/==` lines
+  are read first, because V10 stating its own aliases outranks anything
+  inferred. Three refusals, each of which produced a wrong row first: an alias
+  equal to its own target (from a macro); an alias for a name something already
+  **builds** (`decrypt`, which `world.prog` links from its own objects); and a
+  destination outside the command directories, which is how twelve man pages
+  arrived in a list of commands.
 - **`v10/src/` IS NOT WHOLLY GENERATED, so nothing may prune it.**
   `tools/v10-overlay.py` produces patched copies of tape files, but the directory
   also holds hand-maintained **additions** the generator knows nothing about:
@@ -2527,6 +2771,75 @@ tools/release-mac.sh
 - The signature names **Hello Tham Pty. Ltd.** (a Developer ID needs an enrolled
   team) while the project is personal and non-commercial, per the 2017 covenant.
   That difference is explained on the download page, not hidden.
+
+## K17 — EVERY GAP CLOSED, AND HOW EACH WAS REACHED
+
+**K16's audit left three numbers; K17 closes all three.** The audit asked
+whether the V10 golden is a functional superset of the V8 one and answered no
+in 170 command names, 41 library names and 382 device nodes.
+
+	                 V8      V10    V8-only
+	commands        394      526        0
+	libraries        96      106        0
+	device nodes    426      463        1     <- kmemr, and only kmemr
+
+	inventories   V8 4,883 entries    V10 6,797
+
+**AND IT IS A SUPERSET PATH BY PATH TOO, WITH ONE EXCEPTION.** By-name is the
+weaker question; the raw path diff is the stronger one and it now answers
+
+	457 V8 paths absent -- of which
+	  430   V10 has its OWN, LARGER tree there (/usr/sys 202->785,
+	        /usr/man 552->1551, /usr/include 232->357)
+	   17   the same NAME in a different directory -- V10's own install
+	        paths, e.g. `at' in /bin and `crypt' in /usr/games
+	    9   directories
+	    1   GENUINELY ABSENT: /dev/kmemr
+
+  Getting from 27 genuinely-absent files to 1 took three fixes, and all three
+  were **ours rather than the tape's**: `/usr/bin/WWB` was missing from
+  `BINDIRS` in `v10-world.py` *and* from `DIRS` in `v10-fromv8.py` (the same
+  omission in two lists that agreed with each other and were both wrong), and
+  V10's root had no `/.profile`, so its four-word `/etc/profile` could not reach
+  the `/usr/games` and `/usr/jerq/bin` this disk now carries.
+
+and every tree reads `ok` rather than `thin`, `partial` or `ABSENT`. Measured
+after `bash tools/v10-mkdisk.sh ipnx-v10-ra81.img.stage1.k102.k7.k13.k103`
+(**46/46**, exit 0, both boots halted cleanly), with `tools/v10-link.sh`
+compiling **303 units of 427** and installing **277 programs**.
+
+**`kmemr` is the one V8 device name V10 cannot have**, and V10 says so itself:
+`mem` minor 4, which V8 calls *"public part of kernel memory (read only)"* and
+V10's `mem.c` calls **"obsolete"** with the `case` deleted. A node would open
+and read nothing.
+
+**ROOT IS 95% FULL AND THAT IS NOW A CONSTRAINT, not a note.** 60 blocks of
+5.0 MB left. Bell Labs sized partition `a` to 10,240 sectors and it now carries
+303 units' worth of commands, 45 carried files and a 242,561-byte kernel. There
+is no room for a fourth thing without moving the geometry, which `alice.m` and
+`seki.m` both argue against. `/usr` has 53.6 MB free.
+
+**THE SPLIT BETWEEN "BUILT" AND "CARRIED" IS MEASURED, NOT PLANNED.**
+`v10/mk/gen/fromv8.txt` is derived from the STAGED ROOT the build actually
+produced -- `V10_BUILDER=<image> tools/v10-fromv8.py` reads `/usr/w10` off that
+image -- so a unit that fails to link is picked up from the Eighth Edition
+instead of being lost from both sides. Excluding on the strength of a
+`world.link` ROW instead would have lost `compress`, and `uncompress` and `zcat`
+with it, since both are aliases pointing at it.
+
+Read the whole account in [docs/v10-log/2026-08-22.md](docs/v10-log/2026-08-22.md)
+§10. The four levers, in order of what each was worth, are all recorded as
+gotchas above: **the build is in-tree** (34 units), **the commands are not all
+under `cmd/`** (69 more units, from `games lbin dregs local ipc/bin`), **206
+programs in 60 multi-main units** read out of the tape's own link rules, and
+**an alias is a second name for a binary** — V8's `nlink > 1` says `edit = ex =
+vi = view` is one inode, so building `ex` closes four names.
+
+Check it with one command, host-side, in about two seconds:
+
+```bash
+python3 tools/v8v10-diff.py --all
+```
 
 ## Status / next step
 
