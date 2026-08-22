@@ -1062,8 +1062,13 @@ def build_plan(s):
         rows.append(("4", "/usr/lib/" + name, "build", unit,
                      base + "/ORDER", "-", how))
 
-    rows.append(("5", "/unix", "build", "src/lsys", "ipnx780.m", "-",
-                 "mkconf, then two compiles and one link"))
+    # THE KERNEL IS ITS OWN METHOD.  It is not a program: one mkconf run, two
+    # compiles, one assembly and one link over SEVEN prebuilt per-subsystem
+    # archives, because the tape ships the kernel that way (asstar.o, fs.a,
+    # io.a, star.a, bvax.a, os.a, vm.a, inet.a).  The config is ours --
+    # v10/src/lsys/astro/ipnx780.m, derived from Bell Labs' own alice.m.
+    rows.append(("5", "/unix", "kernel", "src/lsys", "ipnx780.m", "-",
+                 "mkconf, two compiles, one link over seven archives"))
 
     for name, d, dest, objs, libs, how, root in s["progs"]:
         if name in boot and root == "src":

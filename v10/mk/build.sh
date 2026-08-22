@@ -46,7 +46,14 @@ BP=$8
 ONLY=$9
 
 PLAN=$PLANDIR/v10-plan.md
-CC="$CCP -B$BP"
+# -t02p IS WHAT MAKES -B MEAN ANYTHING.  V10's cc has three -t letters -- 0
+# (ccom), 2 (c2) and p (cpp) -- and they select which passes come from the -B
+# directory; `a', `l' and `c' were added to V8's cc.c by this project, not to
+# V10's, so as, ld and crt0.o cannot be redirected at all.  Without -t02p the
+# -B prefix selects nothing and cc silently uses its compiled-in passes: the
+# kernel config compiled to a 36-byte stub, and every stage since 2 has been
+# using the BUILDER's compiler while claiming rule 3.
+CC="$CCP -B$BP -t02p"
 
 # Markers spelled through variables, so the tty's echo of the command carries
 # `$P' and not the token.  A literal in the QUESTION counts as an answer.
@@ -154,6 +161,175 @@ do
 		;;
 	tree)
 		echo "$N $path -- a whole tree, the driver copies it"
+		continue
+		;;
+	kernel)
+		# ONE mkconf, TWO COMPILES, ONE LINK.  The kernel is on the tape
+		# as prebuilt per-subsystem archives, so the only things built
+		# here are the conf.c mkconf generates and a version stamp.
+		# Every path is a variable because CANBSIZ is 256 and the mkconf
+		# line would not fit on one tty line.
+		# $src IS ALREADY src/lsys -- appending /lsys/lib asked for
+		# src/lsys/lsys/lib and mkconf was "not found" in a directory
+		# that does not exist.
+		LS=$TAPE/$src/lib
+		LQ=$TAPE/$src
+		CFG=$OURS/lsys/astro/$objs
+		TB=$OURS/lsys/lib/tab
+		M=`echo $objs | sed -e 's|\.m$||'`
+		if test ! -s $CFG
+		then	echo "$Q $path no config at $CFG" ; echo . >> no.cnt ; continue
+		fi
+		rm -rf w ; mkdir w ; cd w
+		echo "P: kernel $M from $CFG"
+		$LS/mkconf -t $TB -l $LS/low.star -d $LS/devs \
+			-s $M.s.s -c $M.c.c $LS/conf.star $CFG > mk.log 2>&1
+		if test ! -s $M.c.c
+		then
+			echo "$Q $path mkconf produced no conf.c"
+			sed -e 8q -e 's/^/P! /' mk.log
+			echo . >> ../no.cnt ; cd .. ; continue
+		fi
+		${BP}../bin/as -o $M.l.o $M.s.s > as.log 2>&1
+		# THE KERNEL'S OWN FLAGS.  conf.c is kernel source: it needs
+		# -DKERNEL and the kernel tree on the include path, or it dies
+		# on `unknown size' at a struct whose definition it cannot see.
+		KF="-DKERNEL -I$LQ -I/usr/include"
+		$CC $KF -c $M.c.c > cc.log 2>&1
+		# THE SAME EMPTY-OBJECT GUARD AS THE PROGRAM PATH, because the
+		# kernel is not exempt: ipnx780.c.o came out 36 bytes -- a bare
+		# a.out header -- and the failure surfaced at the LINK as
+		# `Undefined: _rpb, dumptime, dumpmagic', which reads as a
+		# missing low-level assembly and was a config that compiled to
+		# nothing.  A guard written once for one path is a guard the
+		# next path does without.
+		if test -s $M.c.o && test `wc -c < $M.c.o` -lt 64
+		then
+			echo "P! $M.c.o was `wc -c < $M.c.o` bytes; retrying -O"
+			rm -f $M.c.o
+			$CC -O $KF -c $M.c.c > cc.log 2>&1
+		fi
+		echo 'char version[] = "Unix 10e ipnx 780";' > vers.c
+		$CC -c vers.c > /dev/null 2>&1
+		# THE ARCHIVES ARE COPIED AND RE-ranlib'd, because cp bumps the
+		# mtime and V10's ld reads a table of contents older than its
+		# archive as no table at all -- one sequential pass, and every
+		# backward reference unresolved.
+		# THE KERNEL ARCHIVES ARE UNPACKED DIRECTORIES, so they are
+		# REBUILT from their members in the tape's own order -- `cp
+		# $LS/fs.a .' copies nothing and ld answers `fs.a: cannot open'.
+		# The members are already-compiled .x/.y objects; only the
+		# archive itself has to be made again.
+		for a in fs.a io.a star.a bvax.a os.a vm.a inet.a
+		do
+			if test -s $LS/$a/ORDER
+			then
+				rm -f $a
+				( cd $LS/$a
+				  ar cr $OBJ/w/$a `cat ORDER` ) > /dev/null 2>&1
+				ranlib $a > /dev/null 2>&1
+			else
+				cp $LS/$a . 2>/dev/null
+				ranlib $a > /dev/null 2>&1
+			fi
+			if test ! -s $a
+			then	echo "P! kernel archive $a is missing"
+			fi
+		done
+		cp $LS/asstar.o . 2>/dev/null
+		# A DRIVER'S SOURCE BEING ON THE TAPE IS NOT ITS OBJECT BEING IN
+		# THE TAPE'S ARCHIVE.  `cdev 18 pt' needs spcdev from
+		# lsys/io/spipe.c: the source is there, devs knows how to
+		# configure it, and `ar t' over all eight archives finds no
+		# spipe -- so the link answers `Undefined: _spcdev' and V10's ld
+		# WRITES THE KERNEL ANYWAY with the execute bits cleared.
+		#
+		# THE RECIPE IS THE TAPE'S, and its middle line is the one to get
+		# right.  lsys/inet/mkfile:
+		#	%.x: %.c
+		#		lcc $CFLAGS -S $stem.c
+		#		sed -f ../lib/asm.sed <$stem.s | as -o $stem.x
+		# asm.sed is not an lcc workaround, it is a PEEPHOLE INLINER --
+		# `calls $n,_spl6' becomes mfpr/mtpr, `calls $n,_bcopy' becomes
+		# movc3 -- so spl6(), bcopy() and copyin() are written as
+		# ordinary C calls and become inline VAX instructions after it.
+		# Omit it and ld says `Undefined: _spl6'.
+		for ka in io/spipe os/streamio
+		do
+			kb=`echo $ka | sed -e 's|.*/||'`
+			ks=$LQ/$ka.c
+			if test -s $OURS/lsys/$ka.c
+			then	ks=$OURS/lsys/$ka.c
+			fi
+			if test ! -s $ks ; then continue ; fi
+			rm -f $kb.s $kb.x
+			# -O, FOR THE SAME REASON AS EVERYWHERE ELSE: without it
+			# this compiler emits a stub, so the .s was empty, as
+			# assembled nothing, and the object "did not build" with
+			# an empty log.  Third time this session.
+			$CC -O $KF -S $ks > ka.log 2>&1
+			if test ! -s $kb.s
+			then	echo "P! $kb.s is empty after cc -S"
+			fi
+			sed -f $LS/asm.sed < $kb.s | ${BP}../bin/as -o $kb.x
+			if test -s $kb.x && test `wc -c < $kb.x` -ge 64
+			then
+				echo "P: kernel object $kb.x from $ks"
+				case $ka in
+				io/*)	ar r io.a $kb.x > /dev/null 2>&1
+					ranlib io.a > /dev/null 2>&1 ;;
+				os/*)	ar r os.a $kb.x > /dev/null 2>&1
+					ranlib os.a > /dev/null 2>&1 ;;
+				esac
+			else
+				echo "P! kernel object $kb.x did not build"
+				sed -e 4q -e 's/^/P! /' ka.log
+			fi
+		done
+		# vers.o is not exempt from the empty-object guard either.
+		if test -s vers.o && test `wc -c < vers.o` -lt 64
+		then	rm -f vers.o ; $CC -O -c vers.c > /dev/null 2>&1
+		fi
+		if test ! -s $M.c.o -o ! -s $M.l.o
+		then
+			echo "$Q $path conf did not compile"
+			sed -e 8q -e 's/^/P! /' cc.log
+			sed -e 4q -e 's/^/P! as /' as.log
+			echo . >> ../no.cnt ; cd .. ; continue
+		fi
+		# V10's ld WRITES ITS OUTPUT EVEN WITH SYMBOLS UNDEFINED and
+		# clears the execute bits, so a kernel file appearing is not
+		# evidence.  This project shipped a 310,300-byte kernel once
+		# that could not boot.
+		${BP}../bin/ld -n -X -o $M.u -T 80000000 -e start \
+			$M.l.o $M.c.o asstar.o fs.a io.a star.a bvax.a \
+			os.a vm.a inet.a vers.o > ld.log 2>&1
+		sed -e '/Undefined/!d' -e 1q ld.log > u.log
+		if test -s $M.u -a ! -s u.log
+		then
+			cp $M.u $DEST$path
+			echo "$P $M.u -> $path"
+			echo . >> ../ok.cnt
+		else
+			echo "$Q $path"
+			sed -e 8q -e 's/^/P! /' ld.log
+			# THE ASSEMBLY LOG TOO.  `Undefined: _rpb, dumptime,
+			# dumpmagic' are labels from the low-level .s that
+			# mkconf generates, so an undefined-symbol list at the
+			# LINK is really a report about the ASSEMBLE, and only
+			# its log says why.
+			sed -e 6q -e 's/^/P! as /' as.log
+			# THE COMPILER'S OWN WORDS.  A 36-byte object is what
+			# cpp writing nothing looks like -- the lcc -undef
+			# shape -- and only its log distinguishes that from a
+			# compiler that ran and emitted nothing useful.
+			sed -e 8q -e 's/^/P! cc /' cc.log
+			echo "P! cmd was: $CC $KF -c $M.c.c"
+			ls -l $M.l.o $M.c.o asstar.o 2>/dev/null |
+				sed -e 's/^/P! obj /'
+			echo . >> ../no.cnt
+		fi
+		cd ..
 		continue
 		;;
 	esac

@@ -161,7 +161,7 @@ Our ipnx780 config.  /unix before the bulk.
 
 | installed path | method | source | objects | libs | note |
 |---|---|---|---|---|---|
-| `/unix` | build | `src/lsys` | `ipnx780.m` | `-` | mkconf, then two compiles and one link |
+| `/unix` | kernel | `src/lsys` | `ipnx780.m` | `-` | mkconf, two compiles, one link over seven archives |
 
 ## Stage 6 — The commands
 
