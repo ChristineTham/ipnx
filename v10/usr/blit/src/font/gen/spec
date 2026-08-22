@@ -1,0 +1,204 @@
+a=$1
+b=311
+c=$1
+if test ! -d S.$c
+then
+	mkdir S.$c
+fi
+jx f <<EOF
+   f 0 s merg C001 p $a $b r w S.$c/ct
+   f 1 s merg C002 p $a $b r w S.$c/dd
+   f 2 s merg C003 p $a $b r w S.$c/aa
+   f 3 s merg C004 p $a $b r w S.$c/ga
+   f 4 s merg C005 p $a $b r w S.$c/^
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C012 p $a $b r w S.$c/tm
+   f 1 s merg C007 p $a $b r w S.$c/~
+   f 2 s merg C008 p $a $b r w S.$c/hc
+   f 3 s merg C009 p $a $b r w S.$c/cd
+   f 4 s merg C010 p $a $b r w S.$c/co
+   f 5 s merg C011 p $a $b r w S.$c/rg
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C018 p $a $b r w S.$c/bx
+   f 1 s merg C013 p $a $b r w S.$c/@
+   f 2 s merg C014 p $a $b r w S.$c/pp
+   f 3 s merg C015 p $a $b r w S.$c/fe
+   f 4 s merg C016 p $a $b r w S.$c/ma
+   f 5 s merg C017 p $a $b r w S.$c/bu
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C024 p $a $b r w S.$c/rh
+   f 1 s merg C019 p $a $b r w S.$c/ob
+   f 2 s merg C020 p $a $b r w S.$c/ci
+   f 3 s merg C021 p $a $b r w S.$c/sq
+   f 4 s merg C022 p $a $b r w S.$c/#
+   f 5 s merg C023 p $a $b r w S.$c/tp
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C030 p $a $b r w S.$c/*e
+   f 1 s merg C025 p $a $b r w S.$c/lh
+   f 2 s merg C026 p $a $b r w S.$c/*a
+   f 3 s merg C027 p $a $b r w S.$c/*b
+   f 4 s merg C028 p $a $b r w S.$c/*q
+   f 5 s merg C029 p $a $b r w S.$c/*d
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C036 p $a $b r w S.$c/*k
+   f 1 s merg C031 p $a $b r w S.$c/*f
+   f 2 s merg C032 p $a $b r w S.$c/*g
+   f 3 s merg C033 p $a $b r w S.$c/*y
+   f 4 s merg C034 p $a $b r w S.$c/*i
+   f 5 s merg C035 p $a $b r w S.$c/*c
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C042 p $a $b r w S.$c/*r
+   f 1 s merg C037 p $a $b r w S.$c/*l
+   f 2 s merg C038 p $a $b r w S.$c/*m
+   f 3 s merg C039 p $a $b r w S.$c/*n
+   f 4 s merg C040 p $a $b r w S.$c/*o
+   f 5 s merg C041 p $a $b r w S.$c/*p
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C048 p $a $b r w S.$c/*u
+   f 1 s merg C043 p $a $b r w S.$c/*s
+   f 2 s merg C044 p $a $b r w S.$c/*t
+   f 3 s merg C045 p $a $b r w S.$c/*h
+   f 4 s merg C046 p $a $b r w S.$c/*w
+   f 5 s merg C047 p $a $b r w S.$c/*x
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C054 p $a $b r w S.$c/*C
+   f 1 s merg C049 p $a $b r w S.$c/*z
+   f 2 s merg C050 p $a $b r w S.$c/*Q
+   f 3 s merg C051 p $a $b r w S.$c/*D
+   f 4 s merg C052 p $a $b r w S.$c/*F
+   f 5 s merg C053 p $a $b r w S.$c/*G
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C060 p $a $b r w S.$c/mu
+   f 1 s merg C055 p $a $b r w S.$c/*L
+   f 2 s merg C056 p $a $b r w S.$c/*H
+   f 3 s merg C057 p $a $b r w S.$c/*W
+   f 4 s merg C058 p $a $b r w S.$c/+
+   f 5 s merg C059 p $a $b r w S.$c/mi
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C066 p $a $b r w S.$c/al
+   f 1 s merg C061 p $a $b r w S.$c/=
+   f 2 s merg C062 p $a $b r w S.$c/di
+   f 3 s merg C063 p $a $b r w S.$c/+-
+   f 4 s merg C064 p $a $b r w S.$c/de
+   f 5 s merg C065 p $a $b r w S.$c/fm
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C072 p $a $b r w S.$c/pd
+   f 1 s merg C067 p $a $b r w S.$c/es
+   f 2 s merg C068 p $a $b r w S.$c/pt
+   f 3 s merg C069 p $a $b r w S.$c/if
+   f 4 s merg C070 p $a $b r w S.$c/ts
+   f 5 s merg C071 p $a $b r w S.$c/gr
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C078 p $a $b r w S.$c/sl
+   f 1 s merg C073 p $a $b r w S.$c/>
+   f 2 s merg C074 p $a $b r w S.$c/<
+   f 3 s merg C075 p $a $b r w S.$c/>=
+   f 4 s merg C076 p $a $b r w S.$c/<=
+   f 5 s merg C077 p $a $b r w S.$c/or
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C085 p $a $b r w S.$c/**
+   f 1 s merg C079 p $a $b r w S.$c/\\
+   f 2 s merg C080 p $a $b r w S.$c/ap
+   f 3 s merg C081 p $a $b r w S.$c/~=
+   f 4 s merg C082 p $a $b r w S.$c/~~
+   f 5 s merg C083 p $a $b r w S.$c/==
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C091 p $a $b r w S.$c/is
+   f 1 s merg C086 p $a $b r w S.$c/Sl
+   f 2 s merg C087 p $a $b r w S.$c/{
+   f 3 s merg C088 p $a $b r w S.$c/}
+   f 4 s merg C089 p $a $b r w S.$c/|
+   f 5 s merg C090 p $a $b r w S.$c/sr
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C097 p $a $b r w S.$c/cu
+   f 1 s merg C092 p $a $b r w S.$c/*S
+   f 2 s merg C093 p $a $b r w S.$c/*P
+   f 3 s merg C094 p $a $b r w S.$c/sb
+   f 4 s merg C095 p $a $b r w S.$c/sp
+   f 5 s merg C096 p $a $b r w S.$c/ca
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C103 p $a $b r w S.$c/l.
+   f 1 s merg C098 p $a $b r w S.$c/ib
+   f 2 s merg C099 p $a $b r w S.$c/ip
+   f 3 s merg C100 p $a $b r w S.$c/mo
+   f 4 s merg C101 p $a $b r w S.$c/br
+   f 5 s merg C102 p $a $b r w S.$c/ru
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C109 p $a $b r w S.$c/<-
+   f 1 s merg C104 p $a $b r w S.$c/L.
+   f 2 s merg C106 p $a $b r w S.$c/b0
+   f 3 s merg C105 p $a $b r w S.$c/bs
+   f 4 s merg C107 p $a $b r w S.$c/b9
+   f 5 s merg C108 p $a $b r w S.$c/->
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C115 p $a $b r w S.$c/lc
+   f 1 s merg C110 p $a $b r w S.$c/ua
+   f 2 s merg C111 p $a $b r w S.$c/da
+   f 3 s merg C112 p $a $b r w S.$c/!=
+   f 4 s merg C113 p $a $b r w S.$c/lf
+   f 5 s merg C114 p $a $b r w S.$c/rf
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C121 p $a $b r w S.$c/lb
+   f 1 s merg C116 p $a $b r w S.$c/rc
+   f 2 s merg C117 p $a $b r w S.$c/_
+   f 3 s merg C118 p $a $b r w S.$c/bv
+   f 4 s merg C119 p $a $b r w S.$c/lt
+   f 5 s merg C120 p $a $b r w S.$c/rt
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C127 p $a $b r w S.$c/te
+   f 1 s merg C122 p $a $b r w S.$c/rb
+   f 2 s merg C123 p $a $b r w S.$c/lk
+   f 3 s merg C124 p $a $b r w S.$c/rk
+   f 4 s merg C125 p $a $b r w S.$c/"
+   f 5 s merg C126 p $a $b r w S.$c/fa
+   q
+EOF
+jx f <<EOF
+   f 0 s merg C132 p $a $b r w S.$c/no
+   f 1 s merg C128 p $a $b r w S.$c/rn
+   f 2 s merg C129 p $a $b r w S.$c/12
+   f 3 s merg C130 p $a $b r w S.$c/14
+   f 4 s merg C131 p $a $b r w S.$c/34
+   f 5 s merg C133 p $a $b r w S.$c/vr
+   q
+EOF

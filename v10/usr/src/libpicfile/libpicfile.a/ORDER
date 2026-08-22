@@ -1,0 +1,14 @@
+pic.601.o
+pic.bit.o
+pic.dmp.o
+pic.pco.o
+pic.run.o
+picclose.o
+picconf.o
+picerror.o
+picgetprop.o
+picopen_r.o
+picopen_w.o
+picpack.o
+picputprop.o
+picunpack.o

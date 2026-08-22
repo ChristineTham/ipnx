@@ -1,0 +1,398 @@
+#  line 99999
+text
+L%35:
+stabs	"printf.c",0x15,0,L%35
+stabs	"printf",0x12,12,printf
+global	printf
+printf:
+link	%fp,&F%1
+movm.l	&M%1,S%1(%fp)
+#	/*
+#	 * Scaled down version of C Library printf.
+#	 * Only %s %u %d (==%u) %o %x %D are recognized.
+#	 */
+#	#include <jerq.h>
+#	#include <jerqio.h>
+#	char *_doprnt();
+#	
+#	printf(fmt, x1)
+#		char *fmt;
+#		unsigned x1;
+#	{
+#		_doprnt(stdout, fmt, &x1);
+pea.l	12(%fp)
+mov.l	8(%fp),-(%sp)
+mov.l	&_iob+12,-(%sp)
+jsr	_doprnt
+lea	12(%sp),%sp
+L%36:
+movm.l	S%1(%fp),&M%1
+unlk	%fp
+rts
+stabs	"fmt",0x6,042,8
+stabs	"x1",0x6,016,12
+stabs	"printf",0x19,14,L%36
+set	S%1,0
+set	T%1,0
+set	F%1,-4
+set	M%1,0x0000
+stabs	"fprintf",0x12,20,fprintf
+global	fprintf
+fprintf:
+link	%fp,&F%2
+movm.l	&M%2,S%2(%fp)
+#	}
+#	
+#	fprintf(f, fmt, x1)
+#		FILE *f;
+#		char *fmt;
+#		unsigned x1;
+#	{
+#		_doprnt(f, fmt, &x1);
+pea.l	16(%fp)
+mov.l	12(%fp),-(%sp)
+mov.l	8(%fp),-(%sp)
+jsr	_doprnt
+lea	12(%sp),%sp
+L%38:
+movm.l	S%2(%fp),&M%2
+unlk	%fp
+rts
+stabs	"f",0x6,050,8
+stabs	"_iobuf",0x21,0,0
+stabs	"fmt",0x6,042,12
+stabs	"x1",0x6,016,16
+stabs	"fprintf",0x19,22,L%38
+set	S%2,0
+set	T%2,0
+set	F%2,-4
+set	M%2,0x0000
+stabs	"sprintf",0x12,28,sprintf
+global	sprintf
+sprintf:
+link	%fp,&F%3
+movm.l	&M%3,S%3(%fp)
+#	}
+#	
+#	char *
+#	sprintf(buf, fmt, x1)
+#		char *buf, *fmt;
+#		unsigned x1;
+#	{
+#		FILE fake;
+#		register FILE *f;
+#		f = &fake;
+lea.l	-12+S%3(%fp),%a2
+#		f->cp = f->base = buf;
+mov.l	8(%fp),%a0
+mov.l	%a0,6(%a2)
+mov.l	%a0,2(%a2)
+#		f->flag = f->count = 0;
+mov.l	&0,%d0
+mov.w	%d0,(%a2)
+mov.b	%d0,10(%a2)
+#		_doprnt(f, fmt, &x1);
+pea.l	16(%fp)
+mov.l	12(%fp),-(%sp)
+mov.l	%a2,-(%sp)
+jsr	_doprnt
+lea	12(%sp),%sp
+#		putc('\0',f);
+mov.l	%a2,(%sp)
+clr.w	-(%sp)
+jsr	putc
+add.l	&2,%sp
+#		return(f->cp);
+mov.l	2(%a2),%a0
+br	L%40
+stabs	"f",0x4,050,10
+stabs	"_iobuf",0x21,0,0
+stabs	"fake",0x5,010,12
+stabs	"_iobuf",0x21,0,0
+L%40:
+movm.l	S%3(%fp),&M%3
+unlk	%fp
+rts
+stabs	"buf",0x6,042,8
+stabs	"fmt",0x6,042,12
+stabs	"x1",0x6,016,16
+stabs	"sprintf",0x19,37,L%40
+set	S%3,-4
+set	T%3,-16
+set	F%3,-20
+set	M%3,0x0400
+stabs	"_doprnt",0x12,44,_doprnt
+global	_doprnt
+_doprnt:
+link	%fp,&F%4
+movm.l	&M%4,S%4(%fp)
+#	}
+#	
+#	char *
+#	_doprnt(f, fmt, x1)
+#		register FILE *f;
+#		register char *fmt;
+#		unsigned *x1;
+#	{
+mov.l	8(%fp),%a2
+mov.l	12(%fp),%a3
+#		register c;
+#		register unsigned int *adx;
+#		register long l;
+#		char *s;
+#	
+#		adx = x1;
+mov.l	16(%fp),%a4
+L%45:
+br.b	L%46
+L%20001:#  line 53, file "printf.c"
+tst.w	%d2
+bne.b	L%48
+#		for(;;){
+#			while((c = *fmt++) != '%') {
+#				if(c == '\0')
+#					return(f->cp);
+mov.l	2(%a2),%a0
+br	L%42
+L%48:
+#				putc(c,f);
+mov.l	%a2,(%sp)
+mov.w	%d2,-(%sp)
+jsr	putc
+add.l	&2,%sp
+L%46:
+mov.b	(%a3)+,%d0
+ext.w	%d0
+mov.w	%d0,%d2
+cmp.w	%d2,&37
+bne.b	L%20001
+
+#			}
+#			c = *fmt++;
+mov.b	(%a3)+,%d0
+ext.w	%d0
+mov.w	%d0,%d2
+#			if(c=='o' || c=='u' || c=='x')
+cmp.w	%d2,&111
+beq.b	L%50
+cmp.w	%d2,&117
+beq.b	L%50
+cmp.w	%d2,&120
+bne	L%49
+L%50:
+#				sprintn((long)*adx, c=='o'? 8: (c=='x'? 16:10), f);
+mov.l	%a2,(%sp)
+cmp.w	%d2,&111
+bne.b	L%52
+mov.l	&8,%d0
+br.b	L%53
+L%52:
+cmp.w	%d2,&120
+bne.b	L%54
+mov.l	&16,%d0
+br.b	L%55
+L%54:
+mov.l	&10,%d0
+L%55:
+L%53:
+mov.w	%d0,-(%sp)
+clr.l	%d0
+mov.w	(%a4),%d0
+mov.l	%d0,-(%sp)
+jsr	sprintn
+add.l	&6,%sp
+br	L%56
+L%49:
+#			else if(c=='d'){	/* Signed, please */
+cmp.w	%d2,&100
+bne	L%57
+#				l= *(int *)adx;
+mov.w	(%a4),%d0
+ext.l	%d0
+mov.l	%d0,%d3
+#				if(l<0){
+tst.l	%d3
+bge.b	L%58
+#					putc('-',f);
+mov.l	%a2,(%sp)
+mov.w	&45,-(%sp)
+jsr	putc
+add.l	&2,%sp
+#					l= -l;
+mov.l	%d3,%d0
+neg.l	%d0
+mov.l	%d0,%d3
+L%58:
+#				}
+#				sprintn(l, 10, f);
+mov.l	%a2,(%sp)
+mov.w	&10,-(%sp)
+mov.l	%d3,-(%sp)
+jsr	sprintn
+add.l	&6,%sp
+br	L%59
+L%57:
+#			}else if(c == 's') {
+cmp.w	%d2,&115
+bne	L%60
+#				s = *(char **)adx;
+mov.l	(%a4),-4+S%4(%fp)
+br.b	L%61
+L%20003:#  line 70, file "printf.c"
+mov.l	%a2,(%sp)
+mov.w	%d2,-(%sp)
+jsr	putc
+add.l	&2,%sp
+L%61:
+#				while(c = *s++)
+mov.l	-4+S%4(%fp),%a0
+add.l	&1,-4+S%4(%fp)
+mov.b	(%a0),%d0
+ext.w	%d0
+mov.w	%d0,%d2
+bne.b	L%20003
+
+#					putc(c,f);
+#				adx += (sizeof (char *)/sizeof(int)) -1;
+add.l	&2,%a4
+br	L%63
+L%60:
+#			} else if (c == 'D') {
+cmp.w	%d2,&68
+bne.b	L%64
+#				sprintn(*(long *)adx, 10, f);
+mov.l	%a2,(%sp)
+mov.w	&10,-(%sp)
+mov.l	(%a4),-(%sp)
+jsr	sprintn
+add.l	&6,%sp
+#				adx += (sizeof(long) / sizeof(int)) - 1;
+add.l	&2,%a4
+br	L%65
+L%64:
+#			} else if (c == 'X') {
+cmp.w	%d2,&88
+bne.b	L%66
+#				sprintn(*(long *)adx, 16, f);
+mov.l	%a2,(%sp)
+mov.w	&16,-(%sp)
+mov.l	(%a4),-(%sp)
+jsr	sprintn
+add.l	&6,%sp
+#				adx += (sizeof(long) / sizeof(int)) - 1;
+add.l	&2,%a4
+br.b	L%67
+L%66:
+#			} else if (c == 'c') {
+cmp.w	%d2,&99
+bne.b	L%68
+#				putc(*adx,f);
+mov.l	%a2,(%sp)
+mov.w	(%a4),-(%sp)
+br.b	L%20005
+L%68:
+#			} else
+#				putc(c, f);
+mov.l	%a2,(%sp)
+mov.w	%d2,-(%sp)
+L%20005:jsr	putc
+add.l	&2,%sp
+
+L%67:
+L%65:
+L%63:
+L%59:
+L%56:
+#			adx++;
+add.l	&2,%a4
+L%43:
+br	L%45
+L%44:
+stabs	"c",0x4,04,2
+stabs	"f",0x4,050,10
+stabs	"_iobuf",0x21,0,0
+stabs	"l",0x4,05,3
+stabs	"s",0x5,042,4
+stabs	"adx",0x4,056,12
+stabs	"fmt",0x4,042,11
+L%42:
+movm.l	S%4(%fp),&M%4
+unlk	%fp
+rts
+stabs	"f",0x6,050,8
+stabs	"_iobuf",0x21,0,0
+stabs	"fmt",0x6,042,12
+stabs	"x1",0x6,056,16
+stabs	"_doprnt",0x19,84,L%42
+set	S%4,-20
+set	T%4,-24
+set	F%4,-28
+set	M%4,0x1c0c
+stabs	"sprintn",0x12,92,sprintn
+global	sprintn
+data	2
+L%72:
+byte	'0,'1,'2,'3,'4,'5,'6,'7
+byte	'8,'9,'A,'B,'C,'D,'E,'F
+byte	0x00
+text
+sprintn:
+link	%fp,&F%5
+movm.l	&M%5,S%5(%fp)
+#		}
+#	}
+#	
+#	/*
+#	 * Print an unsigned integer in base b.
+#	 */
+#	sprintn(n, b, f)
+#		unsigned long n;
+#		FILE *f;
+#	{
+#		register long a;
+#	
+#		if(a = n/b)
+mov.w	12(%fp),%d0
+ext.l	%d0
+mov.l	%d0,(%sp)
+mov.l	8(%fp),%d0
+jsr	uldiv%%
+mov.l	%d0,%d2
+beq.b	L%71
+#			sprintn(a, b, f);
+mov.l	14(%fp),(%sp)
+mov.w	12(%fp),-(%sp)
+mov.l	%d2,-(%sp)
+jsr	sprintn
+add.l	&6,%sp
+L%71:
+#		putc("0123456789ABCDEF"[(int)(n%b)],f);
+mov.l	14(%fp),(%sp)
+mov.w	12(%fp),%d0
+ext.l	%d0
+mov.l	%d0,-(%sp)
+mov.l	8(%fp),%d0
+jsr	ulrem%%
+add.l	&4,%sp
+mov.l	&L%72,%a1
+mov.b	0(%a1,%d0.w),%d0
+ext.w	%d0
+mov.w	%d0,-(%sp)
+jsr	putc
+add.l	&2,%sp
+stabs	"a",0x4,05,2
+L%70:
+movm.l	S%5(%fp),&M%5
+unlk	%fp
+rts
+stabs	"n",0x6,017,8
+stabs	"b",0x6,04,12
+stabs	"f",0x6,050,14
+stabs	"_iobuf",0x21,0,0
+stabs	"sprintn",0x19,98,L%70
+set	S%5,-4
+set	T%5,-4
+set	F%5,-8
+set	M%5,0x0004
+data	1
+#}

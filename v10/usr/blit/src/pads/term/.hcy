@@ -1,0 +1,12 @@
+buttons.c
+cache.c
+cursor.c
+host.c
+lib.c
+lineops.c
+master.c
+pad.c
+paint.c
+protocol.c
+scripthit.c
+univ.h

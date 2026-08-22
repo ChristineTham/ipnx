@@ -9,6 +9,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | destination | from | files | evidence |
 |---|---|---|---|
 | `usr/630` | `630` | 1415 | the WE32100 cross-tools; 57 references to /usr/630/bin, /usr/630/lib and /usr/630/mbin |
+| `usr/blit` | `blit` | 1856 | 228 self-references -- blit/demo/mpx/demo opens `PATH=/bin:/usr/bin:/usr/blit/bin' and blit/.profile `JPATH=:/usr/blit/demo/mpx' |
 | `usr/include` | `include` | 336 | r70's reconstruction of /usr/include, its own tape; 731 references |
 | `usr/jerq` | `jerq` | 3781 | the 5620 distribution, its own tape; its sources name /usr/jerq/include 196 times and /usr/jerq/bin 95 |
 | `usr/local` | `local` | 4 | 270 references to /usr/local, none to /usr/src/local |
@@ -33,6 +34,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/libm` | `libm` | 2 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libmp` | `libmp` | 30 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libnm` | `libnm` | 16 | named in srctotape, the tape's own manifest of /usr/src |
+| `usr/src/libpicfile` | `libpicfile` | 32 | its picfile.h is BYTE-IDENTICAL to the one in r70's /usr/include, so the library shipped on a real machine -- confirmation from a different tape. Its mkfile installs libpicfile.a to /usr/lib. Absent from srctotape only because that list is dated 1989-01-23 and these files are 1989-11 |
 | `usr/src/libplot` | `libplot` | 502 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libsdb` | `libsdb` | 2 | named in srctotape, the tape's own manifest of /usr/src |
 | `usr/src/libtermlib` | `libtermlib` | 7 | named in srctotape, the tape's own manifest of /usr/src |
@@ -40,7 +42,7 @@ The layout mirrors the guest filesystem, the same rule `v8/` follows, so `v10/us
 | `usr/src/netfs` | `netfs` | 84 | v8 keeps its own at /usr/src/netfs |
 | `usr/sys` | `sys` | 1109 | the kernel tree; 124 references to /usr/sys, and v8 keeps its kernel at the same place |
 | `usr/vol2` | `vol2` | 1509 | 40 SELF-references: vol2/index/tools/gettop opens `M=/usr/vol2/index/tools' and sits at vol2/index/tools/gettop; vol2/ADM/mkfile does `cd /usr/vol2' |
-| **total** | | **29634** | |
+| **total** | | **31522** | |
 
 Two kinds of evidence were allowed, and only these:
 
@@ -53,16 +55,14 @@ Two kinds of evidence were allowed, and only these:
 
 | tree | why |
 |---|---|
-| `blit` | the 68000 Blit. Its own files name /usr/blit 228 times, so the PATH is not in doubt -- what is in doubt is whether a Tenth Edition machine carried it at all. It is a different terminal from the 5620 this project emulates, and the tape came bundled with V8-era material. Placement evidence is not shipping evidence. |
 | `dist` | a distribution working directory, naming itself nowhere. |
 | `dregs` | the name is the tape's own verdict on it. |
 | `history` | five loose files left after history/ix was excluded; they name themselves nowhere. |
-| `libpicfile` | not in srctotape, not in v8's source tree, and it names itself nowhere -- despite the lib* spelling of its siblings. |
 | `lsys` | `local sys' -- one machine's kernel tree, and it names itself nowhere. sys/ is the vanilla one: 1,134 files against lsys's 922, newer on 111 of 266 differing files against 8, and more 780 support (52 `star' paths to 35). |
 | `nbstests` | a test corpus, naming itself nowhere. |
-| `ncurses` | a curses library beside the libcurses that IS in srctotape. Not in srctotape, not in v8's source tree, and it names itself nowhere. |
+| `ncurses` | a curses library beside the libcurses that IS in srctotape. Dated 1990-02, ten months AFTER srctotape was written, so its absence from that list is staleness rather than exclusion -- but nothing positively places it: no header of its own reaches /usr/include and it names itself nowhere. |
 
-3782 files. Leaving a tree behind costs nothing — the superset is committed and validated, and a directory can be promoted in one line once its home is known. Guessing costs the thing this rebuild was for: a tree whose shape is a claim about V10 rather than a record of it.
+1894 files. Leaving a tree behind costs nothing — the superset is committed and validated, and a directory can be promoted in one line once its home is known. Guessing costs the thing this rebuild was for: a tree whose shape is a claim about V10 rather than a record of it.
 
 Loose files at the superset root, not placed: `facedl`, `makefile`, `srctotape`.
 

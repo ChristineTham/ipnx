@@ -1,0 +1,9 @@
+Hello to the world of fonts:
+
+	The way to generate fonts is via f. You must extract
+the character files into C??? and S??? (for ascii fonts).
+The latest whereabouts of these is in the file `where'.
+`F' has to be fed a script. `small' is used to generate
+small (ascii) fonts. `special' will help get the special characters
+needed for the ascii fonts. `spec' is a shell script for generating
+a complete special font.

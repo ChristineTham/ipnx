@@ -1,0 +1,8 @@
+rm C???
+ar x `cat where`/$1.a
+genascii 6 8 9 10 12 > temp
+jx f < temp
+for i in 6 8 9 10 12
+do
+	mv font.$i /usr/jerq/Font/$2.$i
+done

@@ -1,0 +1,172 @@
+	.file	"arith.c"
+	.data
+	.text
+	.set	.F1,0
+	.align	4
+	.def	add;	.val	add;	.scl	2;	.type	050;	.endef
+	.globl	add
+	.def	.ef;	.val	..0;	.scl	101;	.line	6;	.endef
+	.set	.R1,2
+add:
+	save	&.R1
+	addh2	0(%r1),0(%r0)
+	addh2	0(%r7),0(%r8)
+	ret	&.R1
+..0:
+	.ln	6
+	ret	&.R1
+	.def	add;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F2,0
+	.align	4
+	.def	sub;	.val	sub;	.scl	2;	.type	050;	.endef
+	.globl	sub
+	.def	.ef;	.val	..1;	.scl	101;	.line	6;	.endef
+	.set	.R2,2
+sub:
+	save	&.R2
+	subh2	0(%r1),0(%r0)
+	subh2	0(%r7),0(%r8)
+	ret	&.R2
+..1:
+	.ln	6
+	ret	&.R2
+	.def	sub;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F3,4
+	.align	4
+	.def	inset;	.val	inset;	.scl	2;	.type	050;	.endef
+	.globl	inset
+	.def	.ef;	.val	..2;	.scl	101;	.line	8;	.endef
+	.set	.R3,2
+inset:
+	save	&.R3
+	movw	%r2,0(%fp)
+	addh2	%r1,0(%r0)
+	addh2	%r1,0(%r0)
+	subh2	%r1,0(%r0)
+	subh2	%r0,0(%r7)
+	movw	4(%r0),4(%r1)
+	movw	0(%r0),0(%r1)
+..2:
+	ret	&.R3
+	.def	inset;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F4,4
+	.align	4
+	.def	div;	.val	div;	.scl	2;	.type	050;	.endef
+	.globl	div
+	.def	.ef;	.val	..3;	.scl	101;	.line	6;	.endef
+	.set	.R4,2
+div:
+	save	&.R4
+	movw	%r7,0(%fp)
+	movh	%r0,*0(%fp)
+	movh	%r0,0(%r7)
+	ret	&.R4
+..3:
+	.ln	6
+	ret	&.R4
+	.def	div;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F5,0
+	.align	4
+	.def	mul;	.val	mul;	.scl	2;	.type	050;	.endef
+	.globl	mul
+	.def	.ef;	.val	..4;	.scl	101;	.line	6;	.endef
+	.set	.R5,2
+mul:
+	save	&.R5
+	MULH2	%r1,0(%r0)
+	MULH2	%r0,0(%r7)
+	ret	&.R5
+..4:
+	.ln	6
+	ret	&.R5
+	.def	mul;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F6,4
+	.align	4
+	.def	rsubp;	.val	rsubp;	.scl	2;	.type	050;	.endef
+	.globl	rsubp
+	.def	.ef;	.val	..5;	.scl	101;	.line	8;	.endef
+	.set	.R6,2
+rsubp:
+	save	&.R6
+	movw	%r2,0(%fp)
+	subh2	0(%r1),0(%r0)
+	subh2	0(%r1),0(%r0)
+	subh2	0(%r1),0(%r0)
+	subh2	0(%r7),0(%r8)
+	movw	4(%r0),4(%r1)
+	movw	0(%r0),0(%r1)
+..5:
+	ret	&.R6
+	.def	rsubp;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F7,4
+	.align	4
+	.def	raddp;	.val	raddp;	.scl	2;	.type	050;	.endef
+	.globl	raddp
+	.def	.ef;	.val	..6;	.scl	101;	.line	8;	.endef
+	.set	.R7,2
+raddp:
+	save	&.R7
+	movw	%r2,0(%fp)
+	addh2	0(%r1),0(%r0)
+	addh2	0(%r1),0(%r0)
+	addh2	0(%r1),0(%r0)
+	addh2	0(%r7),0(%r8)
+	movw	4(%r0),4(%r1)
+	movw	0(%r0),0(%r1)
+..6:
+	ret	&.R7
+	.def	raddp;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F8,0
+	.align	4
+	.def	eqpt;	.val	eqpt;	.scl	2;	.type	044;	.endef
+	.globl	eqpt
+	.def	.ef;	.val	..7;	.scl	101;	.line	4;	.endef
+	.set	.R8,2
+eqpt:
+	save	&.R8
+	cmpw	0(%r8),0(%r7)
+	jne	.L39
+	ret	&.R8
+.L39:
+	ret	&.R8
+..7:
+	.ln	4
+	ret	&.R8
+	.def	eqpt;	.val	.;	.scl	-1;	.endef
+	.data
+	.text
+	.set	.F9,0
+	.align	4
+	.def	eqrect;	.val	eqrect;	.scl	2;	.type	044;	.endef
+	.globl	eqrect
+	.def	.ef;	.val	..8;	.scl	101;	.line	4;	.endef
+	.set	.R9,2
+eqrect:
+	save	&.R9
+	cmpw	0(%r0),0(%r1)
+	jne	.L43
+	cmpw	0(%r8),0(%r7)
+	jne	.L43
+	ret	&.R9
+.L43:
+	ret	&.R9
+..8:
+	.ln	4
+	ret	&.R9
+	.def	eqrect;	.val	.;	.scl	-1;	.endef
+	.data
+	.text

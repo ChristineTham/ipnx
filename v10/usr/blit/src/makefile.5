@@ -1,0 +1,42 @@
+JERQ=/usr/jerq
+LIB=$(JERQ)/lib
+BIN=$(JERQ)/bin
+MCC=$(BIN)/mcc
+CFILES=crabs.c hp.c ismpx5.c jermcap.c jterm.c jwin.c version.c vitty.c
+TARGETS=crabs hp ismpx jermcap jterm jwin version vitty
+
+all:	$(TARGETS)
+
+crabs:
+	$(MCC) -o crabs crabs.c
+
+hp:
+	$(MCC) -o hp hp.c
+
+ismpx:
+	$(CC) -o ismpx ismpx5.c
+
+jermcap:
+	$(CC) -o jermcap jermcap.c
+
+jterm:
+	$(CC) -o jterm jterm.c
+
+jwin:
+	$(CC) -o jwin jwin.c
+
+version:
+	$(MCC) -o version version.c
+
+vitty:
+	$(MCC) -o vitty vitty.c
+
+install:
+	cp crabs $(LIB)/crabs.m
+	cp hp $(LIB)/hp.m
+	cp ismpx $(BIN)/ismpx
+	cp jermcap $(BIN)/jermcap
+	cp jterm $(BIN)/jterm
+	cp jwin $(BIN)/jwin
+	cp version $(LIB)/version.m
+	cp vitty $(LIB)/vitty.m

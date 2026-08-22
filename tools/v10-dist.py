@@ -24,7 +24,14 @@ kinds of evidence, and only these:
        jerq's sources name /usr/jerq/include 196 times; 630's name /usr/630.
 
     2  srctotape, THE TAPE'S OWN MANIFEST OF /usr/src.  A plain list of the
-       directories whoever cut the tape considered to be the source tree.
+       directories whoever cut the tape considered to be the source tree.  It
+       is dated 1989-01-23 and the tapes carry files into 1995, so ABSENCE
+       from it is weak evidence: libpicfile is missing from it only because
+       the library is ten months younger than the list.
+
+    3  A HEADER THAT REACHED /usr/include ON A REAL MACHINE.  libpicfile's
+       picfile.h is byte-identical to the copy in r70's include tree, which is
+       a different tape confirming the library shipped.
 
 WHAT COUNTING REFERENCES CANNOT SETTLE, and why it is not used for the source
 directories: `/usr/games/hack' is where hack is INSTALLED while its source is
@@ -84,6 +91,16 @@ PLACED = {
                 "`char *logfile = \"/usr/dk/LOGPROC\"' -- not the tree's home"),
     "netfs":   ("usr/src/netfs",
                 "v8 keeps its own at /usr/src/netfs"),
+    "libpicfile": ("usr/src/libpicfile",
+                "its picfile.h is BYTE-IDENTICAL to the one in r70's "
+                "/usr/include, so the library shipped on a real machine -- "
+                "confirmation from a different tape. Its mkfile installs "
+                "libpicfile.a to /usr/lib. Absent from srctotape only because "
+                "that list is dated 1989-01-23 and these files are 1989-11"),
+    "blit":    ("usr/blit",
+                "228 self-references -- blit/demo/mpx/demo opens "
+                "`PATH=/bin:/usr/bin:/usr/blit/bin' and blit/.profile "
+                "`JPATH=:/usr/blit/demo/mpx'"),
     "maps":    ("usr/maps",
                 "cmd/map/export/mapdata is a SYMLINK to /usr/maps -- the tape "
                 "naming the path itself"),
@@ -91,22 +108,15 @@ PLACED = {
 
 # tree -> why it is not in the distribution
 LEFT = {
-    "blit":       "the 68000 Blit. Its own files name /usr/blit 228 times, so "
-                  "the PATH is not in doubt -- what is in doubt is whether a "
-                  "Tenth Edition machine carried it at all. It is a different "
-                  "terminal from the 5620 this project emulates, and the tape "
-                  "came bundled with V8-era material. Placement evidence is "
-                  "not shipping evidence.",
     "lsys":       "`local sys' -- one machine's kernel tree, and it names "
                   "itself nowhere. sys/ is the vanilla one: 1,134 files "
                   "against lsys's 922, newer on 111 of 266 differing files "
                   "against 8, and more 780 support (52 `star' paths to 35).",
     "ncurses":    "a curses library beside the libcurses that IS in srctotape. "
-                  "Not in srctotape, not in v8's source tree, and it names "
-                  "itself nowhere.",
-    "libpicfile": "not in srctotape, not in v8's source tree, and it names "
-                  "itself nowhere -- despite the lib* spelling of its "
-                  "siblings.",
+                  "Dated 1990-02, ten months AFTER srctotape was written, so "
+                  "its absence from that list is staleness rather than "
+                  "exclusion -- but nothing positively places it: no header of "
+                  "its own reaches /usr/include and it names itself nowhere.",
     "history":    "five loose files left after history/ix was excluded; they "
                   "name themselves nowhere.",
     "dist":       "a distribution working directory, naming itself nowhere.",

@@ -1,0 +1,30 @@
+x T 202
+x res 972 1 2
+x init
+x font 1 R
+x font 2 I
+x font 3 B
+x font 4 BI
+x font 5 H
+x font 6 HB
+x font 7 HK
+x font 8 CW
+x font 9 CH
+x font 10 S
+V0
+p1
+s10
+f1
+H936
+V162
+cW
+h133ce
+63dwh118cF
+80e63bwh160c8
+wh113c1
+68368:38368868:383683wh113cE
+93S68Twh133c1
+689688684n162 0
+x trailer
+V10692
+x stop
