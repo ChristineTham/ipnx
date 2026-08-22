@@ -40,6 +40,10 @@ OBJ=$5
 DEST=$6
 CCP=$7
 BP=$8
+# AN OPTIONAL FILTER, so one row can be tested without a forty-minute stage.
+# Iterating on /bin/sh by rebuilding all 1,601 commands is how a session gets
+# spent; this makes the failing row a two-minute question.
+ONLY=$9
 
 PLAN=$PLANDIR/v10-plan.md
 CC="$CCP -B$BP"
@@ -100,6 +104,13 @@ do
 	IFS=$OIFS
 	name=`echo $path | sed -e 's|.*/||'`
 	pdir=`echo $path | sed -e 's|/[^/]*$||'`
+	if test -n "$ONLY"
+	then
+		case $path in
+		$ONLY)	;;
+		*)	continue ;;
+		esac
+	fi
 
 	case $meth in
 	MISSING)
@@ -567,6 +578,33 @@ do
 				continue
 			fi
 		fi
+		# AN OBJECT FILE IS NOT EVIDENCE THAT A COMPILER RAN.  Every one
+		# of sh's 23 objects came out 36 bytes -- an a.out header and
+		# nothing else -- and `test -s' passed on all of them, so the
+		# failure surfaced 23 compiles later as `Undefined: _main' with
+		# main.o sitting on the link line.  This project already
+		# recorded the shape (lcc's -undef defect emits empty objects
+		# and exits 0; 327 such objects are on the tape) and the builder
+		# reproduced it by asking only whether the file exists.
+		# 64 bytes is comfortably below any real object and safely above
+		# a bare header.
+		sz=`sed -n '$=' $b 2>/dev/null`
+		if test -s $b && test `wc -c < $b` -lt 64
+		then
+			# -g PRODUCES AN EMPTY OBJECT ON THIS COMPILER, and the
+			# tape asks for it: cmd/sh says `CFLAGS = -g #-gd2', with
+			# the alternative commented out beside it.  Retry without
+			# it -- the same shape as the -Od2 overflow, where the
+			# tape's own flag does not work on the compiler we built
+			# and the remedy is reported rather than silent.
+			echo "P! $b was `wc -c < $b` bytes with '$CF'; retrying -O"
+			rm -f $b
+			( $CC -O -c $XD $stem.c 2>&1
+			  echo "CCST=$?" ) | sed -e 20q > c.log
+			if test -s $b && test `wc -c < $b` -lt 64
+			then	rm -f $b
+			fi
+		fi
 		if test ! -s $b
 		then
 			# `:rofix' IS A REAL BUILD STEP, not a helper.  cpp's
@@ -582,6 +620,33 @@ do
 				$CC $CF2 -S $stem.c > /dev/null 2>&1
 				sh :rofix $stem.s > /dev/null 2>&1
 				$CC -c $stem.s > /dev/null 2>&1
+			fi
+		fi
+		# AN OBJECT FILE IS NOT EVIDENCE THAT A COMPILER RAN.  Every one
+		# of sh's 23 objects came out 36 bytes -- an a.out header and
+		# nothing else -- and `test -s' passed on all of them, so the
+		# failure surfaced 23 compiles later as `Undefined: _main' with
+		# main.o sitting on the link line.  This project already
+		# recorded the shape (lcc's -undef defect emits empty objects
+		# and exits 0; 327 such objects are on the tape) and the builder
+		# reproduced it by asking only whether the file exists.
+		# 64 bytes is comfortably below any real object and safely above
+		# a bare header.
+		sz=`sed -n '$=' $b 2>/dev/null`
+		if test -s $b && test `wc -c < $b` -lt 64
+		then
+			# -g PRODUCES AN EMPTY OBJECT ON THIS COMPILER, and the
+			# tape asks for it: cmd/sh says `CFLAGS = -g #-gd2', with
+			# the alternative commented out beside it.  Retry without
+			# it -- the same shape as the -Od2 overflow, where the
+			# tape's own flag does not work on the compiler we built
+			# and the remedy is reported rather than silent.
+			echo "P! $b was `wc -c < $b` bytes with '$CF'; retrying -O"
+			rm -f $b
+			( $CC -O -c $XD $stem.c 2>&1
+			  echo "CCST=$?" ) | sed -e 20q > c.log
+			if test -s $b && test `wc -c < $b` -lt 64
+			then	rm -f $b
 			fi
 		fi
 		if test ! -s $b
@@ -669,6 +734,12 @@ do
 	else
 		echo "$Q $name"
 		sed -e 5q -e 's/^/P! /' l.log
+		# THE OBJECT SIZES, because `Undefined: _main' with main.o ON the
+		# link line cannot be told from the error: an object that
+		# compiled to almost nothing looks exactly like one that
+		# compiled properly to `test -s'.  A stunted object is visible
+		# only by its size.
+		ls -l *.o 2>/dev/null | sed -e 12q -e 's/^/P! obj /'
 		echo . >> ../no.cnt
 	fi
 	cd ..

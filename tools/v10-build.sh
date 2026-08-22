@@ -26,7 +26,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GOLD="$ROOT/work/v10gold"
 # ONE STAGE PER RUN: bash tools/v10-build.sh <stage> [builder]
 STAGE="${1:-1}"
-BUILDER="$GOLD/${2:-ipnx-v10-made.img.pre-k16}"
+# bash tools/v10-build.sh <stage> [only-pattern] [builder]
+ONLY="${2:-}"
+BUILDER="$GOLD/${3:-ipnx-v10-made.img.pre-k16}"
 OUT="$GOLD/${V10_OUT:-v10-golden.img}"
 # THE BLANK IS MADE ONCE, AT STAGE 1.  Later stages build ONTO the disk stage 1
 # started, so recreating it would throw away the toolchain they compile with.
@@ -98,7 +100,7 @@ rm -f "$CLONE"
 cp -c "$BUILDER" "$CLONE" 2>/dev/null || cp "$BUILDER" "$CLONE"
 
 rm -f "$LOG"
-expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" "$STAGE" 2>&1 | tee "$LOG"
+expect "$ROOT/tools/v10-build.exp" "$CLONE" "$OUT" "$VPORT" "$PPORT" "$STAGE" "$ONLY" 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------- the boot block ---

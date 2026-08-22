@@ -36,6 +36,7 @@ set pport [lindex $argv 3]
 # running them together hides which one failed and wastes the boot.
 set STAGE [lindex $argv 4]
 if {$STAGE eq ""} { set STAGE 1 }
+set ONLY [lindex $argv 5]
 
 set SIM   "$ROOT/work/opensimh/BIN/vax780"
 set ROM   "$ROOT/v10/source/src/lsys/boot/star/uda"
@@ -288,7 +289,7 @@ if {$STAGE == 1} {
 # `cd /; sync' into a shell that was 1,500 compiles from finished.
 # `echo PE''ND' echoes harmlessly and still prints PEND.  A literal in the
 # QUESTION counts as an answer.
-set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PE''ND" \
+set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP '$ONLY' > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PE''ND" \
             "PEND" 14400]
 note "stage $STAGE ran to its end marker" $ok
 run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILE''ND" "SFAILEND" 900
