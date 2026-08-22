@@ -363,6 +363,37 @@ INSTDIRS = ("/bin", "/etc", "/lib", "/usr/bin", "/usr/lib", "/usr/games",
             "/usr/jerq/bin", "/usr/jerq/lib", "/usr/lib/pascal", "/usr/new")
 
 
+def resolve_data(raw):
+    """[(installed path, source)] -- directory-ness DERIVED, not listed.
+
+    A destination is a DIRECTORY when more than one distinct source installs
+    into it, and a FILE otherwise.  That is read off the corpus rather than
+    from a list I typed: a hardcoded INSTDIRS got /usr/lib/docgen wrong (it is
+    docgen's data directory, holding mcsdata among others) and would need
+    extending every time the tape names a directory nobody thought of.
+    `cp yaccpar /usr/lib' and `cp strip.out /usr/bin/strip' are then told apart
+    by evidence -- /usr/lib takes dozens of sources, /usr/bin/strip takes one.
+
+    BUILD DETRITUS IS NOT DATA.  The tape ships a.out and *.o beside the
+    source; `cp a.out /usr/lib/ideal/ideal' is an install of a BUILT program,
+    which stage 6 already covers, and carrying it here would put a 1989 binary
+    on the disk under a data row.
+    """
+    bydst = collections.defaultdict(set)
+    for dst, base, _ in raw:
+        bydst[dst].add(base)
+    out = set()
+    for dst, base, unit in raw:
+        if base in ("a.out", "core") or base.endswith((".o", ".a")):
+            continue
+        if len(bydst[dst]) > 1 or dst.split("/")[-1] == base:
+            path = dst.rstrip("/") + "/" + base
+        else:
+            path = dst                      # a rename: strip.out -> strip
+        out.add((path, unit + "/" + base))
+    return sorted(out)
+
+
 def unit_data(text, m, rules, present):
     """[(path, srcfile)] -- DATA a unit installs, not programs and not scripts.
 
@@ -390,13 +421,7 @@ def unit_data(text, m, rules, present):
                 base = src.split("/")[-1]
                 if base not in present or src.endswith((".o", ".a", ".sh")):
                     continue
-                if dst in INSTDIRS:
-                    path = dst + "/" + base
-                elif dst.split("/")[-1] == base:
-                    path = dst
-                else:
-                    path = dst              # a rename: strip.out -> strip
-                out.append((path, base))
+                out.append((dst, base))
     return out
 
 
@@ -711,8 +736,8 @@ def scan():
                 present = set(os.listdir(os.path.join(TREE, d)))
             except OSError:
                 present = set()
-            for path, sf in unit_data(text, mm, rr, present):
-                data.append((path, d + "/" + sf))
+            for dst, sf in unit_data(text, mm, rr, present):
+                data.append((dst, sf, d))
 
         # ---- EVERY main() IS ACCOUNTED FOR, and this is the correction that
         # matters.  Gating the fallback on "this directory produced nothing"
@@ -770,7 +795,7 @@ def scan():
             "progs": progs, "archives": archives, "parked": parks,
             "dropped": dropped, "gaps": gaps, "admin": admin, "links": links,
             "scripts": sorted(set(scripts)), "large": large,
-            "data": sorted(set(data))}
+            "data": resolve_data(data)}
 
 
 def dedupe(progs):
