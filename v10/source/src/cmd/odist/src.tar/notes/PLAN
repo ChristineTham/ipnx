@@ -1,0 +1,70 @@
+The ship system will live in two places, the library directory $L (typically
+/usr/lib/ship) and the spool directory $S (typically /usr/spool/ship).
+Operations are of two classes: client functions and server functions.
+A single machine may operate as both a client and a server.  The whole
+setup is controlled by a single configuration file, $L/conf.
+
+The configuration file consists of a sequence of pattern lines interspersed
+with definitions pertaining to clients or servers matching the patterns.
+
+Patterns are of the form 'key: match (match ...) (key: match ...)'; the whole
+pattern may be prefixed by an exclamation point to negate it.  Definitions
+are of the form var=value, in shell syntax, and appear one to a line prefixed
+by a tab character.
+
+Each match is a restricted globbing expression, of the form understood by the shell.
+
+Client and server programs scan the configuration file in order, choosing
+only the first configuration that applies to a given situation.
+
+Lines beginning with a # are comments.
+
+For example, the following excerpt might occur in the configuration file of
+a sources repository machine.
+
+	# We accept connections from client1, client2, and client3.
+	client: client1 client2 client3
+		accept=yes
+	client: *
+		accept=no
+	# We periodically poll server1, which sends us some stuff now and then.
+	poll: server1
+		poll=hourly
+	# The user fred on server1 is a klutz.
+	server: server1 user: fred
+		accept=no
+	# We also don't accept stuff from guests.
+	server: server1 group: guest
+		accept=no
+	# This line applies if none of the rejections above do.
+	server: server1
+		accept=yes
+
+For each configuration (server, client, poll, or other to be invented), some
+assignments may be optional and others mandatory.  For example, for client:
+and server: configurations, the 'accept=' assignment is probably mandatory.
+However, for clients the 'notify=' (do we notify them when we have a new package
+for them, or do we wait for them to call?) is optional and defaults (probably)
+to 'no'.
+
+One uniform option understood by all configuration types is the 'transport='
+option, which specifies a program to use to place the network call.  On most
+machines this will probably be subsumed by the networking library, but some
+might require special treatment.
+
+There should be some sort of mechanism for file inclusion.  This would allow
+system administrators to delegate administration of some aspects of the system
+to other users without actually granting write permission for the $L/conf file.
+
+Some specific programs include:
+
+$L/poll - a program run periodically on clients to poll appropriate servers
+$L/client - a program run on the client to accept a shipment from a particular server
+$L/server - the program run on the server that actually makes shipments
+$L/notify - a program run on the server to notify clients
+$L/notified - notify's peer on clients
+
+The spool directory will be organized to have one subdirectory for each
+unfinished job.  Each job's subdirectory will contain a data file and
+control files for each client.  This organization makes it easy to
+atomically access and modify the status of any ongoing job.

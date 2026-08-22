@@ -1,0 +1,50 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.over:
+.vs 20p
+.EQ
+gfont I
++ a over b +
+~~~
++ ab over c +
+~~~
++ a over bc +
+~~~
++ ab over cd +
+~~~
++ abc over d
+~~~
++ a over bcd +
+~~~
++ ab over cdef +
+~~~
++ ab over cdefg +
+.EN
+.nf
+XXXXXX
+.EQ
+1 over 2
+.EN
+XXXXXX
+.EQ
+123 over 345
+.EN
+XXXXXXX
+
+.EQ
+=~a over b ~=~ a over b over c ~=~
+a over b over c over d ~=~ {a over b} over {c over d} ~=
+.EN
+.EQ
+=~1 over 2 ~=~ 1 over 2 over 3 ~=~
+1 over 2 over 3 over 4 ~=~ {1 over 2} over {3 over 4} ~=
+.EN
+.nf
+.EQ
+size -2 {0 over 1 ,~1 over 7 ,~ 1 over 6 ,~1 over 5 ,~1 over 4 ,~2 over 7 ,
+~1 over 3 ,~2 over 5 ,~3 over 7 ,~1 over 2 ,~4 over 7 ,~3 over 5 ,
+~2 over 3 ,~5 over 7 ,~3 over 4 ,~4 over 5 ,~5 over 6 ,~6 over 7 ,~1 over 1} .
+.EN
+

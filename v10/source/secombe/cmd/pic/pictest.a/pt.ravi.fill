@@ -1,0 +1,59 @@
+.sp 1i
+.PS
+	define Big %
+		em = 12/72; vs = 15/72
+.Big
+	%
+	define Normal %
+		em = 10/72; vs = 12/72
+.Normal
+	%
+	define Small %
+		em = 9/72; vs = 11/72
+.Small
+	%
+
+	Normal()
+	arrowht = .08; arrowwid = .04; pagewid = 3
+.PE
+.PS
+[
+	define border % box ht $1.ht wid $1.wid at $1 %
+	Small()
+	u = .45*em
+	boxht = 3*u; boxwid = 40*u
+	dark = .7; medium = .9; light = .96; white = 1
+
+Floor:	[
+		box ht 60*u wid 60*u fill dark invis
+	]
+	[
+		down
+	Out:	box "output shift register" fill white invis
+	Spare:	box "spare output shift register" fill white invis
+	Column:	box ht 5*u fill medium invis
+	SRAM:	box "SRAM" "cell array" ht 20*u fill light invis
+		box "wide data transfer path" fill medium invis
+	In01:	box "input shift register \01" fill white invis
+	In02:	box "input shift register \02" fill white
+		box "..." ht 2*boxht fill white invis
+	In14:	box "input shift register 14" fill white invis
+
+		box ht 10*u wid 9*u "queue" "manager"\
+			with .e at .5<Out.nw,Column.sw> + -u,0 fill medium invis
+
+		box ht SRAM.ht wid 5*u with .e at SRAM.w fill medium invis
+
+		box ht (In01.n.y-In14.s.y) wid 4*u\
+			with .e at .5<In01.nw,In14.sw> fill medium invis
+
+		border(Out)
+		border(Spare)
+		border(In01)
+		border(In02)
+		border(In14)
+	] at Floor
+
+	"144-pin PGA package" rjust at Floor.se + -em,vs/2
+]
+.PE

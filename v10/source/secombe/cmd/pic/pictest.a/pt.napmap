@@ -1,0 +1,274 @@
+.po 0.4i
+.sp .5i
+.PS 7.3
+.ps -2
+.ft H
+define polbegin { polflag = 1; copy thru polbody until "polend" }
+define polbody {
+	if polflag == 0 then {
+		line from PolEnd to $1,$2; PolEnd: Here
+	} else {
+		PolEnd: $1,$2; polflag = 0
+	}
+}
+
+define trapbegin { trapflag = 1; copy thru trapbody until "trapend" }
+define trapbody {
+	if trapflag == 0 then {
+		ThisA: $1,$2; ThisB: $3,$4
+		n = $5
+.ps +4
+		for i = 0 to n do {
+			line from i/n <LastA,LastB> to i/n <ThisA,ThisB>
+		}
+.ps -4
+		LastA: ThisA; LastB: ThisB
+	} else {
+		LastA: $1,$2; LastB: $3, $4; trapflag = 0
+	}
+}
+
+maxx = 9.1
+B: box ht 3.2 wid maxx with .sw at 0,0
+.ps +3
+"NAPOLEON'S RUSSIAN CAMPAIGN: June to December, 1812" at B.n + (0,.3)
+.ps -3
+
+# SCALE
+line from 6.7,.4 to 8.24, .4
+line down .05 from 6.7, .4
+"0" at 6.7, .27
+line down .05 from 7.47, .4
+"50" at 7.47, .27
+line down .05 from 8.24, .4
+"100" at 8.24, .27
+"Miles" at 7.47, .5
+
+"Niemen R." ljust at .6, .1
+spline from	0,	1.5\
+	to	0.1,	1.6\
+	to	.15,	1.5\
+	to	.3,	1.5\
+	to	.4,	1.26\
+	to	.35,	1.08\
+	to	.5,	1.0\
+	to	.55,	.75\
+	to	.5,	.55\
+	to	.55,	.5\
+	to	.5,	.35\
+	to	.58,	.3\
+	to	.58,	.2\
+	to	.4,	0
+
+"Beresina R." ljust at 3.52, .1
+spline from	2.95,	.95\
+	to	3.1,	.85\
+	to	3.2,	.8\
+	to	3.3,	.8\
+	to	3.33,	.7\
+	to	3.35,	.55\
+	to	3.38,	.5\
+	to	3.36,	.4\
+	to	3.4,	.25\
+	to	3.5,	0
+
+"Moskva R." ljust at 7.3, 2.8
+spline from	7.2, 2.8\
+	to	7.45, 2.5\
+	to	7.65, 2.48\
+	to	7.73, 2.35\
+	to	7.75, 2.28
+
+"Dnieper R." ljust at 4.7, 0.1
+spline from	5,	1.08\
+	to	4.9,	1\
+	to	4.7,	1\
+	to	4.6,	.9\
+	to	4.6,	.7\
+	to	4.62,	.6\
+	to	4.68,	.58\
+	to	4.68,	.42\
+	to	4.6,	.3\
+	to	4.6,	.2\
+	to	4.63,	.11\
+	to	4.6,	0
+
+#ADVANCE
+polbegin
+.25	1.45
+.84	1.62
+.87	2.2
+.92	2.2
+.9	1.55
+1.5	1.48
+2.2	2.05
+3.52	1.9
+3.48	1.83
+2.25	1.96
+1.55	1.4
+2.9	1.7
+4.2	1.8
+4.4	1.76
+5.4	1.4
+6.3	1.7
+7.15	2.5
+7.70	2.33
+7.69	2.30
+7.85	2.26
+8.7	2.68	# Top of Moscow
+8.78	2.52	# Bottom of Moscow
+7.85	2.05
+7.23	2.2
+6.35	1.38
+5.4	1.05
+4.3	1.5
+3.0	1.25
+1.4	.8
+.9	.85
+.5	.78
+.25	1.45
+polend
+
+#RETREAT
+# Return from Western Flanking
+trapbegin
+3.52	1.9	3.48	1.83
+3.58	1.75	3.52	1.74	7
+trapend
+trapbegin
+3.65	1.36	3.69	1.37
+3.90	.6	3.94	.61	7
+trapend
+# Return from Eastern Flanking
+trapbegin
+0.83	2.22	0.83	2.22
+.77	1.62	.77	1.62	1
+trapend
+trapbegin
+.71	.8	.71	.8
+.7	.74	.7	.74	1
+trapend
+# Main route
+trapbegin
+8.78	2.52	8.86	2.35
+8.6	2.42	8.75	2.3	25
+8.57	1.85	8.7	1.7	25
+8.45	1.8	8.5	1.63	25
+7.6	2	7.6	1.84	25
+6.95	1.68	7	1.57	25
+trapend
+trapbegin
+6.95	1.68	6.98	1.60
+6.35	1.35	6.38	1.27	15
+trapend
+trapbegin
+6.35	1.35	6.37	1.30
+5.5	1.03	5.52	0.98	10
+trapend
+trapbegin
+5.5	1.03	5.515	1.00
+4.6	.88	4.615	.85	3
+3.9	.56	3.915	.53	3
+trapend
+# Where first flanking returns
+trapbegin
+3.95	.6	3.95	.52
+3.5	.5	3.5	.42	6
+3.39	.5	3.39	.43	6
+trapend
+trapbegin
+3.4	.5	3.4	.46
+2.8	.82	2.8	.79	3
+2.45	.67	2.45	.65	2
+1.5	.78	1.5	.77	1
+.7	.75	.7	.75	1
+trapend
+trapbegin
+.7	.75	.7	.72
+.5	.75	.5	.72	3
+trapend
+
+"Kovno"		ljust	at .45, 1.2
+"Vilna"			at 1.5, 1.18
+"Polotsk"	above	at 3.6, 2.0
+"Vitebsk"		at 4.2, 1.68
+"Smolensk"		at 5.4, 1.23
+"Borodino"		at 7.7, 2.2
+"MOSCOW"		at 8.7, 2.75
+"Maloyaroslavets"	at 8.6, 1.5
+"Mojaisk"	ljust	at 7.8, 2.0
+"Viasma"	ljust	at 7, 1.45
+"Mogilev"	ljust	at 4.7, .25
+"Orsha"		rjust	at 4.6, .95
+"Bobr"		ljust	at 4.05, .45
+"Studenka"	rjust	at 3.3, .4
+"Minsk"			at 2.8, .15
+"Smorgoni"	ljust	at 2, .85
+
+# SIZE OF ARMY
+copy thru { "$1" at $2, $3 } until "xxx"
+422	.5	1.65
+6	.75	2.2
+22	1.05	2.2
+400	1.25	1.6
+60	1.85	1.95
+33	2.9	2.1
+175	4.7	1.8
+145	5.8	1.65
+127	7	2.5
+100	7.82	2.4
+100	8.87	2.6
+96	8	1.6
+87	7.5	1.6
+55	6.7	1.3
+37	6	1.05
+24	5	.8
+20	4.3	.6
+50	3.7	.3
+28	3	.55
+12	2.25	.55
+14	1.8	.65
+8	1.35	.65
+4	.9	.65
+10	.65	.6
+xxx
+
+minx = 0.3
+maxx = maxx - minx
+define temp { 0.015*($1) - 0.8 }
+line from maxx, temp(40) to maxx, temp(-40)\
+	to minx, temp(-40) to minx, temp(40) to maxx, temp(40)
+copy thru {
+	" $1\(de" ljust at maxx, temp($1)
+	"$1\(de " rjust at minx, temp($1)
+} until "xxx"
+40
+20
+0
+-20
+-40
+xxx
+polflag = 1
+copy thru {
+	line dotted .05 from $1, $3 to $1, temp($2)
+	"$2\(de" at $1, temp(-49)
+	"$4 $5" at $1, temp(-58)
+	if polflag == 0 then {
+		line from PolEnd to $1,temp($2); PolEnd: Here
+	} else {
+		PolEnd: $1,temp($2); polflag = 0
+	}
+} until "xxx"
+8.7	32	1.7	18 Oct
+7.9	32	1.8	24 Oct
+6.35	12	1.3	9 Nov
+5.5	-15	1	14 Nov
+3.9	7	.5
+3.3	-13	.5	28 Nov
+2.8	-22	.8	1 Dec
+2.4	-35	.65	6 Dec
+1.3	-26	.8	7 Dec
+xxx
+.ft
+.ps +2
+.PE

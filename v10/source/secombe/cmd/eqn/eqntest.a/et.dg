@@ -1,0 +1,695 @@
+.po .5i
+.nf
+.sp .25i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.dg
+.ll 7.75i
+.nf
+.vs 16p
+.sp
+.EQ
+define Subbase ' .25 '
+define Supshift ' .5 '
+gfont I
+d sup n x/d sup k y {d sup n x} over {d sup k y} |A sub 0 | sup 2 | sub 2 C sub x p 2 sup 2 sup 2 n sup n sup n e sup x sup 2
+.EN
+.EQ
+x0x1x2x(x)[x]x[(x+1)]x(x-0)2-xx=11=xx
+x+x-x/x/x>x<x>=x<=x->x<-x,x;x:x >> x << x|x||x||x|
+.EN
+.EQ
+x sub i,j x sub 1 x sub j x sub 0 x sup 0 x sup i x sup j x sup 2 x sub 1 sup 2
+x sub 1,2 x sub i sub j sub 0 x sub i sup j x sup 2 x sub 1 sup 2
+x cdot
+x times
+x alpha
+x beta
+x delta
+x theta
+x lambda x chi
+x DELTA x inf x int x sum x pi x partial x
+x ,..., x ... x x' x sup ' x sub i sup ' int int sum sum
+.EN
+.sp
+.EQ
+n0n1n2n(n)[n]n[(n+1)]n(n-0)2-nn=11=nn
+n+n-n/n/n>n<n>=n<=n->n<-n,n;n:n >> n << n|n||n||n|
+.EN
+.EQ
+n sub i,j n sub 1 n sub j n sub 0 n sup 0 n sup i n sup j n sup 2 n sub 1 sup 2
+n sub 1,2 n sub i sub j sub 0 n sub i sup j n sup 2 n sub 1 sup 2
+n cdot
+n times
+n alpha
+n beta
+n delta
+n theta
+n lambda n chi
+n DELTA n inf n int n sum n pi n partial n
+n ,..., n ... n
+.EN
+.sp
+.EQ
+3[+2](-1)[]()[/]/(/)B[h]/(n%1)]+)-/+(+[-+-\(muffifjfkf\(*ljajbj\(pdjf|-x|/||F||=| int |)[|]
+.EN
+.sp
+.EQ
+z0z1z2z(z)[z]z[(z+1)]z(z-0)2-zz(1+z)
+z=11=zz+z-z/z/z>z<z>=z<=z->z<-z,z
+z;z:z >> z << z|z||z|z|
+.EN
+.EQ
+z sub i,j z sub 1 z sub j z sub 0 z sup 0 z sup i z sup j z sup 2 z sub 1 sup 2
+z sub 1,2 z sub i sub j sub 0 z sub i sup j z sup 2 z sub 1 sup 2
+z cdot
+z times
+z alpha
+z beta
+z delta
+z theta
+z lambda z chi
+z DELTA z inf z int z sum z pi z partial z
+z ,..., z ... z
+.EN
+.sp
+.EQ
+y0y1y2y(y)[y]y[(y+1)]y(y-0)2-yy=11=yy
+y+y-y/y/y>y<y>=y<=y->y<-y,y;y:y >> y << y|y||y|y|
+.EN
+.EQ
+y sub i,y y sub 1 y sub y y sub 0 y sup 0 y sup i y sup y y sup 2 y sub 1 sup 2
+y sub 1,2 y sub i sub j sub 0 y sub i sup j y sup 2 y sub 1 sup 2
+y cdot
+y times
+y alpha
+y beta
+y delta
+y theta
+y lambda y chi
+y DELTA y inf y int y sum y pi y partial y
+y ,..., y ... y
+.EN
+.sp
+.EQ
+i0
+i1
+i2
+i(i)[i]i[(i+1)]i(i-0)2-i
+i=1
+1=i
+i+i-i/i/i>i<i>=i<=i->i<-i,i;i:i >> i << i
+|i||i|i|
+.EN
+.EQ
+i sub i,j i sub 1 i sub j i sub 0 i sup 0 i sup i i sup j i sup 2 i sub 1 sup 2
+i sub 1,2 i sub i sub j sub 0 i sub i sup j i sup 2 i sub 1 sup 2
+i cdot
+i times
+i alpha
+i beta
+i delta
+i theta
+i lambda i chi
+i DELTA i inf i int i sum i pi i partial i
+i ,..., i ... i
+.EN
+.sp
+.EQ
+j0
+j1
+j2
+j(j)[j]j[(j+1)]j(j-0)2-j
+j=1
+1=j
+j+j-j/j/j>j<j>=j<=j->j<-j,j;j:j >> j << j
+|j||j|j|
+.EN
+.EQ
+j sub i,j j sub 1 j sub j j sub 0 j sup 0 j sup i j sup j j sup 2 j sub 1 sup 2
+j sub 1,2 j sub j sub j sub 0 j sub j sup j j sup 2 j sub 1 sup 2
+j cdot
+j times
+j alpha
+j beta
+j delta
+j theta
+j lambda j chi
+j DELTA j inf j int j sum j pi j partial j
+j ,..., j ... j
+.EN
+.sp
+.EQ
+f0
+f1
+f2
+f(f)[f]f[(f+1)]f(f-0)2-f
+f=1
+1=f
+f+f-f/f/f>f<f>=f<=f->f<-f,f;f:f >> f << f
+|f||f||f|f' f sub 1 sup prime
+.EN
+.EQ
+f sub i,j f sub 1 f sub j f sub 0 f sup 0 f sup i f sup j f sup 2 f sub 1 sup 2
+f sub i,j f sup 2 f sub j sub 0 f sub i sup j f sup 2 f sub 1 sup 2
+f cdot
+f times
+f alpha
+f beta
+f delta
+f theta
+f lambda f chi
+f DELTA f inf f int f sum f pi f partial f
+f ,..., f ... f
+.EN
+.sp
+.EQ
+g0
+g1
+g2
+g(g)[g]g[(g+1)]g(g-0)2-g
+g=1
+1=g
+g+g-g/g/g>g<g>=g<=g->g<-g,g;g:g >> g << g
+|g||g||g|g' g sub 1 sup prime
+.EN
+.EQ
+g sub i,j g sub 1 g sub j g sub 0 g sup 0 g sup i g sup j g sup 2 g sub 1 sup 2
+g sub i,j g sup 2 g sub j sub 0 g sub i sup j g sup 2 g sub 1 sup 2
+g cdot
+g times
+g alpha
+g beta
+g delta
+g theta
+g lambda g chi
+g DELTA g inf g int g sum g pi g partial g
+g ,..., g ... g
+.EN
+.sp
+.EQ
+10
+11
+12
+1(1)[1]1[(1+1)]1(1-0)2-1
+1=1
+1=1
+1+1-1/1/1>1<1>=1<=1->1<-1,1;1:1 >> 1 << 1
+|1||1|1|
+.EN
+.EQ
+1 sub i,j 1 sub 1 1 sub j 1 sub 0 1 sup 0 1 sup i 1 sup j 1 sup 2 1 sub 1 sup 2
+1 sub i,j 1 sup 2 1 sub j sub 0 1 sub i sup j 1 sup 2 1 sub 1 sup 2
+1 cdot
+1 times
+1 alpha
+1 beta
+1 delta
+1 theta
+1 lambda 1 chi
+1 DELTA 1 inf 1 int 1 sum 1 pi 1 partial 1
+1 ,..., 1 ... 1
+.EN
+.sp
+.EQ
+00
+01
+02
+0(0)[0]0[(0+1)]0(0-0)2-0
+0=1
+1=0
+0+0-0/0/0>0<0>=0<=0->0<-0,0;0:0 >> 0 << 0
+|0||0|0|
+.EN
+.EQ
+0 sub i,j 0 sub 1 0 sub j 0 sub 0 0 sup 0 0 sup i 0 sup j 0 sup 2 0 sub 1 sup 2
+0 sub i,j 0 sup 2 0 sub j sub 0 0 sub i sup j 0 sup 2 0 sub 1 sup 2
+0 cdot
+0 times
+0 alpha
+0 beta
+0 delta
+0 theta
+0 lambda 0 chi
+0 DELTA 0 inf 0 int 0 sum 0 pi 0 partial 0
+0 ,..., 0 ... 0
+.EN
+.sp
+.EQ
+22
+21
+22
+2(2)[2]2[(2+1)]2(2-2)2-2
+2=1
+1=2
+2+2-2/2/2>2<2>=2<=2->2<-2,2;2:2 >> 2 << 2
+|2||2|2|
+.EN
+.EQ
+2 sub i,j 2 sub 1 2 sub j 2 sub 2 2 sup 2 2 sup i 2 sup j 2 sup 2 2 sub 1 sup 2
+2 sub i,j 2 sup 2 2 sub j sub 2 2 sub i sup j 2 sup 2 2 sub 1 sup 2
+2 cdot
+2 times
+2 alpha
+2 beta
+2 delta
+2 theta
+2 lambda 2 chi
+2 DELTA 2 inf 2 int 2 sum 2 pi 2 partial 2
+2 ,..., 2 ... 2
+.EN
+.sp
+.EQ
+X0
+X1
+X2
+X(X)[X]X[(X+1)]X(X-0)2-X
+X=1
+1=X
+X+X-X/X/X>X<X>=X<=X->X<-X,X;X:X >> X << X
+|X||X||X|
+.EN
+.EQ
+X sub i,j X sub 1 X sub j X sub 0 X sup 0 X sup i X sup j X sup 2 X sub 1 sup 2
+X sub i,j X sup 2 X sub j sub 0 X sub i sup j X sup 2 X sub 1 sup 2
+X cdot
+X times
+X alpha
+X beta
+X delta
+X theta
+X lambda X chi
+X DELTA X inf X int X sum X pi X partial X
+X ,..., X ... X
+.EN
+.sp
+.EQ
+H0
+H1
+H2
+H(H)[H]H[(H+1)]H(H-0)2-H
+H=1
+1=H
+H+H-H/H/H>H<H>=H<=H->H<-H,H;H:H >> H << H
+|H||H||H|
+.EN
+.EQ
+H sub i,j H sub 1 H sub j H sub 0 H sup 0 H sup i H sup j H sup 2 H sub 1 sup 2
+H sub i,j H sup 2 H sub j sub 0 H sub i sup j H sup 2 H sub 1 sup 2
+H cdot
+H times
+H alpha
+H beta
+H delta
+H theta
+H lambda H chi
+H DELTA H inf H int H sum H pi H partial H
+H ,..., H ... H
+.EN
+.sp
+.EQ
+Y0
+Y1
+Y2
+Y(Y)[Y]Y[(Y+1)]Y(Y-0)2-Y
+Y=1
+1=Y
+Y+Y-Y/Y/Y>Y<Y>=Y<=Y->Y<-Y,Y;Y:Y >> Y << Y
+|Y||Y||Y|
+.EN
+.EQ
+Y sub i,j Y sub 1 Y sub j Y sub 0 Y sup 0 Y sup i Y sup j Y sup 2 Y sub 1 sup 2
+Y sub i,j Y sup 2 Y sub j sub 0 Y sub i sup j Y sup 2 Y sub 1 sup 2
+Y cdot
+Y times
+Y alpha
+Y beta
+Y delta
+Y theta
+Y lambda Y chi
+Y DELTA Y inf Y int Y sum Y pi Y partial Y
+Y ,..., Y ... Y
+.EN
+.sp
+.EQ
+partial 0
+partial 1
+partial 2
+partial ( partial )[ partial ] partial [( partial +1)] partial ( partial -0)2- partial 
+partial =1
+1= partial 
+partial + partial - partial / partial / partial > partial < partial >= partial <= partial -> partial <- partial , partial ; partial : partial  >>  partial  <<  partial 
+| partial || partial | partial |
+.EN
+.EQ
+partial sub i,j partial sub 1 partial sub j partial sub 0 partial sup 0 partial sup i partial sup j partial sup 2 partial sub 1 sup 2
+partial sub i,j partial sup 2 partial sub j sub 0 partial sub i sup j partial sup 2 partial sub 1 sup 2
+partial cdot
+partial times
+partial alpha
+partial beta
+partial delta
+partial theta
+partial lambda partial chi
+partial DELTA partial inf partial int partial sum partial pi partial partial partial 
+partial ,..., partial ... partial 
+.EN
+.sp
+.EQ
+pi 0
+pi 1
+pi 2
+pi ( pi )[ pi ] pi [( pi +1)] pi ( pi -0)2- pi 
+pi =1
+1= pi 
+pi + pi - pi / pi / pi > pi < pi >= pi <= pi -> pi <- pi , pi ; pi : pi  >>  pi  <<  pi 
+| pi || pi || pi |
+.EN
+.EQ
+pi sub i,j pi sub 1 pi sub j pi sub 0 pi sup 0 pi sup i pi sup j pi sup 2 pi sub 1 sup 2
+pi sub i,j pi sup 2 pi sub j sub 0 pi sub i sup j pi sup 2 pi sub 1 sup 2
+pi cdot
+pi times
+pi alpha
+pi beta
+pi delta
+pi theta
+pi lambda pi chi
+pi DELTA pi inf pi int pi sum pi pi pi partial pi 
+pi ,..., pi ... pi 
+.EN
+.sp
+.EQ
+alpha 0
+alpha 1
+alpha 2
+alpha ( alpha )[ alpha ] alpha [( alpha +1)] alpha ( alpha -0)2- alpha 
+alpha =1
+1= alpha 
+alpha + alpha - alpha / alpha / alpha > alpha < alpha >= alpha <= alpha -> alpha <- alpha , alpha ; alpha : alpha  >>  alpha  <<  alpha 
+| alpha || alpha || alpha |
+.EN
+.EQ
+alpha sub i,j alpha sub 1 alpha sub j alpha sub 0 alpha sup 0 alpha sup i alpha sup j alpha sup 2 alpha sub 1 sup 2
+alpha sub i,j alpha sup 2 alpha sub j sub 0 alpha sub i sup j alpha sup 2 alpha sub 1 sup 2
+alpha cdot
+alpha times
+alpha alpha
+alpha beta
+alpha delta
+alpha theta
+alpha alpha alpha chi
+alpha DELTA alpha inf alpha int alpha sum alpha pi alpha partial alpha 
+alpha ,..., alpha ... alpha 
+.EN
+.sp
+.EQ
+lambda 0
+lambda 1
+lambda 2
+lambda ( lambda )[ lambda ] lambda [( lambda +1)] lambda ( lambda -0)2- lambda 
+lambda =1
+1= lambda 
+lambda + lambda - lambda / lambda / lambda > lambda < lambda >= lambda <= lambda -> lambda <- lambda , lambda ; lambda : lambda  >>  lambda  <<  lambda 
+| lambda || lambda || lambda |
+.EN
+.EQ
+lambda sub i,j lambda sub 1 lambda sub j lambda sub 0 lambda sup 0 lambda sup i lambda sup j lambda sup 2 lambda sub 1 sup 2
+lambda sub i,j lambda sup 2 lambda sub j sub 0 lambda sub i sup j lambda sup 2 lambda sub 1 sup 2
+lambda cdot
+lambda times
+lambda alpha
+lambda beta
+lambda delta
+lambda theta
+lambda lambda lambda chi
+lambda DELTA lambda inf lambda int lambda sum lambda pi lambda partial lambda 
+lambda ,..., lambda ... lambda 
+.EN
+.EQ
+z sub i sup j
+i sub i sup j
+j sub i sup j
+f sub i sup j
+x sub i sup j
+1 sub i sup j
+0 sub i sup j
+X sub i sup j
+H sub i sup j
+Y sub i sup j
+partial sub i sup j
+pi sub i sup j
+lambda sub i sup j
+.EN
+.EQ
+z sub m sup k
+i sub m sup k
+j sub m sup k
+f sub m sup k
+x sub m sup k
+1 sub m sup k
+0 sub m sup k
+X sub m sup k
+H sub m sup k
+Y sub m sup k
+partial sub m sup k
+pi sub m sup k
+lambda sub m sup k
+.EN
+.EQ
+z sub pi sup 2
+i sub pi sup 2
+j sub pi sup 2
+f sub pi sup 2
+x sub pi sup 2
+1 sub pi sup 2
+0 sub pi sup 2
+X sub pi sup 2
+H sub pi sup 2
+Y sub pi sup 2
+partial sub pi sup 2
+pi sub pi sup 2
+lambda sub pi sup 2
+.EN
+.EQ
+gfont R
+.EN
+.EQ
+z sub i sup j
+i sub i sup j
+j sub i sup j
+f sub i sup j
+x sub i sup j
+1 sub i sup j
+0 sub i sup j
+X sub i sup j
+H sub i sup j
+Y sub i sup j
+partial sub i sup j
+pi sub i sup j
+lambda sub i sup j
+.EN
+.EQ
+z sub m sup k
+i sub m sup k
+j sub m sup k
+f sub m sup k
+x sub m sup k
+1 sub m sup k
+0 sub m sup k
+X sub m sup k
+H sub m sup k
+Y sub m sup k
+partial sub m sup k
+pi sub m sup k
+lambda sub m sup k
+.EN
+.EQ
+z sub pi sup 2
+i sub pi sup 2
+j sub pi sup 2
+f sub pi sup 2
+x sub pi sup 2
+1 sub pi sup 2
+0 sub pi sup 2
+X sub pi sup 2
+H sub pi sup 2
+Y sub pi sup 2
+partial sub pi sup 2
+pi sub pi sup 2
+lambda sub pi sup 2
+.EN
+.EQ
+gfont B
+.EN
+.EQ
+z sub i sup j
+i sub i sup j
+j sub i sup j
+f sub i sup j
+x sub i sup j
+1 sub i sup j
+0 sub i sup j
+X sub i sup j
+H sub i sup j
+Y sub i sup j
+partial sub i sup j
+pi sub i sup j
+lambda sub i sup j
+.EN
+.EQ
+z sub m sup k
+i sub m sup k
+j sub m sup k
+f sub m sup k
+x sub m sup k
+1 sub m sup k
+0 sub m sup k
+X sub m sup k
+H sub m sup k
+Y sub m sup k
+partial sub m sup k
+pi sub m sup k
+lambda sub m sup k
+.EN
+.EQ
+z sub pi sup 2
+i sub pi sup 2
+j sub pi sup 2
+f sub pi sup 2
+x sub pi sup 2
+1 sub pi sup 2
+0 sub pi sup 2
+X sub pi sup 2
+H sub pi sup 2
+Y sub pi sup 2
+partial sub pi sup 2
+pi sub pi sup 2
+lambda sub pi sup 2
+.EN
+.sp
+.EQ
+gfont I
+x sub i )x
+x sub j )x
+x sub K )x
+x sub H )x
+x sub 1 )x
+x sub 2 )x
+~~~
+x sup i )x
+x sup j )x
+x sup K )x
+x sup H )x
+x sup 1 )x
+x sup 2 )x
+~~~
+(x)x
+(1)x
+(y)x
+(K)x
+(H)x
+(2)x
+~~~
+(x )x
+(1 )x
+(y )x
+(K )x
+(H )x
+(2 )x
+.EN
+.EQ
+x sup i sup j )x
+x sup i sup 1 )x
+x sup i sup 2 )x
+x sup i sup K )x
+x sup i sup H )x
+x sup i sup n )x
+x sup i sup m )x
+~~~
+x sup 2 sup j )x
+x sup 2 sup 1 )x
+x sup 2 sup 2 )x
+x sup 2 sup K )x
+x sup 2 sup H )x
+x sup 2 sup n )x
+x sup 2 sup m )x
+~~~
+x sub i sub j )x
+x sub i sub 1 )x
+x sub i sub 2 )x
+x sub i sub K )x
+x sub i sub H )x
+x sub i sub n )x
+x sub i sub m )x
+.EN
+.EQ
+x sub 2 sub j )x
+x sub 2 sub 1 )x
+x sub 2 sub 2 )x
+x sub 2 sub K )x
+x sub 2 sub H )x
+x sub 2 sub n )x
+x sub 2 sub m )x
+.EN
+.EQ
+gfont R
+(x)xxxx
+(y)xxxx
+(1)xxxx
+(2)xxxx
+(X)xxxx
+(Y)xxxx
+(x+y)xxxx
+(X-Y)xxxx
+.EN
+
+.EQ
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+x sub i sub 2 sup j
+.EN
+.vs 16p
+.nf
+.EQ
+1.2 ~~ 3.4 ~~~ x.1 ~~~ 1.x ~~~ a.b ~~~ x.y ~~~ X.Z
+.EN
+.EQ
+gfont R
+1.2 ~~ 3.4 ~~~ x.1 ~~~ 1.x ~~~ a.b ~~~ x.y ~~~ X.Z
+.EN
+.EQ
+gfont B
+1.2 ~~ 3.4 ~~~ x.1 ~~~ 1.x ~~~ a.b ~~~ x.y ~~~ X.Z
+.EN
+1.2 ~~ 3.4 ~~~ x.1 ~~~ 1.x ~~~ a.b ~~~ x.y ~~~ X.Z
+
+.EQ
+1,2 ~~ 3,4 ~~~ x,1 ~~~ 1,x ~~~ a,b ~~~ x,y ~~~ X,Z
+.EN
+.EQ
+gfont R
+1,2 ~~ 3,4 ~~~ x,1 ~~~ 1,x ~~~ a,b ~~~ x,y ~~~ X,Z
+.EN
+.EQ
+gfont B
+1,2 ~~ 3,4 ~~~ x,1 ~~~ 1,x ~~~ a,b ~~~ x,y ~~~ X,Z
+.EN
+1,2 ~~ 3,4 ~~~ x,1 ~~~ 1,x ~~~ a,b ~~~ x,y ~~~ X,Z

@@ -1,0 +1,146 @@
+From research!hounx!vap Wed Feb 25 17:49 EST 1987
+Message-Version: 2
+>To: /addr=research!bwk/pn=brian.w.kernighan
+Date: Wed, 25 Feb 1987 17:49 EST
+Message-Service: Mail
+Message-Protocol: EMail
+From: hounx!vap
+End-Of-Header:
+Email-Version: 2
+X-Postmark: valerie.a.partridge attbl ho3c506a 59533 2019491448 hounx!vap
+To: research!bwk
+Subject: Curiosity
+UA-Message-ID: <post.vap.Wed, 25 Feb 1987 17:39 EST>
+End-Of-Protocol:
+
+Brian,
+  This is not a problem (the figure comes out the way I want it to),
+just a curiosity:  on the lower figure, the 1st-3rd dashed-line pairs
+have 5 dashes and the 4th & 5th sets have 4, more widely-spaced dashes.
+The dashes in the legend and in the upper figure seem to be more like the
+widely-spaced than the narrowly-spaced dashed lines.  Any ideas?
+Valerie
+
+.EQ
+delim ##
+.EN
+.PH ""
+.BS
+.ce 2
+\f3AT&T BELL LABORATORIES - PROPRIETARY\f1
+Use pursuant to G.E.I. 2.2
+.BE
+.po -0.25i
+.ce
+\f3Figure 5a:\f1  Basic Operation of SPA*
+.FS *
+Figures adapted from [15].
+.FE
+.SP 2
+.PS
+.ps 10
+define SL | circle radius 0.05i with .c at 1st line.w + ($1i,$2i) |
+define ML | box invis wid 0.1i ht 0.1i with .c at 1st line.w + ($1i,$2i)
+	line from last box.n to last box.se to last box.sw to last box.n |
+
+line right 5.75i
+line up 2.5i from 1st line.w "load       "
+line invis right 5.75i from last line.n \
+"smoothed load = forecasted load #cdot (1- alpha sub n )# + measured load #cdot ( alpha sub n )#" \
+"smoothed increment = forecasted increment #cdot (1- beta sub n )# + measured increment #cdot ( beta sub n )#"
+line up 0.1i from 1st line.w + (0.75i,0)
+box invis "previous" "year" with .n at last line.s
+SL(0.75,0.75)
+line dashed right 1.45i from last circle.e
+arrow from last circle.e to 1st line.w + (2.25i,1.05i)
+line from last line.e to last line.e + (0.05i,0.05i) to last arrow.e \
+     + (0.05i,-0.05i) to last arrow.e
+line right 0.1i from last line.c + (0.05i,0)
+box invis "forecasted" "increment" with .w at last line.e
+line up 0.1i from 1st line.w + (2.25i,0)
+box invis "base" "year" with .n at last line.s
+SL(2.25,1.5)
+ML(2.25,1.8)
+line dashed right 1.45i from last circle.e
+arrow from last circle.e to 1st line.w + (3.75i,1.8i)
+line from last line.e to last line.e + (0.05i,0.05i) to last arrow.e \
+     + (0.05i,-0.05i) to last arrow.e
+line right 0.1i from last line.c + (0.05i,0)
+box invis "smoothed" "increment" with .w at last line.e
+line from 7th last line.e - (0.05i,0) to 7th last line.e + (-0.15i,0.1i) \
+to 2nd last box.w - (0.1i,0.1i) to 2nd last box.w
+line left 0.1i from last line.c - (0.1i,0)
+box invis "measured" "increment" with .e at last line.w
+arrow from last arrow.e to 1st line.w + (5.25i,2.1i)
+line up 0.1i from 1st line.w + (3.75i,0)
+box invis "future" "year 1" with .n at last line.s
+line up 0.1i from 1st line.w + (5.25i,0)
+box invis "future" "year 2" with .n at last line.s
+SL(4.0,0.3)
+ML(4.0,0.6)
+box invis ht 0.5i wid 1.25i "measured load " "forecasted load" \
+     "smoothed load " with .w at 1st line.w + (4.05i,0.45i)
+line <- left 0.25i from last box.w
+.PE
+.ps
+.SP 2
+.ce
+\f3Figure 5b:\f1  SPA Response to Outliers (Sign Repeated)*
+.SP
+.PS
+.ps 10
+define ML | box invis wid 0.1i ht 0.1i with .c at 1st line.w + ($1i,$2i)
+	line from last box.n to last box.se to last box.sw to last box.n |
+define FL | line -> right 0.95i up 0.2i from 1st line.w + ($1i,$2i) |
+define OT | line dashed from last line.e - (0.2i,0.3i) to last line.e + (0.2i,-0.3i)
+line dashed from 2nd last line.e + (-0.2i,0.3i) to 2nd last line.e + (0.2i,0.3i) |
+define OL | box wid 0.1i ht 0.1i with .c at 1st line.w + ($1i,$2i) |
+define SL | circle radius 0.05i with .c at 1st line.w + ($1i,$2i) |
+define num | line up 0.1i from 1st line.w + ($1i,0)
+	box invis ht 0.2i wid 0.1i "$2" with .n at last line.s |
+
+line right 6.5i
+line up 3.0i from 1st line.w "load        "
+num(0.25,1)
+num(1.25,2)
+num(2.25,3)
+num(3.25,4)
+box invis ht 0.3i "year of operation" with .n at last box.s
+num(4.25,5)
+num(5.25,6)
+num(6.25,7)
+ML(0.25,0.75)
+FL(0.3,0.75)
+OT()
+ML(1.25,1.2)
+SL(1.25,1.05)
+FL(1.3,1.05)
+OT()
+OL(2.25,2.0)
+arrow from last box.s to last line.c
+SL(2.25,1.4)
+FL(2.3,1.4)
+OT()
+OL(3.25,2.2)
+arrow from last line.c to last box.s
+FL(3.3,2.2)
+OT()
+ML(4.25,2.25)
+SL(4.25,2.35)
+FL(4.3,2.35)
+OT()
+ML(5.25,2.75)
+SL(5.25,2.65)
+FL(5.3,2.65)
+
+SL(4.5,0.3)
+ML(4.5,0.9)
+OL(4.5,0.45)
+box invis ht 0.75i wid 1.4i "measured load     " "forecasted load    " \
+     "outlier threshold  " "outlier                " \
+     "smoothed load     " with .w at 1st line.w + (4.55i,0.6i)
+line dashed left 0.25i from last box.w
+line <- left 0.25i from last box.w + (0,0.15i)
+.PE
+.SP 2
+

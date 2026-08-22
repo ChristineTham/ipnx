@@ -1,0 +1,29 @@
+.vg
+.ll 5i
+Blit Software
+
+.PS
+UK: line dashed from 0,0 to 3,0
+	"User" "Kernel" at UK + .4,0
+HT: line dashed from UK.end + (0,1.4) to UK.end - (0,1.4)
+	"Host  " rjust at end of last line + (0,.1)
+	"  Terminal" ljust at end of last line + (0,.1)
+U1: box ht .75 wid .75 "User" "Proc" at UK + 1,1
+U2: box same "User" "Proc" with .w at U1.e + .1,0
+Mux: box ht .5 wid .5 "mux" with .nw at U2.e + .1,0
+
+	spline from U1.s down 1 then right 1.5 then up to .33<Mux.s,Mux.sw>
+	spline from U2.s down .8 then right .55 then up to .66<Mux.s,Mux.sw>
+Muxt: box ht .75 wid .75 "mux" "term" at end of UK + (1.2,-.3)
+	spline from .5<Mux.s,Mux.se> down 1 then right to Muxt.w
+	L: line from Muxt.e right .3 down .1
+		" mouse" ljust at L.end
+	line from .5<Muxt.e,Muxt.se> right .1 down .3
+		" keyboard" ljust at end of last line
+B1:	box ht .3 wid .4 at Muxt + (-.5,1) "\s-2u1\s0"
+B2:	box ht .2 wid .5 at Muxt + (-.1,1.3) "\s-2u2\s0"
+B3:	box ht .5 wid .2 at Muxt + (.2,1) "\s-2u3\s0"
+	line from B1.s to Muxt.n - (.05,0)
+	line from B2.s to Muxt.n
+	line from B3.s to Muxt.n + (.05,0)
+.PE

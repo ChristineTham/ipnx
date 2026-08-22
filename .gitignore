@@ -42,3 +42,11 @@ libdmd/build-*.log
 libdmd/*.pgm
 libdmd/*.png
 __pycache__/
+
+# THE EXTRACTED TAPE IS SOURCE, WHATEVER ITS SUFFIX.  v10/source holds the
+# six V10 archives unpacked file by file, and nine of those files are named
+# *.tar or *.cpio -- source packages under cmd/, the same shape as the .c.a
+# archives.  The rules above exist to keep BUILT artefacts (disk images,
+# tapes) out of git; they are not about the tape's own contents, and without
+# this exception the extract silently loses nine files.
+!v10/source/**

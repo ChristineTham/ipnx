@@ -1,0 +1,19 @@
+Use APE everywhere.  Keep inspkg, mkpkg, seal, and unseal essential unchanged
+from old ASD stuff.
+
+Client distributee calls distributor rather than vice versa;
+eliminate the need for trust.
+
+Eliminate the crypto stuff; nobody uses it.  Either that or figure out
+a good way to put it in avoiding the problem Dennis mentioned about
+delayed replies.
+
+What about user ids and group ids?  There seem to be some hacks
+for when running setuid under Unix.  Does any of that mean anything
+real, or is it just feeping creaturism?
+
+Take out the feature for shipping special files--there is no
+real support of special files in APE, and we want to run under
+that everywhere.  If you really want to you can ship a script
+to make special files on the remote machine anyway.  (How calvinist
+are you feeling, Andrew asks?)

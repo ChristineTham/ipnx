@@ -1,0 +1,24 @@
+.sp 1i
+.PS
+box fill .7 noedge
+box fill .3
+.PE
+.PS
+circle fill .7 noedge
+circle fill .3
+.PE
+.PS
+line up right then up left then down left then down right fill .7 noedge
+move right .5
+line up right then up left then down left then down right fill .7
+.PE
+
+.PS
+box ht 1 wid 1 fill .3
+box ht .5 wid .5 at last box fill .7 noedge
+.PE
+
+.PS
+box ht 1 wid 1 fill .7
+box ht .5 wid .5 at last box fill 1 noedge "foo"
+.PE

@@ -1,0 +1,80 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.sqrt:
+.vs 20p
+.EQ I
+x = sqrt{a sup 2 + b sup 2}+ sqrt a over b +
+sqrt a sup 2 over b sup 2
+.EN
+.EQ I
+sqrt a+b over sqrt c+d
+~~~
+1 over sqrt{ax sup 2 +bx+c}
+.EN
+.EQ I
+sqrt{A over B} +
+sqrt{a over b} ~~ sqrt { b over a } ~~~ sqrt {A sup 2 over B} ~~~ sqrt {A over B sup 2 }
+.EN
+.EQ I
+sqrt x
+~~~ sqrt X+1
+~~~ sqrt 2
+~~~ sqrt x+1
+~~~ sqrt { x+y sup half}
+~~~ sqrt { X+Y sup half}
+~~~ sqrt { 2 sup 2 sup x }
+
+.EN
+.EQ I
+X = sqrt{A sup 2 + B sup 2}+ sqrt A over B +
+sqrt A sup 2 over B sup 2
+.EN
+.EQ I
+sqrt A+B over sqrt C+D
+~~~ 1 over sqrt{AX sup 2 +BX+C}
+~~~ sqrt A+B bar over sqrt C+D
+~~~ 1 over sqrt{AX bar sup 2 +BX+C}
+~~~ sqrt {phi sub m sup 1} bar
+.EN
+.EQ I
+sqrt { left [ a over b right ] }
+~~~
+sqrt { left { a over b right } }
+~~~
+sqrt { left [ a over b right ] sup 2 }
+~~~
+sqrt { left { a over b right } sup 2 }
+sqrt { left [ a over b over c over d right ] }
+~~~
+sqrt { left { a over b over c over d right } }
+~~~
+sqrt { left [ a over b over c over d right ] sup 2 }
+~~~
+sqrt { left { a over b over c over d right } sup 2 }
+.EN
+.EQ I
+sqrt x ~~ sqrt sqrt x ~~ sqrt sqrt sqrt x ~~ sqrt H sup 2 ~~ sqrt sqrt H sup 2 ~~ sqrt sqrt sqrt H sup 2 ~~
+.EN
+.sp
+From dmg Mon Apr 17 17:33:25 EDT 1989
+.sp
+The following equations look fine when set at ps 10, but not at ps 12...
+.EQ
+X sub {cdot ,p-1} ~=~ delta Q sub {cdot ,p-1} ~+~ sqrt {{1 ~-~ delta sup 2}
+over {p ~-~ 2}} sum from i=1 to p-2 Q sub {cdot ,i} ,
+.EN
+.EQ
+b sub i ~=~ zeta ~=~ sqrt {{1 ^-^ epsilon sup 2}
+over {p~-~1~+~ 2 sqrt {(p^-^1)(1^-^ delta sup 2 )}}} ~=~ O(1),
+.EN
+.ps 12
+.EQ
+X sub {cdot ,p-1} ~=~ delta Q sub {cdot ,p-1} ~+~ sqrt {{1 ~-~ delta sup 2}
+over {p ~-~ 2}} sum from i=1 to p-2 Q sub {cdot ,i} ,
+.EN
+.EQ
+b sub i ~=~ zeta ~=~ sqrt {{1 ^-^ epsilon sup 2}
+over {p~-~1~+~ 2 sqrt {(p^-^1)(1^-^ delta sup 2 )}}} ~=~ O(1),
+.EN

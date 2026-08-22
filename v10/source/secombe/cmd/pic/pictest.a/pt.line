@@ -1,0 +1,92 @@
+.sp 3i
+.PS
+line
+.PE
+.PS
+line right
+.PE
+.PS
+line right up
+.PE
+.PS
+line up then right then down right
+.PE
+.PS
+line
+line dotted
+line dashed
+line
+.PE
+.PS
+line right 6i dashed 1i
+.PE
+.PS
+line right 6i dashed 2i
+.PE
+.PS
+line from 0,0 by 1,0 by 0,1 by -1,0 by 0,-1
+.PE
+.PS 6i
+line from 0,0 \
+ then to 0.05774,0.00368 \
+ then to 0.11058,0.01276 \
+ then to 0.16153,0.0272 \
+ then to 0.21059,0.04689 \
+ then to 0.25728,0.07164 \
+ then to 0.30109,0.10117 \
+ then to 0.34155,0.13517 \
+ then to 0.37819,0.17324 \
+ then to 0.41061,0.21496 \
+ then to 0.43845,0.25988 \
+ then to 0.4614,0.30747 \
+ then to 0.47919,0.35723 \
+ then to 0.49164,0.40858 \
+ then to 0.4986,0.46096 \
+ then to 0.5,0.51378 \
+ then to 0.49582,0.56646 \
+ then to 0.4861,0.6184 \
+ then to 0.47095,0.66902 \
+ then to 0.45055,0.71777 \
+ then to 0.42513,0.76409 \
+ then to 0.39495,0.80747 \
+ then to 0.36037,0.84742 \
+ then to 0.32177,0.8835 \
+ then to 0.27958,0.91531 \
+ then to 0.23426,0.94249 \
+ then to 0.18634,0.96474 \
+ then to 0.13637,0.98179 \
+ then to 0.08514,0.99342 \
+ then to 0.03477,0.9994 \
+ then to 0,1 \
+ then to -0.03477,0.9994 \
+ then to -0.08514,0.99342 \
+ then to -0.13637,0.98179 \
+ then to -0.18634,0.96474 \
+ then to -0.23426,0.94249 \
+ then to -0.27958,0.91531 \
+ then to -0.32177,0.8835 \
+ then to -0.36037,0.84742 \
+ then to -0.39495,0.80747 \
+ then to -0.42513,0.76409 \
+ then to -0.45055,0.71777 \
+ then to -0.47095,0.66902 \
+ then to -0.4861,0.6184 \
+ then to -0.49582,0.56646 \
+ then to -0.5,0.51378 \
+ then to -0.4986,0.46096 \
+ then to -0.49164,0.40858 \
+ then to -0.47919,0.35723 \
+ then to -0.4614,0.30747 \
+ then to -0.43845,0.25988 \
+ then to -0.41061,0.21496 \
+ then to -0.37819,0.17324 \
+ then to -0.34155,0.13517 \
+ then to -0.30109,0.10117 \
+ then to -0.25728,0.07164 \
+ then to -0.21059,0.04689 \
+ then to -0.16153,0.0272 \
+ then to -0.11058,0.01276 \
+ then to -0.05774,0.00368 \
+ then to 0,0
+
+.PE

@@ -1,0 +1,4 @@
+END {
+	break
+	print NR # don't get here
+}

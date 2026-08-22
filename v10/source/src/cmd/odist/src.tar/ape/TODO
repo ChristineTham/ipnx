@@ -1,0 +1,7 @@
+Pervasive error checking:
+
+* dist.sh
+	check exit code of mkpkg and other programs; don't
+	make a valid queue entry unless everything went perfectly.
+* scanq.c transmit.c:
+	inspect for places that need error checking

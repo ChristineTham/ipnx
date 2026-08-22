@@ -1,0 +1,14 @@
+theismann	washington	252	161	2033	13	9
+d.white		dallas		247	156	2079	16	12
+montana		san.francisco	346	213	2613	17	11
+mcmahon		chicago		210	120	1501	9	7
+bartkowski	atlanta		262	166	1905	8	11
+ferragamo	los.angeles	209	118	1609	9	9
+jaworski	philadelphia	286	167	2076	12	12
+kramer		minnesota	308	176	2037	15	12
+dickey		green.bay	218	124	1790	12	14
+brunner		new.york	298	161	2017	10	9
+stabler		new.orleans	189	117	1343	6	10
+lomax		st.louis	205	109	1367	5	6
+williams	tampa.bay	307	164	2071	9	11
+danielson	detroit		197	100	1343	10	14

@@ -1,0 +1,15 @@
+.nf
+.sp .5i
+.sy date >/tmp/foo
+.so /tmp/foo
+et.fat:
+.nf
+.EQ
+gfont I
+x sub i ~~ fat {x sub i} ~~ grad ~~ fat grad
+~~ x sub fat i ~~ fat lambda  ~~ fat partial
+.EN
+.EQ
+gfont B
+x ~~ fat x ~~ fat {x sub i}
+.EN

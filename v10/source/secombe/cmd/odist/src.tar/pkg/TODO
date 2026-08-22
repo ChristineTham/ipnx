@@ -1,0 +1,7 @@
+Fix up the #include files so they aren't so redundantly included.
+
+Make schk() and nchk() more informative.
+
+Look into Sig_type.
+
+Declare all the externs from "asd.h" in appropriate places.
