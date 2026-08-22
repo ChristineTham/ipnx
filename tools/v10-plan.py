@@ -671,6 +671,21 @@ def scan():
             rows = rule_programs(text, u["src"], admin)
             mm = macros(text)
             rr = recipes(text)
+            # A UNIT WITH A MAKEFILE STATES ITS OWN FLAGS, and they carry more
+            # than the optimiser: cmd/yacc says `-O -DWORD32' and cmd/c2 says
+            # `-O -DCOPYCODE'.  Admin/large governs only the LOOSE cmd/*.c --
+            # c2's source is c20.c and yacc's is y1.c..y4.c, so neither could
+            # ever appear in that list.  Compiling them -Od2 without their -D
+            # gave `word displacement overflow' at link time, which reads as a
+            # linker limit and is a missing flag.
+            own = expand(mm.get("CFLAGS", ""), mm)
+            # THE MAKEFILE'S FLAGS VERBATIM, including -g.  Filtering to
+            # -O/-D dropped cmd/ccom's `CFLAGS=-g' entirely and fell back to
+            # -Od2, which is the opposite of what the tape asks for: -g is no
+            # optimiser at all.  cgram.o then overflowed at link time.
+            keep = [w for w in own.split()
+                    if w.startswith(("-O", "-D", "-g", "-I."))]
+            unitcf = " ".join(keep) if keep else "-Od2"
             for dname, ddir, target in aliases(text, mm, rr):
                 links.append((dname, ddir, target, d))
             allf = u["src"] + [f for f in os.listdir(os.path.join(TREE, d))
@@ -686,6 +701,8 @@ def scan():
         # directories the same way.  A main() is covered when its object is in
         # some program's object list; anything else is a program the plan does
         # not build, whatever else the directory managed to produce.
+        if not u["build"]:
+            unitcf = "-Od2"
         covered = set()
         for _, _, objs, _, _ in rows:
             covered.update(objs)
@@ -721,7 +738,15 @@ def scan():
                 continue
             if "games" in d.split("/") and not dest.startswith("/usr/games"):
                 dest = "/usr/games"
-            progs.append((name, d, dest, objs, libs, how, u["root"]))
+            # THE FLAG IS PART OF THE RECIPE.  cmd/Admin/Mk compiles the names
+            # in Admin/large with -O and everything else with -Od2, and -Od2
+            # runs c2 -- the peephole optimiser.  Dropping the distinction made
+            # ld, c2 and yacc fail with `word displacement overflow', which is
+            # the linker saying a branch no longer reaches.  They are in
+            # `large' precisely because they are too big for it.
+            cf = unitcf
+            progs.append((name, d, dest, objs, libs,
+                          "%s %s" % (how, cf), u["root"]))
 
     progs, dropped = dedupe(progs)
 
@@ -924,7 +949,11 @@ BOOTSTRAP = [("yacc", "/usr/bin/yacc", "src/cmd/yacc"),
              ("cc", "/bin/cc", "src/cmd"),
              ("ar", "/bin/ar", "src/cmd"),
              ("cmp", "/bin/cmp", "src/cmd"),
-             ("ed", "/bin/ed", "src/cmd/ed"),
+             # THE LOOSE ed.c, NOT cmd/ed.  cmd/ed is the POSIX generation and
+             # it cannot build here: posix.h wants <unistd.h>, <dirent.h> and
+             # <sys/wait.h>, none of which r70 has.  src/cmd/ed.c is 24 KB with
+             # ZERO POSIX headers -- the ed this system actually compiles.
+             ("ed", "/bin/ed", "src/cmd"),
              ("halt", "/etc/halt", "src/cmd"),
              ("sleep", "/usr/bin/sleep", "src/cmd")]
 
@@ -947,8 +976,13 @@ STAGES = [("1", "The toolchain",
 def build_plan(s):
     rows = []
     boot = {n for n, _, _ in BOOTSTRAP}
+    # THE BOOTSTRAP LOOKS IN THE DROPPED ROWS TOO.  The dedupe prefers a
+    # directory named for the program, so cmd/ed beat the loose cmd/ed.c -- and
+    # cmd/ed is the POSIX generation, which cannot build here.  Stage 1 names
+    # its unit precisely so it can ask for the other one, and it must be able
+    # to see it.
     byname = collections.defaultdict(list)
-    for p in s["progs"]:
+    for p in list(s["progs"]) + list(s["dropped"]):
         byname[p[0]].append(p)
 
     for name, dest, unit in BOOTSTRAP:

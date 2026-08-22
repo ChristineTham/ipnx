@@ -236,10 +236,12 @@ sh "rm -f /dev/ra1a /dev/ra1c" 60
 sh "/etc/mknod /dev/ra1a b 7 $RMINOR; /etc/mknod /dev/ra1c b 7 $UMINOR" 300
 must "the blank's nodes exist" \
     [try "test -b /dev/ra1a && test -b /dev/ra1c && echo ND\$OK" "ND-ok" 300]
-must "mkbitfs writes the ${RBLKS}-block root" \
-    [try "/etc/mkbitfs /dev/ra1a $RBLKS && echo M1\$OK" "M1-ok" 1800]
-must "mkbitfs writes the ${UBLKS}-block /usr" \
-    [try "/etc/mkbitfs /dev/ra1c $UBLKS && echo M2\$OK" "M2-ok" 1800]
+if {$STAGE == 1} {
+    must "mkbitfs writes the ${RBLKS}-block root" \
+        [try "/etc/mkbitfs /dev/ra1a $RBLKS && echo M1\$OK" "M1-ok" 1800]
+    must "mkbitfs writes the ${UBLKS}-block /usr" \
+        [try "/etc/mkbitfs /dev/ra1c $UBLKS && echo M2\$OK" "M2-ok" 1800]
+}
 
 sh "rm -rf $MNT; mkdir $MNT" 300
 must "the new root mounts"   [try "/etc/mount /dev/ra1a $MNT && echo MT\$OK" "MT-ok" 900]
@@ -249,12 +251,14 @@ must "the new /usr mounts"   [try "/etc/mount /dev/ra1c $MNT/usr && echo MU\$OK"
 # Every directory an install target writes into.  V10's mkdir makes ONE level
 # and prints `File exists' rather than failing, which is right for an additive
 # pass.
-foreach d {bin etc lib dev tmp n usr} { sh "mkdir $MNT/$d" 120 }
-foreach d {bin lib include games maps man doc adm tmp src jerq} {
-    sh "mkdir $MNT/usr/$d" 120
+if {$STAGE == 1} {
+    foreach d {bin etc lib dev tmp n usr} { sh "mkdir $MNT/$d" 120 }
+    foreach d {bin lib include games maps man doc adm tmp src jerq} {
+        sh "mkdir $MNT/usr/$d" 120
+    }
+    sh "mkdir $MNT/usr/lib/lex" 120
+    sh "mkdir $MNT/usr/jerq/bin" 120
 }
-sh "mkdir $MNT/usr/lib/lex" 120
-sh "mkdir $MNT/usr/jerq/bin" 120
 sh "rm -rf $OBJ; mkdir $OBJ" 300
 
 # ================================================================= build ===
@@ -264,19 +268,44 @@ sh "rm -rf $OBJ; mkdir $OBJ" 300
 puts "\n===== the plan, stage by stage =====\n"
 
 puts "\n----- STAGE $STAGE -----\n"
-set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT /bin/cc /lib/ > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PEND" \
+# RULE 3: THE NEW TOOLCHAIN RUNS ON THE NEW IMAGE.  Stage 1 has to use the
+# builder's compiler -- the image has none yet -- but from stage 2 the passes
+# doing the work are the ones on the disk being built.  By stage 3 the image
+# compiles itself and the builder is only lending a kernel.
+if {$STAGE == 1} {
+    set USECC "/bin/cc"
+    set USEBP "/lib/"
+} else {
+    set USECC "$MNT/bin/cc"
+    set USEBP "$MNT/lib/"
+}
+set ok [run "sh $BLD $STAGE $N $OURS $PLAN $OBJ $MNT $USECC $USEBP > /tmp/s.log 2>&1; sed -e '/^P/!d' /tmp/s.log; echo PEND" \
             "PEND" 14400]
 note "stage $STAGE ran to its end marker" $ok
 run "echo SFAIL; sed -e '/^PFAILED/!d' -e 20q /tmp/s.log; echo SFAILEND" "SFAILEND" 900
 
-note "the image has a C compiler" \
-    [try "test -s $MNT/bin/cc && test -s $MNT/lib/ccom && echo CC\$OK" "CC-ok" 600]
-note "and an assembler and a loader" \
-    [try "test -s $MNT/bin/as && test -s $MNT/bin/ld && echo AL\$OK" "AL-ok" 600]
-note "and libc" \
-    [try "test -s $MNT/lib/libc.a && echo LC\$OK" "LC-ok" 600]
-note "and a shell" \
-    [try "test -s $MNT/bin/sh && echo SH\$OK" "SH-ok" 600]
+# AN ASSERTION FOR A LATER STAGE IS NOT A FAILURE, IT IS A DELAY.  Checking for
+# libc and /bin/sh after stage 1 cost twenty minutes of timeouts on a run that
+# had done everything asked of it, and reported 15/17 on a complete stage.  Each
+# stage asserts what IT produces.
+switch $STAGE {
+  1 {
+    note "the image has a C compiler" \
+        [try "test -s $MNT/bin/cc && test -s $MNT/lib/ccom && echo CC\$OK" "CC-ok" 300]
+    note "and an assembler and a loader" \
+        [try "test -s $MNT/bin/as && test -s $MNT/bin/ld && echo AL\$OK" "AL-ok" 300]
+    note "and cpp and c2" \
+        [try "test -s $MNT/lib/cpp && test -s $MNT/lib/c2 && echo PC\$OK" "PC-ok" 300]
+  }
+  2 {
+    note "libc is on the image" \
+        [try "test -s $MNT/lib/libc.a && echo LC\$OK" "LC-ok" 300]
+  }
+  6 {
+    note "the image has a shell" \
+        [try "test -s $MNT/bin/sh && echo SH\$OK" "SH-ok" 300]
+  }
+}
 
 run "echo INV; ls $MNT/bin | wc -l; ls $MNT/etc | wc -l; ls $MNT/usr/bin | wc -l; echo INVEND" "INVEND" 900
 
