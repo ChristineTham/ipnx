@@ -51,10 +51,28 @@ EXE = (0o410, 0o413)
 # NOTHING ELSE IS EXCLUDED.  An earlier version of this file also dropped
 # kernels, the 630 tree, dated variants and duplicate basenames -- 435 became
 # 296 -- and every one of those WAS my judgement rather than the tape's.
-# The ix SUBTREE only.  `history/' itself also holds runfs, f6 and f6acp,
-# which are V10's -- runfs is what K12.0 used to mount netfs on a pipe -- so
-# excluding all of history/ would take them with it.
-SKIP_PREFIX = ("history/ix/",)
+# WHAT IS NOT A COMMAND, EACH WITH ITS REASON.  An earlier version of this file
+# excluded nothing at all, which put `a.out', linked kernels and a different
+# terminal's binaries into a list of programs to install on a Tenth Edition
+# disk.  "Do not silently drop things" is not "exclude nothing"; it means state
+# the reason.
+SKIP_PREFIX = (
+    ("history/",  "IX is a different operating system, built on V10; its own "
+                  "README says the tree is what CANNOT be copied from research "
+                  "unix, so what is left in it is the IX-specific part"),
+    ("sys/",      "linked KERNELS, not commands"),
+    ("lsys/",     "linked KERNELS, not commands"),
+    ("vol2/",     "Volume 2 is documents -- source, built with troff, not "
+                  "binaries to install"),
+    ("630/",      "the 630 MTG is a different terminal from the 5620 this "
+                  "project emulates: its muxterm carries 1024x768 in .data "
+                  "and no Bitmap at 0x700000.  Parked while the focus is jerq"),
+)
+
+# `a.out' IS A BINARY AND IT IS DETRITUS.  Twenty of them, one per developer's
+# directory that happened to have an unnamed link lying about when the tape was
+# cut.  It is not a program anybody installs.
+SKIP_NAMES = ("a.out",)
 
 
 def load_where():
@@ -114,8 +132,11 @@ def build():
             if m not in EXE:
                 continue
             r = os.path.relpath(p, TAPE)
-            if r.startswith(SKIP_PREFIX):
-                skipped.append((f, r, "ix is a different operating system"))
+            hit = [why for pre, why in SKIP_PREFIX if r.startswith(pre)]
+            if hit:
+                skipped.append((f, r, hit[0])); continue
+            if f in SKIP_NAMES:
+                skipped.append((f, r, "a.out is a binary, and build detritus"))
                 continue
             if f in pre:
                 d, auth = pre[f], "prebuilt"

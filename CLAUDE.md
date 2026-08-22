@@ -83,7 +83,19 @@ Track B (V10). The tree is **not** in git — `v10/` holds only MANIFEST and
 CASEMAP, and `work/v10/` is rebuilt from the TUHS tarballs:
 
 ```bash
-# Unpack v10src + v10blit + r70include into work/v10/ (25,682 files)
+# Extract ALL SIX V10 archives into v10/source/, which is IN THE REPOSITORY
+bash tools/v10-source.sh       # 54,111 files; ends with a per-path verify
+```
+
+`v10/source` is the tree the build reads, and it is committed so that a
+question about the tape is a `git grep` rather than a re-scan. Six roots, one
+per archive, never merged — `src` and `secombe` are both `/usr/src` from
+different machines, so merging them would pick one file per path and call the
+result "the tape". Our 49 patches from `v10/src` are applied on top and listed
+in `v10/source/OVERLAY`; `CASEMAP` records the 316 paths macOS cannot spell.
+
+```bash
+# The older import, work/v10 only, three archives (25,682 files)
 tools/v10-import.py            # --verify re-checks every hash in ~15 s
 ```
 
@@ -551,16 +563,52 @@ Full spec: [docs/architecture.md](docs/architecture.md) · Phases:
   **The lesson is the general one: a negative established by searching ONE tree
   is a fact about that tree.** The original reasoning is kept below because it is
   correct about V10 and it is what makes the two-tape distinction visible.
-- **(V10-only, and still true.) THE 5620's COMPILER IS NOT IN THE V10 TARBALL —
-  and V10's tape says so in four places.** This settled rung 8,
+- **RETRACTED 2026-08-22: THE 5620's COMPILER *IS* ON THE V10 TAPE — THERE ARE
+  TWO V10 DISTRIBUTIONS AT TUHS AND THIS PROJECT HAD ONLY ONE.** Everything
+  below was measured across `work/v10` — Dan Cross's `v10src` + `v10blit` —
+  and then written down as a fact about *the tape*, singular. **Norman_v10
+  carries three more archives**, and one of them is the missing 5620
+  distribution outright:
+
+	secombe.gz    32M   /usr/src -- a SECOND, independent V10 source tree
+	milligan.gz    4M   /usr -- "directory jerq in the archive was
+	                    /usr/jerq" (Norman's own README)
+	sellers.gz    26M   the manuals: vol1 man, vol2
+
+  `milligan/jerq` is what rung 8 was blocked on, and it is complete:
+
+	sgs        272 files   3cc.c 3nm.c 32reloc.c as/ ar/ ld/ optim/
+	                       dis/ strip/ size/ libld/ libsdp/ comp/ inc/
+	src       1503 files   src/mux/{mux.c, makefile, term/, proto/}
+	src/lib                c C j jj layer mj pot npot olayer sys
+	                       -- the WE32100 libj/liblayer/libsys/libc
+	                       the link line calls "absent too", in SOURCE
+	mbin        58 files   PREBUILT .m binaries: jim.m sam.m proof.m
+	                       pen.m ped.m paint.m vismon.m pads.m ...
+	include     46 files
+
+  `src/mux/term/makefile` names `CC = 3cc` and `AS = 3as` — and `3cc` can now
+  be built. **The bullet's own reasoning was right and only its conclusion was
+  wrong**: it says *"on a real V10 the 5620 software arrived as a separate
+  5620 distribution tape installed into `/usr/jerq`"*, and `milligan.gz` is
+  that tape. K10.2 created `/usr/jerq` by hand because this had not been
+  imported.
+  **The general lesson is the one already recorded two bullets up and it has
+  now cost this project twice: A NEGATIVE ESTABLISHED BY SEARCHING ONE TREE IS
+  A FACT ABOUT THAT TREE.** Before writing down that V10 lacks something,
+  check which archives are on disk — `tools/v10-source.sh` extracts all six.
+  What follows is kept because it is correct about Dan Cross's tree and is
+  what makes the two-distribution distinction visible.
+- **(About Dan Cross's `v10src` alone.) THE 5620's COMPILER IS NOT IN *THAT*
+  TARBALL — and it says so in four places.** This was read as settling rung 8,
   which was carried for weeks as "an authenticity decision" when it is a
   measurement. `src/history/ix/src/jerq/mux/term/makefile` — `muxterm`'s own
   build — names `CC = 3cc`, `AS = 3as`, `3ld`, `3nm`; and
   `src/man/man9/3cc.9` says what those are, verbatim: *"3cc is the C compiler for
   the MAC-32 microprocessor in the Teletype DMD-5620 terminal"*, heading a family
   of eight (`3cc 3as 3ar 3ld 3nm 3size 3strip cprs`). **The man page is the only
-  one of the eight that survived** — no binary, no source, searched by name across
-  all 25,682 files and by every makefile that references them. The WE32100
+  one of the eight in *this* tarball** — no binary, no source, searched by name
+  across all 25,682 of its files (they are all in `milligan/jerq/sgs`) and by every makefile that references them. The WE32100
   `libj.a`/`liblayer.a`/`libsys`/`libc` on that link line are absent too, and the
   second route fails one layer up: `src/630/makefile` line 67 is
   `DMDCC=src/dmdcc`, a prerequisite of its own `all` target, and

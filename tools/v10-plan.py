@@ -65,8 +65,49 @@ def norm(d, name=None):
     return "/" + d.lstrip("/")
 
 
+# OUR SOURCE OVERRIDES THE TAPE'S, and the plan has to say which files those
+# are or it is describing a build that does not happen.  v10/src holds patched
+# copies -- each derived from a named upstream file with a stated sha256 -- and
+# worldc.sh already prefers them; our five one-line corrections were worth
+# three commands that would otherwise not compile.
+#
+# REIMPORTING CANNOT LOSE THEM: tools/v10-import.py writes only to work/v10,
+# the pristine tape, and v10/src is a different tree.  That separation is what
+# lets v10/MANIFEST keep asserting the tarball is unaltered.
+def overlay_index():
+    """What v10/src overrides, keyed by (top-level tree, stem).
+
+    KEYED BY TREE AS WELL AS NAME, because a bare basename match is wrong:
+    v10/src/libc/stdio/printf.c is a LIBC MEMBER, and matching it against the
+    command `printf' claimed the plan built /usr/bin/printf from our source
+    when it does not.  A command in cmd/ is only overridden by something in
+    v10/src/cmd/."""
+    root = os.path.join(ROOT, "v10", "src")
+    out = {}
+    for dp, _, fs in os.walk(root):
+        for f in fs:
+            if f == "PATCHES.md":
+                continue
+            rel = os.path.relpath(os.path.join(dp, f), root)
+            top = rel.split(os.sep)[0]
+            out[(top, f)] = rel
+            out[(top, os.path.splitext(f)[0])] = rel
+    return out
+
+
+def libc_ours(over):
+    """How many libc members come from our source rather than the tape's."""
+    return sorted({rel for (top, _), rel in over.items() if top == "libc"})
+
+
 def build():
     plan = {}          # path -> (stage, method, source, list)
+    over = overlay_index()
+
+    def mark(source, name, tree="cmd"):
+        """Note where our own copy supersedes the tape's, within one tree."""
+        rel = over.get((tree, name))
+        return source if rel is None else "%s  [ours: v10/src/%s]" % (source, rel)
 
     def put(path, stage, method, source, lst):
         # FIRST WRITER WINS, and a collision is reported rather than resolved:
@@ -81,12 +122,15 @@ def build():
                        ("buildtools.ord", "1 buildtools"),
                        ("shutdown.order", "1 shutdown")):
         for f in rows(lst, 3):
-            put(norm(f[2]), stage, "build", "%s/%s" % (f[1], f[0]), lst)
+            put(norm(f[2]), stage, "build",
+                mark("%s/%s" % (f[1], f[0]), f[0]), lst)
 
     # -- stage 2: libc.  260 members become two installed files.
     n = len(rows("libc.ord", 1))
+    ours = libc_ours(over)
     put("/lib/libc.a", "2 libc", "build",
-        "libc/mkfile, %d members in the tape's order" % n, "libc.ord")
+        "libc/mkfile, %d members in the tape's order, %d from v10/src"
+        % (n, len(ours)), "libc.ord")
     put("/lib/crt0.o", "2 libc", "build", "libc/csu", "libc.mk")
 
     # -- stage 4: the libraries
@@ -100,14 +144,15 @@ def build():
     # -- stage 6: the world.  world.link is name/dir/authority/-; world.prog
     #    names the programs inside multi-main units; aliases are second names.
     for f in rows("world.link", 2):
-        put(norm(f[1], f[0]), "6 world", "build", "cmd/%s" % f[0], "world.link")
+        put(norm(f[1], f[0]), "6 world", "build",
+            mark("cmd/%s" % f[0], f[0]), "world.link")
     # world.prog is `name unit unitdir dest libs objects...' -- the
     # destination is the FOURTH field.  Using the third gives paths like
     # /../games/atc/atc, because the third is the unit's directory relative
     # to cmd/.
     for f in rows("world.prog", 4):
         put(norm(f[3], f[0]), "6 world", "build",
-            "%s (%s)" % (f[2], f[1]), "world.prog")
+            mark("%s (%s)" % (f[2], f[1]), f[0]), "world.prog")
     # `name dir unitdir src' -- a shell script, copied rather than compiled.
     for f in rows("world.script", 4):
         put(norm(f[1], f[0]), "6 world", "copy", "cmd/%s/%s" % (f[2], f[3]),
@@ -121,7 +166,8 @@ def build():
 
     # -- stage 7: the tape's own binaries
     for f in rows("tapebins.txt", 3):
-        put(norm(f[2], f[0]), "7 tape", "copy", f[1], "tapebins.txt")
+        top = f[1].split("/")[0]
+        put(norm(f[2], f[0]), "7 tape", "copy", mark(f[1], f[0], top), "tapebins.txt")
 
     # -- stage 7: the device table
     for f in rows("proto-dev", 4):
