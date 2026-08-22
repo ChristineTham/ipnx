@@ -7,6 +7,3 @@
 aouthdr.h	tape	630/3binc/aouthdr.h
 filehdr.h	tape	630/3binc/filehdr.h
 scnhdr.h	tape	630/3binc/scnhdr.h
-sys/label.h	tape	history/ix/include/sys/label.h
-sys/pex.h	tape	history/ix/include/sys/pex.h
-sys/jlabel.h	tape	history/ix/include/sys/jlabel.h

@@ -7,7 +7,7 @@
 # authority: `where'   = v10/mk/where.txt resolved it (manual, makefile, V8)
 #            `default' = nothing named it; /usr/bin, and that is a guess
 #
-# 435 binaries, every linked executable the tape carries.
+# 428 binaries, every linked executable the tape carries.
 
 11as	cmd/PDP11/11as/11as	/usr/bin	default
 11as2	cmd/PDP11/11as/11as2	/usr/bin	default
@@ -113,7 +113,6 @@ diffh	cmd/diff/diffh	/usr/bin	default
 dispatch	cmd/odist/v10/dispatch	/usr/bin	default
 distribute	cmd/ap/apkeys/distribute	/usr/bin	default
 dkcc	ipc/bin/pupu/dkcc	/usr/bin	default
-dkclean	history/ix/root/etc/dkclean	/usr/bin	default
 dkdialer	ipc/mgrs/dkmgr/dkdialer	/usr/bin	default
 dkdialsub	dk/cmd/dkdialsub	/usr/bin	default
 dkhup	ipc/mgrs/dkmgr/dkhup	/usr/bin	default
@@ -184,7 +183,6 @@ library	cmd/library/library	/usr/bin	prebuilt
 lint1	cmd/lint/lint1	/usr/bin	default
 lint2	cmd/lint/lint2	/usr/bin	default
 loadfont	630/bin/loadfont	/usr/bin	default
-login.x	history/ix/root/etc/login.x	/usr/bin	default
 logtty	cmd/logtty	/usr/bin	prebuilt
 lookup	ipc/internet/lookup	/usr/bin	default
 loopback	ipc/bin/loopback	/usr/bin	default
@@ -255,7 +253,6 @@ opp	cmd/pp/opp	/usr/bin	default
 oprefix	cmd/twig/examples/oprefix	/usr/bin	default
 osam	630/bin/osam	/usr/bin	default
 osed	vol2/index/tools/osed	/usr/bin	default
-osession	history/ix/root/bin/osession	/usr/bin	default
 osum	cmd/sum/osum	/usr/bin	default
 path2bon	630/bin/path2bon	/usr/bin	default
 pax	cmd/odist/pax/src/cmd/pax/pax	/usr/bin	default
@@ -294,7 +291,6 @@ prefer	vol2/pi/prefer	/usr/bin	prebuilt
 prefix	cmd/twig/examples/prefix	/usr/bin	default
 proof	630/bin/proof	/usr/bin	default
 prose	cmd/wwb/prose	/usr/bin	default
-ps	history/ix/root/bin/ps	/bin	prebuilt
 ps	cmd/ps/ps	/bin	prebuilt
 ps	cmd/ops/ps	/bin	prebuilt
 psi	630/bin/psi	/usr/bin	default
@@ -306,7 +302,6 @@ punlx	cmd/wwb/punlx	/usr/bin	default
 pupu	ipc/bin/pupu/pupu	/usr/bin	default
 push	dk/cmd/push	/usr/bin	default
 push	ipc/bin/push	/usr/bin	default
-pwx	history/ix/root/etc/pwx	/usr/bin	default
 qbright	cmd/qsnap/qbright	/usr/bin	default
 qns	ipc/bin/qns	/usr/bin	default
 qreset	cmd/qsnap/qreset	/usr/bin	default
@@ -347,7 +342,6 @@ sed	cmd/sed/sed	/usr/bin	prebuilt
 seki.u	lsys/astro/seki.u	/usr/bin	default
 send	cmd/upas/send/send	/usr/bin	default
 sequal	cmd/monk/cmd/index/sequal	/usr/bin	default
-session	history/ix/root/bin/session	/usr/bin	default
 setpart	cmd/setpart	/usr/bin	prebuilt
 sets	cmd/cyntax/cyn/sets	/usr/bin	default
 sets	cmd/cyntax/sets/sets	/usr/bin	default
@@ -358,7 +352,6 @@ sign	cmd/sign/sign	/usr/bin	prebuilt
 sprog	cmd/spell/sprog	/usr/bin	default
 sread	games/atc/sread	/usr/bin	default
 strip.out	cmd/strip/strip.out	/usr/bin	default
-su	history/ix/root/etc/su	/etc	where
 subindex	cmd/monk/cmd/index/subindex	/usr/bin	default
 sum	cmd/sum/sum	/usr/bin	prebuilt
 svcmgr	ipc/mgrs/svcmgr/svcmgr	/usr/bin	default
@@ -446,3 +439,10 @@ xmgr	dk/cmd/xmgr	/usr/bin	default
 xsum	cmd/f2c/xsum	/usr/bin	default
 
 # skipped:
+#   dkclean            history/ix/root/etc/dkclean                    ix is a different operating system
+#   login.x            history/ix/root/etc/login.x                    ix is a different operating system
+#   osession           history/ix/root/bin/osession                   ix is a different operating system
+#   ps                 history/ix/root/bin/ps                         ix is a different operating system
+#   pwx                history/ix/root/etc/pwx                        ix is a different operating system
+#   session            history/ix/root/bin/session                    ix is a different operating system
+#   su                 history/ix/root/etc/su                         ix is a different operating system

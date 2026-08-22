@@ -1,0 +1,339 @@
+# tools/v8drive.exp -- the one way this project drives V8 over a console.
+#
+#	source [file dirname [info script]]/v8drive.exp
+#
+# WHY THIS EXISTS.  Three harnesses (net-selftest, netfs-latency, show-fetch)
+# each grew their own copy of "log in and run a command", each settled on
+# matching a PROMPT, and all three hung.  boot-newdisk.exp, written earlier,
+# matches MARKERS and has never failed a run.  The difference is not luck, and
+# CLAUDE.md states the rule outright:
+#
+#	markers, never prompts, and never a literal.
+#
+# WHY A PROMPT CANNOT WORK, precisely.  The tty echoes what you type, and the
+# echo interleaves into whatever is printing at the time.  So:
+#
+#  * `PS1="FET$M "' -- the shell expands $M and prints `FETX ', but the ECHO of
+#    the line you typed carries the letters F, E, T literally.  Any pattern
+#    short enough to be convenient is a pattern the echo can spell.
+#  * a prompt REPEATS.  Every match after the first can succeed against a
+#    prompt that was already sitting in the buffer before the command was ever
+#    sent, so the driver runs one command out of phase -- sending each into a
+#    shell still busy with the last.  It presents as a machine that goes quiet
+#    with no error anywhere, which is why all three failed the same way.
+#  * `login:' arrives with MARK PARITY on V8 (bit 7 set on the first one), so
+#    even the prompt you have not typed is not the string you think it is.
+#
+# WHY THE MARKER PROTOCOL IS SOUND.  Each step sends three lines:
+#
+#	M=+ok7          <- echoes as `M=+ok7', which lacks the trailing +
+#	<the command>
+#	echo $M+        <- echoes LITERALLY: the tty never expands $M
+#
+# and waits for `+ok7+', which only the shell's own output can produce.  The
+# sequence number rises every step, so a match against stale buffer contents is
+# impossible by construction rather than by discipline -- which is the part
+# that matters, because discipline is what failed here three times.
+#
+# THE OTHER RULE THIS FIXES.  boot-newdisk.exp's `must' calls `exit' on
+# timeout, and expect's exit closes the spawn -- which KILLS A RUNNING GUEST,
+# the one thing this project never does.  Every failure path here goes through
+# v8_bail, which drops to sim> with ^E first (stopping the CPU without writing
+# stale in-core state back over the disk) and then quits.  A bailed run still
+# leaves a machine that was not cleanly halted, so it says so.
+
+# USE THE FLAT, UNBRACED `expect'.  The other two spellings each fail
+# silently, in opposite directions -- full measurement in v10drive.exp:
+#
+#	expect -timeout 15 -- "sim>" {} timeout {}      CORRECT
+#	expect { -timeout 15 "sim>" {} timeout {} }     never times out
+#	expect -timeout 15 { "sim>" {} timeout {} }     never MATCHES: a braced
+#	                                                body after a flag is read
+#	                                                as ONE glob pattern
+
+set V8_SEQ 0
+set V8_RUNNING 0        ;# is there a guest that must not simply be killed?
+set V8_DEADLINE_ID ""   ;# the run's watchdog -- see v8_deadline
+
+# How long a whole run may take before the watchdog reaps it.  Generous, so it
+# never cuts a legitimate build short; a harness that knows its own shape
+# should say so with `v8_deadline'.  What it must never be is absent.
+set V8_RUN_SECS 7200
+
+# WHERE THE MEDIA AND THE SIMULATOR ARE, resolved from THIS file's location
+# and normalised to an absolute path -- once, here, rather than in every
+# caller.
+#
+# Each harness used to carry its own `cd [file dirname [info script]]/..' and
+# then spawn `../opensimh/BIN/vax780' relative to wherever that landed. When
+# it landed wrong, spawn did not report a missing file: it reported EOF, which
+# v8_must correctly translated into "simulator exited". So a path bug arrived
+# disguised as a simulator that started and died, which is a far more alarming
+# thing and sends you looking in the wrong place entirely.
+set V8_MEDIA [file normalize [file join [file dirname [info script]] .. work myv8]]
+set V8_SIMH  [file normalize [file join [file dirname [info script]] .. work opensimh BIN vax780]]
+
+# The overlap guard, called from v8_boot.  See tools/norun.exp: a V8 harness and
+# a V10 harness run DIFFERENT binaries, so each one's own `pgrep' was blind to
+# the other -- which is how a source-disk rebuild came to overwrite an image a
+# running stage-2 had attached.
+source [file dirname [info script]]/norun.exp
+
+# --------------------------------------------------------------- teardown ---
+
+# THE HARNESS MUST ALWAYS TERMINATE ITSELF.  Identical to v10drive.exp's, and
+# here for the same reason: a run that hangs still OWNS the disk image, so the
+# next round cannot start and the only way out is killing a process by hand.
+# Needing that is the bug -- and overlapping simulators are how images get
+# corrupted here.
+#
+# `close' hangs up the pty, so SIMH's console read returns EOF and scp exits.
+# `wait -nowait' reaps without blocking, because a blocking wait would
+# reintroduce the hang this exists to prevent.
+proc v8_reap {} {
+    global V8_RUNNING
+    set V8_RUNNING 0
+    catch {close}
+    catch {wait -nowait}
+}
+
+# A DEADLINE FOR THE RUN, ENFORCED BY THE EVENT LOOP.  `after' timers are
+# serviced by Tcl_DoOneEvent, which is what `expect' blocks in, so this fires
+# even while an expect waits for a pattern that will never arrive.  Every
+# other bound in this file protects one `expect'; this one protects the whole
+# harness, including the paths nobody thought to bound.
+proc v8_deadline {secs} {
+    global V8_DEADLINE_ID
+    catch {after cancel $V8_DEADLINE_ID}
+    set V8_DEADLINE_ID [after [expr {$secs * 1000}] [list v8_expired $secs]]
+}
+
+proc v8_expired {secs} {
+    global V8_RUNNING
+    puts "\nV8-DEADLINE: ${secs}s elapsed and the run has not finished."
+    puts "V8-DEADLINE: stopping the simulator and giving up the disk image."
+    if {$V8_RUNNING} {
+        puts "V8-DEADLINE: the guest was NOT cleanly halted -- treat this"
+        puts "V8-DEADLINE: image as damaged until a hash says otherwise."
+    }
+    v8_reap
+    exit 3
+}
+
+# ---------------------------------------------------------------- failure ---
+
+# Stop without ever killing a running VAX. ^E reaches scp only because expect
+# spawns through a pty, so the console IS a local tty -- on a telnet console it
+# would be an inert data byte (see the channel table in docs/a1-notes.md).
+proc v8_bail {msg} {
+    global V8_RUNNING
+    puts "\nV8-BAIL: $msg"
+    # BOUNDED.  These two had no -timeout and so inherited the harness's
+    # global one, which the drivers set as high as 3600 -- turning every
+    # failed assertion into an hour of holding the image.
+    if {$V8_RUNNING} {
+        send "\005"
+        expect -timeout 30 -- "sim>" {} timeout {} eof {}
+        send "quit\r"
+        expect -timeout 60 eof {} timeout {}
+        puts "V8-BAIL: guest stopped at sim> and quit -- NOT cleanly halted,"
+        puts "V8-BAIL: so treat this image as damaged until a hash says otherwise."
+    }
+    v8_reap
+    exit 1
+}
+
+# Wait for a pattern or bail. Never `exit' directly: see above.
+proc v8_must {pat {t 0}} {
+    global timeout
+    set use [expr {$t > 0 ? $t : $timeout}]
+    expect -timeout $use -- "$pat" {
+    } timeout {
+        v8_bail "never saw '$pat' after ${use}s"
+    } eof {
+        v8_bail "simulator exited while waiting for '$pat'"
+    }
+}
+
+# ------------------------------------------------------------------- boot ---
+
+# Spawn the simulator, apply `extra' config lines, and autoboot.
+#
+# `set noasynch' is FIRST and is not optional: the desktop vax780 is built with
+# SIM_ASYNCH_IO, and without it two overlapping transfers corrupt RP06 I/O
+# (simh #425) -- presenting as `hp06: hard error er1=5<RMR,ILF>' and silent
+# file loss, i.e. as a hardware fault rather than a config error.
+proc v8_boot {img {extra {}} {dtype ""}} {
+    # `global spawn_id' IS LOAD-BEARING. spawn sets spawn_id in the CURRENT
+    # scope, so a spawn inside a proc leaves the global one untouched -- and
+    # every other proc here (v8_must, v8_sh, v8_halt) then talks to the global
+    # default, which is stdin. The symptom is not "no such variable": expect
+    # cheerfully waits on stdin, reads EOF at once, and v8_must reports
+    #
+    #	simulator exited while waiting for 'sim>'
+    #
+    # so a scoping bug arrives dressed as a simulator that started and died.
+    # boot-newdisk.exp never hit this only because it spawns at top level.
+    global spawn_id V8_RUNNING V8_MEDIA V8_SIMH V8_RUN_SECS
+    if {$dtype == ""} {
+        set dtype [expr {[string match "*rp06*" $img] ? "rp06" : "rp07"}]
+    }
+    # Say what is missing while it is still a filename, not after it has
+    # become "the simulator exited".
+    if {![file executable $V8_SIMH]} {
+        puts "\nV8-BAIL: no simulator at $V8_SIMH"
+        exit 2
+    }
+    cd $V8_MEDIA
+    if {![file readable $img]} {
+        puts "\nV8-BAIL: no image '$img' in $V8_MEDIA"
+        exit 2
+    }
+    # NOTHING ELSE MAY BE RUNNING -- at the instant of spawn, not merely when
+    # the wrapper started.  $extra is where a second disk arrives, so its
+    # attach targets are claimed too.  tools/norun.exp.
+    set claim [list $img]
+    foreach c $extra {
+        if {[regexp {^(?:attach|at) +\S+ +(.+)$} $c -> f]} { lappend claim [string trim $f] }
+    }
+    eval sim_guard $claim
+
+    spawn $V8_SIMH
+    set V8_RUNNING 1
+    # ARMED THE MOMENT THERE IS SOMETHING TO REAP, and not before: from here
+    # on the harness owns a simulator and a disk image, so from here on it
+    # must be unable to hold them for ever.
+    v8_deadline $V8_RUN_SECS
+    v8_must "sim>" 60
+    foreach c [concat {
+        "set noasynch"
+        "set cpu idle=4.1BSD"
+        "set tto 7b"
+    } [list "set rp0 $dtype" "at rp0 $img"] $extra] {
+        send "$c\r"
+        v8_must "sim>" 60
+    }
+    send "load -o bootV8 0\r"; v8_must "sim>" 60
+    # THERE IS NO BOOT PROMPT. load+run AUTOBOOTS; a stray `: hp(0,0)unix'
+    # lands at the login prompt as a username and the machine answers
+    # `Password:' forever, which looks exactly like a root password you do
+    # not have.
+    send "run 2\r"
+    v8_must "login:" 480
+}
+
+# Log in and take control, without ever matching a prompt.
+#
+# The handshake is /etc/motd, which login prints before it runs any profile:
+# it is ours, it is distinctive, and -- decisively -- the driver never types
+# it, so no echo can spell it. Matching `# ' instead would match the first `#'
+# in a fortune, and matching a `$ ' would match rather more than that.
+proc v8_login {{user root} {pass ""}} {
+    send "$user\r"
+    if {$pass != ""} {
+        v8_must "assword:" 60
+        send "$pass\r"
+    }
+    v8_must "Welcome to ipnx" 180
+}
+
+# ------------------------------------------------------------------ shell ---
+
+# Run a command and wait for it to finish. See the header for why this shape.
+proc v8_sh {cmd {t 0}} {
+    global V8_SEQ
+    incr V8_SEQ
+    send "M=+ok$V8_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    v8_must "+ok$V8_SEQ+" $t
+}
+
+# Run a command, require something of its OUTPUT, and then wait for it to
+# finish. Order matters: the marker is what proves the command is over, so it
+# has to be matched last or the pattern would be searched for in a buffer the
+# marker has already consumed.
+proc v8_shmust {cmd pat {t 0}} {
+    global V8_SEQ
+    incr V8_SEQ
+    send "M=+ok$V8_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    v8_must "$pat" $t
+    v8_must "+ok$V8_SEQ+" $t
+}
+
+# Run a command whose output is the point, and report whether `pat' appeared
+# WITHOUT bailing when it does not -- for probes, where absence is a result.
+# Returns 1 or 0.
+proc v8_try {cmd pat {t 120}} {
+    global V8_SEQ
+    incr V8_SEQ
+    send "M=+ok$V8_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    set hit 0
+    expect {
+        -timeout $t -- "$pat"   { set hit 1; exp_continue }
+        -timeout $t -- "+ok$V8_SEQ+" {}
+        timeout { v8_bail "command never finished: $cmd" }
+        eof     { v8_bail "simulator exited during: $cmd" }
+    }
+    return $hit
+}
+
+# A command that TAKES THE TTY and ends on its own -- telnet, mail, vi.
+#
+# v8_sh cannot be used for these and the failure is quiet: it sends all three
+# lines at once, so `echo $M+' is read by the program rather than the shell.
+# Against telnet that means the marker is transmitted to the far end and the
+# session then waits forever for a string nobody will ever print. Here the
+# command's own closing output is the signal, and a fresh marker afterwards is
+# what proves the shell -- not the program -- is listening again.
+proc v8_run {cmd endpat {t 120}} {
+    send "$cmd\r"
+    v8_must "$endpat" $t
+    v8_sh ":" 60
+}
+
+# ------------------------------------------------------------------- halt ---
+
+# The clean shutdown, and it works -- boot() calls update(), prints
+# `syncing disks... ', waits five lbolt ticks for the I/O to drain, and only
+# then spins at IPL 31, which SIMH reports as `Infinite loop'. That marker is
+# output-anchored, so it is proof rather than a guess.
+#
+# /etc/halt cannot go through v8_sh: it never returns, so there would be no
+# marker to wait for.
+proc v8_halt {} {
+    global V8_RUNNING
+    # THE TEARDOWN GETS ITS OWN DEADLINE, AND IT MUST EXCEED THE LEGITIMATE
+    # WORST CASE.  A watchdog that can fire while a real `sync' is still
+    # running is worse than the hang it guards against -- reaping mid-sync is
+    # how an image gets left inconsistent.  The bounded waits below cannot add
+    # up to more than a few minutes, so 900 can only be reached by a path that
+    # is genuinely stuck rather than merely slow.
+    v8_deadline 900
+    v8_sh "cd /; sync; sync" 120
+    send "/etc/halt\r"
+    v8_must "Infinite loop" 180
+    set V8_RUNNING 0        ;# stopped cleanly: quitting now is safe
+    # NO ^E HERE.  `Infinite loop' is SIMH's own STOP message -- it has already
+    # halted the CPU and returned to sim> by the time we read it, so there is
+    # nothing left to interrupt.  Sending ^E anyway put a stray 0x05 at the
+    # head of scp's command line, so the next line arrived as `\005quit', scp
+    # rejected it as an unknown command, and the harness then waited the full
+    # timeout for an eof that could never come.  Four minutes at the end of
+    # every run that halts, on every harness that sources this file, all of it
+    # after the work was already done and passing -- which is exactly why it
+    # went unnoticed.
+    expect -timeout 60 -- "sim>" {} \
+                          timeout { v8_bail "halted, but never reached sim> to quit" }
+    send "quit\r"
+    expect -timeout 60 eof {} timeout {}
+    # Unconditional, and the last word.  `quit' is a REQUEST: if SIMH did not
+    # act on it the expect above just times out and returns, and without this
+    # the harness would exit with a simulator still attached to the image.
+    # close() is not a request.
+    v8_reap
+}

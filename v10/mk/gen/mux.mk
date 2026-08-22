@@ -75,14 +75,13 @@ TOOLS  = $(CCPATH) $(CCOM) $(CPP) $(C2) $(AS)
 # THE 5620 INCLUDE TREE, WHICH IS A STAND-IN AND SAYS SO.  A real V10 machine
 # had /usr/jerq from the separate 5620 distribution tape; the V10 golden has no
 # /usr/jerq at all, so ours is the v10blit tarball's 21 headers -- the 68000
-# Blit's -- plus the 6 this build needs that no surviving tree provides at the
+# Blit's -- plus the 3 this build needs that no surviving tree provides at the
 # path mux names.  tools/v10drive.exp's v10_jerq_inc installs the 21 and
 # v10/mk/gen/mux.inc names the rest.
 JERQINC = /usr/jerq/include
 
-# IX's own libc sources, and ours.  labEQ/labLE are Bell Labs' and unchanged;
-# muxix.c is ours and carries its argument in v10/src/PATCHES.md.
-IXLIBC  = $(SRC)/history/ix/src/libc
+# mux is compiled from v10/src, not from the tape: the copy there has IX's
+# labels and process exclusion excised.  See MUX_IX in v10/mk/mkdep.py.
 MUXOURS = $(OURS)/history/ix/src/jerq/mux
 
 # THE MUX SOURCE DIRECTORY, AS A MACRO, SO IT CAN BE A SHALLOW MOUNT.
@@ -94,18 +93,12 @@ MUXOURS = $(OURS)/history/ix/src/jerq/mux
 # components instead of eight.  Nothing else in this file changes.
 MUXSRC  = $(SRC)/history/ix/src/jerq/mux
 
-OBJS = 32ld.o mux.o pcheck.o pinit.o precv.o psend.o ptimeout.o labEQ.o labLE.o muxix.o
+OBJS = pcheck.o pinit.o precv.o psend.o ptimeout.o mux.o 32ld.o
 
 all: mux
 
 mux: $(OBJS) $(LD) $(LIBC)
 	$(CC) $(CFLAGS) -o mux $(OBJS) $(LIBC)
-
-32ld.o: $(MUXSRC)/32ld.c $(INCDIR)/errno.h $(INCDIR)/signal.h $(INCDIR)/sys/stat.h $(INCDIR)/sys/types.h $(JERQINC)/aouthdr.h $(JERQINC)/filehdr.h $(JERQINC)/scnhdr.h $(JERQINC)/sys/jlabel.h $(JERQINC)/sys/label.h $(TOOLS)
-	$(COMPILE) $(MUXSRC)/32ld.c
-
-mux.o: $(MUXSRC)/mux.c $(INCDIR)/errno.h $(INCDIR)/libc.h $(INCDIR)/signal.h $(INCDIR)/stdio.h $(INCDIR)/sys/filio.h $(INCDIR)/sys/param.h $(INCDIR)/sys/stream.h $(INCDIR)/sys/ttyio.h $(INCDIR)/sys/types.h $(INCDIR)/tmpnam.h $(JERQINC)/jioctl.h $(JERQINC)/sys/jlabel.h $(JERQINC)/sys/label.h $(JERQINC)/sys/pex.h $(JERQINC)/tty.h $(MUXSRC)/msgs.h $(MUXSRC)/proto/packets.h $(MUXSRC)/proto/pconfig.h $(MUXSRC)/proto/proto.h $(MUXSRC)/proto/pstats.h $(TOOLS)
-	$(COMPILE) $(MUXSRC)/mux.c
 
 pcheck.o: $(MUXSRC)/proto/pcheck.c $(TOOLS)
 	$(COMPILE) $(MUXSRC)/proto/pcheck.c
@@ -122,14 +115,11 @@ psend.o: $(MUXSRC)/proto/psend.c $(INCDIR)/stdio.h $(INCDIR)/tmpnam.h $(MUXSRC)/
 ptimeout.o: $(MUXSRC)/proto/ptimeout.c $(INCDIR)/stdio.h $(INCDIR)/tmpnam.h $(MUXSRC)/proto/packets.h $(MUXSRC)/proto/pconfig.h $(MUXSRC)/proto/proto.h $(MUXSRC)/proto/pstats.h $(TOOLS)
 	$(COMPILE) $(MUXSRC)/proto/ptimeout.c
 
-labEQ.o: $(IXLIBC)/labEQ.c $(JERQINC)/sys/jlabel.h $(JERQINC)/sys/label.h $(TOOLS)
-	$(COMPILE) $(IXLIBC)/labEQ.c
+mux.o: $(MUXOURS)/mux.c $(INCDIR)/errno.h $(INCDIR)/libc.h $(INCDIR)/signal.h $(INCDIR)/stdio.h $(INCDIR)/sys/filio.h $(INCDIR)/sys/param.h $(INCDIR)/sys/stream.h $(INCDIR)/sys/ttyio.h $(INCDIR)/sys/types.h $(INCDIR)/tmpnam.h $(JERQINC)/jioctl.h $(JERQINC)/tty.h $(MUXSRC)/msgs.h $(MUXSRC)/proto/packets.h $(MUXSRC)/proto/pconfig.h $(MUXSRC)/proto/proto.h $(MUXSRC)/proto/pstats.h $(TOOLS)
+	$(COMPILE) $(MUXOURS)/mux.c
 
-labLE.o: $(IXLIBC)/labLE.c $(JERQINC)/sys/jlabel.h $(JERQINC)/sys/label.h $(TOOLS)
-	$(COMPILE) $(IXLIBC)/labLE.c
-
-muxix.o: $(MUXOURS)/muxix.c $(INCDIR)/sys/types.h $(TOOLS)
-	$(COMPILE) $(MUXOURS)/muxix.c
+32ld.o: $(MUXOURS)/32ld.c $(INCDIR)/errno.h $(INCDIR)/signal.h $(INCDIR)/sys/stat.h $(INCDIR)/sys/types.h $(JERQINC)/aouthdr.h $(JERQINC)/filehdr.h $(JERQINC)/scnhdr.h $(TOOLS)
+	$(COMPILE) $(MUXOURS)/32ld.c
 
 install: mux
 	-mkdir $(DESTDIR)/usr

@@ -1,0 +1,267 @@
+#!/usr/bin/env expect
+#
+# Stages 4 to 8 only, against a build filesystem that already has stages 1 to 3.
+#
+#	expect tools/drive-stages48.exp [port]
+#
+# The full driver spends about fifty minutes rebuilding the toolchain before it
+# reaches anything you are actually iterating on.  The build filesystem is a
+# file -- work/myv8/rp06build -- and it survives the run that made it, so
+# stages 4 onward can be re-run against it directly.  Fifteen minutes instead
+# of eighty.
+#
+# It does NOT recreate rp06build and it does not mkfs.  If /b/tools3 is not
+# already populated the stage scripts say so up front and stop, which is the
+# same check they use in the full driver.
+#
+# Use tools/drive-stage1.sh when the toolchain itself has changed.  Use this
+# when only stages 4 to 8 have.
+
+set timeout 600
+log_file -a stages48.log
+proc sendline {x} { send "$x\r" }
+
+proc must {pat {t 0}} {
+    global timeout
+    set use [expr {$t > 0 ? $t : $timeout}]
+    expect -timeout $use "$pat" {
+    } timeout {
+        send_user "\n*** FAILED: never saw '$pat' after ${use}s ***\n"; exit 3
+    } eof {
+        send_user "\n*** FAILED: simulator exited waiting for '$pat' ***\n"; exit 4
+    }
+}
+
+# Same marker discipline as the full driver: the tty echoes typed characters
+# into whatever is printing, so every marker is spelled through a shell
+# variable and never appears literally in the command that produces it.
+set SEQ 0
+proc sh {cmd {t 0}} {
+    global SEQ
+    incr SEQ
+    sendline "M=+ok$SEQ"
+    sendline "$cmd"
+    sendline "echo \$M+"
+    must "+ok$SEQ+" $t
+}
+proc bootsh {cmd {t 0}} { must "# " $t; sendline $cmd }
+proc simh {cmd {t 0}} { must "sim>" $t; sendline $cmd }
+
+# A precondition, not a step: run the command and REQUIRE its marker before
+# the completion marker.  `sh' only waits for +okN+, which a command prints
+# whether it worked or not -- so the first run of this driver mounted nothing
+# and then ran all five stages against a share that was not there, reporting
+# five failures for one cause.  A precondition that is merely checked at the
+# end is a precondition in name only.
+proc shmust {cmd pat {t 0}} {
+    global SEQ
+    incr SEQ
+    sendline "M=+ok$SEQ"
+    sendline "$cmd"
+    sendline "echo \$M+"
+    must "$pat" $t
+    must "+ok$SEQ+" $t
+}
+
+# cat waits for input, so this cannot use sh -- the marker would never arrive
+# until after the data has been fed and the ^D delivered.
+proc catfile {src dst} {
+    global SEQ
+    incr SEQ
+    sendline "M=+ok$SEQ"
+    sendline "cat > $dst"
+    set f [open $src r]
+    while {[gets $f line] >= 0} { sendline $line }
+    close $f
+    send "\x04"
+    sendline "echo \$M+"
+    must "+ok$SEQ+" 300
+}
+
+set port [lindex $argv 0]
+if {$port == ""} { set port 9370 }
+
+# Which stage to start at. Stages 4 to 7 leave their products on the build
+# filesystem, so re-running all of them to reach a failing stage 8 costs about
+# fifty minutes -- and stage 6 in particular cannot be short-cut by make,
+# because buildcmds.sh rm -rf's each object directory before it builds it.
+set from [lindex $argv 1]
+if {$from == ""} { set from 4 }
+
+# ...and which to stop after.  Stage 9 is the chroot self-rebuild and costs
+# the better part of an hour; iterating on stage 8's contents does not need
+# it re-proved every time.  `expect tools/drive-stages48.exp 9370 8 8' is
+# stage 8 alone.
+set to [lindex $argv 2]
+if {$to == ""} { set to 9 }
+
+spawn vax780
+simh "set noasynch"
+simh "set cpu idle=4.1BSD"
+simh "set tto 7b"
+simh "set rp0 rp07"
+simh "at rp0 rp07v8.net"
+simh "set rp1 rp06"
+simh "at rp1 rp06build"
+# rp2 is the disk stage 8 builds.  Attached always, so a stage-8 run needs no
+# second configuration; builddisk.sh refuses to touch drive 0 regardless.
+#
+# The TYPE is an argument because we want both. The RP07 is the build and
+# Track B disk -- 475 MB of /usr, room for the V10 cross-build. The RP06 is
+# the one the app can actually ship: app/ipnx/Machine.swift's boot.conf says
+# `set rp0 rp06', and an RP07 would be a config change plus three times the
+# bundle. Same DESTDIR, same carry set, one argument apart -- so "retire the
+# TUHS image" can mean the product too and not just the build.
+set s6only [expr {[info exists env(S6ONLY)] ? $env(S6ONLY) : ""}]
+set target [lindex $argv 4]
+if {$target == ""} { set target rp07 }
+if {$target == "rp06"} { set targetimg rp06new } else { set targetimg rp07new }
+send_user "\n=== target: $targetimg ($target) ===\n"
+simh "set rp2 $target"
+simh "at rp2 $targetimg"
+# rp3: the REFERENCE image, read-only -- the source for the 1406 files in
+# gen/carry.txt, which the tape shipped as binaries with no source, plus the
+# 2263 in gen/fromgold.txt that mkcarry.py has proven byte-identical to ours.
+# Read-only because a build must not be able to damage what it copies from.
+#
+# Two settings, because retiring the TUHS image means making OUR disk the
+# reference and they are different drives. `a' is root on both; /usr is
+# partition g on an RP06 (block minor 3*8+6 = 30) and f on an RP07 (29).
+# tools/mkcarry.py --image must name the same file, or the list and the disk
+# it is read from disagree -- which is the one failure this pair can have.
+set refimg [lindex $argv 3]
+# Ours. carry.txt derived from this image and from the TUHS one give the
+# same 1405 paths, which is what "the build no longer needs that disk"
+# means in practice. tools/image-pack.py unpack recreates it from git.
+if {$refimg == ""} { set refimg "rp07new" }
+if {[string match "*rp07*" $refimg] || [string match "*ipnx*" $refimg]} {
+    set reftype rp07; set refusr f; set refusrminor 29
+} else {
+    set reftype rp06; set refusr g; set refusrminor 30
+}
+send_user "\n=== reference image: $refimg ($reftype, /usr on $refusr) ===\n"
+simh "set rp3 $reftype"
+simh "at rp3 -r $refimg"
+simh "set il enable"
+simh "attach il nat:"
+simh "load -o bootV8 0"
+simh "run 2"
+must "login:" 300
+sendline "root"
+bootsh "PS1='ipnx%%% '" 120
+sh "OK=-ok" 120
+sh "stty erase '^H'" 60
+
+# FIRST, before anything at all needs room on /. mkfs given a name that is not
+# a special file creates a REGULAR FILE and writes the filesystem into it, so
+# a run whose /etc/mknod failed left megabytes of would-be filesystem in /dev
+# on a root partition that is only 8 MB. Everything afterwards then fails for
+# the wrong reason: the first casualty is `cat > /tmp/nmount.c', which leaves
+# `/tmp/nmount: not found' and a mount that never happens.
+#
+# This was originally placed just before `mkdir /b' -- i.e. AFTER the nmount
+# compile it exists to protect. Cleanup that runs after the damage matters is
+# not cleanup.
+send_user "\n=== clear wreckage from a previous stage 8 ===\n"
+sh "rm -f /dev/rp2? /dev/rrp2?" 60
+sh "df /" 60
+
+# ------------------------------------------------------------- networking
+# Missing entirely from the first version of this driver, which is what its
+# first run found: nmount answered `short tcp reply (0)' and every stage then
+# reported no /n/src, so five stages failed on one unmounted share.
+#
+# The device nodes and /usr/inet/lib persist on rp07v8.net, so a machine that
+# has run the full driver before already has them -- but ipconfig and
+# tcpconfig are PROCESSES and die with the machine, so they have to run on
+# every boot. Without tcpconfig pushing the TCP discipline onto /dev/ip6
+# there is nothing underneath /dev/tcp01: the open succeeds, the write
+# succeeds, and the reply never comes.  Same sequence the N track settled on.
+send_user "\n=== network ===\n"
+sh "/etc/mknod /dev/il0 c 44 0"
+sh "/etc/mknod /dev/il1 c 44 1"
+sh "/etc/mknod /dev/ip0  c 42 0"
+sh "/etc/mknod /dev/ip6  c 42 6"
+sh "for i in 0 1 2 3 4 5 6 7; do /etc/mknod /dev/tcp0\$i c 43 \$i; done"
+sh "chmod 666 /dev/tcp0? /dev/ip0 /dev/ip6 /dev/il0 /dev/il1"
+sh "mkdir /usr/inet/lib"
+sh "echo '10.0.2.15\tv8' > /usr/inet/lib/hosts"
+sh "echo '10.0.2.2\tgateway' >> /usr/inet/lib/hosts"
+sh "echo '10.0.0.0\tslirp-net' > /usr/inet/lib/networks"
+sh "cd /usr/src/cmd/inet/etc; ./ipconfig /dev/il0 v8 slirp-net /dev/il1 &"
+sh "sleep 3"
+sh "cd /usr/src/cmd/inet/etc; ./tcpconfig /dev/ip6 &"
+sh "sleep 3"
+sh "cd /usr/src/cmd/inet/etc; ./route add '*' gateway; echo route-rc=$?"
+
+# The share, exactly as the full driver builds it: nmount is compiled in the
+# guest from the repo's copy rather than assumed to exist, and minor 65 is odd
+# because tcp_device.c refuses an even one whose socket is not already active.
+# (Stage 6 now builds nmount into DESTDIR, but DESTDIR is not the running
+# system -- this machine still has to make its own.)
+send_user "\n=== mount the repo tree at /n/src ===\n"
+sh "mkdir /n" 60
+sh "mkdir /n/src" 60
+catfile "../../tools/v8/nmount.c" "/tmp/nmount.c"
+sh "cd /tmp; cc -o nmount nmount.c -lin" 300
+sh "/tmp/nmount 10.0.2.2 $port 65 /n/src" 120
+shmust "if test -f /n/src/mk/build1.sh; then echo S48-MOUNTED\$OK; fi" \
+       "S48-MOUNTED-ok" 120
+
+sh "mkdir /b" 60
+sh "if /etc/fsck -y /dev/rrp1g > /dev/null; then /etc/mount /dev/rp1g /b; fi" 900
+sh "df /b"
+shmust "if test -f /b/tools3/bin/cc; then echo S48-STAGE3-present\$OK; fi" \
+       "S48-STAGE3-present-ok" 120
+
+send_user "\n=== stages $from to 8 ===\n"
+sh "date"
+if {$from <= 4} { sh "sh /n/src/mk/buildhdrs.sh /n/src /b/root 2>&1" 1800 }
+if {$from <= 5} { sh "sh /n/src/mk/buildlibs.sh /n/src /b /b/root /b/tools3 2>&1" 7200 }
+# 3 hours, not the 90 minutes this had when stage 6 was eleven commands: it
+# is 132 now, and each is a compile and a link inside the emulator.
+#
+# S6ONLY in the environment builds just the components named instead of all of
+# stage6.order -- same rule, same macros, same install. Set it when ONE command
+# has been added or fixed; leave it unset for a real world build.
+if {$from <= 6} { sh "sh /n/src/mk/buildcmds.sh /n/src /b /b/root /b/tools3 \"$s6only\" 2>&1" 10800 }
+if {$from <= 7} { sh "sh /n/src/mk/buildkernel.sh /n/src /b /b/root ipnx /b/tools3 2>&1" 7200 }
+if {$from <= 8} { # The golden image mounted read-only at /gold, BEFORE builddisk runs: it
+# reads gen/provenance.txt and lifts every `copy' row out of it.
+sh "mkdir /gold" 60
+sh "rm -f /dev/rp3a /dev/rp3$refusr; /etc/mknod /dev/rp3a b 0 24; /etc/mknod /dev/rp3$refusr b 0 $refusrminor" 60
+# `-r' goes LAST. mount.c's usage says so -- "mount [-a] [special dir [-r]]"
+# -- and putting it first makes -r the special file, so the diagnostic is
+# "mount: No such file or directory" about a flag.
+sh "/etc/mount /dev/rp3a /gold -r" 120
+sh "mkdir /gold/usr 2>/dev/null; /etc/mount /dev/rp3$refusr /gold/usr -r" 120
+sh "ls /gold/bin | wc -l" 60
+sh "sh /n/src/mk/builddisk.sh /n/src /b/root 2 $target /mnt /gold 2>&1" 3600 }
+
+# ---------------------------------------------------------------- stage 9
+# A SECOND mount of the same share, inside DESTDIR. chroot has no path to
+# anywhere outside the new root, so /n/src must already be reachable as
+# /b/root/n/src before we enter -- the mount cannot be done from within.
+#
+# Unique id 66 and tcp minor 67: both differ from the first mount's (65).
+# The id is the mount's identity to the kernel and the minor is the device,
+# and reusing either would be asking for the connection already in use.
+if {$to >= 9} {
+send_user "\n=== stage 9: the share, again, inside DESTDIR ===\n"
+sh "mkdir /b/root/n" 60
+sh "mkdir /b/root/n/src" 60
+sh "/tmp/nmount 10.0.2.2 $port 67 /b/root/n/src" 120
+shmust "if test -f /b/root/n/src/mk/build1.sh; then echo S48-INNER-MOUNT\$OK; fi" \
+       "S48-INNER-MOUNT-ok" 120
+sh "sh /n/src/mk/buildstage9.sh /n/src /b /b/root 2>&1" 10800
+sh "date"
+}
+
+sh "echo S48-DONE\$OK"
+sh "cd /; sync; sync"
+sendline "/etc/halt"
+must "Infinite loop" 120
+simh "quit" 60
+expect eof
+wait
+send_user "\n=== STAGES 4-8 DONE ===\n"

@@ -7,214 +7,6 @@ here is derived from a named upstream file with a stated sha256 and
 one stated substitution. A changed base fails the tool rather than
 being silently re-patched.
 
-## muxix.c: the three IX interfaces V10 does not have (K15)
-
-**Reconstructed: upstream has no such file.** `history/ix/src/jerq/mux/muxix.c`
-
-**`src/history/ix` IS IX, NOT MERELY "THE NINTH EDITION'S ARCHIVE"** -- Bell
-Labs' security-enhanced Ninth Edition, with mandatory access control and process
-labels. Beside `jerq/` sit `integrity.c`, `downgrade.c`, `notary.c`, `privserv/`,
-`setlab.c` and `nosh.c`. That matters because the only surviving host-side `mux`
-that speaks the 5620 packet protocol is IX's: **V10's own `src/cmd/` has no
-jerq, mux, blit, 5620 or dmd directory at all.** On a real V10 the 5620 software
-arrived as a separate distribution tape installed into `/usr/jerq`, which is
-exactly what V8's golden has and V10's has not.
-
-So this is **not a deviation from a V10 artefact** -- there is no V10 mux to be
-faithful to. It is what running IX's mux on V10 costs. `lib.a`'s seven objects
-define 98 externals and leave 45 for libc; five of those are absent from V10:
-
-	labEQ, labLE      compiled from the tape's own ix/src/libc/, UNCHANGED
-	unsafe            here, mapped onto select(2)
-	pex, unpex        here, as failing stubs
-
-`labEQ.c` and `labLE.c` are pure K&R against `<sys/label.h>`, which
-`v10/mk/gen/mux.inc` installs, so they need no patch and are named in `mux.mk`'s
-OBJS rather than here.
-
-### `unsafe` is a poll, and reading it as a wait would have busy-spun the program
-
-IX's `unsafe(2)` is a **labelled** `select(2)`: the kernel filters the ready set
-by the caller's label, so on a machine with no process labels a plain select is
-the right semantics rather than an approximation of it. IX's own `unsafe.c`
-cannot simply be compiled -- it is `syscall(64+36, n, r, w)` and V10's
-`lsys/os/sysent.c:184` is `0, nosys,` under the tape's own comment
-`64+36 = nosys`. An empty slot fails rather than doing something else's work, but
-it *does* fail, and mux's next line is `quit("unsafe failed")`.
-
-V10's select takes **four** arguments (`libc/sys/select.s`: `.set select,38`
-over `select(nfd, rfdset, wfdset, time)`; `sysent.c:122`: `4, select`), and
-mux already calls it that way at `mux.c:265` -- so the four-argument form is the
-program's own idiom, not an assumption about V10.
-
-**The fourth argument is MILLISECONDS and zero means POLL**, which is the detail
-that decides whether this code is right. `lsys/os/sys2.c:242`:
-
-	rem = (ap->timo+999)/1000 - (time - t);
-	if (ap->timo == 0 || rem <= 0)
-		goto done;
-
-so 0 short-circuits past the `tsleep` and reports what is ready now. That is
-exactly what the one call site wants: `mux.c:1051` sits inside `checklabs()`,
-which passes **all-ones** fd sets to ask which descriptors are readable at this
-instant and loops `while(nseen)` only while it keeps finding some. A blocking
-select there would hang.
-
-### And on V10 none of the three is ever CALLED
-
-`checklabs()` runs only when `siglab` is set, and `siglab` is set only by the
-`SIGLAB` handler installed at `mux.c:212`. r70's own `signal.h:37` defines it --
-`SIGLAB 26 / * file label changed; secure unix only (not reset) * /` -- and the
-annotation is accurate: **`SIGLAB` appears nowhere in `lsys/`**, so the V10
-kernel never raises it. `NSIG` is 32, so the `signal(2)` call is accepted and
-simply never fires.
-
-So these three functions have to **link** and do not have to **work**, which is
-the honest reason `unsafe` is three lines and `pex` is a stub rather than a
-labelled select we cannot implement.
-
-### `pex` fails, and failing is behaviour mux is written for
-
-IX's `src/libc/pex.c` is not a syscall at all -- it drives an ioctl protocol on
-`FIOPX`, and V10's `sys/filio.h` has no `FIOPX`, so there is nothing to map it
-onto. `mux.c:186`:
-
-	if(pex(0,-1,0)!=0) { untrusted++; unpex(0,-1); }
-
-A non-zero return marks the session untrusted, and a mux on a kernel with no
-process exclusion **is** untrusted. The stub does not defeat that check; it gives
-the true answer to it.
-
-
-### Evidence
-
-Every claim above is a file and a line in the tarball, so none of it rests on
-inference:
-
-	the empty syscall slot   lsys/os/sysent.c:184   `0, nosys,'  / * 64+36 * /
-	select is 38, 4 args     libc/sys/select.s      `.set select,38'
-	                         lsys/os/sysent.c:122   `4, select,'
-	timo is ms, 0 = poll     lsys/os/sys2.c:242     `(ap->timo+999)/1000'
-	the only unsafe() call   mux.c:1051             inside checklabs()
-	mux's own 4-arg select   mux.c:265              select(NSELFD,&rdfd,0,SELTIMO)
-	pex's answer is used     mux.c:186              `untrusted++'
-	SIGLAB exists in r70     include/signal.h:37    `26 / * secure unix only * /'
-	and is never RAISED      grep -rn SIGLAB lsys/  -- no match at all
-	signal 26 is in range    include/signal.h:2     `NSIG 32'
-
-The two that decide correctness rather than merely justifying it are the third
-and the last two. **`timo == 0` means poll**, so a draft of this file that
-described 0 as "the blocking timeout" was wrong in both directions and would
-have busy-spun mux had `checklabs()` been reachable -- and it is **not**
-reachable, because nothing in the V10 kernel ever sends the signal that arms it.
-
-
-```c
-/*
- * The three IX interfaces the Tenth Edition does not have.
- *
- * WHY THIS FILE EXISTS.  `src/history/ix' is IX -- Bell Labs' security-enhanced
- * Ninth Edition, with mandatory access control and process labels -- and the only
- * surviving host-side `mux' that speaks the 5620 packet protocol is IX's.  V10's
- * own src/cmd/ has no mux, jerq, blit or 5620 directory at all: on a real V10 the
- * 5620 software arrived as a separate distribution tape installed into
- * /usr/jerq, which the V10 golden does not have.
- *
- * So there is no V10 mux to be faithful to, and this is not a deviation from a
- * V10 artefact.  It is what running IX's mux on V10 costs: its seven objects
- * leave 45 externals for libc and five of those are not in V10's --
- *
- *	labEQ, labLE	compiled from the tape's own ix/src/libc/, UNCHANGED.
- *			Both are pure K&R against <sys/label.h>, which
- *			v10/mk/gen/mux.inc already installs.  They are named in
- *			mux.mk's OBJS, not here.
- *	unsafe		here, mapped onto select(2).
- *	pex, unpex	here, as failing stubs.
- *
- * NONE OF THE THREE BELOW CAN RUN ON V10, and that is the finding rather than a
- * limitation -- see the SIGLAB note under unsafe().  They exist so the program
- * links; the paths that reach them are dead on a kernel with no labels.
- */
-
-#include <sys/types.h>		/* fd_set -- r70 include/sys/types.h */
-
-/*
- * IX's unsafe(2) is a LABELLED select(2): the kernel filters the ready set by
- * the caller's label.  On a machine with no process labels that filtering is the
- * whole difference, so a plain select is the right semantics and not an
- * approximation of it.
- *
- * COMPILING IX's OWN unsafe.c WOULD NOT DO.  It is seven lines --
- *
- *	unsafe(n, r, w) fd_set *r, *w; { return syscall(64+36, n, r, w); }
- *
- * -- and V10's lsys/os/sysent.c:184 is `0, nosys,' with the tape's own comment
- * `64+36 = nosys'.  An empty slot: it would fail rather than do something else's
- * work, but it WOULD fail, and mux's next line is quit("unsafe failed").
- *
- * V10's select takes FOUR arguments -- libc/sys/select.s says `.set select,38'
- * over the comment `select(nfd, rfdset, wfdset, time)', and sysent.c:122 is
- * `4, select'.  mux already calls it that way at mux.c:265, so the four-argument
- * form is the program's own idiom rather than an assumption about V10.
- *
- * THE TIMEOUT IS 0 BECAUSE THIS IS A POLL, and getting that backwards would
- * have busy-spun the program.  lsys/os/sys2.c:242 reads the fourth argument as
- * MILLISECONDS and short-circuits on zero:
- *
- *	rem = (ap->timo+999)/1000 - (time - t);
- *	if (ap->timo == 0 || rem <= 0)
- *		goto done;
- *
- * so 0 means "report what is ready now", NOT "block".  That is exactly what the
- * one call site wants: mux.c:1051 is inside checklabs(), which passes all-ones
- * fd sets to ask which descriptors are readable at this instant and loops
- * `while(nseen)' only while it keeps finding some.  A blocking select there
- * would hang; a zero-timeout one answers.
- *
- * AND ON V10 IT IS NEVER CALLED.  checklabs() runs only when `siglab' is set,
- * and siglab is set only by the SIGLAB handler installed at mux.c:212.  r70's
- * own signal.h:37 defines it -- `SIGLAB 26 / * file label changed; secure unix
- * only (not reset) * /' -- and the annotation is accurate: SIGLAB appears
- * NOWHERE in lsys/, so the V10 kernel never raises it.  NSIG is 32, so the
- * signal(2) call is accepted and simply never fires.  This function therefore
- * has to link and does not have to work -- which is the honest reason it is
- * three lines rather than a labelled select we cannot implement.
- */
-unsafe(n, r, w)
-	fd_set *r, *w;
-{
-	return select(n, r, w, 0);
-}
-
-/*
- * IX's pex(2)/unpex(2) are process exclusion -- mux calls pex() once, at
- * startup, to ask whether it may hold the terminal exclusively.
- *
- * NOT A SYSCALL, which is why this is a stub and not a mapping: IX's
- * src/libc/pex.c drives an ioctl protocol on FIOPX, and V10's sys/filio.h has
- * no FIOPX at all.  There is nothing on a V10 kernel to map it onto.
- *
- * FAILING IS BEHAVIOUR THE PROGRAM IS WRITTEN FOR, which is what makes a stub
- * honest here rather than a fudge -- mux.c:186:
- *
- *	if(pex(0,-1,0)!=0) { untrusted++; unpex(0,-1); }
- *
- * A non-zero return marks the session untrusted, and a mux running on a kernel
- * with no process exclusion IS untrusted.  So the stub does not defeat a check;
- * it gives the true answer to it.
- */
-pex(fd, t, bufp)
-	char *bufp;
-{
-	return -1;
-}
-
-unpex(fd, t)
-{
-	return 0;
-}
-```
-
 ## sys/lnode.h: reconstructed, because lnode(5) prints it verbatim (B2.2b)
 
 **Reconstructed: upstream has no such file.** `include/sys/lnode.h`
@@ -492,6 +284,410 @@ extern void		sharesfile();
 extern int		putshares();
 extern int		setlimits();
 extern int		limits();
+```
+
+## mux.c: IX's labels and process exclusion, excised (K15)
+
+`history/ix/src/jerq/mux/mux.c`, sha256 `c445a58c5f77050e`
+
+\
+**IX IS NOT A PREDECESSOR OF V10, IT IS BUILT ON IT.** `src/history/ix` is
+McIlroy and Reeds' multilevel-secure system, and its own README says the tree is
+*"shorn of most material that may be copied bodily from research unix
+(v8,v9,v10)"* -- so what remains in it is the IX-SPECIFIC part by construction.
+Taking a file from there is taking IX's version, not V10's under another path.
+
+**AND THERE IS NO V10 mux TO TAKE INSTEAD.** V10's own `src/cmd/` has no jerq,
+mux, blit, 5620 or dmd directory at all; on a real V10 the 5620 software arrived
+on a separate distribution tape. Every `mux.c` on the tape is in `blit/src/mux`
+(68000), `src/630/src` (the 630 MTG, whose muxterm carries 1024x768 in its
+`.data` and no Bitmap at 0x700000) or here.
+
+So the program is carried and **the IX-ness is removed from it**, rather than
+carrying IX's kernel interfaces onto a V10 disk. What went, and every one of
+these paths was ALREADY DEAD on V10:
+
+	pex, unpex	process exclusion.  Not a syscall: IX's libc drives an
+			ioctl on FIOPX, and V10's sys/filio.h has no FIOPX.
+	unsafe()	a LABELLED select.  V10's sysent slot 64+36 is `nosys',
+			with the tape's own comment saying so.
+	checklabs()	armed only by SIGLAB, which r70's signal.h:37 annotates
+			"secure unix only" and which appears NOWHERE in lsys/.
+	labEQ, labLE	label comparison, reached only from checklabs and
+			flatbottom.
+	getplab, setplab, fgetflab, fsetflab	process and file labels.
+	jboot, flatbottom	the download guard.  It turns on `p->cap' and
+			`p->state', and only pex ever set either.
+
+**THE EXCISION IS BEHAVIOUR-NEUTRAL, WHICH IS WHY IT IS AN EXCISION AND NOT A
+CHANGE.** With pex gone `p->cap` is always 0, so `jboot`'s first branch could
+never fire; `flatbottom()` with no labels always returns 1; so `jboot` always
+returned 0 and both of its call sites were already no-ops.
+
+The previous arrangement kept all of this and supplied three shims in a
+`muxix.c` of ours. This removes the code instead, so the shipped binary
+contains no IX at all.
+```diff
+--- tarball/history/ix/src/jerq/mux/mux.c
++++ ours/history/ix/src/jerq/mux/mux.c
+@@ -7,6 +7,4 @@
+ #include <sys/ttyio.h>
+ #include <sys/filio.h>
+-#include <sys/label.h>
+-#include <sys/pex.h>
+ #include <libc.h>
+ #include <signal.h>
+@@ -35,9 +33,5 @@
+ 	char		bcount;
+ 	char		bbuf[MAXPKTDSIZE];
+-	struct label	lab;		/* label of pipe */
+-	short		state;		/* BS_XXX: kind of pexity */
+-	short		cap;		/* caps of pex partner */
+ };
+-enum {BS_NORM, BS_PEX, BS_BOOT};	/* BS_BOOT means pexed boot */
+ 
+ #define	NLAYERS	16		/* Same as in jerq itself */
+@@ -64,7 +58,4 @@
+ struct ttychars zerochars;
+ short		booted;
+-struct label	label;
+-int		siglab;
+-int		untrusted;
+ extern int	receive();
+ extern int	creceive();
+@@ -83,5 +74,4 @@
+ extern int	strlen();
+ extern int	write();
+-extern int	catchsiglab();
+ 
+ struct{
+@@ -132,5 +122,4 @@
+ 	register int n;
+ 	char cmdline[64];
+-	int savlab_t, savlab_u;
+ 	progname=argv[0];
+ #ifdef	TRACING
+@@ -148,18 +137,4 @@
+ 		nochk(n,0);
+ 
+-	getplab(&label,(struct label*)0);
+-	trace("getplab %s\n",labtoa(&label));
+-	savlab_t = label.lb_t;
+-	savlab_u = label.lb_u;
+-	if(fgetflab(0,&label)<0)
+-		quit("can't fgetflab 0");
+-	trace("fgetflab 0: %s\n",labtoa(&label));
+-	label.lb_t = savlab_t;
+-	label.lb_u = savlab_u;
+-	label.lb_fix = F_FROZEN;
+-	trace("setplab %s\n",labtoa(&label));
+-	if(setplab(&label,(struct label*)0)<0)
+-		quit("can't setplab");
+-	label.lb_t = label.lb_u = 0;
+ 
+ 	for(n=1; n<argc; n++) {
+@@ -184,8 +159,4 @@
+ 		return n;
+ 	}
+-	if(pex(0,-1,0)!=0) {
+-		untrusted++;
+-		unpex(0,-1);
+-	}
+ 	if(ioctl(1, JMUX, 0)!=-1)
+ 		quit("already muxing");
+@@ -210,5 +181,4 @@
+ 	devmodes.flags|=F8BIT;
+ 	ioctl(0, TIOCSDEV, &devmodes);
+-	signal(SIGLAB, catchsiglab);
+ 	signal(SIGPIPE, (int (*)())1);
+ 	for(n=0; n<NSPEEDS; n++)
+@@ -276,7 +246,5 @@
+ 		if(bit&rdfd.fds_bits[0]){
+ 			while((n=read(fd, buf, sizeof buf))==-1)
+-				if(errno==ECONC) {
+-					 pexfix(fd);
+-				}else if(errno!=EINTR)
++				if(errno!=EINTR)
+ 					return -1;
+ 				else{
+@@ -395,6 +363,4 @@
+ 		mp->type=M_HANGUP;
+ 	else {
+-		if(siglab)
+-			checklabs();
+ 		if(layer[fd].more>0){
+ 			layer[fd].more-=n;
+@@ -468,16 +434,8 @@
+ 			break;
+ 		case JTOOB:
+-			/* panic: fait accompli */
+-			if(jboot(fd,BS_BOOT,BS_PEX))
+-				quit("call the cops: did untrusted download to multilevel muxterm");
+ 			size = 0;
+ 			break;
+ 		case JBOOT:
+ 		case JZOMBOOT:
+-			/* we have a chance to nip it in bud */
+-			if(jboot(fd,BS_PEX,BS_BOOT)) {
+-				fatal(fd, "averted untrusted download to multilevel muxterm\n");
+-				return 1;
+-			}
+ 			/* fall thru */
+ 		case JTERM:
+@@ -575,23 +533,4 @@
+ 	ioctlvec[1]=layer[fd].chan;
+ 	if(psend_hold(0, ioctlvec, sizeof ioctlvec, fd)!=-1)
+-		unblock(fd);
+-}
+-sendlabel(fd,lab)
+-struct label *lab;
+-{
+-	unsigned char ctlvec[2+LABSIZ];
+-	ctlvec[0]=JLABEL; 
+-	ctlvec[1]=layer[fd].chan;
+-	memcpy(ctlvec+2,lab->lb_bits,LABSIZ);
+-	if(psend_hold(0, ctlvec, sizeof ctlvec, fd)!=-1)
+-		unblock(fd);
+-}
+-sendpex(fd,state)
+-{
+-	char p[3];
+-	p[0] = JPEX;
+-	p[1]=layer[fd].chan;
+-	p[2] = state;
+-	if(psend_hold(0, p, sizeof p, fd)!=-1)
+ 		unblock(fd);
+ }
+@@ -714,8 +653,4 @@
+ 			layer[i].chan=l;
+ 			layer[i].ttydev = devsave;
+-			layer[i].state=BS_NORM;
+-			sendlabel(i,&label);
+-			layer[i].lab = label;
+-			layer[i].cap = 0;
+ 			ttyset(i, &ttychars);
+ 			trace("new fd %d ", i);
+@@ -822,6 +757,4 @@
+ 	while(i--)
+ 		*bp++=*cp++;
+-	if(siglab)
+-		checklabs();
+ 	write(fd, wrbuf, MSGHLEN+n);
+ }
+@@ -849,14 +782,4 @@
+ 	slave=fp[0];
+ 	fd=fp[1];
+-	label.lb_fix = F_RIGID;
+-	if(fsetflab(fd, &label)<0) {
+-		ifdeftracing(struct label lab);
+-		trace("can't set RIGID, errno=%d\n", errno);
+-		ifdeftracing(fgetflab(fd,&lab));
+-		trace("pipelab %s\n", labtoa(&lab));
+-		ifdeftracing(getplab(&lab));
+-		trace("proclab %s\n", labtoa(&lab));
+-		return -1;
+-	}
+ 	trace("pipe %d\n", fd);
+ 	if(ioctl(fd, FIOPUSHLD, &mesg_ld) == -1){
+@@ -876,5 +799,4 @@
+ 		close(slave);
+ 		ioctl(0, TIOCSPGRP, 0);
+-		signal(SIGLAB, (int (*)())0);
+ 		signal(SIGPIPE, (int (*)())0);
+ 		execlp(shell, shell, 0);
+@@ -956,139 +878,8 @@
+ }
+ 
+-flatbottom() {
+-	register struct layer *p;
+-
+-	for(p=layer;p<&layer[NSELFD]; p++)
+-		if(p->busy && !labEQ(&p->lab, &label) 
+-		   && p->state != BS_PEX) {
+-			trace(" flatbot %d", layer-p);
+-			trace(" [lab %s]", labtoa(&p->lab));
+-			return 0;
+-		}
+-	return 1;
+-}
+-
+-jboot(fd,oldstate,newstate)
+-{
+-	register struct layer *p = &layer[fd];
+-
+-	trace("jboot %d", fd);
+-	trace(" os=%d", oldstate);
+-	trace(" ns=%d", newstate);
+-	trace(" ps=%d", p->state);
+-	trace(" pcap=%o", p->cap);
+-	if(untrusted==0 && p->state==oldstate && (p->cap&T_EXTERN)) {
+-		p->state = newstate;
+-		trace(" rv 0\n", 0);
+-		return 0;
+-	} else if(flatbottom()) {
+-		untrusted = 1;
+-		trace(" rv 1\n", 0);
+-		for(p=layer;p<&layer[NSELFD];p++)
+-			if(p->busy)
+-				sendpex(p-layer,0);
+-		return 0;
+-	} else {
+-		trace(" rv -1\n", 0);
+-		return -1;
+-	}
+-}
+-
+-
+-pexfix(fd) {
+-	register struct layer *p = &layer[fd];
+-	int pex;
+-	struct pexclude x;
+-
+-	if(ioctl(fd,FIOQX,&x)==1) {
+-		if(x.newnear==FIONPX && untrusted==0)
+-			ioctl(fd, FIOPX, &x);
+-		else
+-			ioctl(fd, FIONPX, &x);
+-	}
+-	if(untrusted==0 && x.farpid>0 && x.farcap) 
+-		pex = BS_PEX;
+-	else
+-		pex = BS_NORM;
+-	p->cap = (pex==BS_PEX)?x.farcap:0;
+-
+-	trace("pexfix(%d)", fd);
+-	trace(" ps=%d", p->state);
+-	trace(" pcap=%o", p->cap);
+-	trace(" fcap=%o", x.farcap);
+-	trace(" newpex %d\n", pex);
+-
+-	switch(p->state) {
+-	case BS_NORM:
+-	case BS_PEX:
+-		p->state = pex;
+-		sendpex(fd,pex==BS_PEX);
+-		break;
+-	case BS_BOOT:
+-		if(jboot(fd, BS_BOOT, BS_BOOT)) {
+-			fatal(fd, "foiled untrusted download to multilevel muxterm\n");
+-		}
+-		break;
+-	}
+-	trace("pexfix2(%d)", fd);
+-	trace(" ut=%d", untrusted);
+-	trace(" farpid=%d", x.farpid);
+-	trace(" ns=%d\n", p->state);
+-}
+-
+-catchsiglab()
+-{
+-	siglab = 1;
+-}
+-checklabs()
+-{
+-	int i, bit, nseen;
+-	trace("checklabs\n", (char*)0);
+-	siglab = 0;
+-	do {
+-		unsigned readfds = ~0;
+-		unsigned writefds = ~0;
+-		int nfds = unsafe(NSELFD, &readfds, &writefds);
+-		if(nfds<0)
+-			quit("unsafe failed");
+-		trace("unsafe nfds=%d", nfds);
+-		trace(" rdfds=%o", readfds);
+-		trace(" wrfds=%o\n", writefds);
+-		nseen = 0;
+-		for(i=0, bit=1; nseen<nfds && i<NSELFD; i++, bit<<=1) {
+-			if(!FD_ISSET(i,(*(fd_set*)&readfds)) ||
+-			   !layer[i].busy)
+-				continue;
+-			if(i==0) 
+-				quit("terminal label changed");
+-			trace("label change %d\n", i);
+-			labchange(i);
+-			nseen++;
+-		}
+-	} while(nseen);
+-}
+-labchange(fd)
+-{
+-	struct label lab;
+-	fgetflab(fd,&lab);
+-	if(!labLE(&layer[fd].lab, &lab)) {
+-		if(untrusted)
+-			fatal(fd, "illegal untrusted window downgrade\n");
+-		else {
+-			sendioctl(fd, JTERM);
+-			chitchat(fd, "sanitized window downgrade\n");
+-			sendlabel(fd,&lab);
+-		}
+-	}
+-	else if(!labEQ(&layer[fd].lab, &lab)) {
+-		if(untrusted)
+-			fatal(fd, "Label change in untrusted terminal\n");
+-		else
+-			sendlabel(fd,&lab);
+-	}
+-	layer[fd].lab = lab;
+-	trace("labch %d",  fd);
+-	trace(" %s\n", labtoa(&lab));
+-}
++
++
++
++
+ chitchat(fd,s)
+ char *s;
+```
+
+## 32ld.c: the IX download label check, excised (K15)
+
+`history/ix/src/jerq/mux/32ld.c`, sha256 `afd84395e5194a02`
+
+\
+The downloader's share of the same excision -- see the `mux.c` entry for why IX
+material must not ship on a V10 disk.
+
+`32ld.c` reads the file label of the program it is about to download and marks
+the session untrusted when the label is empty:
+
+	if (fgetflab(obj, &lab) == -1)
+		quit( "cannot get label download");
+	if (lab.lb_t == 0 && lab.lb_u == 0)
+		untrusted++;
+
+`fgetflab(2)` does not exist on V10, so on the kernel this runs on the `quit()`
+is the only reachable outcome -- the downloader would refuse every download.
+Removing the check is what makes the program run at all; keeping it would be
+keeping a call that cannot succeed.
+```diff
+--- tarball/history/ix/src/jerq/mux/32ld.c
++++ ours/history/ix/src/jerq/mux/32ld.c
+@@ -9,7 +9,5 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+-#include <sys/label.h>
+-
+-extern int	untrusted;
++
+ extern int	booted;
+ 
+@@ -49,5 +47,4 @@
+ 	struct stat statbuf;
+ 	int	i;
+-	struct label lab;
+ 
+ 	packsiz = min(120, speed/2);
+@@ -58,8 +55,4 @@
+ 		quit( "cannot open download");
+ 	fstat(obj, &statbuf);
+-	if (fgetflab(obj, &lab) == -1)
+-		quit( "cannot get label download");
+-	if (lab.lb_t == 0 && lab.lb_u == 0)
+-		untrusted++;
+ 
+ 	(void)Read ((char * )&fileheader, sizeof(struct filehdr ));
 ```
 
 ## lsys/lib/tab: enable `cdev 18 pt', the stream-pipe device (K17)

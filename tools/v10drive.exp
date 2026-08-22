@@ -1,0 +1,977 @@
+# tools/v10drive.exp -- the one way this project drives V10 over a console.
+#
+# The sibling of tools/v8drive.exp, and it exists for the same reason: three
+# V8 harnesses each grew a private "log in and run a command", each settled on
+# matching a PROMPT, and all three hung.  That rule is not edition-specific,
+# so V10 gets the library BEFORE it gets the second harness rather than after.
+#
+# Read v8drive.exp's header for why markers beat prompts -- the argument is
+# unchanged.  What follows is only what differs on a Tenth Edition machine,
+# and the two entries under HALT are the ones that can cost you a filesystem.
+#
+# ---------------------------------------------------------------------------
+# THE MACHINE.  A VAX-11/750 with an MSCP disk, not V8's 780 with a Massbus:
+#
+#	simulator   work/opensimh/BIN/vax750
+#	disk        RQ (UDA50), `set rq0 ra81'
+#	kernel      seki -- `Unix 10e Mar 15 04:03 1990', off the 1995 tape
+#	console     spawned through expect's pty, so ^E reaches scp
+#
+# THERE IS NO `boot' COMMAND.  SIMH's vax750 implements `boot' as VMB.EXE,
+# DEC's VMS bootstrap, which answers %BOOT-F-Unable to locate BOOT file when
+# pointed at V10's boot block.  work/v10boot/uda750 is the 780 boot ROM off
+# lsys/boot/star/uda with its two device longwords retargeted for the 750 --
+# see tools/v10-uda750.py -- and loading it at FA00 and entering at FA02 does
+# the ROM's job, exactly as lsys/boot/star/defboo.cmd does on a real machine.
+#
+# r5 is the boot flags, from sys/reboot.h:  0 = multi-user, 2 = single-user.
+# ---------------------------------------------------------------------------
+
+# LINE BUFFERING, so a long run can be watched.
+#
+# Tcl block-buffers stdout when it is not a tty, and every harness here is run
+# as `expect ... | tee log' from a script.  So a stage that takes forty
+# minutes writes nothing to the log for the first several thousand lines, and
+# a run that is merely slow is indistinguishable from one that has wedged --
+# which is exactly the question you want to answer without interrupting it.
+# stdbuf cannot help: the buffering is Tcl's, not stdio's.
+fconfigure stdout -buffering line
+
+# -------------------------------------------------------------------------
+# ONE SPELLING OF `expect' IS CORRECT HERE, AND THE OTHER TWO EACH FAIL
+# SILENTLY IN A DIFFERENT DIRECTION.  Use the flat, unbraced form:
+#
+#	expect -timeout 15 -- "sim>" {} timeout {}                  CORRECT
+#	expect { -timeout 15 "sim>" {} timeout {} }                 never times out
+#	expect -timeout 15 { "sim>" {} timeout {} }                 never MATCHES
+#
+# Measured on expect 5.45 (macOS), each variant its own process with an
+# `after' watchdog so a hang is reported rather than waited on:
+#
+#	expect { -timeout 3 "X" {} timeout {} }              HUNG
+#	expect { -timeout 3 "X" {} timeout {} eof {} }       HUNG
+#	expect -timeout 3 { "X" {} timeout {} }              returned at 3s
+#	expect -timeout 3 -- "death" {...} timeout {...}     MATCHED at 1s
+#	expect -timeout 3 { death {...} timeout {...} }      timed out, NO match
+#
+# The third line is the dangerous one, and `exp_internal 1' says why in one
+# line -- a braced body following a flag is taken as ONE GLOB PATTERN, the
+# whole thing, braces and action bodies included:
+#
+#	expect: does "death\r\n" match glob pattern
+#	  " death {set halted 1} timeout {puts TIMED-OUT} "?  no
+#
+# So it is not a pattern list at all: the timeout fires on schedule and
+# nothing can ever match.  Expect only re-splits a braced body into
+# pattern/action pairs when that body is the command's ONLY argument, which is
+# why v10_must and v10_try -- `expect -timeout $use -- "$pat" {...}' and
+# `expect { -timeout $t -- "$pat" {...} ... }' -- have always worked.
+#
+# WHAT THE MIDDLE FORM COST.  `expect { -timeout 15 "sim>" {} timeout {} }' in
+# v10_halt -- a line whose own comment read "waiting for it is waiting for
+# ever" -- held a completed stage-1 run at sim> for as long as the global
+# timeout allowed, twice, with the guest already halted and the disk already
+# consistent.  The run had done all of its work and could not let go of the
+# image.
+#
+# WHAT THE THIRD FORM COST.  Converting to it as the "fix" made every
+# teardown terminate on time and stop matching `death', so the halt path fell
+# through to its ^E fallback on a machine that had halted perfectly.  A run
+# that ends 120s late looks like a slow machine, not a broken pattern.
+#
+# The watchdog below is the backstop for whatever else is like this; the rule
+# above is how not to need it.
+# -------------------------------------------------------------------------
+
+set timeout 600
+set V10_SEQ 0
+set V10_RUNNING 0       ;# is there a guest that must not simply be killed?
+set V10_DEADLINE_ID ""  ;# the run's watchdog -- see v10_deadline
+
+# How long a whole run may take before the watchdog reaps it.  Generous by
+# default so it never cuts a legitimate build short; a harness that knows its
+# own shape should say so with `v10_deadline'.  What it must never be is
+# absent -- see the comment on v10_deadline.
+set V10_RUN_SECS 5400
+
+# Absolute, resolved from THIS file's location -- never relative to whatever
+# directory a caller happened to be in.  v8drive.exp records what a path bug
+# looks like when it is not: spawn reports EOF rather than a missing file, so
+# it arrives disguised as a simulator that started and died.
+# work/v10gold, not work/myv8: the V10 images live beside the golden this
+# project builds, and a bare name handed to v10_boot resolves here.  An
+# absolute path (which is what v10_clone returns) works either way.
+set V10_MEDIA [file normalize [file join [file dirname [info script]] .. work v10gold]]
+# Captured while THIS file is being sourced.  `info script' inside a proc
+# resolves to whatever script is being evaluated at CALL time -- the caller's,
+# not this one's -- so a proc that needs our directory must read it from here.
+set V10_TOOLS [file normalize [file dirname [info script]]]
+set V10_SIMH  [file normalize [file join [file dirname [info script]] .. work opensimh BIN vax750]]
+set V10_ROM   [file normalize [file join [file dirname [info script]] .. work v10boot uda750]]
+set V10_GEN   [file normalize [file join [file dirname [info script]] .. v10 mk gen]]
+
+# THE TRACE PATH IS RESOLVED HERE, AT SOURCE TIME, AND THE REASON IS v10_boot's
+# OWN `cd $V10_MEDIA'.  The simulator is spawned from the media directory so its
+# ATTACH lines can name images by their short names -- so a relative
+# V10_IL_TRACE=work/il.trace lands under work/v10gold/work/, whose directory
+# does not exist.  SIMH says `File open error', prints `sim>' as usual, and
+# v10_boot's generic `v10_must "sim>"' passes: a run with no trace at all and
+# nothing in the transcript that reads as a failure.  Normalising inside
+# v10_iltrace would be too late -- it is called after the cd.
+set V10_ILTRACE {}
+if {[info exists env(V10_IL_TRACE)] && $env(V10_IL_TRACE) ne ""} {
+    set V10_ILTRACE [file normalize $env(V10_IL_TRACE)]
+}
+
+# ARGUMENTS FOR THE SIMULATOR ITSELF, and the app's library is why this exists.
+#
+# The desktop open-simh binaries take no argument and drop straight to `sim>',
+# which is what every harness here drives.  `libsimh/test/main.c' -- the CLI over
+# the static library the APP links -- requires one:
+#
+#	if (argc < 2) { fprintf(stderr, "usage: %s <config-file>\n", ...); return 2; }
+#
+# so spawning it bare exits 2 before printing a prompt, and `v10_must "sim>"'
+# then reports a simulator that started and died.  It does accept a config file
+# and THEN read stdin, so one throwaway config is the whole difference between
+# driving the desktop build and driving the code that ships.
+#
+# Empty by default, so nothing that worked before behaves differently.
+set V10_SIMH_ARGS {}
+
+# The overlap guard, called from v10_boot.  Sourced here rather than by each
+# harness for the same reason the boot itself lives here: there are twenty-nine
+# of them and a rule they each have to remember is a rule that will be missed.
+source [file dirname [info script]]/norun.exp
+
+# ------------------------------------------------------------------ lists ---
+
+# The component lists, READ rather than restated.
+#
+# v10/mk/mkdep.py already emits tc.order, shutdown.order and buildtools.ord --
+# `name<TAB>dir<TAB>install' per line, one file per group -- and a harness
+# that also writes `set BUILDTOOLS {ar cmp tail}' has made a second source of
+# truth out of a list that had one.
+#
+# IT COST A RUN THE DAY IT WAS WRITTEN.  `ed' was added to mkdep.py's
+# BUILDTOOLS, the makefile was generated, the source disk carried ed.c and
+# ed.mk -- and stage 1 built ar, cmp and tail, because its own Tcl copy of the
+# list had not been touched.  Nothing failed: the run reported 42/44 with `ed
+# edits from a script NO' and no line anywhere saying ed had never been built.
+# A list that appears twice will disagree eventually, and the disagreement is
+# silent by construction.
+# `col' picks the field: 0 the component name, 1 its source directory, 2 the
+# path it installs to (relative, no leading slash).  Column 2 is how a driver
+# copies a staged tool into the running system without restating where each
+# one lives -- which is the same duplication one field over.
+# v10_inc_extra <mkdir-on-guest> <overlay-on-guest>  --  install the headers
+# r70 keeps only inside a compiler's directory, from the one generated list.
+#
+# THIS EXISTS BECAUSE TWO HARNESSES DISAGREED WITH THE SURVEY ABOUT
+# /usr/include, AND THE DISAGREEMENT FLATTERED THE TAPE.  tools/v10-world.py has
+# always resolved <stdlib.h>, <float.h> and <stdarg.h> -- stage 2 chose which of
+# r70's four copies of each pcc2 can read and recorded the evidence -- but the
+# copies were performed by tools/v10-stage2.exp alone, on the .s2 image chain.
+# K10.1 runs on a .stage1 clone, which has none of them, so it surveyed one
+# machine and compiled on another; fourteen units failed on a missing stdlib.h or
+# stddef.h and those failures were written up as header facts about the tape.
+# Eleven of them named a decision already made.
+#
+# One proc rather than a block in each harness, on the tc.order rule: a
+# component list that appears twice will disagree, silently.  The list itself is
+# v10/mk/gen/inc.extra, generated from the same table the survey resolves
+# against, and v10-world.py --check refuses when it disagrees with what stage 2
+# copies.  Nothing here decides anything.
+proc v10_inc_extra {mk ours} {
+    # A `while read' loop over a file, run through v10_run because it takes the
+    # tty for as long as the copies take and prints its own end marker.  The
+    # provenance column picks the source: r70's own variant directory under
+    # /usr/include, or our overlay on the courier disk.
+    v10_run "sed -e '/^#/d' $mk/inc.extra | while read h w f ; do case \$w in r70) cp /usr/include/\$f /usr/include/\$h ;; *) cp $ours/\$f /usr/include/\$h ;; esac ; done ; echo IXDONE" "IXDONE" 900
+}
+
+# v10_jerq_inc <courier-root>  --  install the 5620 include tree where the
+# sources name it, by ABSOLUTE path.
+#
+# THE SECOND INSTANCE OF THE SAME DRIFT AS v10_inc_extra, one directory over.
+# Three command units and four libraries write
+#
+#	#include "/usr/jerq/include/jioctl.h"
+#	#include "/usr/blit/include/jioctl.h"		(libblit)
+#
+# -- an absolute path into the 5620 tree, which no -I can satisfy.  The headers
+# are in the v10blit tarball and v10-srcdisk.exp puts all 21 on the courier disk,
+# and tools/v10-world.py's resolver has always counted them as reachable for
+# exactly that reason.  But only tools/v10-libs.exp performed the install, so
+# K10.1 -- on a .stage1 clone -- had three units (dict, dis, mc) fail on a header
+# the survey said was present, while K10.3 on K10.2's output image compiled all
+# three.  That three-unit difference between two runs of the SAME script is what
+# surfaced it: 247 against 244, and the compile half of both is the same lines of
+# worldc.sh, so a difference had to be the machine.
+#
+# `cp *' and not `find | cpio': the tree is flat (21 files) and V10 HAS NO find.
+proc v10_jerq_inc {n} {
+    v10_sh "mkdir /usr/jerq; mkdir /usr/jerq/include" 120
+    v10_sh "mkdir /usr/blit; mkdir /usr/blit/include" 120
+    v10_sh "cd $n/jerq; cp * /usr/jerq/include" 900
+    v10_sh "cd $n/jerq; cp * /usr/blit/include" 900
+    # Our own overlay's jioctl.h wins: it adds `#define JMUX JMPX', an alias no
+    # header on the tape defines while lib5620/openpl.c uses it.  See
+    # v10/src/PATCHES.md.
+    v10_sh "cp $n/ours/include/jioctl.h /usr/jerq/include/jioctl.h" 300
+    v10_sh "cp $n/ours/include/jioctl.h /usr/blit/include/jioctl.h" 300
+}
+
+proc v10_order {file {col 0}} {
+    global V10_GEN
+    set path [file join $V10_GEN $file]
+    if {![file exists $path]} {
+        v10_bail "no $path -- run v10/mk/mkdep.py"
+    }
+    set f [open $path]
+    set names {}
+    foreach line [split [read $f] "\n"] {
+        if {$line eq "" || [string index $line 0] eq "#"} continue
+        lappend names [lindex [split $line "\t"] $col]
+    }
+    close $f
+    if {[llength $names] == 0} { v10_bail "$path is empty" }
+    return $names
+}
+
+# v10_rows <file> <ncol>  --  the WHOLE table, one Tcl list per line.
+#
+# v10_order returns ONE COLUMN as a flat list, and a caller that wants rows
+# cannot tell: destructuring a flat list of names with `lindex $c 0/1/2' yields
+# the name and then TWO EMPTY STRINGS, because "yacc" is a one-element list and
+# an out-of-range lindex is "" rather than an error.
+#
+# THAT COST THE WHOLE POINT OF A STAGE-3 RUN.  `set TC [v10_order tc.order]'
+# then `set inst [lindex $c 2]' made every install path empty, so the strip step
+# ran
+#
+#	/usr/s3/bin/ld -x -r /usr/s3/          ->  ld:/usr/s3/: bad magic number
+#
+# -- ld handed a DIRECTORY -- and the fixpoint compared files that were never
+# created (`yacc.3: No such file or directory'), reporting 7 differences where
+# it had made zero comparisons.  The strong test reported `no stage-1 binary'
+# for all seven for the same reason: `test -s /usr/s1/'.  Fourteen build
+# assertions passed in the same run, because those use only the name.
+#
+# `bad magic number' reads as a corrupt binary and `NO' reads as a difference.
+# Neither says "a field was blank", which is why the count is checked here and
+# a short row BAILS: the generator writes three columns, so a row with two is a
+# malformed table and not something to paper over with an empty string.
+proc v10_rows {file ncol} {
+    global V10_GEN
+    set path [file join $V10_GEN $file]
+    if {![file exists $path]} {
+        v10_bail "no $path -- run v10/mk/mkdep.py"
+    }
+    set f [open $path]
+    set rows {}
+    set n 0
+    foreach line [split [read $f] "\n"] {
+        incr n
+        if {$line eq "" || [string index $line 0] eq "#"} continue
+        set row [split $line "\t"]
+        if {[llength $row] != $ncol} {
+            close $f
+            v10_bail "$path:$n has [llength $row] columns, expected $ncol: \"$line\""
+        }
+        lappend rows $row
+    }
+    close $f
+    if {[llength $rows] == 0} { v10_bail "$path is empty" }
+    return $rows
+}
+
+# --------------------------------------------------------------- teardown ---
+
+# THE HARNESS MUST ALWAYS TERMINATE ITSELF.  This is not tidiness: a run that
+# hangs still OWNS the disk image, so the next round cannot start, and the
+# only way out is killing a process by hand.  Needing that is the bug.
+#
+# It has happened.  On 2026-08-17 a stage-1 run did all of its work, halted
+# the guest cleanly -- `death' and `Infinite loop, PC: 80017019' both in the
+# log -- and then sat at `sim>' owning a vax750 with nothing left to do,
+# while the next round could not begin.
+#
+# `close' hangs up the pty, so SIMH's console read returns EOF and scp exits.
+# `wait -nowait' reaps without blocking, because a blocking wait here would
+# reintroduce exactly the hang this exists to prevent.  Both are catch'd:
+# tearing down a spawn that is already gone is success, not an error.
+proc v10_reap {} {
+    global V10_RUNNING
+    set V10_RUNNING 0
+    catch {close}
+    catch {wait -nowait}
+}
+
+# A DEADLINE FOR THE RUN, ENFORCED BY THE EVENT LOOP.
+#
+# Every other bound in this file is an `-timeout' on one `expect', which
+# protects only the wait it is attached to -- so a hang anywhere without one
+# is unbounded, and there is no way to be sure by reading that none is left.
+# `after' timers are serviced by Tcl_DoOneEvent, which is precisely what
+# `expect' blocks in, so this fires even while an expect is waiting for a
+# pattern that will never arrive.  That makes it a guarantee about the whole
+# harness rather than another local bound: whatever goes wrong and wherever,
+# the run stops and gives up the image.
+#
+# Arm it generously for the work and TIGHTLY for the teardown -- v10_halt
+# re-arms it, because by then the guest is halted and nothing legitimate can
+# take minutes.
+proc v10_deadline {secs} {
+    global V10_DEADLINE_ID
+    catch {after cancel $V10_DEADLINE_ID}
+    set V10_DEADLINE_ID [after [expr {$secs * 1000}] [list v10_expired $secs]]
+}
+
+proc v10_expired {secs} {
+    global V10_RUNNING
+    puts "\nV10-DEADLINE: ${secs}s elapsed and the run has not finished."
+    puts "V10-DEADLINE: stopping the simulator and giving up the disk image."
+    if {$V10_RUNNING} {
+        puts "V10-DEADLINE: the guest was NOT cleanly halted -- treat this"
+        puts "V10-DEADLINE: image as damaged until a hash says otherwise."
+        # ^E AND `quit' BEFORE THE CLOSE, AND THIS IS NOT TIDINESS.
+        #
+        # v10_reap is `close' plus `wait -nowait', and close only ends the
+        # simulator if the simulator is READING its console.  A guest wedged in a
+        # netfs read is not, so SIMH never sees the EOF -- and the driver then
+        # runs `exit 3' and leaves it behind.  Measured 2026-08-20: after this
+        # deadline fired, vax780 pid 83844 was still spinning at 97.9% of a core
+        # with PPID 1, orphaned, holding its disk image, with no pty left to
+        # reach it through.  Nothing could stop it but a signal, which is exactly
+        # what CLAUDE.md's "a harness must terminate itself; needing to kill one
+        # is the bug" forbids -- so the bug was here.
+        #
+        # ^E drops a local-tty console to `sim>' and `quit' ends the process, the
+        # same two steps v10_halt already uses as its fallback.  Both are bounded
+        # and non-fatal: a machine that has genuinely gone away answers with eof
+        # and costs nothing.
+        catch {
+            send "\005"
+            expect -timeout 20 -- "sim>" {} timeout {} eof {}
+            send "quit\r"
+            expect -timeout 30 eof {} timeout {}
+        }
+    }
+    v10_reap
+    exit 3
+}
+
+# ---------------------------------------------------------------- failure ---
+
+proc v10_bail {msg} {
+    global V10_RUNNING
+    puts "\nV10-BAIL: $msg"
+    # A bail is already a failure, so nothing here may wait long enough to
+    # matter.  These two expects had no -timeout and inherited the harness's
+    # global one -- 3600 in the stage drivers -- which turned every failed
+    # assertion into an hour of holding the image.
+    if {$V10_RUNNING} {
+        send "\005"
+        expect -timeout 30 -- "sim>" {} timeout {} eof {}
+        send "quit\r"
+        expect -timeout 60 eof {} timeout {}
+        puts "V10-BAIL: guest stopped at sim> and quit -- NOT cleanly halted,"
+        puts "V10-BAIL: so treat this image as damaged until a hash says otherwise."
+    }
+    v10_reap
+    exit 1
+}
+
+proc v10_must {pat {t 0}} {
+    global timeout
+    set use [expr {$t > 0 ? $t : $timeout}]
+    expect -timeout $use -- "$pat" {
+    } timeout {
+        v10_bail "never saw '$pat' after ${use}s"
+    } eof {
+        v10_bail "simulator exited while waiting for '$pat'"
+    }
+}
+
+# ------------------------------------------------------------------- boot ---
+
+# Spawn the 750, apply `extra' config lines, and boot through the ROM.
+#
+# `extra' is where a caller attaches its own units -- the source disk is
+#	{"set rq1 ra81" "attach rq1 /path/to/src.img"}
+# and nothing else in this file needs to know it exists.
+# AN OPTIONAL PACKET TRACE, because the netfs LATENCY is still unexplained and a
+# trace is the instrument that would settle it.
+#
+# What is already ruled out (2026-08-20): netfsd is not slow (0.2-0.3 ms mean
+# service), no frames are dropped (`show il statistics' reports zero receive
+# errors and zero queue loss), the guest is not CPU-starved (228 KB read locally
+# in 72 ms), and the 512-byte stream head -- which really did cause the
+# TRUNCATION -- left the latency untouched at 6.92 s against 6.67-7.50.  What
+# remains is that the guest sent 978 packets and received 833 for 249 exchanges
+# with no loss, which points at retransmission; V10's TCPTV_MIN is 2 s where V8's
+# is 1, so the penalty is seconds.  A duplicate packet is visible directly in a
+# trace and by inference nowhere else.
+#
+# OFF unless V10_IL_TRACE names a file, so it costs nothing normally and no
+# harness has to be edited to get it:
+#
+#	V10_IL_TRACE=work/il.trace bash tools/v10-netread.sh
+#
+# It is appended AFTER $extra deliberately: `set il debug' is rejected while the
+# device is disabled, so it has to follow whatever `set il enable' the caller
+# passed.
+#
+# THE FIRST VERSION OF THIS PROC PRODUCED AN UNTIMESTAMPED, DUPLICATE-COLLAPSED
+# DUMP -- an instrument that removed the very evidence it was built to find --
+# and it was recorded in CLAUDE.md as "built and unused" for a week.  Both faults
+# are in scp.c and neither is visible from the simulator's behaviour:
+#
+#   * `set debug -t' ON ITS OWN IS AN ERROR.  sim_set_debon() opens with
+#     `if ((cptr == NULL) || (*cptr == 0)) return SCPE_2FARG' -- the switch is
+#     consumed by the command parser, so the filename argument is empty.  It
+#     printed "Too few arguments", `sim>' followed as usual, and v10_boot's
+#     generic `v10_must "sim>"' passed.  A silent failure, in a command whose
+#     whole purpose was to add the timestamps.
+#   * AND THE TIMESTAMP IS NOT A DEFAULT.  sim_console.c:2358 does force -T on,
+#     but that line sits INSIDE `if (sim_deb_switches & SWMASK ('R'))', so it
+#     applies only when -R was asked for.  A bare `set debug <file>' timestamps
+#     nothing at all.
+#   * WORSE, THE DEFAULT FILTER DELETES RETRANSMISSIONS.  scp.c's
+#     _sim_debug_write_flush() collapses consecutive identical lines into
+#     "same as above (N times)" unless -F is given -- and a retransmitted frame
+#     is BY DEFINITION an identical hex dump.  The one hypothesis this trace
+#     exists to test is the one the filter erases, timestamps included.
+#
+# sim_switches are case-insensitive and combine in one word (get_switches() ORs
+# SWMASK (sim_toupper (c))), and sim_set_deb_switches() is called from the same
+# invocation that names the file -- so it must be one command, `-tf <file>'.
+# Verified against the artefact rather than the announcement: tools/il-gaps.py
+# refuses a trace whose lines carry no timestamp or that contains an elision.
+proc v10_iltrace {} {
+    global V10_ILTRACE
+    if {$V10_ILTRACE eq ""} { return {} }
+    return [list "set debug -tf $V10_ILTRACE" \
+                 "set il debug=PKT;DAT"]
+}
+
+# v10_select_machine <image>
+#
+# THE MACHINE IS A PROPERTY OF THE IMAGE, AND TAKING IT FROM THE HARNESS COSTS A
+# RUN.  K10.3 was written for the .k102 chain, which boots on a vax750.  Pointed
+# at the .k13 chain -- whose /unix is OUR ipnx780 kernel -- it panicked twice and
+# halted:
+#
+#	unix
+#	type 2 sp x7fffec00 code x0 pc x800139f8 ...  panic: trap
+#	type 8 sp x7fffec00 code x0 pc x80009581 ...  panic again: trap
+#	HALT instruction, PC: 80000BB3 (HALT)
+#
+# A 780 kernel on a 750 dies on hardware that is not there -- ms780, dw780, mba
+# -- and finding out costs the harness's whole 480-second wait for `ogin', after
+# which the failure reads as a broken build rather than a wrong simulator.
+#
+# So ASK THE KERNEL.  K7's kernel carries its own banner string, `Unix 10e ipnx
+# 780', which is what K9's transcript prints on the console; the golden's
+# lsys/astro/seki.u does not.  That is a measurement of the artefact rather than a
+# convention about its filename -- the same reason provenance here comes from
+# hashes and never from grepping for `vaxpcc2'.
+#
+# Reading it needs no simulator: tools/v10fs.py walks the image host-side.
+# v10_must_boot <pattern> <seconds>
+#
+# THE LOGIN WAIT, WITH A PANIC AS A FIRST-CLASS OUTCOME.  A kernel that panics
+# never prints a prompt, so `v10_must "ogin" 480' sits for the full eight minutes
+# and then reports `never saw ogin after 480s' -- which names the symptom and not
+# the cause.  It cost that, and the diagnosis came from reading the transcript by
+# hand:
+#
+#	unix
+#	type 2 ... panic: trap
+#	type 8 ... panic again: trap
+#	HALT instruction, PC: 80000BB3 (HALT)
+#
+# NO `--' HERE, DELIBERATELY.  `--' ends option processing, so every later
+# argument is a pattern -- which is fine for globs and would silently turn a
+# `-re' into a literal.  Both patterns here are plain globs and neither can begin
+# with a dash, so the flag is unnecessary and its absence is what keeps the
+# second pattern a pattern.  The flat form (pairs as direct arguments, not wrapped
+# in one brace) is the only one of expect's three spellings that both honours
+# -timeout and re-splits into pairs.
+proc v10_must_boot {pat {t 0}} {
+    global timeout
+    set use [expr {$t > 0 ? $t : $timeout}]
+    expect -timeout $use $pat {
+    } "panic: " {
+        v10_bail "THE KERNEL PANICKED during boot, so no prompt is coming.\n   Almost always the wrong simulator for this image: a 780 kernel on a\n   vax750 dies on hardware that is not there (ms780, dw780, mba).  See\n   v10_select_machine, which reads the machine off the image."
+    } timeout {
+        v10_bail "never saw '$pat' after ${use}s"
+    } eof {
+        v10_bail "simulator exited while waiting for '$pat'"
+    }
+}
+
+
+proc v10_select_machine {img} {
+    global V10_SIMH V10_ROM V10_TOOLS
+    set here $V10_TOOLS
+    set fs   [file join $here v10fs.py]
+    if {![file readable $fs]} { return }        ;# no reader: leave the default
+    set cmd "python3 [list $fs] cat [list $img:a] /unix 2>/dev/null |\
+             grep -a -c 'ipnx 780' || true"
+    if {[catch {exec sh -c $cmd} n]} { set n 0 }
+    set n [string trim $n]
+    if {![string is integer -strict $n]} { set n 0 }
+    if {$n > 0} {
+        set V10_SIMH [file normalize [file join $here .. work opensimh BIN vax780]]
+        set V10_ROM  [file normalize [file join $here .. work v10 src lsys boot star uda]]
+        puts "v10: $img carries the ipnx780 kernel -- using vax780"
+    } else {
+        puts "v10: $img carries no ipnx780 banner -- using vax750"
+    }
+}
+
+
+proc v10_boot {img {extra {}} {r5 0}} {
+    # `global spawn_id' IS LOAD-BEARING -- spawn sets spawn_id in the CURRENT
+    # scope, so a spawn inside a proc leaves the global one alone and every
+    # other proc here then talks to stdin, reads EOF at once, and reports
+    # "simulator exited".  A scoping bug arrives dressed as a dead simulator.
+    global spawn_id V10_RUNNING V10_MEDIA V10_SIMH V10_SIMH_ARGS V10_ROM V10_RUN_SECS
+    global V10_ILTRACE
+
+    # Say what is missing while it is still a filename.
+    if {![file executable $V10_SIMH]} { puts "\nV10-BAIL: no simulator at $V10_SIMH"; exit 2 }
+    if {![file readable $V10_ROM]}    { puts "\nV10-BAIL: no boot ROM at $V10_ROM -- run tools/v10-uda750.py"; exit 2 }
+    cd $V10_MEDIA
+    if {![file readable $img]}        { puts "\nV10-BAIL: no image '$img' in $V10_MEDIA"; exit 2 }
+
+    # NOTHING ELSE MAY BE RUNNING, and this is the moment to insist.  The
+    # wrapper checks before a run that then lasts hours; this checks at the
+    # instant of spawn.  Every image about to be attached is offered to the
+    # guard -- $img plus any `attach' in $extra, which is where the source disk
+    # arrives.  See tools/norun.exp.
+    set claim [list $img]
+    foreach c $extra {
+        if {[regexp {^attach +\S+ +(.+)$} $c -> f]} { lappend claim [string trim $f] }
+    }
+    eval sim_guard $claim
+
+    eval spawn [list $V10_SIMH] $V10_SIMH_ARGS
+    set V10_RUNNING 1
+    # ARMED THE MOMENT THERE IS SOMETHING TO REAP, and not before: from here
+    # on the harness owns a simulator and a disk image, so from here on it
+    # must be unable to hold them for ever.
+    v10_deadline $V10_RUN_SECS
+    v10_must "sim>" 60
+
+    # `set noasynch' first, on the same rule as V8: this simulator is built
+    # from the same open-simh tree, which compiles SIM_ASYNCH_IO in, and a
+    # hand-written config that omits it walks into simh #425.  That fault was
+    # documented on the Massbus and this disk is MSCP, so it may well never
+    # bite here -- which is exactly the argument that let it bite there.
+    foreach c [concat {
+        "set noasynch"
+        "set cpu 8m"
+        "set dz enable"
+        "set dz lines=8"
+        "set tto 7b"
+    } [list "set rq0 ra81" "attach rq0 $img"] $extra [v10_iltrace]] {
+        send "$c\r"
+        v10_must "sim>" 60
+    }
+
+    # THE TRACE IS ASSERTED HERE, NOT AT THE END OF THE RUN.  `set debug' can
+    # fail -- a bad path, a bad switch -- and it fails by printing one line and
+    # then `sim>', which the generic prompt-match above accepts.  Both of this
+    # instrument's earlier faults were exactly that shape and both cost a whole
+    # run.  sim_open_logfile() creates the file the instant it succeeds, so its
+    # existence is a marker only the success path can write.
+    if {$V10_ILTRACE ne "" && ![file exists $V10_ILTRACE]} {
+        puts "\nv10_boot: `set debug -tf $V10_ILTRACE' did not create the trace."
+        puts "v10_boot: the simulator's cwd is [pwd]; look for `File open error' above."
+        v10_bail "il trace requested but not opened"
+    }
+
+    send "load -o $V10_ROM FA00\r"; v10_must "sim>" 60
+    foreach c [list "dep sp 200" "dep r1 0" "dep r3 0" "dep r5 $r5"] {
+        send "$c\r"; v10_must "sim>" 60
+    }
+    send "run FA02\r"
+
+    if {$r5 == 2} {
+        # single-user: init execs /bin/sh straight onto the console, so there
+        # is no getty and no banner.  A marker is the only honest handshake.
+        v10_sh ":" 480
+        return
+    }
+    # MARK PARITY.  getty sends its first banner with bit 7 set, so the plain
+    # string "login:" can miss the whole line.  `ogin' survives either way.
+    v10_must_boot "ogin" 480
+}
+
+# Log in and take control, without ever matching a prompt.
+#
+# The handshake is /etc/motd, which login's showmotd() prints before any
+# shell starts -- and which this driver never types, so no echo can spell it.
+#
+# /etc/rc ALSO cats the motd, one screen earlier.  That is harmless and it is
+# harmless BY ORDERING, not by luck: v10_boot has already matched `ogin',
+# which consumed everything before it including rc's copy, so the next motd
+# to arrive can only be login's.  Anything that stops matching `ogin' first
+# breaks this, so do not reorder them.
+proc v10_login {{user root} {pass ""}} {
+    send "$user\r"
+    if {$pass != ""} {
+        v10_must "assword:" 60
+        send "$pass\r"
+    }
+    v10_must "Restored by ipnx" 180
+    v10_sh ":" 120      ;# and prove a shell, not just a banner, is listening
+}
+
+# ------------------------------------------------------------------ shell ---
+
+proc v10_sh {cmd {t 0}} {
+    global V10_SEQ
+    incr V10_SEQ
+    send "M=+ok$V10_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    v10_must "+ok$V10_SEQ+" $t
+}
+
+# Run a command, require something of its OUTPUT, then wait for it to finish.
+# The marker is matched LAST because it is what proves the command is over --
+# matched first, it would have consumed the buffer the pattern lives in.
+proc v10_shmust {cmd pat {t 0}} {
+    global V10_SEQ
+    incr V10_SEQ
+    send "M=+ok$V10_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    v10_must "$pat" $t
+    v10_must "+ok$V10_SEQ+" $t
+}
+
+# Report whether `pat' appeared WITHOUT bailing when it does not -- for
+# probes, where absence is a result.  Returns 1 or 0.
+proc v10_try {cmd pat {t 120}} {
+    global V10_SEQ
+    # AN EMPTY PATTERN IS AN INFINITE LOOP, not a trivially-true assertion,
+    # and it hangs with no output at all.  "" matches at every position and
+    # consumes nothing, so the `exp_continue' below re-enters expect, matches
+    # "" again immediately, and spins at 100% CPU forever -- with the guest
+    # still running beside it, which is the expensive part.
+    #
+    # It reached v10_halt as `v10_try "/bin/sleep 5" ""' -- written as "run
+    # this, I do not care what it prints" -- and wedged a stage-1 run that had
+    # already finished its work.  If you do not care what it prints, that is
+    # what v10_sh is for.
+    if {$pat eq ""} {
+        v10_bail "v10_try called with an empty pattern: $cmd\n         Use v10_sh if the output does not matter."
+    }
+    incr V10_SEQ
+    send "M=+ok$V10_SEQ\r"
+    send "$cmd\r"
+    send "echo \$M+\r"
+    set hit 0
+    expect {
+        -timeout $t -- "$pat"          { set hit 1; exp_continue }
+        -timeout $t -- "+ok$V10_SEQ+"  {}
+        timeout { v10_bail "command never finished: $cmd" }
+        eof     { v10_bail "simulator exited during: $cmd" }
+    }
+    return $hit
+}
+
+# A command that TAKES THE TTY and ends on its own.  v10_sh cannot be used --
+# it sends all three lines at once, so `echo $M+' is read by the program
+# rather than the shell and the driver waits forever for a marker nobody will
+# print.
+#
+# THE END PATTERN USED TO BE MATCHED OUT OF THE COMMAND'S OWN ECHO, which is the
+# same trap v10_sh already avoids one line up.  Every caller spells the token
+# literally -- `... ; echo DIFFEND' waited on as "DIFFEND" -- and the tty echoes
+# the whole line before the shell runs any of it, so v10_must matched the
+# QUESTION and returned while the command had not started.  `v10_sh ":"' then
+# typed a marker into a tty that was still producing output, and the echo
+# interleaved character by character:
+#
+#	DIFF getpoass.o      <- getpass.o
+#	DIFF p8error.o       <- perror.o
+#	DIFF scanf6.o        <- scanf.o
+#
+# Real member names with single characters of `+ok105+' injected mid-word, in a
+# list a host-side count then read.  Bounded but not harmless: v10_sh's own
+# 60 s budget is what caught up with the command, so a loop slower than that
+# turns this into a bail on a healthy machine.
+#
+# THE FIX IS THE MARKER RULE, APPLIED TO THE END TOKEN.  `RUNE''ND' is what gets
+# typed and therefore what the echo carries; the shell's quote removal makes it
+# print `RUNEND'.  So the two spellings partition the stream -- quoted appears
+# ONLY in the echo, bare ONLY in the output -- and the echo can be consumed
+# deliberately instead of being tripped over.  Three waits, in the order the
+# bytes arrive:
+#
+#	RUNE''ND    the echo of the line we just sent
+#	$endpat     the caller's token, now necessarily from real output
+#	RUNEND      the appended sentinel: the command is over
+#
+# `$endpat' becomes a real assertion this way rather than a coincidence, and no
+# call site changes.
+#
+# LENGTHENING THE LINE IS SAFE ON V10, and that had to be checked because
+# CLAUDE.md's `keep every line under CANBSIZ = 256' is V8's rule.  V10's
+# nttyld.c FLUSHES AND CONTINUES where V8 discards:
+#
+#	*op++ = c;
+#	if (op >= &canonb[CANBSIZ-1]) { putcpy(q->next, canonb, op - canonb);
+#	                                op = canonb; }
+#
+# Confirmed on the machine, not just in the source: stage 2 sends a 302-byte
+# line, the log echoes it complete to its final `echo NOOEND', and it runs.
+#
+# The echo wait does NOT bail, deliberately.  If it were ever to miss, the next
+# wait falls through to matching the echo exactly as before -- degrading to
+# today's behaviour rather than failing a run outright.
+proc v10_run {cmd endpat {t 120}} {
+    global timeout
+    set use [expr {$t > 0 ? $t : $timeout}]
+    send "$cmd; echo RUNE''ND\r"
+    expect -timeout 60 -- "RUNE''ND" {} timeout {} eof {}
+    v10_must "$endpat" $use
+    v10_must "RUNEND" $use
+    v10_sh ":" 60
+}
+
+# ------------------------------------------------------------------- halt ---
+
+# THE CLEAN SHUTDOWN, AND IT IS NOT V8's.  This is the one procedure in this
+# file that had to be derived rather than translated, so the evidence is here.
+#
+# V8's boot() (sys/machdep.c) calls update(), prints `syncing disks... ',
+# sleeps five lbolt ticks for the I/O to drain, prints `done', and only then
+# halts.  The userland sync is belt and braces there.
+#
+# V10 DELETED ALL OF THAT.  lsys/md/machdep.c, in full:
+#
+#	boot(howto)  { if (howto&RB_HALT) death(); reboot(1); }
+#	death()      { splx(0x1f); printf("death\n"); for (;;) ; }
+#
+# No update(), no wait, no `syncing disks'.  RB_NOSYNC is defined in
+# lsys/sys/reboot.h and referenced NOWHERE in the kernel, and cmd/halt.c is
+# Berkeley's, which only calls reboot(RB_HALT).  So on a Tenth Edition machine
+# the userland `sync' is the ONLY flush there is.
+#
+# And sync alone is not enough, because it does not wait either: sync(2) ->
+# update() -> bflush(NODEV) (lsys/io/bio.c:692) sets `bp->b_flags |= B_ASYNC'
+# and calls bwrite(), which returns before the disk has the block.  V8 covered
+# that gap inside the kernel; here the gap is ours to cover, which is what the
+# sleep below is for.  Without it the sequence looks identical, exits 0, and
+# leaves blocks in core that death() then spins on top of forever.
+#
+# `death' is the output-anchored marker -- the kernel's own last word -- and
+# SIMH then reports the IPL-31 `for (;;)' as `Infinite loop', because the
+# compiler emits it as a branch to itself.
+# UNMOUNTING IS NOT TIDINESS, IT IS WHAT MAKES THE IMAGE REUSABLE.  /etc/rc
+# mounts /usr from /dev/ra0c, and V10's superblock records that a filesystem
+# is mounted.  Halt without unmounting and the flag stays set, so the NEXT
+# boot of that image answers
+#
+#	mount /dev/ra0c on /usr type 0: In use
+#
+# and carries on into multi-user with /usr simply absent -- the root
+# filesystem's empty /usr directory showing through instead.  Nothing reports
+# an error after that line.  It cost a whole stage-2 run: /usr/s1 (stage 1's
+# entire toolchain) and /usr/bin/ranlib were invisible, so 255 of 261 libc
+# members failed to compile and the run read as a compiler problem.
+#
+# The V8 harnesses have always unmounted before v8_halt -- v10-golden.exp and
+# v10-srcdisk.exp both do it explicitly.  v10-stage1.exp did not, and this is
+# the wrong place to leave it to each caller: /usr is mounted by the MACHINE,
+# not by the harness, so the machine's driver unmounts it.
+# v10_ilstats -- ask the Interlan model what it did, at sim>, before quitting.
+#
+# ONE LINE OF OUTPUT THAT MAY EXPLAIN EVERY SLOW V10 RUN.  netfsd serves the V10
+# guest at about one request every 9.6 seconds (measured twice during K15, and
+# again across K14), which is two orders of magnitude off the V8 figure.  The
+# request COUNT is reasonable -- 6.6 per distinct file, no netfs-level retries --
+# so the cost is per round trip, and 9.6 s is the shape of a lost frame plus one
+# TCP retransmit rather than a scheduling delay.
+#
+# The mechanism is in OUR OWN device model, already counted.
+# libsimh/patches/pdp11_il.c:659:
+#
+#	if (il.rxq_count == 0) {          /* nowhere to put it */
+#	    il.lost = 1;
+#	    il.ierrors++;
+#	    sim_debug (DBG_PKT, &il_dev, "receive with no buffer, frame dropped\n");
+#	    return;
+#	    }
+#
+# and V10's ni1010a.c posts ONE receive command at a time -- ilrcvbufs() returns
+# 0 immediately if (is->flags & CMDACT) -- so the window between an interrupt and
+# the driver re-posting is real. V8's ill.c supplies the next buffer from inside
+# ilrint(), which is the driver il_rxpump() was written and MEASURED against.
+#
+# So `receive errors' on the order of the request count confirms it outright, and
+# il_show_stats() already prints it. No code change, no extra run: this is why it
+# goes in the shared halt rather than in one harness.
+#
+# BOUNDED AND NON-FATAL, like everything else in the teardown: the guest is
+# already halted and the disk already synced, so nothing here may delay the quit.
+# A machine with the card disabled answers with an error and that is fine.
+# THE PARAMETER IS `STATISTICS', AND `stats' COST A 30 s TIMEOUT PER HALT WHILE
+# READING NOTHING.  pdp11_il.c's MTAB row is
+#
+#	{ MTAB_XTD|MTAB_VDV|MTAB_NMO, 0, "STATISTICS", NULL, ... }
+#
+# and SIMH matches the name in full, so `show il stats' answers
+#
+#	%SIM-ERROR: IL device: Non-existent parameter: STATS
+#
+# -- which is not one of the patterns below either, so the first expect fell
+# through to its own timeout and the reading was silently absent.  A diagnostic
+# that cannot fail is not a diagnostic; the error text is matched explicitly now
+# so a future rename is LOUD rather than slow.
+proc v10_ilstats {} {
+    send " show il statistics\r"
+    expect -timeout 30 -- "receive errors" {} \
+                          "Non-existent device" {} \
+                          "Non-existent parameter" {
+                              puts "\nv10_ilstats: SIMH rejected the parameter -- read the MTAB in pdp11_il.c"
+                          } \
+                          "Invalid argument" {} \
+                          timeout { puts "\nv10_ilstats: no answer in 30 s" }
+    expect -timeout 10 -- "sim>" {} timeout {}
+}
+
+proc v10_halt {} {
+    global V10_RUNNING
+    # THE TEARDOWN GETS ITS OWN DEADLINE, AND IT MUST EXCEED THE LEGITIMATE
+    # WORST CASE -- which is the trap this line was written into first.
+    #
+    # A watchdog that can fire while a real `sync' is still running is worse
+    # than the hang it guards against: reaping mid-sync is exactly how an
+    # image gets left inconsistent.  The bounded waits below add up to three
+    # syncs at 180s, a sleep, a halt at 120s and 135s of closing expects --
+    # about 740s if every one of them runs long.  So 900, which can only be
+    # reached by a path that is genuinely stuck rather than merely slow.
+    #
+    # It is the expects that make teardown quick in practice; this only
+    # catches what they miss.
+    v10_deadline 900
+    v10_sh "cd /; sync" 180
+
+    # UNMOUNT EVERYTHING, WITH THE TAPE'S OWN IDIOM.
+    #
+    # `umount -a' walks /etc/mtab backwards -- cmd/umount.c's umountall(),
+    # commented "in reverse order in case of nesting" -- so it needs no list
+    # from the caller and cannot get the order wrong.  Root is not in mtab, so
+    # there is nothing here to unmount out from under the running shell.
+    #
+    # IT TAKES THE MOUNT POINT, NOT THE DEVICE, and that is not guessable from
+    # V8 habits.  umountone() calls `funmount(f)' on exactly the string you
+    # gave it and then matches it against mtab's FILE field, so
+    #
+    #	/etc/umount /dev/ra0c     ->  /dev/ra0c: Invalid argument
+    #	/etc/umount /usr          ->  works
+    #
+    # The first form is what V8's umount(8) takes, it is what this driver
+    # tried first, and it failed on both devices while the halt carried on
+    # reporting success.  `-a' sidesteps the question entirely.
+    #
+    # `cd /' above is what makes any of it possible: a shell sitting in a
+    # directory on the filesystem being unmounted keeps it busy.
+    #
+    # v10_sh, not v10_try: a filesystem that is legitimately busy prints its
+    # own complaint and the marker still comes back.  A failure here must not
+    # stop the halt -- an unmount that did not happen costs the NEXT run its
+    # /usr, while a halt that did not happen costs this one its filesystem.
+    v10_sh "/etc/umount -a" 300
+    v10_sh "sync" 180
+    # /bin/sleep may not be installed yet on an image early in the bootstrap.
+    # v10_sh, not v10_try: a missing sleep prints `not found' and the marker
+    # still comes back, so this cannot fail either way and there is no output
+    # worth matching.  A third sync follows regardless, so the wait is never
+    # the only defence.
+    v10_sh "/bin/sleep 5" 180
+    v10_sh "sync" 180
+    # Say what is still mounted, so a busy unmount is visible in the log
+    # rather than only in the next run's failure.
+    v10_sh "cat /etc/mtab" 120
+
+    # THERE MAY BE NO /etc/halt, and that must not hang the harness.
+    #
+    # The bootstrap has a genuine chicken and egg here: cmd/halt.c is on the
+    # tape but the first golden did not install it, so the very run that
+    # BUILDS halt is a run that starts without one.  The first stage-1 attempt
+    # died exactly there -- the build failed, so there was no halt, so the
+    # driver waited 300 s for a `death' nothing could print.
+    #
+    # THE FALLBACK IS NOT A COMPROMISE ON V10, and this is the one place that
+    # is worth stating plainly, because on V8 it would be.  V8's /etc/halt is
+    # load-bearing: its boot() calls update() and sleeps for the I/O, so
+    # skipping it skips a real flush.  V10's does NOT -- boot() goes straight
+    # to death(), which only raises IPL and spins.  So the syncs above are the
+    # entire flush either way, and stopping the CPU at sim> after them leaves
+    # exactly the disk /etc/halt would have left.  What is lost is the
+    # output-anchored marker, not any data.
+    send "/etc/halt\r"
+    set halted 0
+    expect -timeout 120 -- "death" { set halted 1 } \
+                           "not found" {} \
+                           "cannot" {} \
+                           timeout {} \
+                           eof { set halted 1 }
+    if {!$halted} {
+        puts "\nV10-HALT: no usable /etc/halt -- stopping at sim> instead."
+        puts "V10-HALT: safe here, because V10's boot() does not sync (it calls"
+        puts "V10-HALT: death() directly), so the syncs above were the whole flush."
+        send "\005"
+        # BOUNDED, like every other expect in this proc.  These two had no
+        # -timeout for a while and therefore inherited the HARNESS's global
+        # one -- 3600 in v10-stage1.exp -- which is the same defect the long
+        # comment below describes, sitting ten lines above the comment that
+        # describes it.  `timeout {}' does not mean "briefly".
+        expect -timeout 30 -- "sim>" {} timeout {} eof {}
+        v10_ilstats
+        set V10_RUNNING 0
+        send "quit\r"
+        expect -timeout 60 eof {} timeout {}
+        v10_reap
+        return
+    }
+    set V10_RUNNING 0       ;# stopped cleanly: quitting now is safe
+    # NO ^E.  By the time `Infinite loop' is readable SIMH has already stopped
+    # the CPU and returned to sim>, so there is nothing to interrupt -- and a
+    # stray 0x05 lands at the head of scp's command line, turning the next
+    # line into `\005quit', which scp rejects.  v8drive.exp spent four minutes
+    # per run on exactly that, after the work had already passed.
+    #
+    # EVERY TIMEOUT FROM HERE IS EXPLICIT AND SHORT.  The guest is already
+    # halted -- the CPU stopped at IPL 31 and the disk is synced -- so there
+    # is nothing left worth waiting for, and these `expect's inherit the
+    # HARNESS's global timeout when they do not say otherwise.  v10-stage1.exp
+    # sets it to 3600, so a run that had finished all its work sat here for an
+    # hour with nothing to show for it.  v8drive.exp records the same bug
+    # costing four minutes a run; the fix is the same and the cause is the
+    # habit of writing `timeout {}' and thinking it means "briefly".
+    expect -timeout 60 -- "Infinite loop" {} \
+                          "sim>" {} \
+                          timeout { puts "\nV10-WARN: halted at death but never reached sim>" }
+    # `sim>' may already have been consumed with the line above, in which case
+    # there is nothing more coming and waiting for it is waiting for ever.
+    expect -timeout 15 -- "sim>" {} timeout {}
+    v10_ilstats
+    send "quit\r"
+    expect -timeout 60 eof {} \
+                       timeout { puts "V10-WARN: sent quit but the simulator did not exit" }
+    # Unconditional, and it is the last word.  `quit' is a REQUEST -- if SIMH
+    # did not act on it, the expect above simply times out and returns, and
+    # without this the harness would exit with the simulator still attached
+    # to the image.  close() is not a request.
+    v10_reap
+}

@@ -1,0 +1,384 @@
+#!/usr/bin/env expect
+# K15: rung 8's host half -- V10 builds mux(1), the 5620 multiplexer's VAX side.
+#
+#	expect tools/v10-mux.exp <k13-image> <tree-port> <ours-port> <mk-port>
+#
+# WHAT RUNG 8 CAN AND CANNOT REACH, because this harness is the half that can.
+# `mux' is two programs: `muxterm', which runs ON the DMD-5620, and `mux', which
+# runs on the VAX and downloads it.  The terminal half CANNOT BE BUILT FROM THIS
+# TAPE -- muxterm's own makefile names `3cc'/`3as'/`3ld'/`3nm', `src/man/man9/
+# 3cc.9' documents all eight of those as the MAC-32 cross-compiler for the 5620,
+# and THE MAN PAGE IS THE ONLY ONE OF THE EIGHT ON THE TAPE.  Four independent
+# places say so; docs/v10-log/2026-08-19.md has them.
+#
+# The host half is ordinary VAX C.  Its mkfile names `$CC', not `3cc'; it links
+# no library but libc; every construct in it is K&R.  So this is buildable, and
+# it is what rung 8 delivers.
+#
+# `mux' IS NOT IN V10's LIVE SOURCE TREE, which reframes the rung rather than
+# merely narrowing it.  `src/cmd/' has no jerq, mux, blit, 5620 or dmd directory;
+# every mux.c on the tape is the 68000 Blit's (`blit/src/mux/'), the 630 MTG's
+# (`src/630/src/') or this one -- and `ix' is the NINTH EDITION.  On a real V10
+# the 5620 software arrived as a SEPARATE 5620 distribution tape installed into
+# /usr/jerq, which is the shape of what V8's golden has and V10's has not.  So
+# this restores V9-era source onto a V10 system with V10's own compiler, which is
+# what the surviving tree offers.
+#
+# THE PACKET SIZE IS THE TAPE'S 124, AND AN OBJECT IS WHY -- not the source.
+# `proto.h' carries `/* was 64 */' directly above
+#
+#	#define MAXPKTDSIZE (124 * sizeof(Pbyte))
+#
+# which reads as an invitation to restore 64 and match V8's muxterm, the only
+# 5620 muxterm this project possesses.  IT IS NOT A RESTORATION.  The tape ships
+# Bell Labs' own compiled `lib.a' beside the source, and its `mux.o' declares
+# `_buf' as a COMMON symbol whose value -- which for a common IS its size -- is
+#
+#	124  _buf
+#
+# so the shipped artefact was built at 124 and the annotation records a change
+# made BEFORE 1989.  Building at 64 would therefore be a deviation for
+# interoperability, not a return to the tape's own value, and CLAUDE.md's rule is
+# that a deviation needs the tape to be unable to run as-is.  It can: 124 is what
+# Bell Labs ran.  So we build 124, assert it, and leave 64 as a separate decision
+# with its evidence recorded rather than smuggled into the first build.
+#
+# WHAT THE ORACLE CAN AND CANNOT SETTLE.  `lib.a' is dated 1989-01-02 (six
+# members) and 1989-07-15 (mux.o) -- the working-directory pattern in miniature,
+# the same shape as libc.a's 4.1-year spread.  1989 is exactly the era CLAUDE.md
+# establishes is UNREPRODUCIBLE: the compiler that built it is not on the tape,
+# and these are most likely Ninth Edition objects besides.  So a byte difference
+# here is the expected result and not a defect; it is reported as a number beside
+# the number that matters, exactly as stage 2 reports built-versus-identical.
+
+log_user 1
+
+set here [file dirname [info script]]
+source $here/v10drive.exp
+
+set V10_SIMH [file normalize [file join $here .. work opensimh BIN vax780]]
+set V10_ROM  [file normalize [file join $here .. work v10 src lsys boot star uda]]
+# 7200.  The first run reached its report in ~3000 s having only got through the
+# header installs, so at the measured ~7 s a netfs request the whole of this
+# harness -- 27 headers, 10 objects, a link, the oracle's 15-block archive and an
+# install -- does not fit 5400.  A generous deadline costs only that a genuinely
+# hung run takes longer to give up, and CLAUDE.md's rule cuts this way: a watchdog
+# that can fire during legitimate work is worse than the hang it guards against.
+set V10_RUN_SECS 7200
+
+if {[llength $argv] < 6} {
+    puts "usage: v10-mux.exp <k13-image> <tport> <oport> <mport> <xport> <liba-size>"
+    exit 2
+}
+set img   [lindex $argv 0]
+set tport [lindex $argv 1]
+set oport [lindex $argv 2]
+set mport [lindex $argv 3]
+set xport [lindex $argv 4]
+# The oracle archive's length, measured HOST-SIDE by the driver and passed in --
+# never written down here, because a constant that restates a measurement drifts
+# away from it silently.
+set LIBASZ [lindex $argv 5]
+
+set T1   /usr/s1
+set OBJ  /usr/k15obj
+set JQ   /usr/jerq/include
+# The shallow mount, not the deep path: every reader of $MUXD pays netfs's
+# per-component walk, and this one is read once per object in the compare step.
+set MUXD /n/mux
+set IXLIB /n/tree/src/history/ix/src/libc
+set DEST /usr/w15
+
+# The seven objects, in the mkfile's own $LL order.  Restated here ONLY as the
+# list the assertions walk -- the build itself reads v10/mk/gen/mux.mk, which
+# mkdep.py generates from MUX_OBJS, so a disagreement between the two shows up
+# as a missing object rather than as a silently shorter check.
+set OBJS {32ld.o mux.o pcheck.o pinit.o precv.o psend.o ptimeout.o}
+
+# `struct Packet' at the tape's MAXPKTDSIZE: header + dsize + data[124] + edb[2].
+# Pbyte is `unsigned char', so this is 1+1+124+2 with no padding to hide in.
+set PKTSZ 128
+
+set results {}
+proc note {name ok} { global results; lappend results [list $name $ok assert] }
+proc report {} {
+    global results
+    puts "\n===== V10 K15: mux, THE HOST HALF OF RUNG 8 ====="
+    set failed 0
+    foreach r $results {
+        puts [format "  %-54s %s" [lindex $r 0] [expr {[lindex $r 1] ? "ok" : "NO"}]]
+        if {!([lindex $r 1])} { incr failed }
+    }
+    puts "===== [expr {[llength $results] - $failed}]/[llength $results] =====\n"
+    return $failed
+}
+
+# ========================================================== boot =============
+# K13 installed the network, so this image brings its interface up from /etc/rc
+# and needs nothing but the card attached.
+set IL [list "set il enable" "set il address=2013E800" "set il vector=E8" \
+             "attach il nat:"]
+v10_boot $img $IL
+note "the K13 image came up" 1
+v10_login root
+v10_sh "PATH=/bin:/etc:/usr/bin:$T1/bin; export PATH" 120
+v10_sh "OK=-ok" 120
+# The verdict tokens live in variables so the tty's echo of the COMMAND cannot
+# put a literal SAME/DIFF into the transcript -- `echo SAME $name' would print
+# the token whatever the answer, and an unanchored match would then count every
+# comparison as a match.  CLAUDE.md's splice rule, applied to data.
+v10_sh "S=CMPSAME; D=CMPDIFF; Z=CMPGONE" 120
+
+# The three shares, on three device numbers -- neta.h's `server may be using
+# several', and nadomount() answers EBUSY for a repeat.
+# A FOURTH SHARE, AND IT IS THE MUX DIRECTORY ITSELF -- because netfs charges a
+# round trip per PATH COMPONENT, walking from the mount root every time, and that
+# is 80% of this build's traffic.  Measured 2026-08-20 against a share mounted at
+# the tarball root: two accesses to one 1905-byte source cost 28 walk requests
+# and 6 read requests, at ~7.5 s each.
+#
+# COPYING THE SOURCES TO LOCAL DISK FIRST WOULD NOT HELP -- the copy pays the
+# identical walk.  Shortening the PATH is what helps, so mux.mk names its source
+# directory through $(MUXSRC) and this points it at a one-component mount:
+# /n/mux/32ld.c instead of /n/tree/src/history/ix/src/jerq/mux/32ld.c.
+v10_sh "mkdir /n; mkdir /n/tree; mkdir /n/ours; mkdir /n/mk; mkdir /n/mux" 120
+set sh1 [v10_try "/etc/nafsmnt 10.0.2.2 $tport /n/tree 0" "mounted on" 900]
+set sh2 [v10_try "/etc/nafsmnt 10.0.2.2 $oport /n/ours 1" "mounted on" 900]
+set sh3 [v10_try "/etc/nafsmnt 10.0.2.2 $mport /n/mk   2" "mounted on" 900]
+set sh4 [v10_try "/etc/nafsmnt 10.0.2.2 $xport /n/mux  3" "mounted on" 900]
+note "the tape mounts over TCP" $sh1
+note "our overlay mounts"       $sh2
+note "the makefiles mount"      $sh3
+note "the mux directory mounts shallow" $sh4
+set shares [expr {$sh1 && $sh2 && $sh3 && $sh4}]
+
+# EVERYTHING BELOW IS GATED ON THE MOUNT, and a skipped assertion is reported as
+# a failure rather than omitted: a phase that did not run is not a phase that
+# passed.  Without this, `test -s' against a path under an unmounted /n/tree
+# tests the mount POINT and passes.
+if {!$shares} {
+    foreach n {"the mux sources stage locally" \
+               "the oracle archive reads to its full length" \
+               "the 5620 include tree installs" \
+               "mux.inc's headers install" \
+               "all seven objects compile" \
+               "mux links" \
+               "mux is an executable" \
+               "MAXPKTDSIZE is the tape's 124 (struct Packet = 128)" \
+               "the tape's own lib.a extracts (the oracle)" \
+               "mux installs into a staged root"} {
+        note $n 0
+    }
+    set failed [report]
+    v10_halt
+    exit 1
+}
+
+# =============================== /usr/jerq/include ==========================
+# THE 5620 INCLUDE TREE IS A STAND-IN AND THE HARNESS SAYS SO.  A real V10 had
+# /usr/jerq from the 5620 distribution tape; this golden has no /usr/jerq at all
+# (K10.2's transcript shows the harness creating it).  So ours is the v10blit
+# tarball's 21 headers -- the 68000 Blit's, which is the naming trap and is all
+# that survived -- plus the six from v10/mk/gen/mux.inc that no surviving tree
+# provides at the path mux names.
+v10_sh "mkdir /usr/jerq; mkdir $JQ; mkdir $JQ/sys" 120
+# 2400, NOT 900, AND THE NUMBER IS MEASURED RATHER THAN PADDED.  This copy is 21
+# files and `cp *.h' is about the cheapest shape there is -- after the `cd', each
+# file costs NNAMI + NGET + two NREAD + NPUT, five requests, with no path walk to
+# save.  At the ~7 s per netfs request measured on 2026-08-20 that is ~735 s
+# against a 900 s bound, so it succeeded once and then bailed:
+#
+#	V10-BAIL: never saw '+ok11+' after 900s
+#
+# There is nothing structural left to shorten here -- the cost is entirely the
+# latency (see the netfs entry in CLAUDE.md), so the honest fix is to stop
+# pretending it is faster than it is.
+v10_sh "cd /n/tree/blit/include; cp *.h $JQ" 2400
+note "the 5620 include tree installs" \
+    [v10_try "test -s $JQ/tty.h && echo JQ\$OK" "JQ-ok" 300]
+
+# Our overlay's jioctl.h wins: it adds `#define JMUX JMPX', an alias no header on
+# the tape defines while lib5620/openpl.c uses it.  See v10/src/PATCHES.md.
+v10_sh "cp /n/ours/include/jioctl.h $JQ/jioctl.h" 300
+
+# THE SIX, FROM THE GENERATED LIST.  Not six copy lines in Tcl: inc.extra's
+# lesson is that a list which appears twice will disagree, and the copy that
+# disagreed was the one nobody ran.  mux.inc's third column is the path within
+# the tape or the overlay, and its second says which.
+set inc_ok 1
+foreach row [v10_rows "mux.inc" 3] {
+    set h    [lindex $row 0]
+    set prov [lindex $row 1]
+    set path [lindex $row 2]
+    set from [expr {$prov eq "tape" ? "/n/tree/src/$path" : "/n/ours/$path"}]
+    if {![v10_try "cp $from $JQ/$h && echo IN\$OK" "IN-ok" 300]} { set inc_ok 0 }
+}
+note "mux.inc's headers install" $inc_ok
+
+# ==================================================== build mux ==============
+v10_sh "rm -rf $OBJ; mkdir $OBJ; mkdir $OBJ/mux" 300
+# ===================== BUILD IN-TREE, BECAUSE THE TAPE DOES ==================
+#
+# V10's cpp CANNOT RESOLVE A QUOTED INCLUDE FOR AN OUT-OF-TREE SOURCE, and adding
+# the directory to -I does not help.  Measured 2026-08-21, twice: mux.c includes
+# msgs.h, pconfig.h, proto.h, packets.h and pstats.h with quotes, and with
+#
+#	cc -O -I/n/mux -I/n/mux/proto -I/usr/jerq/include -I/usr/include -c /n/mux/mux.c
+#
+# cpp answered `Can't find include file' for all five -- while netfsd's trace shows
+# it never looked for ANY of them.  Each name appears exactly once in the trace,
+# and that once is MAKE stat'ing a prerequisite.  The control is in the same run:
+# `aouthdr.h', which 32ld.c includes with ANGLE brackets, appears three times
+# because cpp really did search these directories for it.  So angle includes search
+# the -I list and quoted ones do not reach the filesystem at all.
+#
+# cpp.c explains the shape: the search is `for (dirp = dirs + inctype; *dirp;
+# ++dirp)' with inctype 1 for angle and 0 for quoted, and dirs[0] is a POINTER
+# INTO argv that trmdir() truncated in place (cpp.c:2317), reassigned on every
+# include entry and exit (cpp.c:551, :1174).
+#
+# The tape never meets this because it compiles IN the source directory --
+# mkfile:53 is `$CC -c $CFLAGS $stem.c' over `INCL = $PDIR', a RELATIVE path.  So
+# we do the same: stage the sources into the object directory and build with
+# MUXSRC=`.'.  CLAUDE.md's standing warning, "the tape's makefiles assume you
+# build in the source directory", with the remedy rather than a workaround.
+#
+# It is also much FASTER: the compile then reads nothing over netfs, and netfs is
+# ~7 s a request.
+v10_sh "mkdir $OBJ/mux/proto" 300
+v10_sh "cp $MUXD/*.c $MUXD/*.h $OBJ/mux" 2400
+v10_sh "cp $MUXD/proto/*.c $MUXD/proto/*.h $OBJ/mux/proto" 2400
+# AND THE OTHER THREE OBJECTS TOO -- labEQ.c and labLE.c from IX's own libc, and
+# our muxix.c.  Run 5 compiled labEQ.c off the share and then failed on labLE.c
+# from the SAME directory with
+#
+#	0: No source file /n/tree/src/history/ix/src/libc/labLE.c
+#
+# after netfsd had already answered the lookup (`labLE.c = ino 229 ... size=389').
+# Lookup succeeded, open failed -- the same shape as the quoted includes, and the
+# same remedy: if the build compiles it, it lives locally.  Nothing here is
+# read over netfs more than once.
+v10_sh "cp $IXLIB/labEQ.c $IXLIB/labLE.c $OBJ/mux" 1200
+v10_sh "cp /n/ours/history/ix/src/jerq/mux/muxix.c $OBJ/mux" 1200
+note "the mux sources stage locally" \
+    [v10_try "test -s $OBJ/mux/msgs.h && test -s $OBJ/mux/proto/proto.h && test -s $OBJ/mux/labLE.c && test -s $OBJ/mux/muxix.c && echo ST\$OK" "ST-ok" 300]
+
+# MUXSRC is `.' -- the object directory the sources were just staged into, so cpp
+# sees exactly the layout the tape's own build gives it.  SRC stays the tarball
+# root because IXLIBC still reads labEQ.c/labLE.c through it (two files, both
+# using only angle includes, so neither the depth nor the quoted-include defect
+# costs anything there).
+# Every source the build compiles is now in the object directory, so all three
+# source-directory macros are `.' and the compile touches netfs not at all.
+v10_sh "A='SRC=/n/tree/src OURS=/n/ours MUXSRC=. IXLIBC=. MUXOURS=.'" 120
+v10_sh "A=\"\$A INCDIR=/usr/include TOOLDIR=$OBJ DESTDIR=$DEST\"" 120
+v10_sh "B='CC=cc CCPATH=/bin/cc CPP=$T1/lib/cpp CCOM=$T1/lib/ccom C2=$T1/lib/c2'" 120
+v10_sh "C='AS=/bin/as LD=/bin/ld LIBC=/lib/libc.a'" 120
+
+# The compiler's output goes through `sed -e 40q' so a runaway diagnostic cannot
+# fill the filesystem -- a FULL V10 filesystem does not fail, it SLEEPS in
+# alloc(), so an unbounded log is a hung run rather than an error.  The pipe
+# closing gives cc EPIPE, which needs no counting and no truncation.
+note "mux links" \
+    [v10_try "cd $OBJ/mux; make -f /n/mk/mux.mk \$A \$B \$C 2>&1 | sed -e 40q; if test -s mux; then echo MX\$OK; fi" \
+        "MX-ok" 2700]
+
+# EVERY OBJECT, BY NAME.  `make' stops at the first failure, so "mux links" alone
+# cannot distinguish six objects from seven -- and V10's ld WRITES ITS OUTPUT FILE
+# EVEN WHEN SYMBOLS ARE UNDEFINED (it just clears the execute bits), so `test -s
+# mux' is not "mux linked" either.  Both halves are checked.
+set objs_ok 1
+foreach o $OBJS {
+    if {![v10_try "cd $OBJ/mux; test -s $o && echo OB\$OK" "OB-ok" 300]} { set objs_ok 0 }
+}
+note "all seven objects compile" $objs_ok
+
+# THE EXECUTE BIT IS THE REAL LINK TEST, for the reason above: `ld' clears it on
+# an undefined symbol and leaves the file behind.  `test -x' is the question.
+note "mux is an executable" \
+    [v10_try "cd $OBJ/mux; test -x mux && echo XB\$OK" "XB-ok" 300]
+
+# ============================= the packet size, MEASURED ====================
+# A CONSTANT IN A HEADER IS NOT EVIDENCE THAT THE BUILD USED IT.  This compiles
+# `sizeof(struct Packet)' with the same -I list the makefile passes and returns it
+# as an EXIT STATUS, so no escaping of `\n' through two shells is needed and the
+# number lands in the transcript either way -- 128 for the tape's 124, 68 for 64.
+# An assertion that merely said "ok" would hide which one we built.
+v10_sh "cd $OBJ/mux; echo '#include \"proto.h\"' > psz.c" 300
+v10_sh "cd $OBJ/mux; echo 'main(){exit(sizeof(struct Packet));}' >> psz.c" 300
+v10_sh "cd $OBJ/mux; cc -I$MUXD/proto -I$JQ -o psz psz.c 2>&1 | sed -e 10q" 900
+note "MAXPKTDSIZE is the tape's 124 (struct Packet = $PKTSZ)" \
+    [v10_try "cd $OBJ/mux; ./psz; echo PKT\$?\$OK" "PKT$PKTSZ-ok" 300]
+
+# ================================ the oracle ================================
+# `ar' is not on the golden -- stage 1 builds it as a BUILDTOOL -- and `ar x' of
+# the tape's own lib.a is what makes a per-object comparison possible at all.
+# THE ARCHIVE IS READ WHOLE OVER NETFS FIRST, AND ITS LENGTH IS ASSERTED, because
+# a netfs read on V10 can stop after one block SILENTLY -- K15's first run lost
+# 1774 bytes of a 5870-byte source that way and the failure presented as a syntax
+# error in Bell Labs' code.  lib.a is $LIBASZ bytes, FIFTEEN blocks, so it is
+# squarely in that risk.
+#
+# `test -s mux.o' cannot stand in for this: CLAUDE.md's own rule is that an object
+# file is not evidence a compiler ran, and `test -s' cannot tell a truncated
+# archive member from a whole one.  A short `ar x' would hand the oracle a
+# corrupted symbol table and the 124-byte answer would be wrong with nothing
+# saying so.  $w is unquoted because `wc -c' prints %7ld -- right-aligned in seven
+# columns -- so a quoted compare is false for every file.
+set ar_ok [v10_try "w=`wc -c < $MUXD/lib.a`; if test \$w = $LIBASZ; then echo AZ\$OK; else echo AZBAD \$w; fi" "AZ-ok" 900]
+note "the oracle archive reads to its full length" $ar_ok
+set tape_ok 0
+if {$ar_ok} {
+    set tape_ok [v10_try "cd $OBJ/mux; mkdir tape; cd tape; ar x $MUXD/lib.a && test -s mux.o && echo AR\$OK" "AR-ok" 900]
+}
+note "the tape's own lib.a extracts (the oracle)" $tape_ok
+
+if {$tape_ok} {
+    # THE COUNTING IS THE DRIVER'S, NOT TCL's, and that is stage 3's pattern
+    # rather than a shortcut.  `v10_run' does not return the buffer -- its
+    # closing `v10_sh ":"' runs another expect, which overwrites expect_out --
+    # so reading $expect_out(buffer) after it is reading the resynchronisation,
+    # not the answer.  The first version of this loop did exactly that and
+    # tools/v10-dryrun.sh caught it before a boot was spent.
+    #
+    # So the guest PRINTS every verdict, the transcript records it, and
+    # tools/v10-mux.sh counts from the log with an unanchored grep.  That also
+    # satisfies CLAUDE.md's rule about cross-checking a count against something
+    # that did not come from the same parse.
+    #
+    # One command for all seven, because each `v10_run' is a netfs-paced round
+    # trip.  The verdict tokens come from $S/$D/$Z so the tty's echo of the
+    # command carries no literal SAME/DIFF -- `echo SAME $o' would print the
+    # token whatever the answer.
+    # THE OBJECT LIST GOES INTO A SHELL VARIABLE FIRST, and that is CANBSIZ
+    # rather than taste.  A tty line over 256 bytes (sys/param.h) is discarded
+    # SILENTLY, and this loop with all seven names spelled out came to ~230
+    # before v10_run appends its own `; echo RUNEND' -- close enough to the
+    # cliff that a single extra object would have pushed it over and the
+    # comparison would simply never have run.
+    v10_sh "L='$OBJS'" 120
+    v10_run "cd $OBJ/mux; for o in \$L ; do if test -s tape/\$o ; then if cmp -s \$o tape/\$o ; then echo \$S \$o ; else echo \$D \$o ; fi ; else echo \$Z \$o ; fi ; done ; echo K15CMPEND" "K15CMPEND" 900
+}
+
+# ================================== install =================================
+# A STAGED ROOT, NEVER THE RUNNING SYSTEM.  K10.3's reasoning applies unchanged:
+# the prebuilt binaries are the oracle and installing over them destroys the
+# comparison on the only machine that has both.
+v10_sh "rm -rf $DEST; mkdir $DEST" 300
+note "mux installs into a staged root" \
+    [v10_try "cd $OBJ/mux; make -f /n/mk/mux.mk \$A \$B \$C install 2>&1 | sed -e 20q; test -x $DEST/usr/jerq/bin/mux && echo IS\$OK" \
+        "IS-ok" 900]
+
+# ==================================== facts =================================
+# Sizes to the transcript, so even a later failure leaves the numbers behind.
+v10_sh "ls -l $OBJ/mux/mux $MUXD/lib.a" 300
+
+# THE SHARES COME DOWN BEFORE THE HALT.  A netfs mount is guest RAM and the TCP
+# connection is host state, so a halt with one mounted leaves a mount that can
+# neither speak nor be cleared by umount(8) -- it is a gmount(2) object keyed by
+# device number and only `nafsmnt -u' releases it.
+v10_sh "/etc/nafsmnt -u /n/tree; /etc/nafsmnt -u /n/ours; /etc/nafsmnt -u /n/mk" 900
+
+set failed [report]
+v10_halt
+exit [expr {$failed ? 1 : 0}]

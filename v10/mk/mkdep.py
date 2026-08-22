@@ -974,9 +974,9 @@ MUX_DIR = "history/ix/src/jerq/mux"
 # was Bell Labs' idiom for sharing one build among mux/tmux/smux (plain,
 # -DTRACING and -DPSTATISTICS); we build one variant.  Stated rather than
 # silent, because it IS a difference from the recipe on the tape.
+# `mux.o' IS NOT HERE -- it is in MUX_OURS, because the mux.c that gets compiled
+# is v10/src's patched copy with IX excised, not the tape's.
 MUX_OBJS = [
-    ("32ld.o",     "32ld.c"),
-    ("mux.o",      "mux.c"),
     ("pcheck.o",   "proto/pcheck.c"),
     ("pinit.o",    "proto/pinit.c"),
     ("precv.o",    "proto/precv.c"),
@@ -1023,21 +1023,10 @@ MUX_INC = [
     ("aouthdr.h",   "tape", "630/3binc/aouthdr.h"),
     ("filehdr.h",   "tape", "630/3binc/filehdr.h"),
     ("scnhdr.h",    "tape", "630/3binc/scnhdr.h"),
-    ("sys/label.h", "tape", "history/ix/include/sys/label.h"),
-    ("sys/pex.h",   "tape", "history/ix/include/sys/pex.h"),
-    # THE SIXTH, AND THE RESOLVER FOUND IT RATHER THAN A READING OF THE
-    # SOURCES.  `sys/label.h' line 48 is `#include "sys/jlabel.h"', so no .c
-    # file names it and two rounds of scanning the seven sources missed it.
-    # mkgen.scan_includes() would have DROPPED it silently and the build would
-    # have failed on `Can't find include file sys/jlabel.h' twenty minutes
-    # into a boot -- which is the whole argument for mux_closure() raising.
-    #
-    # It also settles the label.h choice, in the opposite direction to the one
-    # measured first.  r70's own top-level `label.h' includes the same line and
-    # r70 HAS NO sys/jlabel.h ANYWHERE, so V10's copy is unusable as shipped --
-    # another r70 reconstruction gap, and a reason to take the pair from the ix
-    # tree that carries both rather than mixing generations.
-    ("sys/jlabel.h", "tape", "history/ix/include/sys/jlabel.h"),
+    # NO IX HEADERS.  sys/label.h, sys/pex.h and sys/jlabel.h used to be
+    # installed here from history/ix/include.  They are gone because the thing
+    # that needed them is gone: v10/src/.../mux.c is a patched copy with IX's
+    # labels and process-exclusion excised, so nothing includes them.
 ]
 
 # REFERENCED AND NEVER COMPILED, so the resolver must not fail on it and must
@@ -1058,29 +1047,39 @@ MUX_INC = [
 # missing header becomes a mystery three hours into a build.
 # THE FIVE EXTERNALS V10's libc DOES NOT HAVE, and they split three ways.
 #
-# `src/history/ix' is IX -- the security-enhanced Ninth Edition -- so mux's seven
-# objects want interfaces a V10 kernel has never had.  `lib.a' defines 98
-# externals and leaves 45 for libc; five are absent, and the tape supplies two of
-# them itself:
+# NO IX OBJECTS.  `src/history/ix' is IX -- McIlroy and Reeds' multilevel-secure
+# system, built ON the Tenth Edition, not a predecessor of it.  Its own README
+# says the tree is "shorn of most material that may be copied bodily from
+# research unix (v8,v9,v10)", so WHAT IS LEFT IN IT IS THE IX-SPECIFIC PART by
+# construction -- which is exactly what must not be shipped on a V10 disk.
 #
-#   MUX_IX    labEQ.c, labLE.c -- IX's OWN libc sources, compiled UNCHANGED.
-#             Pure K&R against <sys/label.h>, which MUX_INC installs.  Using
-#             Bell Labs' own code is the authentic answer and needs no patch.
-#   MUX_OURS  muxix.c -- unsafe(), pex(), unpex().  A NEWFILES entry in
-#             tools/v10-overlay.py with the full argument; the short form is that
-#             unsafe(2) is a LABELLED select and V10's slot 64+36 is `nosys',
-#             while pex(2) drives an ioctl on a FIOPX V10 does not define.
+# mux itself is still IX's, because no V10 mux survives: V10's src/cmd has no
+# jerq, mux, blit or 5620 directory at all, and on a real V10 the 5620 software
+# arrived on a separate distribution tape.  So the program is carried and the
+# IX-ness is removed from it, rather than the reverse.
 #
-# NONE OF THE THREE IN muxix.c CAN BE REACHED AT RUN TIME on V10: checklabs() is
-# armed only by SIGLAB, r70's signal.h:37 calls that "secure unix only", and the
-# signal appears nowhere in lsys/.  They exist so the program LINKS.
-MUX_IX_DIR = "history/ix/src/libc"
-MUX_IX = [
-    ("labEQ.o", "labEQ.c"),
-    ("labLE.o", "labLE.c"),
-]
+# WHAT WENT, and it is ~200 lines of a 1,144-line program:
+#
+#   pex/unpex        process exclusion.  Not a syscall -- IX's libc drives an
+#                    ioctl on FIOPX, which V10's sys/filio.h does not define.
+#   unsafe()         a LABELLED select.  V10's slot 64+36 is `nosys'.
+#   checklabs()      armed only by SIGLAB, which r70's signal.h:37 calls
+#                    "secure unix only" and which appears nowhere in lsys/.
+#   labEQ/labLE      label comparison, reached only from checklabs/flatbottom.
+#   getplab/setplab/fgetflab/fsetflab   process and file labels.
+#   jboot/flatbottom the download guard, which turns on p->cap and p->state --
+#                    both of which only pex ever set.
+#
+# EVERY ONE OF THOSE PATHS WAS ALREADY DEAD on V10, which is what makes this an
+# excision rather than a change in behaviour: pex could never succeed, and
+# checklabs could never be entered.  The previous arrangement kept them and
+# supplied three shims (muxix.c); this removes them instead, so the shipped
+# binary contains no IX code at all.
+MUX_IX_DIR = None
+MUX_IX = []
 MUX_OURS = [
-    ("muxix.o", "muxix.c"),
+    ("mux.o",  "mux.c"),       # both are v10/src copies with IX excised: mux.c
+    ("32ld.o", "32ld.c"),      # loses pex/labels, 32ld.c loses the label check
 ]
 
 MUX_UNREACHED = {
@@ -1138,7 +1137,13 @@ def mux_closure(path, jerq, seen=None, chain=()):
         name = raw.decode("ascii", "replace")
         if name in MUX_UNREACHED:
             continue
-        cands = [os.path.join(own, name)] if kind == b'"' else []
+        # A QUOTED INCLUDE IS SEARCHED IN THE TAPE'S mux DIRECTORY TOO, because
+        # two of these sources are OURS -- v10/src copies of mux.c and 32ld.c
+        # with IX excised -- and their siblings (msgs.h, mpxstats.h, proto/*)
+        # are still the tape's.  The build compiles in-tree, so both sets land
+        # in one directory on the guest; the resolver has to model that or it
+        # raises on a header that will in fact be there.
+        cands = [os.path.join(own, name), os.path.join(d, name)] if kind == b'"' else []
         cands += [os.path.join(proto, name)]
         if name in jerq:
             cands.append(jerq[name])
@@ -1182,7 +1187,7 @@ def emit_mux():
     # one or two components, and a makefile that names the directory through a
     # macro can be pointed at such a mount without regenerating anything.
     srcdir = "$(MUXSRC)"
-    ixdir  = os.path.join(SRC, MUX_IX_DIR)
+    ixdir  = None          # no IX objects any more; see MUX_IX above
     ourdir = os.path.join(OURS, MUX_DIR)
     jerqpaths = {v: k for k, v in jerq.items()}
 
@@ -1197,8 +1202,6 @@ def emit_mux():
             return "$(JERQINC)/" + jerqpaths[path]
         if path.startswith(INC + os.sep):
             return "$(INCDIR)/" + mkgen.rel(path, INC)
-        if path.startswith(ixdir + os.sep):
-            return "$(IXLIBC)/" + mkgen.rel(path, ixdir)
         if path.startswith(ourdir + os.sep):
             return "$(MUXOURS)/" + mkgen.rel(path, ourdir)
         return srcdir + "/" + mkgen.rel(path, d)
@@ -1234,9 +1237,8 @@ def emit_mux():
 # v10/mk/gen/mux.inc names the rest.
 JERQINC = /usr/jerq/include
 
-# IX's own libc sources, and ours.  labEQ/labLE are Bell Labs' and unchanged;
-# muxix.c is ours and carries its argument in v10/src/PATCHES.md.
-IXLIBC  = $(SRC)/%s
+# mux is compiled from v10/src, not from the tape: the copy there has IX's
+# labels and process exclusion excised.  See MUX_IX in v10/mk/mkdep.py.
 MUXOURS = $(OURS)/%s
 
 # THE MUX SOURCE DIRECTORY, AS A MACRO, SO IT CAN BE A SHALLOW MOUNT.
@@ -1248,7 +1250,7 @@ MUXOURS = $(OURS)/%s
 # components instead of eight.  Nothing else in this file changes.
 MUXSRC  = $(SRC)/%s
 
-""" % (len(MUX_INC), MUX_IX_DIR, MUX_DIR, MUX_DIR, MUX_DIR))
+""" % (len(MUX_INC), MUX_DIR, MUX_DIR, MUX_DIR))
     out.append("OBJS = " + " ".join(o for o, _ in MUX_OBJS + MUX_IX + MUX_OURS)
                + "\n")
     out.append("\nall: mux\n")
@@ -1265,8 +1267,7 @@ MUXSRC  = $(SRC)/%s
                    % (obj, " ".join(["%s/%s" % (srcdir, src)] + deps
                                     + ["$(TOOLS)"]), srcdir, src))
     # The IX libc members and our glue, each from its own root.
-    for objs, root, var in ((MUX_IX, ixdir, "$(IXLIBC)"),
-                            (MUX_OURS, ourdir, "$(MUXOURS)")):
+    for objs, root, var in ((MUX_OURS, ourdir, "$(MUXOURS)"),):
         for obj, src in objs:
             full = os.path.join(root, src)
             if not os.path.exists(full):
