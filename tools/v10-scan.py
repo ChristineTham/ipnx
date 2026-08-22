@@ -353,6 +353,42 @@ def aliases(text, m, rules):
     return out
 
 
+def unit_scripts(text, m, rules, srcs):
+    """[(name, dir, srcfile)] -- scripts a unit's OWN makefile installs.
+
+    cmd/pascal's Makefile ends `cp pascal.sh $B/pascal', which is the tape
+    saying that the pascal COMMAND is a shell script wrapping pi and px.  There
+    are 154 .sh files inside unit directories and most are not commands, so the
+    install rule is the evidence -- sweeping them all in would put every test
+    and helper script on the disk.
+    """
+    out = []
+    for tgt in ("install", "all"):
+        if tgt not in rules:
+            continue
+        for raw in rules[tgt][1]:
+            for line in re.split(r"[;&]+", expand(raw, m)):
+                mo = re.match(r"\s*cp\s+(\S+\.sh)\s+(\S+)\s*$", line.strip())
+                if not mo:
+                    continue
+                src, dst = mo.group(1), mo.group(2).rstrip("/")
+                if src not in srcs and src.split("/")[-1] not in srcs:
+                    continue
+                name = dst.split("/")[-1]
+                d = "/".join(dst.split("/")[:-1])
+                if not name or not NAMEOK.match(name):
+                    continue
+                for pre in ("/usr/jerq/bin", "/usr/games", "/usr/lib",
+                            "/usr/bin", "/bin", "/etc", "/lib"):
+                    if d.endswith(pre):
+                        d = pre
+                        break
+                else:
+                    continue
+                out.append((name, d, src.split("/")[-1]))
+    return out
+
+
 def rule_programs(text, srcs, admin):
     """[(name, dest, objects, libs, how)] from the unit's build file.
 
@@ -434,6 +470,27 @@ def rule_programs(text, srcs, admin):
 
 
 # ======================================================== 4. the scan ===
+def admin_large():
+    """The 27 names cmd/Admin/Mk compiles -O instead of -Od2.
+
+    Mk's own if-chain:
+
+	if   Admin/lookline "$i" Admin/large
+	then CFLAGS=-O
+	else CFLAGS='-Od2'
+
+    -Od2 is the optimiser plus c2; -O alone skips c2.  The tape names the
+    exceptions rather than the rule, and they are the big programs -- fsck,
+    dump, restor, ls, sort, tar, ld -- so this is a real build decision and not
+    a nicety.  A plan carrying no flag at all silently compiles all 208 the
+    same way.
+    """
+    p = os.path.join(TREE, "src", "cmd", "Admin", "large")
+    if not os.path.exists(p):
+        return set()
+    return {l.strip() for l in open(p, errors="replace") if l.strip()}
+
+
 def admin_dest():
     """cmd/Admin is the tape's own answer to `where does this install'."""
     d = os.path.join(TREE, "src", "cmd", "Admin")
@@ -521,10 +578,65 @@ def scan():
             archives.append((os.path.dirname(rel), n))
 
     admin = admin_dest()
-    progs, parks, gaps, links = [], [], [], []
+    large = admin_large()
+    progs, parks, gaps, links, scripts = [], [], [], [], []
 
+    # cmd/Admin/Mk BUILDS FIVE SUFFIXES, NOT ONE, and reading only *.c lost
+    # twelve commands outright -- bc (a yacc grammar), wc (assembly), and ten
+    # shell scripts including nohup, which and dircmp.  Mk's own rules:
+    #
+    #   *.y   yacc $B.y && cc $CFLAGS -o $B y.tab.c -ly
+    #   *.l   lex  $B.l && cc $CFLAGS -o $B lex.yy.c -ll
+    #   *.c   cc $CFLAGS -o $B $B.c
+    #   *.s   as -o $B.o $B.s && cc -o $B $B.o
+    #   *.sh  cp $B.sh $DESTDIR$D/$B      -- INSTALLED, never compiled
+    #
+    # A script is a `copy', not a `build': treating it as one would hand the
+    # compiler a shell program.
+    for r in BUILD_ROOTS:
+        for area, fixed in (("cmd", None), ("games", "/usr/games"),
+                            ("lbin", "/usr/bin"), ("dregs", "/usr/bin"),
+                            ("local", "/usr/bin")):
+            d = os.path.join(TREE, r, area)
+            if not os.path.isdir(d):
+                continue
+            for f in sorted(os.listdir(d)):
+                if not os.path.isfile(os.path.join(d, f)):
+                    continue
+                stem, dot, ext = f.rpartition(".")
+                if not dot or ext not in ("c", "y", "l", "s", "sh"):
+                    continue
+                dest = fixed or admin.get(stem, "/usr/bin")
+                cf = "-O" if f in large else "-Od2"
+                if ext == "sh":
+                    scripts.append((stem, dest, r + "/" + area + "/" + f))
+                    continue
+                if ext == "c":
+                    try:
+                        if not MAIN.search(open(os.path.join(d, f),
+                                                errors="replace").read()):
+                            continue
+                    except OSError:
+                        continue
+                    objs, libs = [stem + ".o"], "-"
+                elif ext == "y":
+                    objs, libs = ["y.tab.o"], "-ly"
+                elif ext == "l":
+                    objs, libs = ["lex.yy.o"], "-ll"
+                else:
+                    objs, libs = [stem + ".o"], "-"
+                progs.append((stem, r + "/" + area, dest, objs, libs,
+                              "Admin/Mk " + cf, r))
+
+    seenloose = {(p[1], p[0]) for p in progs}
     for d, u in sorted(units.items()):
-        if u["root"] not in BUILD_ROOTS or not u["src"]:
+        # A UNIT IS A DIRECTORY WITH A BUILD FILE **OR** SOURCES.  Requiring
+        # sources skipped cmd/pascal outright -- it holds a Makefile, pascal.sh
+        # and six subdirectories, and not one .c at its own level -- so the
+        # `cp pascal.sh $B/pascal' that MAKES the pascal command was never
+        # read.  Any directory the tape gave a build file to is a directory
+        # with something to say.
+        if u["root"] not in BUILD_ROOTS or not (u["src"] or u["build"]):
             continue
         why = parked(d)
         if why:
@@ -540,8 +652,14 @@ def scan():
                 text = ""
             rows = rule_programs(text, u["src"], admin)
             mm = macros(text)
-            for dname, ddir, target in aliases(text, mm, recipes(text)):
+            rr = recipes(text)
+            for dname, ddir, target in aliases(text, mm, rr):
                 links.append((dname, ddir, target, d))
+            allf = u["src"] + [f for f in os.listdir(os.path.join(TREE, d))
+                               if f.endswith(".sh")] \
+                if os.path.isdir(os.path.join(TREE, d)) else u["src"]
+            for nm, dd, sf in unit_scripts(text, mm, rr, allf):
+                scripts.append((nm, dd, d + "/" + sf))
 
         # ---- EVERY main() IS ACCOUNTED FOR, and this is the correction that
         # matters.  Gating the fallback on "this directory produced nothing"
@@ -575,6 +693,8 @@ def scan():
             rows.append((name, dest, objs, "-", "scanned"))
 
         for name, dest, objs, libs, how in rows:
+            if (d, name) in seenloose:
+                continue
             progs.append((name, d, dest, objs, libs, how, u["root"]))
 
     progs, dropped = dedupe(progs)
@@ -595,7 +715,8 @@ def scan():
     links = sorted({(n, d, t) for n, d, t, _ in links if t in made})
     return {"files": files, "roles": roles, "byroot": byroot, "units": units,
             "progs": progs, "archives": archives, "parked": parks,
-            "dropped": dropped, "gaps": gaps, "admin": admin, "links": links}
+            "dropped": dropped, "gaps": gaps, "admin": admin, "links": links,
+            "scripts": sorted(set(scripts)), "large": large}
 
 
 def dedupe(progs):
@@ -841,6 +962,10 @@ def build_plan(s):
     # scanned out of milligan/jerq/src/font, which is a 5620 font tool that
     # happens to share the name.  Aliases are resolved after dedupe, so they
     # cannot compete in it; the competing build row is removed here instead.
+    for name, dest, src in s["scripts"]:
+        rows.append(("6", dest.rstrip("/") + "/" + name, "copy", src, "-", "-",
+                     "a shell script -- Admin/Mk installs it, never compiles"))
+
     linkpaths = {d.rstrip("/") + "/" + n for n, d, _ in s["links"]}
     rows = [r for r in rows if not (r[1] in linkpaths and r[2] == "build")]
     for name, d, target in s["links"]:
@@ -937,7 +1062,8 @@ def main(argv):
     print("   units %d   programs %d   archives %d   parked %d   dropped %d"
           % (len(s["units"]), len(s["progs"]), len(s["archives"]),
              len(s["parked"]), len(s["dropped"])))
-    print("   aliases (the tape's own ln): %d" % len(s["links"]))
+    print("   aliases %d   shell scripts %d   -O names %d"
+          % (len(s["links"]), len(s["scripts"]), len(s["large"])))
     print("   SEEN BUT NOT BUILT: %d directories" % len(s["gaps"]))
 
     if a.gaps:

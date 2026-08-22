@@ -153,7 +153,16 @@ if {![file exists $ROM]}   { puts "no boot rom at $ROM";   exit 1 }
 
 set cfg "/tmp/v10build.[pid].conf"
 set fh [open $cfg w]
+# `set noasynch' FIRST, on the same rule as V8: this simulator is built from
+# the same open-simh tree, which compiles SIM_ASYNCH_IO in, and a hand-written
+# config that omits it walks into simh #425.  That fault was documented on the
+# Massbus and this disk is MSCP, so it may never bite here -- which is exactly
+# the argument that let it bite there.
+puts $fh "set noasynch"
 puts $fh "set cpu 8m"
+puts $fh "set dz enable"
+puts $fh "set dz lines=8"
+puts $fh "set tto 7b"
 puts $fh "set rq0 ra81"
 puts $fh "attach rq0 [file tail $IMG]"
 puts $fh "set rq1 ra81"
@@ -174,6 +183,13 @@ expect -timeout 180 -- "sim>" {} timeout { bail "simulator never prompted" }
 # The tape's own boot ROM, loaded at FA00 and entered at FA02.  It finds /unix
 # itself, which is why there is no `boot' command here.
 sim "load -o $ROM FA00"
+# THE ROM NEEDS ITS REGISTERS SET BEFORE IT IS ENTERED, and omitting them is
+# not a slow boot -- it is an immediate `HALT instruction, PC: 00000001'.  The
+# boot ROM is entered with a stack, a unit number and a flags word, exactly as
+# the 780's console would leave them.  r5 selects the mode: 0 is multi-user, 2
+# would be single-user (RB_SINGLE), where init execs /bin/sh straight onto the
+# console and there is no getty and no banner to wait for.
+foreach c {"dep sp 200" "dep r1 0" "dep r3 0" "dep r5 0"} { sim $c }
 send "run FA02\r"
 
 set booted 0
