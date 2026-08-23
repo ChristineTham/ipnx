@@ -1,0 +1,125 @@
+#!/usr/bin/env expect
+#
+#	expect tools/v10-launch.exp <image> <netfs-port>
+#
+# Boot the golden, log in, mount this repository's v10/ on /n/v10, and then
+# hand the console to the person who ran it.  Driven by tools/v10-launch.sh,
+# which is what starts the netfsd this mounts.
+log_user 1
+set timeout 900
+
+set ROOT [file normalize [file dirname [file dirname [info script]]]]
+set IMG  [lindex $argv 0]
+set PORT [lindex $argv 1]
+set SIM  "$ROOT/work/opensimh/BIN/vax780"
+set ROM  "$ROOT/v10/usr/sys/boot/star/uda"
+set TEST [expr {[info exists env(V10_LAUNCH_TEST)] && $env(V10_LAUNCH_TEST) ne ""}]
+
+set CFG "/tmp/v10launch.[pid].conf"
+set fh [open $CFG w]
+# `set noasynch' first: this simulator has SIM_ASYNCH_IO compiled in and a
+# config that omits it walks into simh #425.  `set tto 7b' because getty sends
+# its first banner with bit 7 set.  The Interlan is what /n rides on -- and
+# what gives the machine an outside world; /etc/rc brings il0 up at 10.0.2.15
+# with 10.0.2.2 as the gateway, which is also the host.
+puts $fh "set noasynch"
+puts $fh "set cpu 8m"
+puts $fh "set dz enable"
+puts $fh "set dz lines=8"
+puts $fh "set tto 7b"
+puts $fh "set rq0 ra81"
+puts $fh "attach rq0 [file tail $IMG]"
+puts $fh "set il enable"
+puts $fh "set il address=2013E800"
+puts $fh "set il vector=E8"
+puts $fh "attach il nat:"
+close $fh
+
+proc bail {why} {
+    puts "\nv10-launch: $why"
+    catch { send "\005" }
+    catch { expect -timeout 20 -- "sim>" {} timeout {} }
+    catch { send "quit\r" }
+    catch { close }
+    exit 1
+}
+
+cd [file dirname $IMG]
+spawn $SIM $CFG
+expect -timeout 180 -- "sim>" {} timeout { bail "simulator never prompted" }
+
+# The tape's own boot ROM: loaded at FA00, entered at FA02 with the registers
+# the 780's console would leave.  Without them it is an immediate
+# `HALT instruction, PC: 00000001'.  r5=0 is multi-user.
+send "load -o $ROM FA00\r"
+expect -timeout 60 -- "sim>" {} timeout { bail "the rom would not load" }
+foreach c {"dep sp 200" "dep r1 0" "dep r3 0" "dep r5 0"} {
+    send "$c\r"
+    expect -timeout 30 -- "sim>" {} timeout { bail "no sim> after $c" }
+}
+send "run FA02\r"
+
+expect -timeout 900 -- "ogin:" {} -- "panic:" { bail "panic during boot" } \
+    timeout { bail "no login prompt" }
+send "root\r"
+expect -timeout 300 -- "# " {} timeout { bail "root did not get a shell" }
+
+# The mount.  ONE DEVICE NUMBER PER MOUNT -- neta.h's `short dev' is what
+# nadomount() keys on, so a second share with the same number answers
+# `In use'.  This is the only one, so it is 0.
+send "mkdir /n; mkdir /n/v10\r"
+expect -timeout 120 -- "# " {} timeout {}
+send "/etc/nafsmnt 10.0.2.2 $PORT /n/v10 0\r"
+expect -timeout 900 -- "mounted on" {} -- "In use" { bail "/n/v10 already mounted" } \
+    timeout { bail "nafsmnt never reported a mount" }
+expect -timeout 60 -- "# " {} timeout {}
+
+# Prove it is really there before saying so -- V10's `ls' exits 0 for a file
+# that is not present, so the test is `test -d' against a marker the driver
+# never types.
+send "A=okmnt\r"
+expect -timeout 60 -- "# " {} timeout {}
+send "test -d /n/v10/usr/src/cmd && echo +\$A+\r"
+expect -timeout 300 -- "+okmnt+" {} timeout { bail "/n/v10 mounted but the source is not readable" }
+
+puts "\n=========================================================="
+puts "  Research UNIX, Tenth Edition -- logged in as root"
+puts "  this repository's v10/ is mounted on /n/v10"
+puts "    /n/v10/usr/src   the source"
+puts "    /n/v10/usr/man   the manuals"
+puts "  network: il0 10.0.2.15, gateway/host 10.0.2.2"
+puts ""
+puts "  BEFORE YOU QUIT -- an unclean halt corrupts the disk:"
+puts "      /etc/umount /n/v10"
+puts "      cd /; sync; sync"
+puts "      /etc/umount -a"
+puts "      sync"
+puts "      /etc/halt        wait for 'death', then ^E and 'quit'"
+puts "=========================================================="
+puts ""
+
+if {$TEST} {
+    # V10_LAUNCH_TEST: prove the whole path without a human, by doing the
+    # shutdown the banner asks for.
+    send "/etc/umount /n/v10\r"; expect -timeout 300 -- "# " {} timeout {}
+    send "cd /; sync; sync\r";   expect -timeout 120 -- "# " {} timeout {}
+    send "/etc/umount -a\r";     expect -timeout 600 -- "# " {} timeout {}
+    send "sync\r";               expect -timeout 120 -- "# " {} timeout {}
+    send "/etc/halt\r"
+    expect -timeout 300 -- "death" { puts "TEST: clean halt" } \
+        timeout { bail "no death marker" }
+    expect -timeout 120 -- "sim>" {} timeout { catch { send "\005" }
+        expect -timeout 60 -- "sim>" {} timeout { bail "no sim prompt" } }
+    send "quit\r"
+    expect -timeout 60 eof {} timeout {}
+    catch { close }
+    file delete $CFG
+    puts "TEST: OK"
+    exit 0
+}
+
+# Hand the console over.  ^E is SIMH's stop character on a local console and
+# drops to `sim>' with the guest still running; `c' resumes.
+interact
+catch { close }
+file delete $CFG
