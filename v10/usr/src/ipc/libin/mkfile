@@ -19,7 +19,8 @@ $L: $OBJS
 
 $L(%.o):N: %.o
 
-$OBJS: cyntax
+# $OBJS: cyntax -- dropped: cyntax is libin's lint, it is not built here,
+# and libipc's mkfile makes no such demand of its own objects.
 
 cyntax: $COBJS
 	cyntax $COBJS && touch cyntax

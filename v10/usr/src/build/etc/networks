@@ -1,0 +1,3 @@
+# NOT the 4.2 /etc/networks format!
+127.0		loopback-net
+10.0.2.0	ipnx-net

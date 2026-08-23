@@ -1,0 +1,78 @@
+# Copy the build system into /v10/usr/src/build.  That is all it does.
+#
+#	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
+#	mktape    fills a blank /v10/usr from the six archives
+#	mkbuild   puts the build system into /v10/usr/src/build      <-- this
+#	mkipnx    writes /v10/usr back out as ipnx.tar
+#
+# The disk mkimage makes has to carry the thing that built it, so this runs
+# before mkipnx.  A /v10/usr that mktape has just filled does not have it
+# either -- nothing puts it there but this.
+#
+# Named file by file: v10's cp takes only -z (cp(1)), so there is no -r.
+
+B=/n/v10/usr/src/build
+
+test -d /v10/usr/src || exit 1
+
+rm -f /v10/usr/src/build/*
+test -d /v10/usr/src/build || mkdir /v10/usr/src/build || exit 1
+for f in PATCHES.md fixbin fixnames inccheck installed makedev makedev2 mkbuild mkcheck mkdev mkfile mkimage mkipnx mkmk mktape patch proto-dev unmkbin
+do
+	cp $B/$f /v10/usr/src/build/$f || exit 1
+done
+
+test -d /v10/usr/src/build/etc || mkdir /v10/usr/src/build/etc || exit 1
+for f in fstab group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
+do
+	cp $B/etc/$f /v10/usr/src/build/etc/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src || mkdir /v10/usr/src/build/src || exit 1
+for f in README jump.c local-alloc.c nafsmnt.c sh.local.h
+do
+	cp $B/src/$f /v10/usr/src/build/src/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/cmd || mkdir /v10/usr/src/build/src/cmd || exit 1
+for f in cc.c fsck.c login.c mkbitfs.c mv.c
+do
+	cp $B/src/cmd/$f /v10/usr/src/build/src/cmd/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/include || mkdir /v10/usr/src/build/src/include || exit 1
+for f in shares.h
+do
+	cp $B/src/include/$f /v10/usr/src/build/src/include/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/include/sys || mkdir /v10/usr/src/build/src/include/sys || exit 1
+for f in lnode.h
+do
+	cp $B/src/include/sys/$f /v10/usr/src/build/src/include/sys/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/libc || mkdir /v10/usr/src/build/src/libc || exit 1
+for f in mkfile
+do
+	cp $B/src/libc/$f /v10/usr/src/build/src/libc/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/libc/gen || mkdir /v10/usr/src/build/src/libc/gen || exit 1
+for f in atof.c malloc.c memmove.c qsort.c
+do
+	cp $B/src/libc/gen/$f /v10/usr/src/build/src/libc/gen/$f || exit 1
+done
+
+test -d /v10/usr/src/build/src/libc/stdio || mkdir /v10/usr/src/build/src/libc/stdio || exit 1
+for f in _dtoa.c _fconv.c fconv.h fgets.c fprintf.c fputs.c fscanf.c printf.c rdwr.c scanf.c snprintf.c sprintf.c sscanf.c strtod.c vfprintf.c vfscanf.c vprintf.c
+do
+	cp $B/src/libc/stdio/$f /v10/usr/src/build/src/libc/stdio/$f || exit 1
+done
+
+test -d /v10/usr/src/build/v8 || mkdir /v10/usr/src/build/v8 || exit 1
+for f in README finddev.c fstat.c install.sh rp07dump.c rp07rest.c
+do
+	cp $B/v8/$f /v10/usr/src/build/v8/$f || exit 1
+done
+

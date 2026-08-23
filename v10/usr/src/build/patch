@@ -1,0 +1,261 @@
+# Source repairs, applied to /v10/usr/src.  mkimage re-extracts the tapes over
+# that tree, so they are applied here rather than edited in place; each is also
+# carried in the repository, so git holds the record.  All are idempotent -- the
+# pattern is gone after the first pass.  Run from the Makefile, once.
+
+SRC=/v10/usr/src
+GEN=$SRC/build
+
+# arff.c:694 compares struct rt_ent * (line 69) against char * (line 72).  The
+# file is byte-identical to v8's; v8's cc accepted the mismatch, v10's does not.
+cd $SRC/cmd || exit 1
+sed 's|== (rt_last +|== (struct rt_ent *)(rt_last +|' arff.c > a$$ && mv a$$ arff.c
+
+# v10 split v8's monolithic sys/ioctl.h: TIOCGETP, TIOCGPGRP and TIOCSPGRP to
+# sys/ttyio.h; TIOCLGET, TIOCLBIS and TIOCLBIC to sys/nttyio.h; FIOCLEX,
+# FIOPUSHLD, FIOPOPLD and FIOLOOKLD to sys/filio.h.  csh's sources are 4.2
+# (3/11/81) and still ask for the old name.  nfunc.c is not in the makefile's
+# OBJS, so it keeps the include and the TIOCSETD/NTTYDISC calls v10 has no
+# equivalent for.
+cd $SRC/lbin/csh || exit 1
+for f in sh.c sh.err.c sh.func.c sh.print.c sh.proc.c sh.sem.c
+do
+	sed 's|#include <sys/ioctl.h>|#include <sys/ttyio.h>\
+#include <sys/nttyio.h>\
+#include <sys/filio.h>|' $f > c$$ && mv c$$ $f
+done
+
+# sh.local.h needs NCARGS, NOFILE and NSYSFILE, which sh.local.h:27 says come
+# from <sys/param.h> -- csh chooses not to include it and the NCARGS line is
+# commented out.  param.h:8-10 give NOFILE 128, NSYSFILE 4, NCARGS (16*1024).
+# Copied rather than sed'd: v10's sed writes a literal t for \t in a
+# replacement, which produced `#definetNCARGSt...' and three "undefined
+# control" errors.
+cp $GEN/src/sh.local.h $SRC/lbin/csh/sh.local.h || exit 1
+
+# cmd/gcc/mkfile:313,318,320 end `strip -g target' with the $ missing, so each of
+# the four install rules strips a file literally named target and fails.  -g is
+# right: strip.c:26 has case 'g' and strip(1) documents it.
+cd $SRC/cmd/gcc || exit 1
+sed 's|strip -g target|strip -g $target|' mkfile > g$$ && mv g$$ mkfile
+
+# cc.c:65-71 rejects -o whose argument ends .c or .o -- "-o would overwrite" and
+# exit 8 -- so v10's cc cannot do `cc -c -o foo.o'.  lcc's makefiles use that
+# form for all eighteen of their objects, which land in $(D) = vax-bsd.  Compile
+# in place and move instead.
+cd $SRC/cmd/lcc/c || exit 1
+sed 's|[$](CC) -c -o [$]@ [$](CCOPT) [$](C)/\(.*\)\.c|$(CC) -c $(CCOPT) $(C)/\1.c \&\& mv \1.o $@|' \
+    makefile > m$$ && mv m$$ makefile
+
+cd $SRC/cmd/lcc/gen2 || exit 1
+sed -e 's|[$](CC) -c -o [$]@ [$](CCOPT) \([^;]*\)$|$(CC) -c $(CCOPT) \1 \&\& mv `basename \1 .c`.o $@|' \
+    -e 's|[$](CC) -c -o [$]@ \(-I[a-z]*\) [$](CCOPT) \([^;]*\)$|$(CC) -c \1 $(CCOPT) \2 \&\& mv `basename \2 .c`.o $@|' \
+    makefile > m$$ && mv m$$ makefile
+
+cd $SRC/cmd/lcc/gen0 || exit 1
+sed 's|[$](CC) -c -o [$]@ [$](CFLAGS) [$](INCLUDES) gen\.c|$(CC) -c $(CFLAGS) $(INCLUDES) gen.c \&\& mv gen.o $@|' \
+    makefile > m$$ && mv m$$ makefile
+
+# toplev.c takes <sys/param.h> under USG -- and gcc/mkfile:22 is CFLAGS with
+# -DUSG -- then takes <sys/types.h> again behind `#ifndef _TYPES_'.  v10's
+# types.h defines no _TYPES_ and carries no guard of its own, while param.h:131
+# ends `#include "sys/types.h"', so the typedefs are parsed twice and every one
+# of them reads as three type specifiers combined:
+#     "/usr/include/sys/types.h":33:illegal type combination
+# Recorded before, in docs/v10-log/2026-08-18.md, against a different header.
+cd $SRC/cmd/gcc || exit 1
+sed '/^#include <sys\/types.h>$/d' toplev.c > t$$ && mv t$$ toplev.c
+
+# lcc's Symbol.ref is `float ref;' (c/c.h:226) and seven statements increment or
+# decrement it with ++ and --, which v10's ccom refuses:
+#     "../c/dag.c":430:no float ++/--
+# Rewritten as += 1 and -= 1.  All seven are standalone statements, so nothing
+# depends on the value of the expression.  Symbol.count is short and nodecount
+# is int, so their ++ are left alone.
+cd $SRC/cmd/lcc/c || exit 1
+for f in dag.c input.c stmt.c
+do
+	sed -e 's|->ref++;|->ref += 1;|' -e 's|->ref--;|->ref -= 1;|' $f > r$$ && mv r$$ $f
+done
+
+# cmd/gcc/jump.c on v10src is damaged -- a 124-line block duplicated over the
+# region GNU CC 1.21 has at 386-518, leaving two #endif without an #if.  It is
+# not repairable by sed, so the reconstruction carried in the repository is
+# copied over it; that file's own header records what was lost and how it was
+# rebuilt.  Idempotent: cp of the same bytes.
+cp $GEN/src/jump.c $SRC/cmd/gcc/jump.c || exit 1
+
+# cmd/gcc/local-alloc.c likewise: its first 4096 bytes are the tail of GNU CC's
+# Makefile followed by 1405 NUL bytes, so cpp reads the Makefile comments as
+# directives -- "local-alloc.c: 42: undefined control".  Same treatment.
+cp $GEN/src/local-alloc.c $SRC/cmd/gcc/local-alloc.c || exit 1
+
+# Admin/etcfiles names seventeen files no v10 tape carries.  Five of them exist
+# in the Eighth Edition and are staged here from mk/gen/v8, the way the two gcc
+# reconstructions are staged: finddev.c, fstat.c, rp07dump.c and rp07rest.c are
+# compiled by the ordinary .c rule, install.sh copied by the .sh rule.  They are
+# kept under mk/gen so nothing in v10/usr/src pretends to be tape content.
+cd $SRC/cmd || exit 1
+for f in finddev.c fstat.c rp07dump.c rp07rest.c install.sh
+do
+	cp $GEN/v8/$f $SRC/cmd/$f || exit 1
+done
+
+# nafsmnt is ours -- no v10 tape has it.  Staged like the v8 imports.
+cp $GEN/src/nafsmnt.c $SRC/cmd/nafsmnt.c || exit 1
+
+# libin's mkfile makes every archive member depend on cyntax, its lint, which is
+# not built here; libipc's mkfile makes no such demand and is why that one built.
+cd $SRC/ipc/libin || exit 1
+sed 's|^[$]OBJS: cyntax$|# $OBJS: cyntax -- dropped, see mk/gen/patch|' \
+    mkfile > n$$ && mv n$$ mkfile
+
+# renice.c takes <sys/param.h> and then <sys/types.h>; param.h:131 ends with
+# `#include "sys/types.h"' and types.h has no guard, so the typedefs are parsed
+# twice.  Same fault as toplev.c.
+cd $SRC/cmd || exit 1
+sed '/^#include <sys\/types.h>$/d' renice.c > r$$ && mv r$$ renice.c
+
+# gets was taken out of libc deliberately -- libc/stdio/gets.c-1 opens
+#     /*
+#      * Deleted from libc.a by td, 88.11.07
+#      * gets is an unacceptable security hole.
+#      */
+# -- so it is not put back, and the ten call sites use fgets.  fgets keeps the
+# newline where gets stripped it, which matters: rp07dump compares the answer
+# with strcmp(answer, "yes").  strcspn is libc's (gen/strcspn.s).
+cd $SRC/cmd || exit 1
+sed -e 's|^		gets(mbuf);$|		*mbuf = 0; fgets(mbuf, sizeof mbuf, stdin); mbuf[strcspn(mbuf, "\\n")] = 0;|' \
+    -e 's|^			gets(charbuf);$|			*charbuf = 0; fgets(charbuf, sizeof charbuf, stdin); charbuf[strcspn(charbuf, "\\n")] = 0;|' \
+    -e 's|if (gets(tbf) == NULL)|if (fgets(tbf, sizeof tbf, stdin) == NULL)|' \
+    -e 's|if (gets(tbf) == EOF) {|if (fgets(tbf, sizeof tbf, stdin) == NULL) {|' \
+    512restor.c > g$$ && mv g$$ 512restor.c
+
+sed -e 's|^		gets(mbuf);$|		*mbuf = 0; fgets(mbuf, sizeof mbuf, stdin); mbuf[strcspn(mbuf, "\\n")] = 0;|' \
+    -e 's|^			gets(charbuf);$|			*charbuf = 0; fgets(charbuf, sizeof charbuf, stdin); charbuf[strcspn(charbuf, "\\n")] = 0;|' \
+    -e 's|if (gets(tbf) == NULL)|if (fgets(tbf, sizeof tbf, stdin) == NULL)|' \
+    -e 's|if (gets(tbf) == EOF) {|if (fgets(tbf, sizeof tbf, stdin) == NULL) {|' \
+    restor.c > g$$ && mv g$$ restor.c
+
+for f in rp07dump.c rp07rest.c
+do
+	sed 's|^				gets (answer);$|				*answer = 0; fgets(answer, sizeof answer, stdin); answer[strcspn(answer, "\\n")] = 0;|' \
+	    $f > g$$ && mv g$$ $f
+done
+
+# dumprestor.h:25 is `char c_addr[BSIZE];', and v10's param.h:77 makes BSIZE a
+# macro taking a device.  It meant 512: v8's param.h:96 defines BSIZE 512 under
+# CLSIZE==1, and the program that reads these dumps is called 512restor.  Only
+# 512restor.c, dumpdir.c and restor.c include this header, so the three stay
+# consistent with each other.
+sed 's|^	char	c_addr\[BSIZE\];|	char	c_addr[512];|' \
+    /usr/include/dumprestor.h > d$$ && mv d$$ /usr/include/dumprestor.h
+
+# bad144.c:81 calls tell(), which v10 has not got -- no libc member, no man
+# page.  tell(f) is lseek(f, 0L, 1).
+cd $SRC/cmd || exit 1
+sed 's|tell(f), name);|lseek(f, 0L, 1), name);|' bad144.c > b$$ && mv b$$ bad144.c
+
+# fstat.c includes <sys/tty.h>, which v10 has not got, and uses nothing from it.
+sed '/^#include <sys\/tty.h>$/d' fstat.c > f$$ && mv f$$ fstat.c
+
+# The libc repairs stage 2 made, parked in work/v10-preserved and reapplied here.
+# PATCHES.md, beside this script, has a section per file.  Every one is "a 1993
+# ANSI member, converted to K&R" -- not handed to lcc, because lcc's prebuilt
+# driver passes -undef to a cpp that rejects it and the member becomes an empty
+# object that exits 0.  A loud failure beats a silent hole; docs/v10-bootstrap.md
+# :112 measures cc alone after the repairs at 260 of 261 against the tape's own
+# cc+lcc mixture at 246.
+cd $SRC/libc/gen || exit 1
+for f in atof.c malloc.c memmove.c qsort.c
+do
+	cp $GEN/src/libc/gen/$f $SRC/libc/gen/$f || exit 1
+done
+
+cd $SRC/libc/stdio || exit 1
+for f in _dtoa.c _fconv.c fconv.h fgets.c fprintf.c fputs.c fscanf.c printf.c rdwr.c scanf.c snprintf.c sprintf.c sscanf.c strtod.c vfprintf.c vfscanf.c vprintf.c
+do
+	cp $GEN/src/libc/stdio/$f $SRC/libc/stdio/$f || exit 1
+done
+
+# stdio/iolib.h has no branch for a v10 VAX: it covers v10-without-stdarg, pANS
+# -with-stdarg and SGI, and under the mkfile's own -DV10 va_list is declared only
+# when sgi is also defined -- so the nine printf/scanf members failed under both
+# compilers.  <shares.h> is on no surviving machine; it was reconstructed from
+# the tape's own lnode(5) and checked against Bell Labs' object code, and
+# sys/lnode.h with it.
+cp $GEN/src/include/shares.h /usr/include/shares.h || exit 1
+cp $GEN/src/include/sys/lnode.h /usr/include/sys/lnode.h || exit 1
+
+# /usr/include/stdlib.h has to exist for atof.c: r70 ships it as
+# include/CC/stdlib.h, six lines whose body is `#include <libc.h>'.  K&R defaults
+# an undeclared function to int, so without it strtod's double would truncate to
+# a word and atof would be silently wrong -- worse than a compile error.
+test -f /usr/include/stdlib.h || cp /usr/include/CC/stdlib.h /usr/include/stdlib.h || exit 1
+
+# libc/mkfile, repaired, copied rather than sed'd -- the changes are structural.
+#
+#   The default rule was `cc -O -c $prereq', and forty-four members list a header
+#   among their prerequisites -- snprintf.o names stdio/iolib.h -- so cc was
+#   handed the .h as a second source file.  The headers are stripped from the
+#   argument list, which leaves them doing what they are there for.
+#
+#   -DV10 goes on that rule: it was in LCCARGS, which only the lcc recipes
+#   carried, and snprintf.c and its siblings choose their V10 branch on it --
+#   without it, line 22 takes the pANS `FILE *f=sopenw();' path instead.
+#
+#   The ten lcc recipes are gone, so every member goes through that one rule.
+#   docs/v10-bootstrap.md:115: "LIBC_LCC is empty.  lcc must not be reinstated to
+#   close a member: its prebuilt driver passes -undef to a cpp that rejects it,
+#   so those members become empty objects that exit 0."  libdmalloc.a keeps its
+#   own lcc line; it is a separate archive, not a libc member.
+#
+#   setupshares.o is dropped from $OBJ, so libc.a is 260 members and not 261.
+#   gen/setupshares.c:7 includes <sys/share.h> for a struct sh_consts that
+#   share(5) does not print, that limits(2) names without a field, and that
+#   appears in neither lsys/ nor sys/ -- and setupshares() passes &shconsts to
+#   limits(2) L_GETCOSTS, a call that has the KERNEL write through the pointer.
+#   A guessed size compiles, links, and overwrites the caller's stack, so the
+#   member is left out rather than invented.  The rule stays in the mkfile with
+#   the reason beside it.
+cp $GEN/src/libc/mkfile $SRC/libc/mkfile || exit 1
+
+# stdio/iolib.h asks for <unistd.h>, which /usr/include has not got.  It is on
+# both tapes as cmd/dist/v10/lcc-incl/unistd.h -- lcc's own POSIX set for v10,
+# four headers, dirent.h libv.h unistd.h utime.h, none of them in the installed
+# include/lcc.  Named by subdirectory rather than put on the include path, for
+# the reason PATCHES.md gives for <lcc/stdarg.h>: include/lcc also holds stdio.h,
+# string.h and math.h, which would shadow the system headers for every member.
+cp $SRC/cmd/dist/v10/lcc-incl/unistd.h /usr/include/lcc/unistd.h || exit 1
+cd $SRC/libc/stdio || exit 1
+sed 's|^#include <unistd.h>$|#include <lcc/unistd.h>|' iolib.h > i$$ && mv i$$ iolib.h
+
+# The cmd repairs stage 2 made; PATCHES.md has a section on each.
+#   cc.c       uses BUFSIZE without including <sys/param.h>
+#   fsck.c     `#include <stat.h>' names a header the archive has not
+#   mv.c       uses ROOTINO and includes nothing that defines it
+#   mkbitfs.c  the BITFS check asks about the wrong machine
+#   login.c    a 1993 ANSI member, converted to K&R
+cd $SRC/cmd || exit 1
+for f in cc.c fsck.c login.c mkbitfs.c mv.c
+do
+	cp $GEN/src/cmd/$f $SRC/cmd/$f || exit 1
+done
+
+# iolib.h:55-56 are ANSI prototypes pcc2 cannot parse -- `char *strerror(int
+# errno);' and `int _IO_setvbuf(FILE *);'.  De-prototyped, as everything else in
+# this family was.
+cd $SRC/libc/stdio || exit 1
+sed -e 's|^char \*strerror(int errno);$|char *strerror();|' \
+    -e 's|^int _IO_setvbuf(FILE \*);$|int _IO_setvbuf();|' \
+    iolib.h > i$$ && mv i$$ iolib.h
+
+# The pANS members want _IOFBF, and /usr/include/stdio.h has _IONBF 04 and
+# _IOLBF 0200 but not it.  lcc/stdio.h:4 is `#define _IOFBF 0', which is
+# consistent with those two: zero means neither unbuffered nor line-buffered.
+if grep _IOFBF /usr/include/stdio.h > /dev/null
+then	:
+else
+	sed 's|^#define	_IONBF	04$|#define	_IOFBF	0\
+#define	_IONBF	04|' /usr/include/stdio.h > s$$ && mv s$$ /usr/include/stdio.h
+fi

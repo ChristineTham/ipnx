@@ -1,0 +1,38 @@
+HOME=/; export HOME
+PATH=/bin:/usr/bin:/etc; export PATH
+date
+
+case ${1-xx} in
+autoboot)
+	echo Autoboot:
+	/etc/fsck -p
+	case $? in
+	0)	;;
+	4)	/etc/reboot -n ;;
+	8)	echo "reboot interrupted"; exit 1 ;;
+	esac
+	;;
+esac
+
+/etc/mount -a
+/etc/swapon -a
+
+rm -f /etc/mtab
+/etc/mount
+
+cat /etc/motd
+
+# The Interlan is this machine's only network.  dipconfig takes the ARP channel
+# as its last argument; ni1010a.c:3 gives each board eight minors from N*8, and
+# il1 is the one /etc/rc has always used.
+if test -c /dev/il0
+then
+	/etc/dipconfig /dev/il0 10.0.2.15 10.0.0.0 /dev/il1 >/dev/null 2>&1 &
+	/etc/tcpconfig /dev/ip6 >/dev/null 2>&1 &
+	echo "network: il0 10.0.2.15, gateway 10.0.2.2"
+fi
+
+# netfs cannot be described in fstab: nafsmnt takes a host and a port, not a
+# block device, and fstab(5) has no field for either.
+test -d /n/v10 && /etc/nafsmnt 10.0.2.2 9350 /n/v10 0
+test -d /n/tapes && /etc/nafsmnt 10.0.2.2 9351 /n/tapes 1

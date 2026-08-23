@@ -1,0 +1,857 @@
+# Build a v10 userland: the toolchain, the libraries it needs, and the /bin
+# commands Admin/binfiles names.
+#
+#   mk               /bin only, on this machine
+#   mk ROOT=/v10     /v10/bin, from the running toolchain
+#   mk world         the lot, in bootstrap order
+#   mk ROOT=/v10 world   populate /v10 from nothing
+#
+# Every target is an installed file carrying mk(1)'s P attribute, which points at
+# ./installed and exits 0 -- not out of date -- when the target exists.  Times
+# are never compared: everything already installed came off the tape and a time
+# comparison would rebuild all of it.  Prerequisites are still built, so a
+# missing stage is filled in whichever target asked for it.
+#
+# Bootstrap order, and why:
+#
+# Every target that compiles anything takes $SRCOK, so ./patch has run and
+# libc.a has a current __.SYMDEF before any of them starts.  Without that the
+# tools stage reaches gcc and lcc with their sources unrepaired.
+#
+# mk(1):263 -- "Files may be made in any order that respects the preceding
+# restrictions" -- so the order of a target's prerequisite list buys nothing.
+# The sequence below is enforced by real dependencies, not by the order of
+# world's list: lcc depends on rcc and gcc-cpp, and libc.a and libdmalloc.a
+# depend on lcc.  Nothing else crosses a stage, because every recipe runs the
+# builder's cc, mk and make, not the ones being installed into ROOT.
+#
+#   tools   mk, gcc-cpp, rcc, lcc.  libc cannot be built without lcc -- libc's
+#           own mkfile compiles memmove, qsort, fgets, fputs, rdwr, scanf,
+#           sprintf, vfprintf, vfscanf and malloc with it, not with cc.  lcc in
+#           turn needs gcc-cpp: etc/bowell.c:5 names /usr/lib/gcc-cpp, and the
+#           whole of GNU CC 1.x is in cmd/gcc, where cccp.c is that program.
+#           lcc's own gen3 sets CC=lcc -A, so the compiler proper is bootstrapped
+#           from gen0, which uses plain cc.
+#   lib     cpp, ccom, c2, libc.a, crt0.o.  cc.c:7-12 hardcodes all five paths.
+#   libs    libipc.a for track, libjobs.a for csh.
+#   bin     the commands Admin/binfiles names.
+#   etc     the ones Admin/etcfiles names.
+#
+# Admin/libfiles holds one name, dknames, and nothing in the corpus is a source
+# for it or a reader of it, so /lib has no Mk-built content -- everything there
+# is a by-product of the toolchain build.
+#
+# Not built: iostat reads ubdinit, mbdinit and the dk_* counters and v10's kernel
+# has none of them under any config; mail is Berkeley Mail, installed by its own
+# Makefile as /usr/bin/Mail; rmail hard-links to a /bin/mail the tapes carry no
+# source for; rsh hard-links to rx (ipc/bin/mkfile:78).
+
+ROOT=
+DEST=$ROOT/bin
+ETC=$ROOT/etc
+SRC=/v10/usr/src
+CMD=$SRC/cmd
+CSH=$SRC/lbin/csh
+JOBS=$SRC/lbin/libjobs
+LCC=$CMD/lcc
+LIBC=$SRC/libc
+IPC=$SRC/ipc
+# The build system travels inside ipnx.tar, beside the source it builds, so
+# nothing here reads a netfs share and root carries none of it -- root is 5 MB
+# (ipnx-v10.m:51) and /etc/mkimage is the only file this project puts there.
+GEN=$SRC/build
+
+TOOLS=$ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/bin/stab
+LIB=$ROOT/lib/cpp $ROOT/lib/ccom $ROOT/lib/c2 $ROOT/lib/libc.a $ROOT/lib/crt0.o $ROOT/lib/mcrt0.o
+LIBS=$ROOT/usr/lib/diffh $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libjobs.a $ROOT/usr/lib/libdmalloc.a
+SRCOK=dirs $CMD/.ranlib $CMD/.patched
+# lcc is not usable on its own: its driver execs /usr/lib/rcc and
+# /usr/lib/gcc-cpp.  Depending on the driver alone is not enough -- it is
+# already installed, so its P predicate reports it up to date and the two
+# programs it needs are never reached.
+LCCOK=$ROOT/usr/bin/lcc $ROOT/usr/lib/rcc $ROOT/usr/lib/gcc-cpp
+BIN=$DEST/adb $DEST/ar $DEST/arff $DEST/as $DEST/cat $DEST/cc $DEST/chmod $DEST/cmp $DEST/cp $DEST/csh $DEST/date $DEST/dd $DEST/df $DEST/diff $DEST/du $DEST/e $DEST/echo $DEST/ed $DEST/false $DEST/grep $DEST/kill $DEST/ld $DEST/ln $DEST/login $DEST/ls $DEST/make $DEST/mkdir $DEST/mt $DEST/mv $DEST/newgrp $DEST/nice $DEST/nm $DEST/nohup $DEST/od $DEST/passwd $DEST/pr $DEST/ps $DEST/pstat $DEST/pwd $DEST/rm $DEST/rmdir $DEST/sh $DEST/size $DEST/stty $DEST/sync $DEST/tar $DEST/test $DEST/time $DEST/track $DEST/true $DEST/vmstat $DEST/who $DEST/write
+ETCF=$ETC/ac $ETC/accton $ETC/chown $ETC/clri $ETC/cron $ETC/dcheck $ETC/dmesg $ETC/dskcpy $ETC/fsck $ETC/getty $ETC/halt $ETC/hideblock $ETC/icheck $ETC/init $ETC/mkbitfs $ETC/mkfs $ETC/mknod $ETC/mount $ETC/ncheck $ETC/quot $ETC/reboot $ETC/renice $ETC/sa $ETC/savecore $ETC/setlog $ETC/showq $ETC/su $ETC/smash $ETC/swapon $ETC/umount $ETC/update $ETC/wall $ETC/termcap $ETC/finddev $ETC/install $ETC/mklost+found $ETC/shutdown $ETC/group $ETC/whoami $ETC/mtab $ETC/utmp $ETC/ttys $ETC/fstab $ETC/motd $ETC/passwd $ETC/services $ETC/hosts $ETC/networks $ETC/rc $ETC/512restor $ETC/bad144 $ETC/dumpdir $ETC/fstat $ETC/restor $ETC/rp07dump $ETC/rp07rest $ETC/nafsmnt $ETC/mkimage
+PREP=$ROOT/usr/bin/strip $SRCOK
+all:V:  world
+world:V: tools lib libs bin etc
+tools:V: $TOOLS
+lib:V:  $LIB
+libs:V: $LIBS
+etc:V:  $ETCF
+bin:V:  $BIN
+
+# ---- stamps ----------------------------------------------------------------
+# Nothing else makes these.  mkimage makes /v10, /v10/usr, /v10/usr/src,
+# /v10/usr/blit and /v10/unix, and mkdev makes /v10/dev, but not the seven
+# below: five are where this mkfile installs, and two are needed at boot --
+# init.c:23 is `char wtmpf[] = "/usr/adm/wtmp"', and /tmp is where cc and lcc
+# write.  With ROOT empty they all exist and every test is a no-op.
+#
+# Virtual, not stamped: a stamp in the source tree would be one file for two
+# values of ROOT, so building /bin here would leave /v10 without its
+# directories.  Every test is a no-op when they exist, so running it each time
+# costs nothing.
+dirs:V:
+	test -d $ROOT/bin || mkdir $ROOT/bin
+	test -d $ROOT/etc || mkdir $ROOT/etc
+	test -d $ROOT/lib || mkdir $ROOT/lib
+	test -d $ROOT/tmp || mkdir $ROOT/tmp
+	test -d $ROOT/usr || mkdir $ROOT/usr
+	test -d $ROOT/usr/adm || mkdir $ROOT/usr/adm
+	test -d $ROOT/usr/bin || mkdir $ROOT/usr/bin
+	test -d $ROOT/usr/lib || mkdir $ROOT/usr/lib
+
+# A copied .a has a stale __.SYMDEF and v10's ld then makes one sequential pass,
+# reporting undefined symbols that are all present.
+$CMD/.ranlib:
+	ranlib /lib/libc.a
+	echo done > $CMD/.ranlib
+
+# Source repairs, run once.  They are nothing's prerequisite, so re-patching
+# never forces a rebuild.  mkimage re-extracts the tapes over /v10/usr/src and
+# takes the stamps with the repairs, which is right: both must happen again.
+$CMD/.patched:
+	sh $GEN/patch
+	echo done > $CMD/.patched
+
+# ---- tools -----------------------------------------------------------------
+# mk's own src/mkfile needs mk, so the modules from its NAMES are compiled
+# directly with CFLAGS=-DV9 as that mkfile sets, linked as nmk, and installed
+# where its install target puts it.  membername goes with it: mk(1) documents
+# the two together and libc's mkfile:84 calls it to turn libc.a(read.o) into
+# read.o.  mkconv goes too: mk(1)'s NAME line is `mk, mkconv, membername'.
+# Both are sh scripts in mk's export directory.
+$ROOT/usr/bin/mk:Psh $GEN/installed: $SRCOK
+	cd $CMD/mk/src; cc -DV9 -o nmk alloc.c arc.c bquote.c builtins.c dir.c expand.c gen.c glob.c graph.c job.c lex.c main.c makefile.c match.c mk.c parse.c quote.c recipe.c regexp.c rule.c run.c shprint.c sig.c symtab.c t_ar.c t_driver.c t_file.c var.c word.c || echo 'mk: FAILED'
+	cd $CMD/mk/src; cp nmk $ROOT/usr/bin/mk && strip $ROOT/usr/bin/mk; rm -f nmk *.o
+	cp $CMD/mk/export/membername $ROOT/usr/bin/membername && chmod +x $ROOT/usr/bin/membername
+	cp $CMD/mk/export/mkconv $ROOT/usr/bin/mkconv && chmod +x $ROOT/usr/bin/mkconv
+
+# cmd/gcc is GNU CC 1.x entire, but only its preprocessor is wanted: lcc's
+# driver execs /usr/lib/gcc-cpp and /usr/lib/rcc and nothing else from gcc, and
+# gcc-cpp is cccp under a second name --
+#     cpp: cccp
+#     	ln cccp cpp
+#     cccp: cccp.o cexp.o version.o $CLIB
+# So the cpp target is built rather than all or install.  That also steps around
+# the two files v10src damaged: jump.c, whose block 3 duplicates block 2, and
+# local-alloc.c, whose block 0 is Makefile text plus 1405 NUL bytes and whose
+# block 6 is a foreign block (the same one that overwrote limits.h entirely).
+# All three are reachable only through cc1, which nothing here uses.  cccp.c,
+# cexp.y, cexp.c, version.c and alloca.c are structurally clean -- no NULs, no
+# duplicate blocks, no stray comment terminators, balanced #if -- and none of
+# them includes limits.h.
+#
+# CC=cc because mkfile:25 is `CC = gcc' -- it expects to build GNU CC with GNU
+# CC.  Line 26 says "OLDCC should not be the GNU C compiler" and line 27 sets
+# OLDCC = cc, so cc is what the bootstrap is meant to use.  The install target
+# is not used either, so its `strip -g target' bug does not arise.
+$ROOT/usr/lib/gcc-cpp:Psh $GEN/installed: $SRCOK
+	cd $CMD/gcc; mk cpp CC=cc || echo 'gcc-cpp: FAILED'
+	cd $CMD/gcc; cp cpp $ROOT/usr/lib/gcc-cpp && chmod 775 $ROOT/usr/lib/gcc-cpp && strip $ROOT/usr/lib/gcc-cpp
+
+# gen2, not gen0.  lcc's doc/install.tex:42-43 names gen0 the ``symbolic'' code
+# generator and gen3 the demonstration one; :387, "Installing a Production
+# Compiler", is gen2, whose gen2/vax is the VAX generator.  gen0's rcc emits a
+# symbolic dump -- progbeg, segment, function, node -- which /bin/as rejects
+# character by character.
+#
+# HOST and HOSTOS, because gen2/makefile:5 is D=$(HOST)-$(HOSTOS); the tape
+# ships a gen2/vax-v9 directory, and install.tex:435 lists vax/v9 among the
+# supported target-system pairs.
+$ROOT/usr/lib/rcc:Psh $GEN/installed: $SRCOK
+	cd $LCC/gen2; make HOST=vax HOSTOS=v9 || echo 'rcc: FAILED'
+	cd $LCC/gen2; cp vax-v9/rcc $ROOT/usr/lib/rcc && strip $ROOT/usr/lib/rcc
+
+# The driver is one host file plus lcc.c, linked to a.out.  HOST=coma, not
+# guessed: the lcc already on the image reports
+#     /usr/lib/gcc-cpp -undef -Dvax -DV9 ... -I/usr/include/libc -I/usr/include/lcc
+#     | /usr/lib/rcc -v -
+# under -v, and rcc is invoked with no -g1.  bowell.c:7 adds -g1 and coma.c:7
+# does not, so the installed driver was built from coma; every other path in the
+# trace matches both.
+$ROOT/usr/bin/lcc:Psh $GEN/installed: $SRCOK $ROOT/usr/lib/rcc $ROOT/usr/lib/gcc-cpp
+	cd $LCC/etc; make a.out HOST=coma || echo 'lcc: FAILED'
+	cd $LCC/etc; cp a.out $ROOT/usr/bin/lcc && strip $ROOT/usr/bin/lcc; rm -f a.out
+
+# ---- lib -------------------------------------------------------------------
+# cmd/cpp's mkfile runs yacc over cpy.y, then :yyfix and :rofix.
+$ROOT/lib/cpp:Psh $GEN/installed: $SRCOK
+	cd $CMD/cpp; mk cpp && cp cpp $ROOT/lib/cpp && strip $ROOT/lib/cpp || echo 'cpp: FAILED'
+
+# ccom's makefile calls its binary comp and its build target build.  Its install
+# target is not used: it begins `cp /lib/ccom comp.sv', which cannot work when
+# there is no /lib/ccom yet, and it hardcodes /lib.
+$ROOT/lib/ccom:Psh $GEN/installed: $SRCOK
+	cd $CMD/ccom/vax; make build || echo 'ccom: FAILED'
+	cd $CMD/ccom/vax; cp comp $ROOT/lib/ccom && strip $ROOT/lib/ccom
+
+$ROOT/lib/c2:Psh $GEN/installed: $SRCOK
+	cd $CMD/c2; make c2 && make install DESTDIR=$ROOT || echo 'c2: FAILED'
+
+# libc's own install target starts `cp $target liboc.a', saving the libc.a it is
+# about to replace, which cannot work when there is none; the archive is built
+# with its mkfile and installed here.  ranlib at the destination, because cp
+# updates the mtime and that alone makes __.SYMDEF stale.
+$ROOT/lib/libc.a:Psh $GEN/installed: $SRCOK $LCCOK
+	cd $LIBC; mk libc.a || echo 'libc.a: FAILED'
+	cd $LIBC; cp libc.a $ROOT/lib/libc.a && ranlib $ROOT/lib/libc.a
+
+$ROOT/lib/crt0.o:Psh $GEN/installed: $SRCOK
+	cd $LIBC; mk crt0.o mcrt0.o || echo 'crt0.o: FAILED'
+	cd $LIBC; cp crt0.o mcrt0.o $ROOT/lib
+
+# ---- libraries the commands need -------------------------------------------
+# nafsmnt links -lin for tcp_sock and tcp_connect (ipc/libin/tcp_lib.c) and
+# in_address (in_address.c).  libin's own install target is cp then ranlib at
+# /usr/lib, which is where ld looks.
+$ROOT/usr/lib/libin.a:Psh $GEN/installed: $SRCOK
+	cd $IPC/libin; mk libin.a || echo 'libin.a: FAILED'
+	cd $IPC/libin; cp libin.a $ROOT/usr/lib/libin.a && ranlib $ROOT/usr/lib/libin.a
+
+# track links -lipc; ld searches /lib, /usr/lib and /usr/local/lib and has no -L.
+$ROOT/usr/lib/libipc.a:Psh $GEN/installed: $SRCOK
+	cd $IPC/libipc; mk libipc.a || echo 'libipc.a: FAILED'
+	cd $IPC/libipc; cp libipc.a $ROOT/usr/lib/libipc.a && ranlib $ROOT/usr/lib/libipc.a
+
+# csh links ../libjobs/libjobs.a by path, so it is built and ranlibbed where it
+# stands; its makefile's libjobs.a target is a bare `ar cr' and only its install
+# target ranlibs.
+$JOBS/libjobs.a: $SRCOK
+	cd $JOBS; make libjobs.a && ranlib libjobs.a || echo 'libjobs.a: FAILED'
+
+# ... and installed as well, which its own install target does:
+#     cp libjobs.a $(DESTDIR)/usr/lib
+#     ranlib $(DESTDIR)/usr/lib/libjobs.a
+$ROOT/usr/lib/libjobs.a:Psh $GEN/installed: $SRCOK $JOBS/libjobs.a
+	cp $JOBS/libjobs.a $ROOT/usr/lib/libjobs.a && ranlib $ROOT/usr/lib/libjobs.a || echo 'libjobs.a install: FAILED'
+
+# libc's install target names libdmalloc.a alongside libc.a, crt0.o and mcrt0.o.
+# Its own rule compiles gen/malloc.c with lcc, not cc.
+$ROOT/usr/lib/libdmalloc.a:Psh $GEN/installed: $SRCOK $LCCOK
+	cd $LIBC; mk libdmalloc.a || echo 'libdmalloc.a: FAILED'
+	cd $LIBC; cp libdmalloc.a $ROOT/usr/lib/libdmalloc.a && ranlib $ROOT/usr/lib/libdmalloc.a
+
+# ---- strip -----------------------------------------------------------------
+# strip is in no Admin list, so dest puts it in /usr/bin and its own Makefile's
+# install target agrees.  Every install below calls it.  That install runs
+# `strip strip.out' through PATH, which cannot work before strip exists, so the
+# fresh binary is invoked as ./strip -- on a scratch copy, since strip.out is the
+# tape's own prebuilt binary and make clean does not remove it.
+$ROOT/usr/bin/strip:Psh $GEN/installed: $SRCOK
+	cd $CMD/strip; make clean; make strip && cp strip strip.new && ./strip strip.new && cp strip.new $ROOT/usr/bin/strip || echo 'strip: FAILED'
+	cd $CMD/strip; make stab && strip stab && cp stab $ROOT/usr/bin/stab || echo 'stab: FAILED'
+	cd $CMD/strip; rm -f strip.new; make clean
+
+# ---- commands --------------------------------------------------------------
+
+$DEST/adb:Psh $GEN/installed: $PREP
+	cd $CMD/adb/vax; make adb && strip adb && cp adb $DEST/adb || echo 'adb: FAILED'
+
+$DEST/ar:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o ar ar.c && strip ar && cp ar $DEST/ar || echo 'ar: FAILED'
+	cd $CMD; rm -f ar ar.o
+
+$DEST/arff:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o arff arff.c && strip arff && cp arff $DEST/arff || echo 'arff: FAILED'
+	cd $CMD; rm -f arff arff.o
+
+$DEST/as:Psh $GEN/installed: $PREP
+	cd $CMD/as; make clean; make as || echo 'as: FAILED'
+	cd $CMD/as; strip as && cp as $DEST/as; make clean
+
+$DEST/cat:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o cat cat.c && strip cat && cp cat $DEST/cat || echo 'cat: FAILED'
+	cd $CMD; rm -f cat cat.o
+
+$DEST/cc:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o cc cc.c && strip cc && cp cc $DEST/cc || echo 'cc: FAILED'
+	cd $CMD; rm -f cc cc.o
+
+$DEST/chmod:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o chmod chmod.c && strip chmod && cp chmod $DEST/chmod || echo 'chmod: FAILED'
+	cd $CMD; rm -f chmod chmod.o
+
+$DEST/cmp:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o cmp cmp.c && strip cmp && cp cmp $DEST/cmp || echo 'cmp: FAILED'
+	cd $CMD; rm -f cmp cmp.o
+
+$DEST/cp:Psh $GEN/installed: $PREP
+	cd $CMD/cp; make clean && make && make install D=$DEST/cp && make clean || echo 'cp: FAILED'
+
+$DEST/csh:Psh $GEN/installed: $PREP $JOBS/libjobs.a
+	cd $CSH; make csh && strip csh && cp csh $DEST/csh || echo 'csh: FAILED'
+	cd $CSH; rm -f *.o csh
+
+$DEST/date:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o date date.c && strip date && cp date $DEST/date || echo 'date: FAILED'
+	cd $CMD; rm -f date date.o
+
+$DEST/dd:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o dd dd.c && strip dd && cp dd $DEST/dd || echo 'dd: FAILED'
+	cd $CMD; rm -f dd dd.o
+
+$DEST/df:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o df df.c && strip df && cp df $DEST/df || echo 'df: FAILED'
+	cd $CMD; rm -f df df.o
+
+$DEST/diff:Psh $GEN/installed: $PREP
+	cd $CMD/diff; mk install DIFF=$DEST/diff DIFFH=$ROOT/usr/lib/diffh || echo 'diff: FAILED'
+
+$DEST/du:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o du du.c && strip du && cp du $DEST/du || echo 'du: FAILED'
+	cd $CMD; rm -f du du.o
+
+$DEST/e:Psh $GEN/installed: $PREP $DEST/ed
+	ln $DEST/ed $DEST/e || echo 'e: FAILED'
+
+$DEST/echo:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o echo echo.c && strip echo && cp echo $DEST/echo || echo 'echo: FAILED'
+	cd $CMD; rm -f echo echo.o
+
+# ed is the only binfiles entry with both a cmd/ed.c and a cmd/ed/.  The flat
+# one is newer -- Sep 17 1993 against Jan 15 1992 -- and sits in the tree Mk
+# builds from and dest routes; the directory is a working copy, with CC=pcc,
+# -- and the binary is written as edbin, because cmd/ed is that directory.
+# -D_POSIX_SOURCE, a saved oed binary and no install target.
+$DEST/ed:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o edbin ed.c && strip edbin && cp edbin $DEST/ed || echo 'ed: FAILED'
+	cd $CMD; rm -f edbin ed.o
+
+$DEST/false:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o false false.c && strip false && cp false $DEST/false || echo 'false: FAILED'
+	cd $CMD; rm -f false false.o
+
+$DEST/grep:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o grep grep.c && strip grep && cp grep $DEST/grep || echo 'grep: FAILED'
+	cd $CMD; rm -f grep grep.o
+
+$DEST/kill:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o kill kill.c && strip kill && cp kill $DEST/kill || echo 'kill: FAILED'
+	cd $CMD; rm -f kill kill.o
+
+$DEST/ld:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o ld ld.c && strip ld && cp ld $DEST/ld || echo 'ld: FAILED'
+	cd $CMD; rm -f ld ld.o
+
+$DEST/ln:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o ln ln.c && strip ln && cp ln $DEST/ln || echo 'ln: FAILED'
+	cd $CMD; rm -f ln ln.o
+
+$DEST/login:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o login login.c && strip login && cp login $DEST/login || echo 'login: FAILED'
+	cd $CMD; rm -f login login.o
+
+$DEST/ls:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o ls ls.c && strip ls && cp ls $DEST/ls || echo 'ls: FAILED'
+	cd $CMD; rm -f ls ls.o
+
+$DEST/make:Psh $GEN/installed: $PREP
+	cd $CMD/make; make clean && make && make install DESTDIR=$ROOT && make clean || echo 'make: FAILED'
+
+$DEST/mkdir:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mkdir mkdir.c && strip mkdir && cp mkdir $DEST/mkdir || echo 'mkdir: FAILED'
+	cd $CMD; rm -f mkdir mkdir.o
+
+$DEST/mt:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mt mt.c && strip mt && cp mt $DEST/mt || echo 'mt: FAILED'
+	cd $CMD; rm -f mt mt.o
+
+$DEST/mv:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mv mv.c && strip mv && cp mv $DEST/mv || echo 'mv: FAILED'
+	cd $CMD; rm -f mv mv.o
+
+$DEST/newgrp:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o newgrp newgrp.c && strip newgrp && cp newgrp $DEST/newgrp || echo 'newgrp: FAILED'
+	cd $CMD; rm -f newgrp newgrp.o
+
+$DEST/nice:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o nice nice.c && strip nice && cp nice $DEST/nice || echo 'nice: FAILED'
+	cd $CMD; rm -f nice nice.o
+
+$DEST/nm:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o nm nm.c && strip nm && cp nm $DEST/nm || echo 'nm: FAILED'
+	cd $CMD; rm -f nm nm.o
+
+$DEST/nohup:Psh $GEN/installed: $PREP
+	cp $CMD/nohup.sh $DEST/nohup && chmod +x $DEST/nohup || echo 'nohup: FAILED'
+
+$DEST/od:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o od od.c && strip od && cp od $DEST/od || echo 'od: FAILED'
+	cd $CMD; rm -f od od.o
+
+$DEST/passwd:Psh $GEN/installed: $PREP
+	cp $CMD/passwd.sh $DEST/passwd && chmod +x $DEST/passwd || echo 'passwd: FAILED'
+
+$DEST/pr:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o pr pr.c && strip pr && cp pr $DEST/pr || echo 'pr: FAILED'
+	cd $CMD; rm -f pr pr.o
+
+$DEST/ps:Psh $GEN/installed: $PREP
+	cd $CMD/ps; mk ps && cp ps $DEST/ps && strip $DEST/ps && /etc/chown root $DEST/ps && chmod a=rx,u+ws $DEST/ps || echo 'ps: FAILED'
+
+# -O is a DEVIATION, for the reason track's is: pstat.c is not in Admin/large,
+# so the tape's rule is -Od2, and -Od2 means as -d2 -- word displacements, which
+# pstat.o overflows.
+$DEST/pstat:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o pstat pstat.c && strip pstat && cp pstat $DEST/pstat || echo 'pstat: FAILED'
+	cd $CMD; rm -f pstat pstat.o
+
+$DEST/pwd:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o pwd pwd.c && strip pwd && cp pwd $DEST/pwd || echo 'pwd: FAILED'
+	cd $CMD; rm -f pwd pwd.o
+
+$DEST/rm:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o rm rm.c && strip rm && cp rm $DEST/rm || echo 'rm: FAILED'
+	cd $CMD; rm -f rm rm.o
+
+$DEST/rmdir:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o rmdir rmdir.c && strip rmdir && cp rmdir $DEST/rmdir || echo 'rmdir: FAILED'
+	cd $CMD; rm -f rmdir rmdir.o
+
+$DEST/sh:Psh $GEN/installed: $PREP
+	cd $CMD/sh; mk sh && cp sh $DEST/sh && strip $DEST/sh && /etc/chown bin,bin $DEST/sh && chmod o-w,g+w $DEST/sh || echo 'sh: FAILED'
+
+$DEST/size:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o size size.c && strip size && cp size $DEST/size || echo 'size: FAILED'
+	cd $CMD; rm -f size size.o
+
+$DEST/stty:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o stty stty.c && strip stty && cp stty $DEST/stty || echo 'stty: FAILED'
+	cd $CMD; rm -f stty stty.o
+
+$DEST/sync:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o sync sync.c && strip sync && cp sync $DEST/sync || echo 'sync: FAILED'
+	cd $CMD; rm -f sync sync.o
+
+$DEST/tar:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o tar tar.c && strip tar && cp tar $DEST/tar || echo 'tar: FAILED'
+	cd $CMD; rm -f tar tar.o
+
+$DEST/test:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o test test.c && strip test && cp test $DEST/test || echo 'test: FAILED'
+	cd $CMD; rm -f test test.o
+
+$DEST/time:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o time time.c && strip time && cp time $DEST/time || echo 'time: FAILED'
+	cd $CMD; rm -f time time.o
+
+# There are two track.c.  dk/cmd/track.c (1984) calls tdkexec and is linked -ldk
+# into /usr/bin by dk/cmd/Makefile; cmd/track.c (1987) was ported off Datakit and
+# calls ipcexec, which is libipc's -- libdk.a holds tdkexec, not ipcexec.
+# binfiles routes the cmd/ copy to /bin, so this is the 1987 one.
+#
+# -O is a DEVIATION.  track.c is not in Admin/large, so the tape's rule is Mk's
+# default -Od2, and that cannot link it: as -d[124] sets the displacement size
+# (asmain.c:241) and cc.c:262 hands dflag straight to as, so -Od2 means word
+# displacements, which track.o overflows against libipc.
+$DEST/track:Psh $GEN/installed: $PREP $ROOT/usr/lib/libipc.a
+	cd $CMD; cc -O   -o track track.c -lipc && strip track && cp track $DEST/track || echo 'track: FAILED'
+	cd $CMD; rm -f track track.o
+
+$DEST/true:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o true true.c && strip true && cp true $DEST/true || echo 'true: FAILED'
+	cd $CMD; rm -f true true.o
+
+$DEST/vmstat:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o vmstat vmstat.c && strip vmstat && cp vmstat $DEST/vmstat || echo 'vmstat: FAILED'
+	cd $CMD; rm -f vmstat vmstat.o
+
+$DEST/who:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o who who.c && strip who && cp who $DEST/who || echo 'who: FAILED'
+	cd $CMD; rm -f who who.o
+
+$DEST/write:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o write write.c && strip write && cp write $DEST/write || echo 'write: FAILED'
+	cd $CMD; rm -f write write.o
+
+# ---- /etc ------------------------------------------------------------------
+# Admin/etcfiles, less what Admin/dest routes elsewhere and what has no source.
+#
+# login and passwd are in binfiles too, and dest tests binfiles first, so both
+# go to /bin and are built there, not here.
+#
+# termcap is not a program: cmd/termcap builds the terminal database with
+#     termcap.obj: termcap.src
+#     	ed - termcap.src < reorder
+# and installs it cp termcap.obj ${DESTDIR}/etc/termcap.
+#
+# Recovered from the Eighth Edition, staged by ./patch or copied from mk/gen/etc:
+# finddev, fstat, rp07dump, rp07rest, install, mklost+found, shutdown and group.
+# whoami is the machine name; mtab and utmp are empty, as in v8.
+#
+# System-specific configuration, in mk/gen/etc, modelled on v8's:
+#   ttys      generated from this kernel's own complement -- console, the 32 dz
+#             lines four dz11s give, and 64 stream pipes.  The eight lines
+#             v10-launch configures carry getty; the rest are present but off.
+#   fstab     colon-separated per fstab(5); getfsent takes rw/ro/sw as well as a
+#             number, and sw becomes FSSWAP (-2), which mount -a skips along
+#             with the / line.  Lists root, /usr, swap and the golden's two.
+#   rc        vanilla in shape: fsck on autoboot, then `mount -a', which is what
+#             fstab is for.  Only the Interlan and the two netfs mounts are
+#             spelled out -- nafsmnt takes a host and a port, and fstab(5) has
+#             no field for either.
+#   passwd, services, hosts, networks, motd, group
+#
+# These four faults are repaired in ./patch rather than excluded:
+#   gets      taken out of libc on purpose (gets.c-1: "Deleted from libc.a by
+#             td, 88.11.07"), so the six call sites use fgets instead
+#   tell      absent entirely; tell(f) is lseek(f, 0L, 1)
+#   BSIZE     dumprestor.h meant 512, per v8 param.h:96 and the name 512restor
+#   sys/tty.h fstat.c includes it and uses nothing from it
+#
+# fstat is built -O for the reason track and pstat are: -Od2 means as -d2, word
+# displacements, and fstat.o overflows them.  Not in Admin/large either.
+#
+# Superseded, kept for the record:
+#   512restor rp07dump rp07rest   call gets(), and v10's libc has none -- its
+#                                 mkfile lists fgets.o and ftell.o, not gets.o
+#   bad144                        calls tell(), likewise absent
+#   restor dumpdir                include <dumprestor.h>, whose line 25 is
+#                                 `char c_addr[BSIZE];' while param.h:77 makes
+#                                 BSIZE(dev) a macro taking an argument.  That
+#                                 header is byte-identical to the r70include
+#                                 tape's, so v10 shipped an include tree its own
+#                                 param.h contradicts
+#   fstat                         needs <sys/tty.h>, which v10 does not have
+#
+# Still not built, no source anywhere: analyze and catman are 4.3BSD's
+# (etc/catman.c and old/analyze.c), and backsh and dklisten appear in no BSD,
+# in v10's own manual, or anywhere in the corpus but etcfiles.  Former list: analyze, backsh, catman, dklisten, finddev, fstat, group, install, mklost+found, motd, mtab, rp07dump, rp07rest, shutdown, ttys, utmp, whoami.
+# group, motd, mtab, ttys and utmp are data files -- the only copies anywhere
+# are under history/ix/root/etc, which is IX, a different operating system, and
+# excluded.  The rest have no source at all; the names that appear to match are
+# other things (libc/sys/fstat.s is the syscall stub, whoami.h is pascal's,
+# install.asd and lcc/doc/install.ps are unrelated).
+
+
+
+
+$ETC/ac:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o ac ac.c && strip ac && cp ac $ETC/ac || echo 'ac: FAILED'
+	cd $CMD; rm -f ac ac.o
+
+
+$ETC/accton:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o accton accton.c && strip accton && cp accton $ETC/accton || echo 'accton: FAILED'
+	cd $CMD; rm -f accton accton.o
+
+
+
+
+$ETC/chown:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o chown chown.c && strip chown && cp chown $ETC/chown || echo 'chown: FAILED'
+	cd $CMD; rm -f chown chown.o
+
+
+$ETC/clri:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o clri clri.c && strip clri && cp clri $ETC/clri || echo 'clri: FAILED'
+	cd $CMD; rm -f clri clri.o
+
+
+$ETC/cron:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o cron cron.c && strip cron && cp cron $ETC/cron || echo 'cron: FAILED'
+	cd $CMD; rm -f cron cron.o
+
+
+$ETC/dcheck:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o dcheck dcheck.c && strip dcheck && cp dcheck $ETC/dcheck || echo 'dcheck: FAILED'
+	cd $CMD; rm -f dcheck dcheck.o
+
+
+$ETC/dmesg:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o dmesg dmesg.c && strip dmesg && cp dmesg $ETC/dmesg || echo 'dmesg: FAILED'
+	cd $CMD; rm -f dmesg dmesg.o
+
+
+$ETC/dskcpy:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o dskcpy dskcpy.c && strip dskcpy && cp dskcpy $ETC/dskcpy || echo 'dskcpy: FAILED'
+	cd $CMD; rm -f dskcpy dskcpy.o
+
+
+
+
+$ETC/fsck:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o fsck fsck.c && strip fsck && cp fsck $ETC/fsck || echo 'fsck: FAILED'
+	cd $CMD; rm -f fsck fsck.o
+
+
+$ETC/getty:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o getty getty.c && strip getty && cp getty $ETC/getty || echo 'getty: FAILED'
+	cd $CMD; rm -f getty getty.o
+
+
+$ETC/halt:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o halt halt.c && strip halt && cp halt $ETC/halt || echo 'halt: FAILED'
+	cd $CMD; rm -f halt halt.o
+
+
+$ETC/hideblock:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o hideblock hideblock.c && strip hideblock && cp hideblock $ETC/hideblock || echo 'hideblock: FAILED'
+	cd $CMD; rm -f hideblock hideblock.o
+
+
+$ETC/icheck:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o icheck icheck.c && strip icheck && cp icheck $ETC/icheck || echo 'icheck: FAILED'
+	cd $CMD; rm -f icheck icheck.o
+
+
+$ETC/init:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o init init.c && strip init && cp init $ETC/init || echo 'init: FAILED'
+	cd $CMD; rm -f init init.o
+
+
+$ETC/mkbitfs:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mkbitfs mkbitfs.c && strip mkbitfs && cp mkbitfs $ETC/mkbitfs || echo 'mkbitfs: FAILED'
+	cd $CMD; rm -f mkbitfs mkbitfs.o
+
+
+$ETC/mkfs:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mkfs mkfs.c && strip mkfs && cp mkfs $ETC/mkfs || echo 'mkfs: FAILED'
+	cd $CMD; rm -f mkfs mkfs.o
+
+
+$ETC/mknod:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mknod mknod.c && strip mknod && cp mknod $ETC/mknod || echo 'mknod: FAILED'
+	cd $CMD; rm -f mknod mknod.o
+
+
+$ETC/mount:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o mount mount.c && strip mount && cp mount $ETC/mount || echo 'mount: FAILED'
+	cd $CMD; rm -f mount mount.o
+
+
+$ETC/ncheck:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o ncheck ncheck.c && strip ncheck && cp ncheck $ETC/ncheck || echo 'ncheck: FAILED'
+	cd $CMD; rm -f ncheck ncheck.o
+
+
+$ETC/quot:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o quot quot.c && strip quot && cp quot $ETC/quot || echo 'quot: FAILED'
+	cd $CMD; rm -f quot quot.o
+
+
+$ETC/reboot:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o reboot reboot.c && strip reboot && cp reboot $ETC/reboot || echo 'reboot: FAILED'
+	cd $CMD; rm -f reboot reboot.o
+
+
+$ETC/renice:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o renice renice.c && strip renice && cp renice $ETC/renice || echo 'renice: FAILED'
+	cd $CMD; rm -f renice renice.o
+
+
+
+
+$ETC/sa:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o sa sa.c && strip sa && cp sa $ETC/sa || echo 'sa: FAILED'
+	cd $CMD; rm -f sa sa.o
+
+
+$ETC/savecore:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o savecore savecore.c && strip savecore && cp savecore $ETC/savecore || echo 'savecore: FAILED'
+	cd $CMD; rm -f savecore savecore.o
+
+
+$ETC/setlog:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o setlog setlog.c && strip setlog && cp setlog $ETC/setlog || echo 'setlog: FAILED'
+	cd $CMD; rm -f setlog setlog.o
+
+
+$ETC/showq:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o showq showq.c && strip showq && cp showq $ETC/showq || echo 'showq: FAILED'
+	cd $CMD; rm -f showq showq.o
+
+
+$ETC/su:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o su su.c && strip su && cp su $ETC/su || echo 'su: FAILED'
+	cd $CMD; rm -f su su.o
+
+
+$ETC/smash:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o smash smash.c && strip smash && cp smash $ETC/smash || echo 'smash: FAILED'
+	cd $CMD; rm -f smash smash.o
+
+
+$ETC/swapon:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o swapon swapon.c && strip swapon && cp swapon $ETC/swapon || echo 'swapon: FAILED'
+	cd $CMD; rm -f swapon swapon.o
+
+
+$ETC/umount:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o umount umount.c && strip umount && cp umount $ETC/umount || echo 'umount: FAILED'
+	cd $CMD; rm -f umount umount.o
+
+
+$ETC/update:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o update update.c && strip update && cp update $ETC/update || echo 'update: FAILED'
+	cd $CMD; rm -f update update.o
+
+
+$ETC/wall:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o wall wall.c && strip wall && cp wall $ETC/wall || echo 'wall: FAILED'
+	cd $CMD; rm -f wall wall.o
+
+
+$ETC/termcap:Psh $GEN/installed: $PREP
+	cd $CMD/termcap; make install DESTDIR=$ROOT || echo 'termcap: FAILED'
+	cd $CMD/termcap; make clean
+
+$ETC/finddev:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o finddev finddev.c && strip finddev && cp finddev $ETC/finddev || echo 'finddev: FAILED'
+	cd $CMD; rm -f finddev finddev.o
+
+
+
+
+$ETC/install:Psh $GEN/installed: $PREP
+	cp $CMD/install.sh $ETC/install && chmod +x $ETC/install || echo 'install: FAILED'
+
+# Shipped, not compiled: three scripts and a group file from v8, a machine name
+# of our own, and two empty files.  mount and login write mtab and utmp, and
+# they are empty in v8 too.
+$ETC/mklost+found:Psh $GEN/installed: $PREP
+	cp $GEN/etc/mklost+found $ETC/mklost+found && chmod +x $ETC/mklost+found
+
+$ETC/shutdown:Psh $GEN/installed: $PREP
+	cp $GEN/etc/shutdown $ETC/shutdown && chmod +x $ETC/shutdown
+
+$ETC/group:Psh $GEN/installed: $PREP
+	cp $GEN/etc/group $ETC/group
+
+$ETC/whoami:Psh $GEN/installed: $PREP
+	cp $GEN/etc/whoami $ETC/whoami
+
+$ETC/mtab:Psh $GEN/installed: $PREP
+	cp $GEN/etc/mtab $ETC/mtab
+
+$ETC/utmp:Psh $GEN/installed: $PREP
+	cp $GEN/etc/utmp $ETC/utmp
+
+$ETC/ttys:Psh $GEN/installed: $PREP
+	cp $GEN/etc/ttys $ETC/ttys
+
+# The disk mkimage builds is an RA73 (rq1, v10-launch.sh:26) and its /usr is
+# partition 5: mkimage:22 is `mkbitfs /dev/ra15 392528', which mkbitfs.c:45
+# documents as 4k blocks -- 392528*8 = 3140224, and ra.c:47 puts partition 5
+# at block 780264, leaving 3140226 of RA73_LBN's 3920490.  Booted as unit 0
+# that partition is ra05.  This file is only ever written to a disk that has
+# no fstab yet (installed is `test -f "$1"'), so it describes that disk.
+$ETC/fstab:Psh $GEN/installed: $PREP
+	cp $GEN/etc/fstab $ETC/fstab
+
+$ETC/motd:Psh $GEN/installed: $PREP
+	cp $GEN/etc/motd $ETC/motd
+
+$ETC/passwd:Psh $GEN/installed: $PREP
+	cp $GEN/etc/passwd $ETC/passwd
+
+$ETC/services:Psh $GEN/installed: $PREP
+	cp $GEN/etc/services $ETC/services
+
+$ETC/hosts:Psh $GEN/installed: $PREP
+	cp $GEN/etc/hosts $ETC/hosts
+
+$ETC/networks:Psh $GEN/installed: $PREP
+	cp $GEN/etc/networks $ETC/networks
+
+$ETC/rc:Psh $GEN/installed: $PREP
+	cp $GEN/etc/rc $ETC/rc
+
+# nafsmnt is not on any tape and not in any Admin list; /etc/rc calls it as
+# /etc/nafsmnt, so that is where it goes.  -lin for tcp_sock, tcp_connect and
+# in_address; -lipc because errstr, which tcp_lib.c declares extern, is defined
+# in libipc/ipcopen.c:8.
+$ETC/nafsmnt:Psh $GEN/installed: $PREP $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
+	cd $CMD; cc -O   -o nafsmnt nafsmnt.c -lin -lipc && strip nafsmnt && cp nafsmnt $ETC/nafsmnt || echo 'nafsmnt: FAILED'
+	cd $CMD; rm -f nafsmnt nafsmnt.o
+
+# The one file this project adds to root.
+$ETC/mkimage:Psh $GEN/installed: $PREP
+	cp $GEN/mkimage $ETC/mkimage
+
+$ETC/512restor:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o 512restor 512restor.c && strip 512restor && cp 512restor $ETC/512restor || echo '512restor: FAILED'
+	cd $CMD; rm -f 512restor 512restor.o
+
+$ETC/bad144:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o bad144 bad144.c && strip bad144 && cp bad144 $ETC/bad144 || echo 'bad144: FAILED'
+	cd $CMD; rm -f bad144 bad144.o
+
+$ETC/dumpdir:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o dumpdir dumpdir.c && strip dumpdir && cp dumpdir $ETC/dumpdir || echo 'dumpdir: FAILED'
+	cd $CMD; rm -f dumpdir dumpdir.o
+
+$ETC/fstat:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o fstat fstat.c && strip fstat && cp fstat $ETC/fstat || echo 'fstat: FAILED'
+	cd $CMD; rm -f fstat fstat.o
+
+$ETC/restor:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O   -o restor restor.c && strip restor && cp restor $ETC/restor || echo 'restor: FAILED'
+	cd $CMD; rm -f restor restor.o
+
+$ETC/rp07dump:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o rp07dump rp07dump.c && strip rp07dump && cp rp07dump $ETC/rp07dump || echo 'rp07dump: FAILED'
+	cd $CMD; rm -f rp07dump rp07dump.o
+
+$ETC/rp07rest:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o rp07rest rp07rest.c && strip rp07rest && cp rp07rest $ETC/rp07rest || echo 'rp07rest: FAILED'
+	cd $CMD; rm -f rp07rest rp07rest.o
+
+# ---- verify -----------------------------------------------------------------
+# Every installed file, read from the same lists the build uses, so the two
+# cannot drift apart.  Silence means everything is where it should be.
+#
+#	mk verify              checks this machine
+#	mk ROOT=/v10 verify    checks the disk being built
+verify:V:
+	for f in $TOOLS $LIB $LIBS $BIN $ETCF
+	do
+		test -f $f || echo "MISSING  $f"
+	done
+	for d in $ROOT/bin $ROOT/etc $ROOT/lib $ROOT/tmp $ROOT/usr/adm $ROOT/usr/bin $ROOT/usr/lib
+	do
+		test -d $d || echo "MISSING DIR  $d"
+	done
+
+# ---- second products --------------------------------------------------------
+# Each of these is installed by a rule whose other product is the one the P
+# attribute keys on, so on a root that already has that one the whole recipe is
+# skipped and these never appear.  They get targets of their own.
+$ROOT/lib/mcrt0.o:Psh $GEN/installed: $SRCOK
+	cd $LIBC; mk mcrt0.o || echo 'mcrt0.o: FAILED'
+	cd $LIBC; cp mcrt0.o $ROOT/lib/mcrt0.o
+
+# diff's mkfile builds and installs diff and diffh together; DIFF and DIFFH name
+# where each goes, and diffh's own place is /usr/lib (diff/mkfile:2).
+$ROOT/usr/lib/diffh:Psh $GEN/installed: $PREP
+	cd $CMD/diff; mk install DIFF=$DEST/diff DIFFH=$ROOT/usr/lib/diffh || echo 'diffh: FAILED'
+
+# mk(1)'s NAME line is `mk, mkconv, membername'; both are sh scripts in mk's
+# export directory.
+$ROOT/usr/bin/membername:Psh $GEN/installed: $SRCOK
+	cp $CMD/mk/export/membername $ROOT/usr/bin/membername && chmod +x $ROOT/usr/bin/membername
+
+$ROOT/usr/bin/mkconv:Psh $GEN/installed: $SRCOK
+	cp $CMD/mk/export/mkconv $ROOT/usr/bin/mkconv && chmod +x $ROOT/usr/bin/mkconv
+
+# stab is strip's other binary; no Admin list names it, so dest gives /usr/bin.
+$ROOT/usr/bin/stab:Psh $GEN/installed: $PREP
+	cd $CMD/strip; make stab && strip stab && cp stab $ROOT/usr/bin/stab || echo 'stab: FAILED'
+	cd $CMD/strip; make clean
+
+# bprint is lcc/etc's other target, and has its own bprint.1.  Built CC=lcc
+# because it is ANSI C: profio.c:38-40 is `#ifdef BPRINT' then
+#     #define dclproto(func,args) func args
+# -- the prototype form -- and bprint.c defines BPRINT before including it, then
+# declares `int main(int argc, char *argv[])' and a function pointer with a
+# prototyped type.  It also wants <stdlib.h>, which v10's /usr/include has not
+# got and /usr/include/lcc has; lcc passes -I/usr/include/lcc itself.
+# install.tex says the same of gen3's gen.c.
+#
+# Not stripped here: etc/makefile:2 is LDFLAGS=-s and line 9 is
+# `$(CC) -o bprint $(LDFLAGS) bprint.c', so lcc has already passed -s to ld.
+# strip would print "bprint already stripped" and do nothing.
+$ROOT/usr/bin/bprint:Psh $GEN/installed: $PREP $ROOT/usr/bin/lcc
+	cd $LCC/etc; make bprint CC=lcc && cp bprint $ROOT/usr/bin/bprint || echo 'bprint: FAILED'

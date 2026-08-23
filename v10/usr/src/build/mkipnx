@@ -1,0 +1,20 @@
+# Write /v10/usr back out as ipnx.tar, which is the one thing mkimage reads.
+#
+#	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
+#	mktape    fills a blank /v10/usr from the six archives
+#	mkbuild   puts the build system into /v10/usr/src/build
+#	mkipnx    writes /v10/usr back out as ipnx.tar               <-- this
+#
+# It extracts nothing and touches no device.  Run it against any /v10/usr that
+# holds what a v10 machine's /usr should hold -- one mktape has just filled, or
+# one an earlier mkimage left behind.
+#
+# It copies nothing in: mkbuild does that, and this refuses without it.
+
+TAPES=/n/tapes
+
+# /v10/usr must hold what a v10 machine's /usr holds, build system included:
+# run mkbuild first.
+test -d /v10/usr/src/build || exit 1
+
+cd /v10/usr && tar cf $TAPES/ipnx.tar . || exit 1

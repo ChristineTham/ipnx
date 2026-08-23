@@ -1,0 +1,53 @@
+# Make a bootable v10 disk on ra1.  The only file this needs outside the disk
+# it builds is /n/tapes/ipnx.tar -- or /usr/tapes/ipnx.tar, which a disk this
+# script made carries, so the second one needs no network at all.
+#
+# Everything else comes out of that archive: the source, and the build system
+# under /usr/src/build.  Root is 5 MB (ipnx-v10.m:51), so this script is the
+# only thing this project adds to it.
+
+TAPES=/n/tapes
+test -f /usr/tapes/ipnx.tar && TAPES=/usr/tapes
+
+TAPE=/v10/usr/.tape
+BUILD=/v10/usr/src/build
+
+test -d /v10/usr && /etc/umount /v10/usr
+test -d /v10 && /etc/umount /v10
+
+# The boot block is this machine's own: uda.s reads absolute block 0.
+dd if=/dev/ra00 of=/dev/ra10 bs=512 count=1 || exit 1
+
+/etc/mkbitfs /dev/ra10 1280 || exit 1
+/etc/mkbitfs /dev/ra15 392528 || exit 1
+
+test -d /v10 || mkdir /v10 || exit 1
+/etc/mount /dev/ra10 /v10 || exit 1
+test -d /v10/usr || mkdir /v10/usr || exit 1
+/etc/mount /dev/ra15 /v10/usr || exit 1
+
+# Nothing to extract yet: leave /v10 blank and mounted, which is what mktape
+# needs.  That is the bootstrap -- mkimage, mktape, mkimage.
+if test ! -f $TAPES/ipnx.tar
+then
+	echo "mkimage: no $TAPES/ipnx.tar"
+	echo "mkimage: /v10 is blank and mounted -- run mktape, then mkimage again"
+	exit 0
+fi
+
+# tar cannot READ an archive off a netafs mount -- tar.c:990 tolerates only
+# ENOTTY from its MTIOCTOP, and neta.c:35 passes nodev as t_ioctl, which
+# subr.c:199 turns into ENODEV -- so it is copied local first.  The copy is
+# then moved into place rather than removed, so the disk keeps its own.
+cp $TAPES/ipnx.tar $TAPE || exit 1
+cd /v10/usr && tar xf $TAPE || exit 1
+mkdir /v10/usr/tapes || exit 1
+mv $TAPE /v10/usr/tapes/ipnx.tar || exit 1
+
+cp /unix /v10/unix || exit 1
+sh $BUILD/mkdev /v10/dev || exit 1
+
+mk -f $BUILD/mkfile ROOT=/v10 world || exit 1
+
+cd /
+sync

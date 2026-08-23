@@ -1,0 +1,12 @@
+Sources written for this project, not carried by any v10 tape.
+
+    nafsmnt.c   mounts a netfs share.  v10 removed gmount -- slot 49 of its
+                system call table reads `nosys / was gmount' -- and fmount
+                takes an open file descriptor, so the connection is named by
+                the fd.  nafsmnt does what mount(8) cannot: tcp_sock(), then
+                tcp_connect(), then fmount(1, fd, mount, dev).  fstab(5) has
+                five fields and none of them holds a host or a port, so this
+                cannot be reached through /etc/mount -a.
+
+./patch stages it into /v10/usr/src/cmd; the mkfile builds it into /etc,
+which is where /etc/rc calls it from.

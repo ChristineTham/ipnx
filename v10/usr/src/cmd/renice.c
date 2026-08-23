@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <sys/pioctl.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/vtimes.h>
 #include <sys/proc.h>
 

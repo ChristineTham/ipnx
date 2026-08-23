@@ -1,0 +1,71 @@
+# Extract the six archives into a blank /v10/usr.  That is all it does.
+#
+#	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
+#	mktape    fills a blank /v10/usr from the six archives   <-- this
+#	mkipnx    writes /v10/usr back out as ipnx.tar
+#
+# Run when the tapes change, or to build a /usr from nothing.  A machine whose
+# /v10/usr is already populated does not need this -- mkipnx alone regenerates
+# the archive from what is there.
+#
+# tar cannot READ an archive off a netafs mount -- tar.c:990 tolerates only
+# ENOTTY from its MTIOCTOP, and neta.c:35 passes nodev as t_ioctl, which
+# subr.c:199 turns into ENODEV -- so each archive is copied local first.
+# Writing is sequential and needs no backspace, so the result goes straight out.
+
+TAPES=/n/tapes
+TAPE=/v10/usr/.tape
+
+# /v10/usr must be blank and mounted.  mkimage makes it that way: with no
+# ipnx.tar to extract it stops right after mounting.  Anything already there is
+# a disk somebody built, and extracting six tapes over it would mix two trees --
+# so refuse rather than damage it.
+test -d /v10/usr || exit 1
+if test -d /v10/usr/src
+then
+	echo "mktape: /v10/usr already holds a source tree"
+	echo "mktape: run mkimage first -- it blanks ra1 and mounts it"
+	exit 1
+fi
+if test -d /v10/usr/tapes
+then
+	echo "mktape: /v10/usr is a disk mkimage has already built"
+	echo "mktape: run mkimage first -- it blanks ra1 and mounts it"
+	exit 1
+fi
+
+mkdir /v10/usr/src || exit 1
+mkdir /v10/usr/blit || exit 1
+
+cp $TAPES/secombe.tar $TAPE || exit 1
+cd /v10/usr/src && tar xf $TAPE || exit 1
+
+cp $TAPES/sellers.tar $TAPE || exit 1
+cd /v10/usr && tar xf $TAPE || exit 1
+
+cp $TAPES/milligan.tar $TAPE || exit 1
+cd /v10/usr && tar xf $TAPE || exit 1
+
+cp $TAPES/v10blit.tar $TAPE || exit 1
+cd /v10/usr/blit && tar xf $TAPE || exit 1
+
+# v10src is norman's, and secombe wins wherever both have a path.  Only what
+# secombe lacks is taken: 630, maps and doc, and thirteen source directories.
+# Everything else v10src adds at this level is a compiled binary left in the
+# source tree -- cmd/ls is 29816 bytes mode 775, and so are cmd/pr, cmd/test,
+# cmd/ranlib and the rest -- or an object, an archive, a core or a nohup.out.
+#
+# cmd/adb/vax is one level down and easy to miss: secombe has cmd/adb, with
+# 11v, 68v, comm, conf, cray, g, null, seq, v7 and v8, but no vax -- adb is
+# built per machine, and ours is the one directory only norman carries.
+cp $TAPES/v10src.tar $TAPE || exit 1
+cd /v10/usr && tar xf $TAPE 630 maps || exit 1
+cd /v10/usr/src && tar xf $TAPE doc || exit 1
+cd /v10/usr/src && tar xf $TAPE \
+	cmd/bison cmd/cp cmd/cyntax cmd/flex cmd/gcc cmd/icon \
+	cmd/library cmd/m4 cmd/matlab cmd/pascal cmd/post cmd/wwb \
+	cmd/adb/vax lbin/kermit || exit 1
+rm -f $TAPE
+
+# The kernel is /usr/sys on a running machine, not /usr/src/sys.
+mv /v10/usr/src/sys /v10/usr/sys || exit 1

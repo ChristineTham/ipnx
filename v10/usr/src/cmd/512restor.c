@@ -205,7 +205,7 @@ char	*argv[];
 #else
 	do {
 		printf("Tape? ");
-		gets(mbuf);
+		*mbuf = 0; fgets(mbuf, sizeof mbuf, stdin); mbuf[strcspn(mbuf, "\n")] = 0;
 		mt = open(mbuf, 0);
 	} while (mt == -1);
 	magtape = mbuf;
@@ -247,7 +247,7 @@ newvol:
 		close(mt);
 getvol:
 		printf("Mount desired tape volume: Specify volume #: ");
-		if (gets(tbf) == NULL)
+		if (fgets(tbf, sizeof tbf, stdin) == NULL)
 			return;
 		volno = atoi(tbf);
 		if (volno <= 0) {
@@ -333,14 +333,14 @@ done:
 			char charbuf[50];
 
 			printf("Disk? ");
-			gets(charbuf);
+			*charbuf = 0; fgets(charbuf, sizeof charbuf, stdin); charbuf[strcspn(charbuf, "\n")] = 0;
 			fi = open(charbuf, 2);
 		} while (fi == -1);
 #endif
 #ifndef STANDALONE
 		if (command == 'R') {
 			printf("Enter starting volume number: ");
-			if (gets(tbf) == EOF) {
+			if (fgets(tbf, sizeof tbf, stdin) == NULL) {
 				volno = 1;
 				printf("\n");
 			}

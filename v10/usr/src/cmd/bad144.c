@@ -78,7 +78,7 @@ found:
 		}
 		lseek(f, 512 * (di->di_size - di->di_nsect), 0);
 		printf("bad block information at 0x%x in %s:\n",
-		    tell(f), name);
+		    lseek(f, 0L, 1), name);
 		if (read(f, &dkbad, sizeof (struct dkbad)) !=
 		    sizeof (struct dkbad)) {
 			fprintf("%s: can't read bad block info (wrong type disk?)\n");

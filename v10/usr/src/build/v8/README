@@ -1,0 +1,21 @@
+Eighth Edition source, imported because v10src carries none.
+
+Admin/etcfiles names seventeen files that no v10 tape has.  Six are per-machine
+data and four cannot be recovered at all (analyze and catman are 4.3BSD's --
+etc/catman.c and old/analyze.c -- while backsh and dklisten appear nowhere in
+any BSD, in v10's own manual, or anywhere in the corpus but etcfiles itself).
+The rest are here, byte-identical to the v8 tree in this repository:
+
+    finddev.c  fstat.c  rp07dump.c  rp07rest.c   from v8/usr/src/cmd
+    install.sh                                   from v8/usr/src/cmd
+
+They live under mk/gen rather than in v10/usr/src so that nothing in the
+distribution tree pretends to be tape content.  ./patch copies them into
+/v10/usr/src/cmd before the build, the way it does the two gcc reconstructions.
+
+../etc holds the same for files that are shipped rather than compiled:
+
+    mklost+found  shutdown  group     from v8/etc
+    whoami                            ours: the machine name, ipnx-v10
+    mtab  utmp                        empty, as they are in v8 -- runtime
+                                      state that mount and login write
