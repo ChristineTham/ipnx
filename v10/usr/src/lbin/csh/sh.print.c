@@ -72,7 +72,9 @@ flush()
 	register int unit;
 	int lmode = 0;
 
-#include <sys/ioctl.h>
+#include <sys/ttyio.h>
+#include <sys/nttyio.h>
+#include <sys/filio.h>
 
 	if (linp == linbuf)
 		return;

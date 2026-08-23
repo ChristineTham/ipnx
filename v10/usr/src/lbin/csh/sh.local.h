@@ -27,7 +27,9 @@
  * NCARGS and NOFILE are from <sys/param.h> which we choose not
  * to wholly include
  */
-/* #define	NCARGS	10240		/* Max. chars in an argument list */
+#define	NCARGS	(16*1024)
+#define	NOFILE	128
+#define	NSYSFILE 4	/* v10 sys/param.h:8-10 */
 
 
 /*

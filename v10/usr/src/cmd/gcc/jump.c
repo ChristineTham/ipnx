@@ -1,3 +1,27 @@
+/* RECONSTRUCTED.  The copy on v10src is damaged: lines 267-392 and 407-532 of
+   it are byte-identical for 124 lines, each copy ending at the same truncation
+   point, "But don't l", and running on into different text -- the first into
+   "EST (PATTERN (insn))) == STACK_POINTER_REGNUM)", the second into a stray
+   comment.  Two #endif are left without an #if, which is what cpp reports:
+
+       jump.c: 404: If-less endif
+
+   Lost with it are GNU CC 1.21's lines 386-518: the rest of the invert-jump
+   block, the jump-to-jump detection, the "if (foo) bar; else break;" transform
+   and the cross-jump code.  jump.c is the only file under cmd/gcc with an
+   unbalanced #if count, and v10tapes/norman/cmd/gcc/jump.c is byte-identical to
+   the extracted copy, so the damage is the archive's and not this project's.
+
+   Rebuilt from GNU CC 1.21 (1988) with the four local changes the undamaged
+   parts of the tape's file carry, and nothing else:
+
+     208, 588  the CODE_LABEL loops also accept a JUMP_INSN whose pattern is
+               RETURN, for a machine with explicit RETURN insns and no epilogue
+     803       simplejump_p loses its static
+     1301      rtx_equal_p returns 0 when the modes differ
+
+   Verified: diff against GNU CC 1.21 is those four hunks and no others.  */
+
 /* Optimize jump instructions, for GNU compiler.
    Copyright (C) 1988 Free Software Foundation, Inc.
 
@@ -211,7 +235,6 @@ jump_optimize (f, cross_jump, noop_moves)
 		      || (GET_CODE (insn) == JUMP_INSN
 			  && GET_CODE (PATTERN (insn)) == RETURN)))
 	insn = PREV_INSN (insn);
-
       if (GET_CODE (insn) == NOTE
 	  && NOTE_LINE_NUMBER (insn) == NOTE_INSN_FUNCTION_END
 	  && ! insn->volatil)
@@ -388,147 +411,139 @@ jump_optimize (f, cross_jump, noop_moves)
 		       && condjump_p (insn))
 		{
 		  /* Delete the original unconditional jump (and barrier).  */
-		  /* But don't lEST (PATTERN (insn))) == STACK_POINTER_REGNUM)
-	    {
-	      delete_insn (insn);
-	      if (insn == last_insn)
-		last_insn = prev;
-	    }
-	  else
-	    /* If we find an insn that isn't a stack adjust, stop deleting.  */
-	    break;
-	  /* Back up to insn before the deleted one and try to delete more.  */
-	  insn = prev;
-	}
-    }
-#endif
-#endif
-
-  if (noop_moves)
-    for (insn = f; insn; )
-      {
-	register rtx next = NEXT_INSN (insn);
-
-	if (GET_CODE (insn) == INSN)
-	  {
-	    register rtx body = PATTERN (insn);
-
-	    /* Delete insns that existed just to advise flow-analysis.  */
-
-	    if (GET_CODE (body) == USE
-		|| GET_CODE (body) == CLOBBER)
-	      delete_insn (insn);
-
-	    /* Detect and delete no-op move instructions
-	       resulting from not allocating a parameter in a register.  */
-
-	    else if (GET_CODE (body) == SET
-		     && (SET_DEST (body) == SET_SRC (body)
-			 || (GET_CODE (SET_DEST (body)) == MEM
-			     && GET_CODE (SET_SRC (body)) == MEM
-			     && rtx_equal_p (SET_SRC (body), SET_DEST (body))))
-		     && ! SET_DEST (body)->volatil
-		     && ! SET_SRC (body)->volatil)
-	      delete_insn (insn);
-
-	    /* Detect and ignore no-op move instructions
-	       resulting from smart or fortuitous register allocation.  */
-
-	    else if (GET_CODE (body) == SET)
-	      {
-		int sreg = true_regnum (SET_SRC (body));
-		int dreg = true_regnum (SET_DEST (body));
-
-		if (sreg == dreg && sreg >= 0)
-		  delete_insn (insn);
-		else if (sreg >= 0 && dreg >= 0)
-		  {
-		    rtx tem = find_equiv_reg (0, insn, 0,
-					      sreg, 0, dreg);
-		    if (tem != 0
-			&& GET_MODE (tem) == GET_MODE (SET_DEST (body)))
-		      delete_insn (insn);
-		  }
-	      }
-	  }
-      insn = next;
-    }
-
-  /* Now iterate optimizing jumps until nothing changes over one pass.  */
-  changed = 1;
-  while (changed)
-    {
-      register rtx next;
-      changed = 0;
-
-      for (insn = f; insn; insn = next)
-	{
-	  next = NEXT_INSN (insn);
-
-	  /* On the first iteration, if this is the last jump pass
-	     (just before final), do the special peephole optimizations.  */
-
-	  if (noop_moves && first && !flag_no_peephole)
-	    if (GET_CODE (insn) == INSN || GET_CODE (insn) == JUMP_INSN)
-	      peephole (insn);
-
-	  /* Tension the labels in dispatch tables.  */
-
-	  if (GET_CODE (insn) == JUMP_INSN)
-	    {
-	      if (GET_CODE (PATTERN (insn)) == ADDR_VEC)
-		changed |= tension_vector_labels (PATTERN (insn), 0);
-	      if (GET_CODE (PATTERN (insn)) == ADDR_DIFF_VEC)
-		changed |= tension_vector_labels (PATTERN (insn), 1);
-	    }
-
-	  if (GET_CODE (insn) == JUMP_INSN && JUMP_LABEL (insn))
-	    {
-	      register rtx reallabelprev = prev_real_insn (JUMP_LABEL (insn));
-
-	      /* Delete insns that adjust stack pointer before a return,
-		 if this is the last jump-optimization before final
-		 and we need to have a frame pointer.  */
-#if 0
-#ifdef EXIT_IGNORE_STACK
-	      if (noop_moves && frame_pointer_needed && EXIT_IGNORE_STACK
-		  && NEXT_INSN (JUMP_LABEL (insn)) == 0)
-		{
-		  rtx prev = prev_real_insn (insn);
-		  if (prev != 0
-		      && GET_CODE (prev) == INSN
-		      && GET_CODE (PATTERN (prev)) == SET
-		      && GET_CODE (SET_DEST (PATTERN (prev))) == REG
-		      && REGNO (SET_DEST (PATTERN (prev))) == STACK_POINTER_REGNUM)
-		    {
-		      delete_insn (prev);
-		      changed = 1;
-		    }
-		}
-#endif
-#endif
-
-	      /* Detect jump to following insn.  */
-	      if (reallabelprev == insn && condjump_p (insn))
-		{
-		  reallabelprev = PREV_INSN (insn);
-		  delete_jump (insn);
+		  /* But don't let its destination go with it.  */
+		  ++LABEL_NUSES (JUMP_LABEL (reallabelprev));
+		  delete_insn (reallabelprev);
+		  /* Now change the condition, and make it go to the
+		     place the deleted jump went to.
+		     This may cause the label after the deletion to go away.
+		     But now that the unconditional jump and its barrier
+		     are gone, that is ok.  */
+		  invert_jump (insn, JUMP_LABEL (reallabelprev));
+		  --LABEL_NUSES (JUMP_LABEL (reallabelprev));
+		  next = insn;
 		  changed = 1;
 		}
-	      /* Detect jumping over an unconditional jump.  */
-	      else if (reallabelprev != 0
-		       && GET_CODE (reallabelprev) == JUMP_INSN
-		       && prev_real_insn (reallabelprev) == insn
-		       && no_labels_between_p (insn, reallabelprev)
-		       && simplejump_p (reallabelprev)
-		       /* Ignore this if INSN is a hairy kind of jump,
-			  since they may not be invertible.
-			  This is conservative; could instead construct
-			  the inverted insn and try recognizing it.  */
-		       && condjump_p (insn))
+	      else
 		{
-		  /* Delete the original unconditional jump (and barrier).  */
-		  /* But don't l/* If cannot cross jump to code before the label,
+		  /* Detect a jump to a jump.  */
+		  {
+		    register rtx nlabel = follow_jumps (JUMP_LABEL (insn));
+		    if (nlabel != JUMP_LABEL (insn))
+		      {
+			redirect_jump (insn, nlabel);
+			changed = 1;
+			next = insn;
+		      }
+		  }
+
+		  /* Look for   if (foo) bar; else break;  */
+		  /* The insns look like this:
+		     insn = condjump label1;
+		        ...range1 (some insns)...
+			jump label2;
+		     label1:
+		        ...range2 (some insns)...
+			jump somewhere unconditionally
+		     label2:  */
+		  {
+		    rtx label1 = next_label (insn);
+		    rtx range1end = label1 ? prev_real_insn (label1) : 0;
+		    /* Don't do this optimization on the first round, so that
+		       jump-around-a-jump gets simplified before we ask here
+		       whether a jump is unconditional.  */
+		    if (! first
+			&& JUMP_LABEL (insn) == label1
+			&& LABEL_NUSES (label1) == 1
+			&& GET_CODE (range1end) == JUMP_INSN
+			&& simplejump_p (range1end))
+		      {
+			rtx label2 = next_label (label1);
+			rtx range2end = label2 ? prev_real_insn (label2) : 0;
+			if (range1end != range2end
+			    && JUMP_LABEL (range1end) == label2
+			    && GET_CODE (range2end) == JUMP_INSN
+			    && GET_CODE (NEXT_INSN (range2end)) == BARRIER)
+			  {
+			    rtx range1beg = NEXT_INSN (insn);
+			    rtx range2beg = NEXT_INSN (label1);
+			    rtx range1after = NEXT_INSN (range1end);
+			    rtx range2after = NEXT_INSN (range2end);
+			    /* Splice range2 between INSN and LABEL1.  */
+			    NEXT_INSN (insn) = range2beg;
+			    PREV_INSN (range2beg) = insn;
+			    NEXT_INSN (range2end) = range1after;
+			    PREV_INSN (range1after) = range2end;
+			    /* Splice range1 between LABEL1 and LABEL2.  */
+			    NEXT_INSN (label1) = range1beg;
+			    PREV_INSN (range1beg) = label1;
+			    NEXT_INSN (range1end) = range2after;
+			    PREV_INSN (range2after) = range1end;
+			    /* Invert the jump condition, so we
+			       still execute the same insns in each case.  */
+			    invert_jump (insn, label1);
+			    changed = 1;
+			    continue;
+			  }
+		      }
+		  }
+
+		  /* Now that the jump has been tensioned,
+		     try cross jumping: check for identical code
+		     before the jump and before its target label. */
+
+		  /* First, cross jumping of conditional jumps:  */
+
+		  if (cross_jump && condjump_p (insn))
+		    {
+		      rtx newjpos, newlpos;
+		      rtx x = prev_real_insn (JUMP_LABEL (insn));
+
+		      /* A conditional jump may be crossjumped
+			 only if the place it jumps to follows
+			 an opposing jump that comes back here.  */
+
+		      if (x != 0 && ! jump_back_p (x, insn))
+			/* We have no opposing jump;
+			   cannot cross jump this insn.  */
+			x = 0;
+
+		      newjpos = 0;
+		      /* TARGET is nonzero if it is ok to cross jump
+			 to code before TARGET.  If so, see if matches.  */
+		      if (x != 0)
+			find_cross_jump (insn, x, 2,
+					 &newjpos, &newlpos);
+
+		      if (newjpos != 0)
+			{
+			  do_cross_jump (insn, newjpos, newlpos);
+			  /* Make the old conditional jump
+			     into an unconditional one.  */
+			  SET_SRC (PATTERN (insn))
+			    = gen_rtx (LABEL_REF, VOIDmode, JUMP_LABEL (insn));
+			  emit_barrier_after (insn);
+			  changed = 1;
+			  next = insn;
+			}
+		    }
+
+		  /* Cross jumping of unconditional jumps:
+		     a few differences.  */
+
+		  if (cross_jump && simplejump_p (insn))
+		    {
+		      rtx newjpos, newlpos;
+		      rtx target;
+
+		      newjpos = 0;
+
+		      /* TARGET is nonzero if it is ok to cross jump
+			 to code before TARGET.  If so, see if matches.  */
+		      find_cross_jump (insn, JUMP_LABEL (insn), 1,
+				       &newjpos, &newlpos);
+
+		      /* If cannot cross jump to code before the label,
 			 see if we can cross jump to another jump to
 			 the same label.  */
 		      /* Try each other jump to this label.  */

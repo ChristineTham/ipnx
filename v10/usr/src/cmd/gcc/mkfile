@@ -310,14 +310,14 @@ shipped:	$BINS
 	ship $newprereq
 
 $libdir/gcc-cc1: cc1
-	cp $prereq $target; chmod 775 $target; strip -g target
+	cp $prereq $target; chmod 775 $target; strip -g $target
 $libdir/gcc-gnulib:	gnulib
 	cp $prereq $target; chmod 775 $target
 	ranlib $target
 $libdir/gcc-cpp:	cpp
-	cp $prereq $target; chmod 775 $target; strip -g target
+	cp $prereq $target; chmod 775 $target; strip -g $target
 $bindir/gcc:	gcc
-	cp $prereq $target; chmod 775 $target; strip -g target
+	cp $prereq $target; chmod 775 $target; strip -g $target
 
 # do make -f ../gcc/Makefile maketest DIR=../gcc
 # in the intended test directory to make it a suitable test directory.

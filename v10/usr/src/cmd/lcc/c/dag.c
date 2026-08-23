@@ -427,7 +427,7 @@ Node listnodes(tp, tlab, flab) Tree tp; {
 		l = listnodes(tp->kids[0], 0, 0);
 		r = listnodes(tp->kids[1], 0, 0);
 		p = newnode(op, l, r, findlabel(lab));
-		p->syms[0]->ref++;
+		p->syms[0]->ref += 1;
 		list(p);
 		break;
 		}
@@ -546,7 +546,7 @@ Node listnodes(tp, tlab, flab) Tree tp; {
 	case ADDRG: case ADDRF:
 		assert(tlab == 0 && flab == 0);
 		if (tp->u.sym->scope == LABELS)
-			tp->u.sym->ref++;
+			tp->u.sym->ref += 1;
 		p = node(tp->op, 0, 0, tp->u.sym);
 		break;
 	default:assert(0);
@@ -558,7 +558,7 @@ Node listnodes(tp, tlab, flab) Tree tp; {
 Node jump(lab) {
 	Symbol p = findlabel(lab);
 
-	p->ref++;
+	p->ref += 1;
 	return newnode(JUMP+V, node(ADDRG+P, 0, 0, p), 0, 0);
 }
 

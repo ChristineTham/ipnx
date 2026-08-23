@@ -1,0 +1,6 @@
+# /bin holds exactly what Admin/binfiles names; everything else is /usr/bin.
+# Silent on success.
+test -f /bin/sed   && rm -f /bin/sed
+test -f /bin/sleep && rm -f /bin/sleep
+test -f /bin/tp    && mv /bin/tp /usr/bin/tp
+test -f /usr/bin/adb && mv /usr/bin/adb /bin/adb

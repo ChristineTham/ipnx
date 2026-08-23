@@ -1,7 +1,9 @@
 static	char *sccsid = "@(#)sh.func.c 4.5 81/06/19";
 
 #include "sh.h"
-#include <sys/ioctl.h>
+#include <sys/ttyio.h>
+#include <sys/nttyio.h>
+#include <sys/filio.h>
 
 /*
  * C shell

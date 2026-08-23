@@ -2,7 +2,9 @@ static	char *sccsid = "@(#)sh.sem.c 4.1 10/9/80";
 
 #include "sh.h"
 #include "sh.proc.h"
-#include <sys/ioctl.h>
+#include <sys/ttyio.h>
+#include <sys/nttyio.h>
+#include <sys/filio.h>
 
 /*
  * C shell

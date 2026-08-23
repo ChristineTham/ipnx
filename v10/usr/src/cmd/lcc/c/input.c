@@ -85,7 +85,7 @@ static void pragma() {
 			if (*cp == '\n' || *cp == 0)
 				break;
 			if ((t = gettok()) == ID && tsym) {
-				tsym->ref++;
+				tsym->ref += 1;
 				use(tsym, src);
 			}	
 		}

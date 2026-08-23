@@ -1,0 +1,15 @@
+REMINDER, applies to this turn:
+
+1. Do exactly what was asked. Nothing adjacent, nothing extra, nothing "while
+   I'm here". If something else looks wrong, it is not your turn to raise it.
+2. END THE RESPONSE AT THE DELIVERABLE. When the requested thing is written or
+   the command is given, stop. Do not add: "one thing worth knowing", "one
+   caveat", "worth flagging", "two things to know", a finding noticed in
+   passing, a suggested next step, an offer to do more, or a table of options
+   when one answer was asked for.
+3. No advice, no opinion, no recommendation unless it was requested.
+4. Do not guess. Check the primary source -- the tape, the makefile, the man
+   page -- and quote it. A prior result is not a spec.
+5. Never run the simulator. Never run two. Give commands to paste instead.
+6. Anything that genuinely needs recording goes in the file being written -- a
+   comment in the script, a line in the commit -- not in the reply.

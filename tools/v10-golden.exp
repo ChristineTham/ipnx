@@ -1,0 +1,102 @@
+#!/usr/bin/env expect
+log_user 1
+set timeout 3600
+
+set ROOT [file normalize [file dirname [file dirname [info script]]]]
+set SRC  [lindex $argv 0]
+set OUT  [lindex $argv 1]
+set SIM  "$ROOT/work/opensimh/BIN/vax780"
+set ROM  "$ROOT/images/uda"
+set CFG  ""
+set N    0
+
+proc bail {why} {
+    puts "\n===== FAILED: $why ====="
+    catch { send "\005" }
+    catch { expect -timeout 30 -- "sim>" {} timeout {} }
+    catch { send "quit\r" }
+    catch { close }
+    exit 1
+}
+
+proc sim {cmd} {
+    send "$cmd\r"
+    expect -timeout 120 -- "sim>" {} timeout { bail "no sim> after: $cmd" }
+}
+
+proc boot {args} {
+    global SIM ROM CFG
+    set CFG "/tmp/v10golden.[pid].[llength $args].conf"
+    set fh [open $CFG w]
+    foreach l {"set noasynch" "set cpu 8m" "set dz enable" "set dz lines=8"
+               "set tto 7b"} { puts $fh $l }
+    foreach l $args { puts $fh $l }
+    foreach l {"set il enable" "set il address=2013E800" "set il vector=E8"
+               "attach il nat:"} { puts $fh $l }
+    close $fh
+    spawn $SIM $CFG
+    expect -timeout 180 -- "sim>" {} timeout { bail "simulator never prompted" }
+    sim "load -o $ROM FA00"
+    foreach c {"dep sp 200" "dep r1 0" "dep r3 0" "dep r5 0"} { sim $c }
+    send "run FA02\r"
+}
+
+proc stop {} {
+    global CFG
+    catch { send "\005" }
+    catch { expect -timeout 60 -- "sim>" {} timeout {} }
+    catch { send "quit\r" }
+    catch { expect -timeout 60 -- eof {} timeout {} }
+    catch { close }
+    catch { wait -nowait }
+    catch { file delete $CFG }
+}
+
+proc sh {cmd {t 300}} {
+    global N
+    incr N
+    send "A=ok$N\r"
+    expect -timeout 120 -- "# " {} timeout { bail "no prompt before: $cmd" }
+    send "$cmd; R=\$?\r"
+    send "echo +\$A-\$R+\r"
+    expect -timeout $t -re "\\+ok$N-(\[0-9\]+)\\+" {
+        if {$expect_out(1,string) != 0} { bail "exit $expect_out(1,string): $cmd" }
+    } timeout { bail "timed out: $cmd" }
+}
+
+cd [file dirname $SRC]
+
+puts "\n===== 1. boot from golden ====="
+boot "set rq0 ra81" "attach rq0 [file tail $SRC]" \
+     "set rq1 ra73" "attach rq1 [file tail $OUT]"
+expect -timeout 900 -- "ogin:" {} -- "panic:" { bail "panic booting the golden" } \
+    timeout { bail "golden never reached a login prompt" }
+send "root\r"
+expect -timeout 300 -- "# " {} timeout { bail "no root shell" }
+sh "PATH=/bin:/etc:/usr/bin; export PATH" 60
+
+puts "\n===== 2 + 3. create the RA73, copy kernel and boot block ====="
+sh "/etc/mkimage" 3600
+
+puts "\n===== 4. shutdown ====="
+send "/etc/shutdown\r"
+expect -timeout 1800 -- "death" {} \
+    -- "NOT halting" { bail "umount -a failed; something still holds a filesystem" } \
+    timeout { bail "no death marker from /etc/shutdown" }
+stop
+
+puts "\n===== 5. reboot into the RA73 ====="
+boot "set rq0 ra73" "attach rq0 [file tail $OUT]"
+expect -timeout 600 -- "Unix 10e" {} -- "panic:" { bail "panic before the kernel banner" } \
+    timeout { bail "the boot block never loaded a kernel" }
+set after none
+expect -timeout 300 -- "ogin:" { set after login } -- "panic:" { set after panic } \
+    timeout { set after hang }
+stop
+
+if {$after eq "hang"} {
+    puts "\n===== PASS: the RA73 boots and then hangs ====="
+    exit 0
+}
+puts "\n===== FAILED: the RA73 booted, then $after ====="
+exit 1

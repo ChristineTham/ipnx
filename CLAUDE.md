@@ -254,6 +254,80 @@ simulator running.
   source and `-I` does not help.
 - **On V10 `ls` exits 0 for a file that is not there.** Assert with `test -b`/`test -c`/
   `test -s`.
+- **`ra`'s `0100` is per-partition, and units 8..15 do not exist.** `ra.c:39` is
+  `UNIT=(minor>>3)&027`; `027` clears the shifted bit that `0100` — the bitmapped-fs
+  marker — occupies, so `ra 8` computes to minor 64 and reads back as unit 0.
+  `phone/gauss.m`, a real config with sixteen drives, jumps **0..7 then 16..23** for
+  exactly this reason, and `mkconf` dimensions the arrays by max id + 1
+  (`gauss.c.c:275` is `radisk[24]`), so the gap costs eight unused slots and nothing
+  else. The bit itself is set per *partition*, not on every node: `v8/proto-dev` has
+  `ra00` at 64 and `ra02` at 66 but `ra01`, `ra11`, `ra21` — every partition `b`, which
+  is swap — at 1, 9 and 17 with it clear, and the raw `rra*` nodes never set it at all
+  (minors 0..23, `u*8+part`). Swap and raw devices hold no filesystem to be bitmapped.
+- **`/dev/tty` is `40,3`, and it is a userland convention, not a kernel feature.** Nothing
+  in the kernel resolves it: `nami.c` has no special case, and `u_ttydev`/`u_ttyino` are
+  set once in `streamio.c:588` and read only by `acct.c:78`. `param.h:9` gives the whole
+  answer — `#define NSYSFILE 4 /* stdin, stdout, stderr, /dev/tty */`. `init.c`'s
+  `setupio()` calls `dup(0)` **three** times, not twice, so the terminal occupies fds
+  0,1,2 *and 3* and is inherited by everything; `login.c:56` closes only from `NSYSFILE`
+  up. Major 40 is `io/fd.c`, whose contract is "open(minor n) → dup of fd n", so opening
+  `40,3` in any process that inherited fd 3 lands on fd 4 and dups the terminal. Reading
+  `fd.c` alone predicts EBADF and is wrong, because it assumes fd 3 is free.
+- **`/dev/pt/*` are STREAM PIPES, not pseudo-ttys.** V8's `cdevsw` shows major 18 is
+  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `lsys/io/spipe.c`.
+  The tape leaves `cdev 18 pt` commented out with its own `# remove?`; we uncomment it,
+  recorded in `PATCHES.md:289`.
+- **`sys/mkconf/` has its own test fixtures; the build reads `sys/lib/`.** `mk.star:19` is
+  `mkconf -t $LD/tab -d $LD/devs`, so `sys/lib/tab` and `sys/lib/devs` are the authority.
+  The `tab`, `devs`, `conf` and `low` sitting beside `mkconf`'s sources are the input set
+  for exercising the tool — `mkconf/conf` is a toy 750 with `inode 12` and `hz 50` and is
+  nobody's machine. Reading them as system tables says `pt` has no major and `hp` is an
+  unknown device, and `readconf.c:73` makes an unknown name a hard error, so that mistake
+  is the difference between a kernel that configures and one that does not.
+  They are not simply out of date, which is the tempting reading: `lib/tab` is Jun 14 1994
+  and `mkconf/tab` is Jun 16 1994, two days *newer* — and what it changes is to comment out
+  `hp` and **enable `cdev 18 pt`**. Somebody was trying our exact patch in the tool's
+  scratch directory, which is corroboration for it rather than a reason to distrust
+  `lib/tab`.
+  Our patched `lsys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
+  from that file rather than carried forward, or it silently loses whatever the tape gained
+  (it had dropped `ld 20 archosld` and `ld 21 xttyld`, both of which `ipnx-v10.m` declares).
+- **`ra`'s `0100` is per-partition, and units 8..15 do not exist.** `ra.c:39` is
+  `UNIT=(minor>>3)&027`; `027` clears the shifted bit that `0100` — the bitmapped-fs
+  marker — occupies, so `ra 8` computes to minor 64 and reads back as unit 0.
+  `phone/gauss.m`, a real config with sixteen drives, jumps **0..7 then 16..23** for
+  exactly this reason, and `mkconf` dimensions the arrays by max id + 1
+  (`gauss.c.c:275` is `radisk[24]`), so the gap costs eight unused slots and nothing
+  else. The bit itself is set per *partition*, not on every node: `v8/proto-dev` has
+  `ra00` at 64 and `ra02` at 66 but `ra01`, `ra11`, `ra21` — every partition `b`, which
+  is swap — at 1, 9 and 17 with it clear, and the raw `rra*` nodes never set it at all
+  (minors 0..23, `u*8+part`). Swap and raw devices hold no filesystem to be bitmapped.
+- **`/dev/tty` is `40,3`, and it is a userland convention, not a kernel feature.** Nothing
+  in the kernel resolves it: `nami.c` has no special case, and `u_ttydev`/`u_ttyino` are
+  set once in `streamio.c:588` and read only by `acct.c:78`. `param.h:9` gives the whole
+  answer — `#define NSYSFILE 4 /* stdin, stdout, stderr, /dev/tty */`. `init.c`'s
+  `setupio()` calls `dup(0)` **three** times, not twice, so the terminal occupies fds
+  0,1,2 *and 3* and is inherited by everything; `login.c:56` closes only from `NSYSFILE`
+  up. Major 40 is `io/fd.c`, whose contract is "open(minor n) → dup of fd n", so opening
+  `40,3` in any process that inherited fd 3 lands on fd 4 and dups the terminal. Reading
+  `fd.c` alone predicts EBADF and is wrong, because it assumes fd 3 is free.
+- **`/dev/pt/*` are STREAM PIPES, not pseudo-ttys.** V8's `cdevsw` shows major 18 is
+  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `lsys/io/spipe.c`.
+  The tape leaves `cdev 18 pt` commented out with its own `# remove?`; we uncomment it,
+  recorded in `PATCHES.md:289`.
+- **`sys/mkconf/` holds STALE COPIES of `tab` and `devs`; the build reads `sys/lib/`.**
+  `mk.star:19` is `mkconf -t $LD/tab -d $LD/devs`, so `sys/lib/tab` and `sys/lib/devs` are
+  the authority and `sys/mkconf/tab` and `sys/mkconf/devs` are used by nothing. They
+  disagree in ways that look like real answers: `mkconf/tab` comments out `bdev 0 hp` and
+  enables `cdev 18 pt` where `lib/tab` does the reverse, and `mkconf/devs` is missing `hp`,
+  `fineclock`, `xttyld` and `ebufld` entirely — all of which `lib/devs` has and real
+  configs use. Asking the wrong copy says `pt` has no major and `hp` is an unknown device;
+  both are false. `readconf.c:73` makes an unknown name a hard error, so this is the
+  difference between a kernel that configures and one that does not.
+  Our patched `lsys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
+  from that file rather than carried forward, or it silently loses whatever the tape
+  gained (it had dropped `ld 20 archosld` and `ld 21 xttyld`, both of which
+  `ipnx-v10.m` declares).
 - **1970s `sh` forks for a compound command carrying an input redirection**, so a counter
   assigned inside `while read ... done < file` is lost in a dead child. Tally into files.
   `IFS='|'` on the `read` also persists into the loop body, which stops the shell splitting

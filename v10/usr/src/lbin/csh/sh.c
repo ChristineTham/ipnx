@@ -1,7 +1,9 @@
 static	char *sccsid = "@(#)sh.c 4.2 3/11/81";
 
 #include "sh.h"
-#include <sys/ioctl.h>
+#include <sys/ttyio.h>
+#include <sys/nttyio.h>
+#include <sys/filio.h>
 /*
  * C Shell
  *

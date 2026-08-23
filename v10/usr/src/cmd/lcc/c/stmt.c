@@ -50,7 +50,7 @@ static void branch(lab) {
 		&& cp->u.node->syms[0]->u.l.label != lab) {
 			Symbol old = findlabel(lab);
 			equatelab(cp->u.node->syms[0], old);
-			old->ref++;
+			old->ref += 1;
 			if (cp->prev->next = cp->next)
 				cp->next->prev = cp->prev;
 			else
@@ -111,7 +111,7 @@ void definelab(lab) {
 	while (cp->kind == Jump && cp->u.node && cp->u.node->kids[0]
 	&& cp->u.node->kids[0]->op == ADDRG+P
 	&& cp->u.node->kids[0]->syms[0]->u.l.label == lab) {
-		cp->u.node->kids[0]->syms[0]->ref--;
+		cp->u.node->kids[0]->syms[0]->ref -= 1;
 		assert(cp->next);
 		cp->prev->next = cp->next;
 		cp->next->prev = cp->prev;
@@ -479,7 +479,7 @@ void statement(loop, swp, lev) struct swtch *swp; {
 				p->u.l.equatedto = p;
 				p->src = src;
 			}
-			p->ref++;
+			p->ref += 1;
 			use(p, src);
 			branch(p->u.l.label);
 			t = gettok();

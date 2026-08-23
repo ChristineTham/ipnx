@@ -12,8 +12,8 @@ CONF="$ROOT/images/v10.conf"
 NETPID=""; TAPEPID=""
 trap 'kill $NETPID $TAPEPID 2>/dev/null' EXIT
 
-"$NETFSD" -p "$PORT"  -v "$ROOT/v10" & NETPID=$!
-"$NETFSD" -p "$TPORT" -v "$ROOT/tapes" & TAPEPID=$!
+"$NETFSD" -p "$PORT"  "$ROOT/v10" & NETPID=$!
+"$NETFSD" -p "$TPORT" "$ROOT/tapes" & TAPEPID=$!
 
 cat > "$CONF" <<EOF
 set noasynch

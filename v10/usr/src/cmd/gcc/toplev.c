@@ -40,7 +40,6 @@ and this notice must be preserved on all copies.  */
 #endif
 
 #ifndef _TYPES_
-#include <sys/types.h>
 #endif
 #include <sys/stat.h>
 

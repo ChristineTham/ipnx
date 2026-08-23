@@ -1,0 +1,1069 @@
+# /dev repair, part 1 -- CREATE ONLY.  Removes nothing.
+# Generated from tools/proto-dev-ipnx780.
+#
+# It deletes nothing on purpose.  A first draft classified nodes as
+# unused and would have removed /dev/il1, which /etc/rc passes to
+# dipconfig as its ARP channel (dipconfig.c:33).  Extras are listed for
+# you to judge, not acted on.
+MKNOD=/etc/mknod
+DEV=${1-/dev}
+test -d $DEV || mkdir $DEV
+test -d $DEV/fd || mkdir $DEV/fd
+test -d $DEV/dk || mkdir $DEV/dk
+test -d $DEV/pt || mkdir $DEV/pt
+
+echo '--- creating missing nodes ---'
+test -c $DEV/console || { echo console; $MKNOD $DEV/console c 0 0; chmod 0622 $DEV/console; }
+test -c $DEV/starcons || { echo starcons; $MKNOD $DEV/starcons c 8 0; chmod 0622 $DEV/starcons; }
+test -c $DEV/mem || { echo mem; $MKNOD $DEV/mem c 3 0; chmod 0644 $DEV/mem; }
+test -c $DEV/kmem || { echo kmem; $MKNOD $DEV/kmem c 3 1; chmod 0644 $DEV/kmem; }
+test -c $DEV/null || { echo null; $MKNOD $DEV/null c 3 2; chmod 0666 $DEV/null; }
+test -c $DEV/kUmem || { echo kUmem; $MKNOD $DEV/kUmem c 3 3; chmod 0600 $DEV/kUmem; }
+test -c $DEV/mtpr || { echo mtpr; $MKNOD $DEV/mtpr c 3 5; chmod 0600 $DEV/mtpr; }
+test -c $DEV/tty00 || { echo tty00; $MKNOD $DEV/tty00 c 1 0; chmod 0622 $DEV/tty00; }
+test -c $DEV/tty01 || { echo tty01; $MKNOD $DEV/tty01 c 1 1; chmod 0622 $DEV/tty01; }
+test -c $DEV/tty02 || { echo tty02; $MKNOD $DEV/tty02 c 1 2; chmod 0622 $DEV/tty02; }
+test -c $DEV/tty03 || { echo tty03; $MKNOD $DEV/tty03 c 1 3; chmod 0622 $DEV/tty03; }
+test -c $DEV/tty04 || { echo tty04; $MKNOD $DEV/tty04 c 1 4; chmod 0622 $DEV/tty04; }
+test -c $DEV/tty05 || { echo tty05; $MKNOD $DEV/tty05 c 1 5; chmod 0622 $DEV/tty05; }
+test -c $DEV/tty06 || { echo tty06; $MKNOD $DEV/tty06 c 1 6; chmod 0622 $DEV/tty06; }
+test -c $DEV/tty07 || { echo tty07; $MKNOD $DEV/tty07 c 1 7; chmod 0622 $DEV/tty07; }
+test -b $DEV/rp0a || { echo rp0a; $MKNOD $DEV/rp0a b 0 0; chmod 0640 $DEV/rp0a; }
+test -c $DEV/rrp0a || { echo rrp0a; $MKNOD $DEV/rrp0a c 4 0; chmod 0640 $DEV/rrp0a; }
+test -b $DEV/rp0b || { echo rp0b; $MKNOD $DEV/rp0b b 0 1; chmod 0640 $DEV/rp0b; }
+test -c $DEV/rrp0b || { echo rrp0b; $MKNOD $DEV/rrp0b c 4 1; chmod 0640 $DEV/rrp0b; }
+test -b $DEV/rp0c || { echo rp0c; $MKNOD $DEV/rp0c b 0 2; chmod 0640 $DEV/rp0c; }
+test -c $DEV/rrp0c || { echo rrp0c; $MKNOD $DEV/rrp0c c 4 2; chmod 0640 $DEV/rrp0c; }
+test -b $DEV/rp0d || { echo rp0d; $MKNOD $DEV/rp0d b 0 3; chmod 0640 $DEV/rp0d; }
+test -c $DEV/rrp0d || { echo rrp0d; $MKNOD $DEV/rrp0d c 4 3; chmod 0640 $DEV/rrp0d; }
+test -b $DEV/rp0e || { echo rp0e; $MKNOD $DEV/rp0e b 0 4; chmod 0640 $DEV/rp0e; }
+test -c $DEV/rrp0e || { echo rrp0e; $MKNOD $DEV/rrp0e c 4 4; chmod 0640 $DEV/rrp0e; }
+test -b $DEV/rp0f || { echo rp0f; $MKNOD $DEV/rp0f b 0 5; chmod 0640 $DEV/rp0f; }
+test -c $DEV/rrp0f || { echo rrp0f; $MKNOD $DEV/rrp0f c 4 5; chmod 0640 $DEV/rrp0f; }
+test -b $DEV/rp0g || { echo rp0g; $MKNOD $DEV/rp0g b 0 6; chmod 0640 $DEV/rp0g; }
+test -c $DEV/rrp0g || { echo rrp0g; $MKNOD $DEV/rrp0g c 4 6; chmod 0640 $DEV/rrp0g; }
+test -b $DEV/rp0h || { echo rp0h; $MKNOD $DEV/rp0h b 0 7; chmod 0640 $DEV/rp0h; }
+test -c $DEV/rrp0h || { echo rrp0h; $MKNOD $DEV/rrp0h c 4 7; chmod 0640 $DEV/rrp0h; }
+test -b $DEV/rp1a || { echo rp1a; $MKNOD $DEV/rp1a b 0 8; chmod 0640 $DEV/rp1a; }
+test -c $DEV/rrp1a || { echo rrp1a; $MKNOD $DEV/rrp1a c 4 8; chmod 0640 $DEV/rrp1a; }
+test -b $DEV/rp1b || { echo rp1b; $MKNOD $DEV/rp1b b 0 9; chmod 0640 $DEV/rp1b; }
+test -c $DEV/rrp1b || { echo rrp1b; $MKNOD $DEV/rrp1b c 4 9; chmod 0640 $DEV/rrp1b; }
+test -b $DEV/rp1c || { echo rp1c; $MKNOD $DEV/rp1c b 0 10; chmod 0640 $DEV/rp1c; }
+test -c $DEV/rrp1c || { echo rrp1c; $MKNOD $DEV/rrp1c c 4 10; chmod 0640 $DEV/rrp1c; }
+test -b $DEV/rp1d || { echo rp1d; $MKNOD $DEV/rp1d b 0 11; chmod 0640 $DEV/rp1d; }
+test -c $DEV/rrp1d || { echo rrp1d; $MKNOD $DEV/rrp1d c 4 11; chmod 0640 $DEV/rrp1d; }
+test -b $DEV/rp1e || { echo rp1e; $MKNOD $DEV/rp1e b 0 12; chmod 0640 $DEV/rp1e; }
+test -c $DEV/rrp1e || { echo rrp1e; $MKNOD $DEV/rrp1e c 4 12; chmod 0640 $DEV/rrp1e; }
+test -b $DEV/rp1f || { echo rp1f; $MKNOD $DEV/rp1f b 0 13; chmod 0640 $DEV/rp1f; }
+test -c $DEV/rrp1f || { echo rrp1f; $MKNOD $DEV/rrp1f c 4 13; chmod 0640 $DEV/rrp1f; }
+test -b $DEV/rp1g || { echo rp1g; $MKNOD $DEV/rp1g b 0 14; chmod 0640 $DEV/rp1g; }
+test -c $DEV/rrp1g || { echo rrp1g; $MKNOD $DEV/rrp1g c 4 14; chmod 0640 $DEV/rrp1g; }
+test -b $DEV/rp1h || { echo rp1h; $MKNOD $DEV/rp1h b 0 15; chmod 0640 $DEV/rp1h; }
+test -c $DEV/rrp1h || { echo rrp1h; $MKNOD $DEV/rrp1h c 4 15; chmod 0640 $DEV/rrp1h; }
+test -b $DEV/ra00 || { echo ra00; $MKNOD $DEV/ra00 b 7 64; chmod 0640 $DEV/ra00; }
+test -b $DEV/ra01 || { echo ra01; $MKNOD $DEV/ra01 b 7 1; chmod 0640 $DEV/ra01; }
+test -b $DEV/ra02 || { echo ra02; $MKNOD $DEV/ra02 b 7 66; chmod 0640 $DEV/ra02; }
+test -b $DEV/ra03 || { echo ra03; $MKNOD $DEV/ra03 b 7 67; chmod 0640 $DEV/ra03; }
+test -b $DEV/ra04 || { echo ra04; $MKNOD $DEV/ra04 b 7 68; chmod 0640 $DEV/ra04; }
+test -b $DEV/ra05 || { echo ra05; $MKNOD $DEV/ra05 b 7 69; chmod 0640 $DEV/ra05; }
+test -b $DEV/ra06 || { echo ra06; $MKNOD $DEV/ra06 b 7 70; chmod 0640 $DEV/ra06; }
+test -c $DEV/rra00 || { echo rra00; $MKNOD $DEV/rra00 c 28 0; chmod 0640 $DEV/rra00; }
+test -c $DEV/rra01 || { echo rra01; $MKNOD $DEV/rra01 c 28 1; chmod 0640 $DEV/rra01; }
+test -c $DEV/rra02 || { echo rra02; $MKNOD $DEV/rra02 c 28 2; chmod 0640 $DEV/rra02; }
+test -c $DEV/rra03 || { echo rra03; $MKNOD $DEV/rra03 c 28 3; chmod 0640 $DEV/rra03; }
+test -c $DEV/rra04 || { echo rra04; $MKNOD $DEV/rra04 c 28 4; chmod 0640 $DEV/rra04; }
+test -c $DEV/rra05 || { echo rra05; $MKNOD $DEV/rra05 c 28 5; chmod 0640 $DEV/rra05; }
+test -c $DEV/rra06 || { echo rra06; $MKNOD $DEV/rra06 c 28 6; chmod 0640 $DEV/rra06; }
+test -c $DEV/rra07 || { echo rra07; $MKNOD $DEV/rra07 c 28 7; chmod 0640 $DEV/rra07; }
+test -b $DEV/ra10 || { echo ra10; $MKNOD $DEV/ra10 b 7 72; chmod 0640 $DEV/ra10; }
+test -b $DEV/ra11 || { echo ra11; $MKNOD $DEV/ra11 b 7 9; chmod 0640 $DEV/ra11; }
+test -b $DEV/ra12 || { echo ra12; $MKNOD $DEV/ra12 b 7 74; chmod 0640 $DEV/ra12; }
+test -b $DEV/ra13 || { echo ra13; $MKNOD $DEV/ra13 b 7 75; chmod 0640 $DEV/ra13; }
+test -b $DEV/ra14 || { echo ra14; $MKNOD $DEV/ra14 b 7 76; chmod 0640 $DEV/ra14; }
+test -b $DEV/ra15 || { echo ra15; $MKNOD $DEV/ra15 b 7 77; chmod 0640 $DEV/ra15; }
+test -b $DEV/ra16 || { echo ra16; $MKNOD $DEV/ra16 b 7 78; chmod 0640 $DEV/ra16; }
+test -c $DEV/rra10 || { echo rra10; $MKNOD $DEV/rra10 c 28 8; chmod 0660 $DEV/rra10; }
+test -c $DEV/rra11 || { echo rra11; $MKNOD $DEV/rra11 c 28 9; chmod 0640 $DEV/rra11; }
+test -c $DEV/rra12 || { echo rra12; $MKNOD $DEV/rra12 c 28 10; chmod 0640 $DEV/rra12; }
+test -c $DEV/rra13 || { echo rra13; $MKNOD $DEV/rra13 c 28 11; chmod 0640 $DEV/rra13; }
+test -c $DEV/rra14 || { echo rra14; $MKNOD $DEV/rra14 c 28 12; chmod 0640 $DEV/rra14; }
+test -c $DEV/rra15 || { echo rra15; $MKNOD $DEV/rra15 c 28 13; chmod 0640 $DEV/rra15; }
+test -c $DEV/rra16 || { echo rra16; $MKNOD $DEV/rra16 c 28 14; chmod 0660 $DEV/rra16; }
+test -c $DEV/rra17 || { echo rra17; $MKNOD $DEV/rra17 c 28 15; chmod 0640 $DEV/rra17; }
+test -b $DEV/ra20a || { echo ra20a; $MKNOD $DEV/ra20a b 7 80; chmod 0664 $DEV/ra20a; }
+test -b $DEV/ra21 || { echo ra21; $MKNOD $DEV/ra21 b 7 17; chmod 0640 $DEV/ra21; }
+test -b $DEV/ra22 || { echo ra22; $MKNOD $DEV/ra22 b 7 18; chmod 0664 $DEV/ra22; }
+test -b $DEV/ra23 || { echo ra23; $MKNOD $DEV/ra23 b 7 83; chmod 0640 $DEV/ra23; }
+test -b $DEV/ra24 || { echo ra24; $MKNOD $DEV/ra24 b 7 84; chmod 0640 $DEV/ra24; }
+test -b $DEV/ra25 || { echo ra25; $MKNOD $DEV/ra25 b 7 85; chmod 0640 $DEV/ra25; }
+test -b $DEV/ra26 || { echo ra26; $MKNOD $DEV/ra26 b 7 22; chmod 0640 $DEV/ra26; }
+test -c $DEV/rra20 || { echo rra20; $MKNOD $DEV/rra20 c 28 16; chmod 0640 $DEV/rra20; }
+test -c $DEV/rra21 || { echo rra21; $MKNOD $DEV/rra21 c 28 17; chmod 0640 $DEV/rra21; }
+test -c $DEV/rra22 || { echo rra22; $MKNOD $DEV/rra22 c 28 18; chmod 0640 $DEV/rra22; }
+test -c $DEV/rra23 || { echo rra23; $MKNOD $DEV/rra23 c 28 19; chmod 0640 $DEV/rra23; }
+test -c $DEV/rra24 || { echo rra24; $MKNOD $DEV/rra24 c 28 20; chmod 0640 $DEV/rra24; }
+test -c $DEV/rra25 || { echo rra25; $MKNOD $DEV/rra25 c 28 21; chmod 0640 $DEV/rra25; }
+test -c $DEV/rra26 || { echo rra26; $MKNOD $DEV/rra26 c 28 22; chmod 0640 $DEV/rra26; }
+test -c $DEV/rra27 || { echo rra27; $MKNOD $DEV/rra27 c 28 23; chmod 0640 $DEV/rra27; }
+test -b $DEV/mt0 || { echo mt0; $MKNOD $DEV/mt0 b 1 0; chmod 0666 $DEV/mt0; }
+test -c $DEV/rmt0 || { echo rmt0; $MKNOD $DEV/rmt0 c 5 0; chmod 0666 $DEV/rmt0; }
+test -b $DEV/nmt0 || { echo nmt0; $MKNOD $DEV/nmt0 b 1 4; chmod 0666 $DEV/nmt0; }
+test -c $DEV/nrmt0 || { echo nrmt0; $MKNOD $DEV/nrmt0 c 5 4; chmod 0666 $DEV/nrmt0; }
+test -b $DEV/mt1 || { echo mt1; $MKNOD $DEV/mt1 b 1 8; chmod 0666 $DEV/mt1; }
+test -c $DEV/rmt1 || { echo rmt1; $MKNOD $DEV/rmt1 c 5 8; chmod 0666 $DEV/rmt1; }
+test -b $DEV/nmt1 || { echo nmt1; $MKNOD $DEV/nmt1 b 1 12; chmod 0666 $DEV/nmt1; }
+test -c $DEV/nrmt1 || { echo nrmt1; $MKNOD $DEV/nrmt1 c 5 12; chmod 0666 $DEV/nrmt1; }
+test -c $DEV/drum || { echo drum; $MKNOD $DEV/drum c 7 0; chmod 0644 $DEV/drum; }
+test -b $DEV/swap || { echo swap; $MKNOD $DEV/swap b 4 0; chmod 0640 $DEV/swap; }
+test -c $DEV/stdin || { echo stdin; $MKNOD $DEV/stdin c 40 0; chmod 0666 $DEV/stdin; }
+test -c $DEV/stdout || { echo stdout; $MKNOD $DEV/stdout c 40 1; chmod 0666 $DEV/stdout; }
+test -c $DEV/stderr || { echo stderr; $MKNOD $DEV/stderr c 40 2; chmod 0666 $DEV/stderr; }
+test -c $DEV/tty || { echo tty; $MKNOD $DEV/tty c 40 3; chmod 0666 $DEV/tty; }
+test -c $DEV/fd/0 || { echo fd/0; $MKNOD $DEV/fd/0 c 40 0; chmod 0666 $DEV/fd/0; }
+test -c $DEV/fd/1 || { echo fd/1; $MKNOD $DEV/fd/1 c 40 1; chmod 0666 $DEV/fd/1; }
+test -c $DEV/fd/2 || { echo fd/2; $MKNOD $DEV/fd/2 c 40 2; chmod 0666 $DEV/fd/2; }
+test -c $DEV/fd/3 || { echo fd/3; $MKNOD $DEV/fd/3 c 40 3; chmod 0666 $DEV/fd/3; }
+test -c $DEV/fd/4 || { echo fd/4; $MKNOD $DEV/fd/4 c 40 4; chmod 0666 $DEV/fd/4; }
+test -c $DEV/fd/5 || { echo fd/5; $MKNOD $DEV/fd/5 c 40 5; chmod 0666 $DEV/fd/5; }
+test -c $DEV/fd/6 || { echo fd/6; $MKNOD $DEV/fd/6 c 40 6; chmod 0666 $DEV/fd/6; }
+test -c $DEV/fd/7 || { echo fd/7; $MKNOD $DEV/fd/7 c 40 7; chmod 0666 $DEV/fd/7; }
+test -c $DEV/fd/8 || { echo fd/8; $MKNOD $DEV/fd/8 c 40 8; chmod 0666 $DEV/fd/8; }
+test -c $DEV/fd/9 || { echo fd/9; $MKNOD $DEV/fd/9 c 40 9; chmod 0666 $DEV/fd/9; }
+test -c $DEV/fd/10 || { echo fd/10; $MKNOD $DEV/fd/10 c 40 10; chmod 0666 $DEV/fd/10; }
+test -c $DEV/fd/11 || { echo fd/11; $MKNOD $DEV/fd/11 c 40 11; chmod 0666 $DEV/fd/11; }
+test -c $DEV/fd/12 || { echo fd/12; $MKNOD $DEV/fd/12 c 40 12; chmod 0666 $DEV/fd/12; }
+test -c $DEV/fd/13 || { echo fd/13; $MKNOD $DEV/fd/13 c 40 13; chmod 0666 $DEV/fd/13; }
+test -c $DEV/fd/14 || { echo fd/14; $MKNOD $DEV/fd/14 c 40 14; chmod 0666 $DEV/fd/14; }
+test -c $DEV/fd/15 || { echo fd/15; $MKNOD $DEV/fd/15 c 40 15; chmod 0666 $DEV/fd/15; }
+test -c $DEV/fd/16 || { echo fd/16; $MKNOD $DEV/fd/16 c 40 16; chmod 0666 $DEV/fd/16; }
+test -c $DEV/fd/17 || { echo fd/17; $MKNOD $DEV/fd/17 c 40 17; chmod 0666 $DEV/fd/17; }
+test -c $DEV/fd/18 || { echo fd/18; $MKNOD $DEV/fd/18 c 40 18; chmod 0666 $DEV/fd/18; }
+test -c $DEV/fd/19 || { echo fd/19; $MKNOD $DEV/fd/19 c 40 19; chmod 0666 $DEV/fd/19; }
+test -c $DEV/fd/20 || { echo fd/20; $MKNOD $DEV/fd/20 c 40 20; chmod 0666 $DEV/fd/20; }
+test -c $DEV/fd/21 || { echo fd/21; $MKNOD $DEV/fd/21 c 40 21; chmod 0666 $DEV/fd/21; }
+test -c $DEV/fd/22 || { echo fd/22; $MKNOD $DEV/fd/22 c 40 22; chmod 0666 $DEV/fd/22; }
+test -c $DEV/fd/23 || { echo fd/23; $MKNOD $DEV/fd/23 c 40 23; chmod 0666 $DEV/fd/23; }
+test -c $DEV/fd/24 || { echo fd/24; $MKNOD $DEV/fd/24 c 40 24; chmod 0666 $DEV/fd/24; }
+test -c $DEV/fd/25 || { echo fd/25; $MKNOD $DEV/fd/25 c 40 25; chmod 0666 $DEV/fd/25; }
+test -c $DEV/fd/26 || { echo fd/26; $MKNOD $DEV/fd/26 c 40 26; chmod 0666 $DEV/fd/26; }
+test -c $DEV/fd/27 || { echo fd/27; $MKNOD $DEV/fd/27 c 40 27; chmod 0666 $DEV/fd/27; }
+test -c $DEV/fd/28 || { echo fd/28; $MKNOD $DEV/fd/28 c 40 28; chmod 0666 $DEV/fd/28; }
+test -c $DEV/fd/29 || { echo fd/29; $MKNOD $DEV/fd/29 c 40 29; chmod 0666 $DEV/fd/29; }
+test -c $DEV/fd/30 || { echo fd/30; $MKNOD $DEV/fd/30 c 40 30; chmod 0666 $DEV/fd/30; }
+test -c $DEV/fd/31 || { echo fd/31; $MKNOD $DEV/fd/31 c 40 31; chmod 0666 $DEV/fd/31; }
+test -c $DEV/fd/32 || { echo fd/32; $MKNOD $DEV/fd/32 c 40 32; chmod 0666 $DEV/fd/32; }
+test -c $DEV/fd/33 || { echo fd/33; $MKNOD $DEV/fd/33 c 40 33; chmod 0666 $DEV/fd/33; }
+test -c $DEV/fd/34 || { echo fd/34; $MKNOD $DEV/fd/34 c 40 34; chmod 0666 $DEV/fd/34; }
+test -c $DEV/fd/35 || { echo fd/35; $MKNOD $DEV/fd/35 c 40 35; chmod 0666 $DEV/fd/35; }
+test -c $DEV/fd/36 || { echo fd/36; $MKNOD $DEV/fd/36 c 40 36; chmod 0666 $DEV/fd/36; }
+test -c $DEV/fd/37 || { echo fd/37; $MKNOD $DEV/fd/37 c 40 37; chmod 0666 $DEV/fd/37; }
+test -c $DEV/fd/38 || { echo fd/38; $MKNOD $DEV/fd/38 c 40 38; chmod 0666 $DEV/fd/38; }
+test -c $DEV/fd/39 || { echo fd/39; $MKNOD $DEV/fd/39 c 40 39; chmod 0666 $DEV/fd/39; }
+test -c $DEV/fd/40 || { echo fd/40; $MKNOD $DEV/fd/40 c 40 40; chmod 0666 $DEV/fd/40; }
+test -c $DEV/fd/41 || { echo fd/41; $MKNOD $DEV/fd/41 c 40 41; chmod 0666 $DEV/fd/41; }
+test -c $DEV/fd/42 || { echo fd/42; $MKNOD $DEV/fd/42 c 40 42; chmod 0666 $DEV/fd/42; }
+test -c $DEV/fd/43 || { echo fd/43; $MKNOD $DEV/fd/43 c 40 43; chmod 0666 $DEV/fd/43; }
+test -c $DEV/fd/44 || { echo fd/44; $MKNOD $DEV/fd/44 c 40 44; chmod 0666 $DEV/fd/44; }
+test -c $DEV/fd/45 || { echo fd/45; $MKNOD $DEV/fd/45 c 40 45; chmod 0666 $DEV/fd/45; }
+test -c $DEV/fd/46 || { echo fd/46; $MKNOD $DEV/fd/46 c 40 46; chmod 0666 $DEV/fd/46; }
+test -c $DEV/fd/47 || { echo fd/47; $MKNOD $DEV/fd/47 c 40 47; chmod 0666 $DEV/fd/47; }
+test -c $DEV/fd/48 || { echo fd/48; $MKNOD $DEV/fd/48 c 40 48; chmod 0666 $DEV/fd/48; }
+test -c $DEV/fd/49 || { echo fd/49; $MKNOD $DEV/fd/49 c 40 49; chmod 0666 $DEV/fd/49; }
+test -c $DEV/fd/50 || { echo fd/50; $MKNOD $DEV/fd/50 c 40 50; chmod 0666 $DEV/fd/50; }
+test -c $DEV/fd/51 || { echo fd/51; $MKNOD $DEV/fd/51 c 40 51; chmod 0666 $DEV/fd/51; }
+test -c $DEV/fd/52 || { echo fd/52; $MKNOD $DEV/fd/52 c 40 52; chmod 0666 $DEV/fd/52; }
+test -c $DEV/fd/53 || { echo fd/53; $MKNOD $DEV/fd/53 c 40 53; chmod 0666 $DEV/fd/53; }
+test -c $DEV/fd/54 || { echo fd/54; $MKNOD $DEV/fd/54 c 40 54; chmod 0666 $DEV/fd/54; }
+test -c $DEV/fd/55 || { echo fd/55; $MKNOD $DEV/fd/55 c 40 55; chmod 0666 $DEV/fd/55; }
+test -c $DEV/fd/56 || { echo fd/56; $MKNOD $DEV/fd/56 c 40 56; chmod 0666 $DEV/fd/56; }
+test -c $DEV/fd/57 || { echo fd/57; $MKNOD $DEV/fd/57 c 40 57; chmod 0666 $DEV/fd/57; }
+test -c $DEV/fd/58 || { echo fd/58; $MKNOD $DEV/fd/58 c 40 58; chmod 0666 $DEV/fd/58; }
+test -c $DEV/fd/59 || { echo fd/59; $MKNOD $DEV/fd/59 c 40 59; chmod 0666 $DEV/fd/59; }
+test -c $DEV/fd/60 || { echo fd/60; $MKNOD $DEV/fd/60 c 40 60; chmod 0666 $DEV/fd/60; }
+test -c $DEV/fd/61 || { echo fd/61; $MKNOD $DEV/fd/61 c 40 61; chmod 0666 $DEV/fd/61; }
+test -c $DEV/fd/62 || { echo fd/62; $MKNOD $DEV/fd/62 c 40 62; chmod 0666 $DEV/fd/62; }
+test -c $DEV/fd/63 || { echo fd/63; $MKNOD $DEV/fd/63 c 40 63; chmod 0666 $DEV/fd/63; }
+test -c $DEV/fd/64 || { echo fd/64; $MKNOD $DEV/fd/64 c 40 64; chmod 0666 $DEV/fd/64; }
+test -c $DEV/fd/65 || { echo fd/65; $MKNOD $DEV/fd/65 c 40 65; chmod 0666 $DEV/fd/65; }
+test -c $DEV/fd/66 || { echo fd/66; $MKNOD $DEV/fd/66 c 40 66; chmod 0666 $DEV/fd/66; }
+test -c $DEV/fd/67 || { echo fd/67; $MKNOD $DEV/fd/67 c 40 67; chmod 0666 $DEV/fd/67; }
+test -c $DEV/fd/68 || { echo fd/68; $MKNOD $DEV/fd/68 c 40 68; chmod 0666 $DEV/fd/68; }
+test -c $DEV/fd/69 || { echo fd/69; $MKNOD $DEV/fd/69 c 40 69; chmod 0666 $DEV/fd/69; }
+test -c $DEV/fd/70 || { echo fd/70; $MKNOD $DEV/fd/70 c 40 70; chmod 0666 $DEV/fd/70; }
+test -c $DEV/fd/71 || { echo fd/71; $MKNOD $DEV/fd/71 c 40 71; chmod 0666 $DEV/fd/71; }
+test -c $DEV/fd/72 || { echo fd/72; $MKNOD $DEV/fd/72 c 40 72; chmod 0666 $DEV/fd/72; }
+test -c $DEV/fd/73 || { echo fd/73; $MKNOD $DEV/fd/73 c 40 73; chmod 0666 $DEV/fd/73; }
+test -c $DEV/fd/74 || { echo fd/74; $MKNOD $DEV/fd/74 c 40 74; chmod 0666 $DEV/fd/74; }
+test -c $DEV/fd/75 || { echo fd/75; $MKNOD $DEV/fd/75 c 40 75; chmod 0666 $DEV/fd/75; }
+test -c $DEV/fd/76 || { echo fd/76; $MKNOD $DEV/fd/76 c 40 76; chmod 0666 $DEV/fd/76; }
+test -c $DEV/fd/77 || { echo fd/77; $MKNOD $DEV/fd/77 c 40 77; chmod 0666 $DEV/fd/77; }
+test -c $DEV/fd/78 || { echo fd/78; $MKNOD $DEV/fd/78 c 40 78; chmod 0666 $DEV/fd/78; }
+test -c $DEV/fd/79 || { echo fd/79; $MKNOD $DEV/fd/79 c 40 79; chmod 0666 $DEV/fd/79; }
+test -c $DEV/fd/80 || { echo fd/80; $MKNOD $DEV/fd/80 c 40 80; chmod 0666 $DEV/fd/80; }
+test -c $DEV/fd/81 || { echo fd/81; $MKNOD $DEV/fd/81 c 40 81; chmod 0666 $DEV/fd/81; }
+test -c $DEV/fd/82 || { echo fd/82; $MKNOD $DEV/fd/82 c 40 82; chmod 0666 $DEV/fd/82; }
+test -c $DEV/fd/83 || { echo fd/83; $MKNOD $DEV/fd/83 c 40 83; chmod 0666 $DEV/fd/83; }
+test -c $DEV/fd/84 || { echo fd/84; $MKNOD $DEV/fd/84 c 40 84; chmod 0666 $DEV/fd/84; }
+test -c $DEV/fd/85 || { echo fd/85; $MKNOD $DEV/fd/85 c 40 85; chmod 0666 $DEV/fd/85; }
+test -c $DEV/fd/86 || { echo fd/86; $MKNOD $DEV/fd/86 c 40 86; chmod 0666 $DEV/fd/86; }
+test -c $DEV/fd/87 || { echo fd/87; $MKNOD $DEV/fd/87 c 40 87; chmod 0666 $DEV/fd/87; }
+test -c $DEV/fd/88 || { echo fd/88; $MKNOD $DEV/fd/88 c 40 88; chmod 0666 $DEV/fd/88; }
+test -c $DEV/fd/89 || { echo fd/89; $MKNOD $DEV/fd/89 c 40 89; chmod 0666 $DEV/fd/89; }
+test -c $DEV/fd/90 || { echo fd/90; $MKNOD $DEV/fd/90 c 40 90; chmod 0666 $DEV/fd/90; }
+test -c $DEV/fd/91 || { echo fd/91; $MKNOD $DEV/fd/91 c 40 91; chmod 0666 $DEV/fd/91; }
+test -c $DEV/fd/92 || { echo fd/92; $MKNOD $DEV/fd/92 c 40 92; chmod 0666 $DEV/fd/92; }
+test -c $DEV/fd/93 || { echo fd/93; $MKNOD $DEV/fd/93 c 40 93; chmod 0666 $DEV/fd/93; }
+test -c $DEV/fd/94 || { echo fd/94; $MKNOD $DEV/fd/94 c 40 94; chmod 0666 $DEV/fd/94; }
+test -c $DEV/fd/95 || { echo fd/95; $MKNOD $DEV/fd/95 c 40 95; chmod 0666 $DEV/fd/95; }
+test -c $DEV/fd/96 || { echo fd/96; $MKNOD $DEV/fd/96 c 40 96; chmod 0666 $DEV/fd/96; }
+test -c $DEV/fd/97 || { echo fd/97; $MKNOD $DEV/fd/97 c 40 97; chmod 0666 $DEV/fd/97; }
+test -c $DEV/fd/98 || { echo fd/98; $MKNOD $DEV/fd/98 c 40 98; chmod 0666 $DEV/fd/98; }
+test -c $DEV/fd/99 || { echo fd/99; $MKNOD $DEV/fd/99 c 40 99; chmod 0666 $DEV/fd/99; }
+test -c $DEV/fd/100 || { echo fd/100; $MKNOD $DEV/fd/100 c 40 100; chmod 0666 $DEV/fd/100; }
+test -c $DEV/fd/101 || { echo fd/101; $MKNOD $DEV/fd/101 c 40 101; chmod 0666 $DEV/fd/101; }
+test -c $DEV/fd/102 || { echo fd/102; $MKNOD $DEV/fd/102 c 40 102; chmod 0666 $DEV/fd/102; }
+test -c $DEV/fd/103 || { echo fd/103; $MKNOD $DEV/fd/103 c 40 103; chmod 0666 $DEV/fd/103; }
+test -c $DEV/fd/104 || { echo fd/104; $MKNOD $DEV/fd/104 c 40 104; chmod 0666 $DEV/fd/104; }
+test -c $DEV/fd/105 || { echo fd/105; $MKNOD $DEV/fd/105 c 40 105; chmod 0666 $DEV/fd/105; }
+test -c $DEV/fd/106 || { echo fd/106; $MKNOD $DEV/fd/106 c 40 106; chmod 0666 $DEV/fd/106; }
+test -c $DEV/fd/107 || { echo fd/107; $MKNOD $DEV/fd/107 c 40 107; chmod 0666 $DEV/fd/107; }
+test -c $DEV/fd/108 || { echo fd/108; $MKNOD $DEV/fd/108 c 40 108; chmod 0666 $DEV/fd/108; }
+test -c $DEV/fd/109 || { echo fd/109; $MKNOD $DEV/fd/109 c 40 109; chmod 0666 $DEV/fd/109; }
+test -c $DEV/fd/110 || { echo fd/110; $MKNOD $DEV/fd/110 c 40 110; chmod 0666 $DEV/fd/110; }
+test -c $DEV/fd/111 || { echo fd/111; $MKNOD $DEV/fd/111 c 40 111; chmod 0666 $DEV/fd/111; }
+test -c $DEV/fd/112 || { echo fd/112; $MKNOD $DEV/fd/112 c 40 112; chmod 0666 $DEV/fd/112; }
+test -c $DEV/fd/113 || { echo fd/113; $MKNOD $DEV/fd/113 c 40 113; chmod 0666 $DEV/fd/113; }
+test -c $DEV/fd/114 || { echo fd/114; $MKNOD $DEV/fd/114 c 40 114; chmod 0666 $DEV/fd/114; }
+test -c $DEV/fd/115 || { echo fd/115; $MKNOD $DEV/fd/115 c 40 115; chmod 0666 $DEV/fd/115; }
+test -c $DEV/fd/116 || { echo fd/116; $MKNOD $DEV/fd/116 c 40 116; chmod 0666 $DEV/fd/116; }
+test -c $DEV/fd/117 || { echo fd/117; $MKNOD $DEV/fd/117 c 40 117; chmod 0666 $DEV/fd/117; }
+test -c $DEV/fd/118 || { echo fd/118; $MKNOD $DEV/fd/118 c 40 118; chmod 0666 $DEV/fd/118; }
+test -c $DEV/fd/119 || { echo fd/119; $MKNOD $DEV/fd/119 c 40 119; chmod 0666 $DEV/fd/119; }
+test -c $DEV/fd/120 || { echo fd/120; $MKNOD $DEV/fd/120 c 40 120; chmod 0666 $DEV/fd/120; }
+test -c $DEV/fd/121 || { echo fd/121; $MKNOD $DEV/fd/121 c 40 121; chmod 0666 $DEV/fd/121; }
+test -c $DEV/fd/122 || { echo fd/122; $MKNOD $DEV/fd/122 c 40 122; chmod 0666 $DEV/fd/122; }
+test -c $DEV/fd/123 || { echo fd/123; $MKNOD $DEV/fd/123 c 40 123; chmod 0666 $DEV/fd/123; }
+test -c $DEV/fd/124 || { echo fd/124; $MKNOD $DEV/fd/124 c 40 124; chmod 0666 $DEV/fd/124; }
+test -c $DEV/fd/125 || { echo fd/125; $MKNOD $DEV/fd/125 c 40 125; chmod 0666 $DEV/fd/125; }
+test -c $DEV/fd/126 || { echo fd/126; $MKNOD $DEV/fd/126 c 40 126; chmod 0666 $DEV/fd/126; }
+test -c $DEV/fd/127 || { echo fd/127; $MKNOD $DEV/fd/127 c 40 127; chmod 0666 $DEV/fd/127; }
+test -c $DEV/dk/dkctl || { echo dk/dkctl; $MKNOD $DEV/dk/dkctl c 31 1; chmod 0600 $DEV/dk/dkctl; }
+test -c $DEV/dk/dk01 || { echo dk/dk01; $MKNOD $DEV/dk/dk01 c 31 1; chmod 0600 $DEV/dk/dk01; }
+test -c $DEV/dk/dk02 || { echo dk/dk02; $MKNOD $DEV/dk/dk02 c 31 2; chmod 0622 $DEV/dk/dk02; }
+test -c $DEV/dk/dk03 || { echo dk/dk03; $MKNOD $DEV/dk/dk03 c 31 3; chmod 0666 $DEV/dk/dk03; }
+test -c $DEV/dk/dk04 || { echo dk/dk04; $MKNOD $DEV/dk/dk04 c 31 4; chmod 0622 $DEV/dk/dk04; }
+test -c $DEV/dk/dk05 || { echo dk/dk05; $MKNOD $DEV/dk/dk05 c 31 5; chmod 0666 $DEV/dk/dk05; }
+test -c $DEV/dk/dk06 || { echo dk/dk06; $MKNOD $DEV/dk/dk06 c 31 6; chmod 0644 $DEV/dk/dk06; }
+test -c $DEV/dk/dk07 || { echo dk/dk07; $MKNOD $DEV/dk/dk07 c 31 7; chmod 0666 $DEV/dk/dk07; }
+test -c $DEV/dk/dk08 || { echo dk/dk08; $MKNOD $DEV/dk/dk08 c 31 8; chmod 0622 $DEV/dk/dk08; }
+test -c $DEV/dk/dk09 || { echo dk/dk09; $MKNOD $DEV/dk/dk09 c 31 9; chmod 0666 $DEV/dk/dk09; }
+test -c $DEV/dk/dk10 || { echo dk/dk10; $MKNOD $DEV/dk/dk10 c 31 10; chmod 0644 $DEV/dk/dk10; }
+test -c $DEV/dk/dk11 || { echo dk/dk11; $MKNOD $DEV/dk/dk11 c 31 11; chmod 0666 $DEV/dk/dk11; }
+test -c $DEV/dk/dk12 || { echo dk/dk12; $MKNOD $DEV/dk/dk12 c 31 12; chmod 0622 $DEV/dk/dk12; }
+test -c $DEV/dk/dk13 || { echo dk/dk13; $MKNOD $DEV/dk/dk13 c 31 13; chmod 0666 $DEV/dk/dk13; }
+test -c $DEV/dk/dk14 || { echo dk/dk14; $MKNOD $DEV/dk/dk14 c 31 14; chmod 0622 $DEV/dk/dk14; }
+test -c $DEV/dk/dk15 || { echo dk/dk15; $MKNOD $DEV/dk/dk15 c 31 15; chmod 0666 $DEV/dk/dk15; }
+test -c $DEV/dk/dk16 || { echo dk/dk16; $MKNOD $DEV/dk/dk16 c 31 16; chmod 0622 $DEV/dk/dk16; }
+test -c $DEV/dk/dk17 || { echo dk/dk17; $MKNOD $DEV/dk/dk17 c 31 17; chmod 0666 $DEV/dk/dk17; }
+test -c $DEV/dk/dk18 || { echo dk/dk18; $MKNOD $DEV/dk/dk18 c 31 18; chmod 0622 $DEV/dk/dk18; }
+test -c $DEV/dk/dk19 || { echo dk/dk19; $MKNOD $DEV/dk/dk19 c 31 19; chmod 0666 $DEV/dk/dk19; }
+test -c $DEV/dk/dk20 || { echo dk/dk20; $MKNOD $DEV/dk/dk20 c 31 20; chmod 0622 $DEV/dk/dk20; }
+test -c $DEV/dk/dk21 || { echo dk/dk21; $MKNOD $DEV/dk/dk21 c 31 21; chmod 0666 $DEV/dk/dk21; }
+test -c $DEV/dk/dk22 || { echo dk/dk22; $MKNOD $DEV/dk/dk22 c 31 22; chmod 0722 $DEV/dk/dk22; }
+test -c $DEV/dk/dk23 || { echo dk/dk23; $MKNOD $DEV/dk/dk23 c 31 23; chmod 0666 $DEV/dk/dk23; }
+test -c $DEV/dk/dk24 || { echo dk/dk24; $MKNOD $DEV/dk/dk24 c 31 24; chmod 0622 $DEV/dk/dk24; }
+test -c $DEV/dk/dk25 || { echo dk/dk25; $MKNOD $DEV/dk/dk25 c 31 25; chmod 0666 $DEV/dk/dk25; }
+test -c $DEV/dk/dk26 || { echo dk/dk26; $MKNOD $DEV/dk/dk26 c 31 26; chmod 0622 $DEV/dk/dk26; }
+test -c $DEV/dk/dk27 || { echo dk/dk27; $MKNOD $DEV/dk/dk27 c 31 27; chmod 0666 $DEV/dk/dk27; }
+test -c $DEV/dk/dk28 || { echo dk/dk28; $MKNOD $DEV/dk/dk28 c 31 28; chmod 0622 $DEV/dk/dk28; }
+test -c $DEV/dk/dk29 || { echo dk/dk29; $MKNOD $DEV/dk/dk29 c 31 29; chmod 0666 $DEV/dk/dk29; }
+test -c $DEV/dk/dk30 || { echo dk/dk30; $MKNOD $DEV/dk/dk30 c 31 30; chmod 0622 $DEV/dk/dk30; }
+test -c $DEV/dk/dk31 || { echo dk/dk31; $MKNOD $DEV/dk/dk31 c 31 31; chmod 0666 $DEV/dk/dk31; }
+test -c $DEV/dk/dk32 || { echo dk/dk32; $MKNOD $DEV/dk/dk32 c 31 32; chmod 0722 $DEV/dk/dk32; }
+test -c $DEV/dk/dk33 || { echo dk/dk33; $MKNOD $DEV/dk/dk33 c 31 33; chmod 0666 $DEV/dk/dk33; }
+test -c $DEV/dk/dk34 || { echo dk/dk34; $MKNOD $DEV/dk/dk34 c 31 34; chmod 0622 $DEV/dk/dk34; }
+test -c $DEV/dk/dk35 || { echo dk/dk35; $MKNOD $DEV/dk/dk35 c 31 35; chmod 0666 $DEV/dk/dk35; }
+test -c $DEV/dk/dk36 || { echo dk/dk36; $MKNOD $DEV/dk/dk36 c 31 36; chmod 0622 $DEV/dk/dk36; }
+test -c $DEV/dk/dk37 || { echo dk/dk37; $MKNOD $DEV/dk/dk37 c 31 37; chmod 0666 $DEV/dk/dk37; }
+test -c $DEV/dk/dk38 || { echo dk/dk38; $MKNOD $DEV/dk/dk38 c 31 38; chmod 0622 $DEV/dk/dk38; }
+test -c $DEV/dk/dk39 || { echo dk/dk39; $MKNOD $DEV/dk/dk39 c 31 39; chmod 0666 $DEV/dk/dk39; }
+test -c $DEV/dk/dk40 || { echo dk/dk40; $MKNOD $DEV/dk/dk40 c 31 40; chmod 0622 $DEV/dk/dk40; }
+test -c $DEV/dk/dk41 || { echo dk/dk41; $MKNOD $DEV/dk/dk41 c 31 41; chmod 0666 $DEV/dk/dk41; }
+test -c $DEV/dk/dk42 || { echo dk/dk42; $MKNOD $DEV/dk/dk42 c 31 42; chmod 0622 $DEV/dk/dk42; }
+test -c $DEV/dk/dk43 || { echo dk/dk43; $MKNOD $DEV/dk/dk43 c 31 43; chmod 0666 $DEV/dk/dk43; }
+test -c $DEV/dk/dk44 || { echo dk/dk44; $MKNOD $DEV/dk/dk44 c 31 44; chmod 0622 $DEV/dk/dk44; }
+test -c $DEV/dk/dk45 || { echo dk/dk45; $MKNOD $DEV/dk/dk45 c 31 45; chmod 0666 $DEV/dk/dk45; }
+test -c $DEV/dk/dk46 || { echo dk/dk46; $MKNOD $DEV/dk/dk46 c 31 46; chmod 0622 $DEV/dk/dk46; }
+test -c $DEV/dk/dk47 || { echo dk/dk47; $MKNOD $DEV/dk/dk47 c 31 47; chmod 0666 $DEV/dk/dk47; }
+test -c $DEV/dk/dk48 || { echo dk/dk48; $MKNOD $DEV/dk/dk48 c 31 48; chmod 0622 $DEV/dk/dk48; }
+test -c $DEV/dk/dk49 || { echo dk/dk49; $MKNOD $DEV/dk/dk49 c 31 49; chmod 0666 $DEV/dk/dk49; }
+test -c $DEV/dk/dk50 || { echo dk/dk50; $MKNOD $DEV/dk/dk50 c 31 50; chmod 0622 $DEV/dk/dk50; }
+test -c $DEV/dk/dk51 || { echo dk/dk51; $MKNOD $DEV/dk/dk51 c 31 51; chmod 0664 $DEV/dk/dk51; }
+test -c $DEV/dk/dk52 || { echo dk/dk52; $MKNOD $DEV/dk/dk52 c 31 52; chmod 0622 $DEV/dk/dk52; }
+test -c $DEV/dk/dk53 || { echo dk/dk53; $MKNOD $DEV/dk/dk53 c 31 53; chmod 0664 $DEV/dk/dk53; }
+test -c $DEV/dk/dk54 || { echo dk/dk54; $MKNOD $DEV/dk/dk54 c 31 54; chmod 0622 $DEV/dk/dk54; }
+test -c $DEV/dk/dk55 || { echo dk/dk55; $MKNOD $DEV/dk/dk55 c 31 55; chmod 0664 $DEV/dk/dk55; }
+test -c $DEV/dk/dk56 || { echo dk/dk56; $MKNOD $DEV/dk/dk56 c 31 56; chmod 0622 $DEV/dk/dk56; }
+test -c $DEV/dk/dk57 || { echo dk/dk57; $MKNOD $DEV/dk/dk57 c 31 57; chmod 0664 $DEV/dk/dk57; }
+test -c $DEV/dk/dk58 || { echo dk/dk58; $MKNOD $DEV/dk/dk58 c 31 58; chmod 0644 $DEV/dk/dk58; }
+test -c $DEV/dk/dk59 || { echo dk/dk59; $MKNOD $DEV/dk/dk59 c 31 59; chmod 0664 $DEV/dk/dk59; }
+test -c $DEV/dk/dk60 || { echo dk/dk60; $MKNOD $DEV/dk/dk60 c 31 60; chmod 0622 $DEV/dk/dk60; }
+test -c $DEV/dk/dk61 || { echo dk/dk61; $MKNOD $DEV/dk/dk61 c 31 61; chmod 0664 $DEV/dk/dk61; }
+test -c $DEV/dk/dk62 || { echo dk/dk62; $MKNOD $DEV/dk/dk62 c 31 62; chmod 0622 $DEV/dk/dk62; }
+test -c $DEV/dk/dk63 || { echo dk/dk63; $MKNOD $DEV/dk/dk63 c 31 63; chmod 0664 $DEV/dk/dk63; }
+test -c $DEV/dk/dk64 || { echo dk/dk64; $MKNOD $DEV/dk/dk64 c 31 64; chmod 0622 $DEV/dk/dk64; }
+test -c $DEV/dk/dk65 || { echo dk/dk65; $MKNOD $DEV/dk/dk65 c 31 65; chmod 0664 $DEV/dk/dk65; }
+test -c $DEV/dk/dk66 || { echo dk/dk66; $MKNOD $DEV/dk/dk66 c 31 66; chmod 0722 $DEV/dk/dk66; }
+test -c $DEV/dk/dk67 || { echo dk/dk67; $MKNOD $DEV/dk/dk67 c 31 67; chmod 0664 $DEV/dk/dk67; }
+test -c $DEV/dk/dk68 || { echo dk/dk68; $MKNOD $DEV/dk/dk68 c 31 68; chmod 0622 $DEV/dk/dk68; }
+test -c $DEV/dk/dk69 || { echo dk/dk69; $MKNOD $DEV/dk/dk69 c 31 69; chmod 0664 $DEV/dk/dk69; }
+test -c $DEV/dk/dk70 || { echo dk/dk70; $MKNOD $DEV/dk/dk70 c 31 70; chmod 0622 $DEV/dk/dk70; }
+test -c $DEV/dk/dk71 || { echo dk/dk71; $MKNOD $DEV/dk/dk71 c 31 71; chmod 0664 $DEV/dk/dk71; }
+test -c $DEV/dk/dk72 || { echo dk/dk72; $MKNOD $DEV/dk/dk72 c 31 72; chmod 0622 $DEV/dk/dk72; }
+test -c $DEV/dk/dk73 || { echo dk/dk73; $MKNOD $DEV/dk/dk73 c 31 73; chmod 0664 $DEV/dk/dk73; }
+test -c $DEV/dk/dk74 || { echo dk/dk74; $MKNOD $DEV/dk/dk74 c 31 74; chmod 0622 $DEV/dk/dk74; }
+test -c $DEV/dk/dk75 || { echo dk/dk75; $MKNOD $DEV/dk/dk75 c 31 75; chmod 0664 $DEV/dk/dk75; }
+test -c $DEV/dk/dk76 || { echo dk/dk76; $MKNOD $DEV/dk/dk76 c 31 76; chmod 0622 $DEV/dk/dk76; }
+test -c $DEV/dk/dk77 || { echo dk/dk77; $MKNOD $DEV/dk/dk77 c 31 77; chmod 0664 $DEV/dk/dk77; }
+test -c $DEV/dk/dk78 || { echo dk/dk78; $MKNOD $DEV/dk/dk78 c 31 78; chmod 0622 $DEV/dk/dk78; }
+test -c $DEV/dk/dk79 || { echo dk/dk79; $MKNOD $DEV/dk/dk79 c 31 79; chmod 0664 $DEV/dk/dk79; }
+test -c $DEV/dk/dk80 || { echo dk/dk80; $MKNOD $DEV/dk/dk80 c 31 80; chmod 0622 $DEV/dk/dk80; }
+test -c $DEV/dk/dk81 || { echo dk/dk81; $MKNOD $DEV/dk/dk81 c 31 81; chmod 0664 $DEV/dk/dk81; }
+test -c $DEV/dk/dk82 || { echo dk/dk82; $MKNOD $DEV/dk/dk82 c 31 82; chmod 0622 $DEV/dk/dk82; }
+test -c $DEV/dk/dk83 || { echo dk/dk83; $MKNOD $DEV/dk/dk83 c 31 83; chmod 0664 $DEV/dk/dk83; }
+test -c $DEV/dk/dk84 || { echo dk/dk84; $MKNOD $DEV/dk/dk84 c 31 84; chmod 0622 $DEV/dk/dk84; }
+test -c $DEV/dk/dk85 || { echo dk/dk85; $MKNOD $DEV/dk/dk85 c 31 85; chmod 0664 $DEV/dk/dk85; }
+test -c $DEV/dk/dk86 || { echo dk/dk86; $MKNOD $DEV/dk/dk86 c 31 86; chmod 0622 $DEV/dk/dk86; }
+test -c $DEV/dk/dk87 || { echo dk/dk87; $MKNOD $DEV/dk/dk87 c 31 87; chmod 0664 $DEV/dk/dk87; }
+test -c $DEV/dk/dk88 || { echo dk/dk88; $MKNOD $DEV/dk/dk88 c 31 88; chmod 0622 $DEV/dk/dk88; }
+test -c $DEV/dk/dk89 || { echo dk/dk89; $MKNOD $DEV/dk/dk89 c 31 89; chmod 0664 $DEV/dk/dk89; }
+test -c $DEV/dk/dk90 || { echo dk/dk90; $MKNOD $DEV/dk/dk90 c 31 90; chmod 0622 $DEV/dk/dk90; }
+test -c $DEV/dk/dk91 || { echo dk/dk91; $MKNOD $DEV/dk/dk91 c 31 91; chmod 0664 $DEV/dk/dk91; }
+test -c $DEV/dk/dk92 || { echo dk/dk92; $MKNOD $DEV/dk/dk92 c 31 92; chmod 0644 $DEV/dk/dk92; }
+test -c $DEV/dk/dk93 || { echo dk/dk93; $MKNOD $DEV/dk/dk93 c 31 93; chmod 0664 $DEV/dk/dk93; }
+test -c $DEV/dk/dk94 || { echo dk/dk94; $MKNOD $DEV/dk/dk94 c 31 94; chmod 0622 $DEV/dk/dk94; }
+test -c $DEV/dk/dk95 || { echo dk/dk95; $MKNOD $DEV/dk/dk95 c 31 95; chmod 0664 $DEV/dk/dk95; }
+test -c $DEV/kmc0 || { echo kmc0; $MKNOD $DEV/kmc0 c 26 0; chmod 0666 $DEV/kmc0; }
+test -c $DEV/dn0 || { echo dn0; $MKNOD $DEV/dn0 c 19 128; chmod 0666 $DEV/dn0; }
+test -c $DEV/il0 || { echo il0; $MKNOD $DEV/il0 c 44 0; chmod 0600 $DEV/il0; }
+test -c $DEV/il1 || { echo il1; $MKNOD $DEV/il1 c 44 1; chmod 0666 $DEV/il1; }
+test -c $DEV/il2 || { echo il2; $MKNOD $DEV/il2 c 44 2; chmod 0666 $DEV/il2; }
+test -c $DEV/il3 || { echo il3; $MKNOD $DEV/il3 c 44 3; chmod 0666 $DEV/il3; }
+test -c $DEV/il4 || { echo il4; $MKNOD $DEV/il4 c 44 4; chmod 0666 $DEV/il4; }
+test -c $DEV/il5 || { echo il5; $MKNOD $DEV/il5 c 44 5; chmod 0666 $DEV/il5; }
+test -c $DEV/il6 || { echo il6; $MKNOD $DEV/il6 c 44 6; chmod 0666 $DEV/il6; }
+test -c $DEV/il7 || { echo il7; $MKNOD $DEV/il7 c 44 7; chmod 0666 $DEV/il7; }
+test -c $DEV/tcp00 || { echo tcp00; $MKNOD $DEV/tcp00 c 43 0; chmod 0600 $DEV/tcp00; }
+test -c $DEV/tcp01 || { echo tcp01; $MKNOD $DEV/tcp01 c 43 1; chmod 0666 $DEV/tcp01; }
+test -c $DEV/tcp02 || { echo tcp02; $MKNOD $DEV/tcp02 c 43 2; chmod 0600 $DEV/tcp02; }
+test -c $DEV/tcp03 || { echo tcp03; $MKNOD $DEV/tcp03 c 43 3; chmod 0666 $DEV/tcp03; }
+test -c $DEV/tcp04 || { echo tcp04; $MKNOD $DEV/tcp04 c 43 4; chmod 0600 $DEV/tcp04; }
+test -c $DEV/tcp05 || { echo tcp05; $MKNOD $DEV/tcp05 c 43 5; chmod 0666 $DEV/tcp05; }
+test -c $DEV/tcp06 || { echo tcp06; $MKNOD $DEV/tcp06 c 43 6; chmod 0600 $DEV/tcp06; }
+test -c $DEV/tcp07 || { echo tcp07; $MKNOD $DEV/tcp07 c 43 7; chmod 0666 $DEV/tcp07; }
+test -c $DEV/tcp08 || { echo tcp08; $MKNOD $DEV/tcp08 c 43 8; chmod 0600 $DEV/tcp08; }
+test -c $DEV/tcp09 || { echo tcp09; $MKNOD $DEV/tcp09 c 43 9; chmod 0666 $DEV/tcp09; }
+test -c $DEV/tcp10 || { echo tcp10; $MKNOD $DEV/tcp10 c 43 10; chmod 0600 $DEV/tcp10; }
+test -c $DEV/tcp11 || { echo tcp11; $MKNOD $DEV/tcp11 c 43 11; chmod 0666 $DEV/tcp11; }
+test -c $DEV/tcp12 || { echo tcp12; $MKNOD $DEV/tcp12 c 43 12; chmod 0600 $DEV/tcp12; }
+test -c $DEV/tcp13 || { echo tcp13; $MKNOD $DEV/tcp13 c 43 13; chmod 0666 $DEV/tcp13; }
+test -c $DEV/tcp14 || { echo tcp14; $MKNOD $DEV/tcp14 c 43 14; chmod 0600 $DEV/tcp14; }
+test -c $DEV/tcp15 || { echo tcp15; $MKNOD $DEV/tcp15 c 43 15; chmod 0666 $DEV/tcp15; }
+test -c $DEV/tcp16 || { echo tcp16; $MKNOD $DEV/tcp16 c 43 16; chmod 0600 $DEV/tcp16; }
+test -c $DEV/tcp17 || { echo tcp17; $MKNOD $DEV/tcp17 c 43 17; chmod 0666 $DEV/tcp17; }
+test -c $DEV/tcp18 || { echo tcp18; $MKNOD $DEV/tcp18 c 43 18; chmod 0600 $DEV/tcp18; }
+test -c $DEV/tcp19 || { echo tcp19; $MKNOD $DEV/tcp19 c 43 19; chmod 0666 $DEV/tcp19; }
+test -c $DEV/tcp20 || { echo tcp20; $MKNOD $DEV/tcp20 c 43 20; chmod 0600 $DEV/tcp20; }
+test -c $DEV/tcp21 || { echo tcp21; $MKNOD $DEV/tcp21 c 43 21; chmod 0666 $DEV/tcp21; }
+test -c $DEV/tcp22 || { echo tcp22; $MKNOD $DEV/tcp22 c 43 22; chmod 0600 $DEV/tcp22; }
+test -c $DEV/tcp23 || { echo tcp23; $MKNOD $DEV/tcp23 c 43 23; chmod 0666 $DEV/tcp23; }
+test -c $DEV/tcp24 || { echo tcp24; $MKNOD $DEV/tcp24 c 43 24; chmod 0600 $DEV/tcp24; }
+test -c $DEV/tcp25 || { echo tcp25; $MKNOD $DEV/tcp25 c 43 25; chmod 0666 $DEV/tcp25; }
+test -c $DEV/tcp26 || { echo tcp26; $MKNOD $DEV/tcp26 c 43 26; chmod 0600 $DEV/tcp26; }
+test -c $DEV/tcp27 || { echo tcp27; $MKNOD $DEV/tcp27 c 43 27; chmod 0666 $DEV/tcp27; }
+test -c $DEV/tcp28 || { echo tcp28; $MKNOD $DEV/tcp28 c 43 28; chmod 0600 $DEV/tcp28; }
+test -c $DEV/tcp29 || { echo tcp29; $MKNOD $DEV/tcp29 c 43 29; chmod 0666 $DEV/tcp29; }
+test -c $DEV/tcp30 || { echo tcp30; $MKNOD $DEV/tcp30 c 43 30; chmod 0600 $DEV/tcp30; }
+test -c $DEV/tcp31 || { echo tcp31; $MKNOD $DEV/tcp31 c 43 31; chmod 0666 $DEV/tcp31; }
+test -c $DEV/tcp32 || { echo tcp32; $MKNOD $DEV/tcp32 c 43 32; chmod 0600 $DEV/tcp32; }
+test -c $DEV/tcp33 || { echo tcp33; $MKNOD $DEV/tcp33 c 43 33; chmod 0666 $DEV/tcp33; }
+test -c $DEV/tcp34 || { echo tcp34; $MKNOD $DEV/tcp34 c 43 34; chmod 0600 $DEV/tcp34; }
+test -c $DEV/tcp35 || { echo tcp35; $MKNOD $DEV/tcp35 c 43 35; chmod 0666 $DEV/tcp35; }
+test -c $DEV/tcp36 || { echo tcp36; $MKNOD $DEV/tcp36 c 43 36; chmod 0600 $DEV/tcp36; }
+test -c $DEV/tcp37 || { echo tcp37; $MKNOD $DEV/tcp37 c 43 37; chmod 0666 $DEV/tcp37; }
+test -c $DEV/tcp38 || { echo tcp38; $MKNOD $DEV/tcp38 c 43 38; chmod 0600 $DEV/tcp38; }
+test -c $DEV/tcp39 || { echo tcp39; $MKNOD $DEV/tcp39 c 43 39; chmod 0666 $DEV/tcp39; }
+test -c $DEV/tcp40 || { echo tcp40; $MKNOD $DEV/tcp40 c 43 40; chmod 0600 $DEV/tcp40; }
+test -c $DEV/tcp41 || { echo tcp41; $MKNOD $DEV/tcp41 c 43 41; chmod 0666 $DEV/tcp41; }
+test -c $DEV/tcp42 || { echo tcp42; $MKNOD $DEV/tcp42 c 43 42; chmod 0600 $DEV/tcp42; }
+test -c $DEV/tcp43 || { echo tcp43; $MKNOD $DEV/tcp43 c 43 43; chmod 0666 $DEV/tcp43; }
+test -c $DEV/tcp44 || { echo tcp44; $MKNOD $DEV/tcp44 c 43 44; chmod 0600 $DEV/tcp44; }
+test -c $DEV/tcp45 || { echo tcp45; $MKNOD $DEV/tcp45 c 43 45; chmod 0666 $DEV/tcp45; }
+test -c $DEV/tcp46 || { echo tcp46; $MKNOD $DEV/tcp46 c 43 46; chmod 0600 $DEV/tcp46; }
+test -c $DEV/tcp47 || { echo tcp47; $MKNOD $DEV/tcp47 c 43 47; chmod 0666 $DEV/tcp47; }
+test -c $DEV/tcp48 || { echo tcp48; $MKNOD $DEV/tcp48 c 43 48; chmod 0600 $DEV/tcp48; }
+test -c $DEV/tcp49 || { echo tcp49; $MKNOD $DEV/tcp49 c 43 49; chmod 0666 $DEV/tcp49; }
+test -c $DEV/tcp50 || { echo tcp50; $MKNOD $DEV/tcp50 c 43 50; chmod 0600 $DEV/tcp50; }
+test -c $DEV/tcp51 || { echo tcp51; $MKNOD $DEV/tcp51 c 43 51; chmod 0666 $DEV/tcp51; }
+test -c $DEV/tcp52 || { echo tcp52; $MKNOD $DEV/tcp52 c 43 52; chmod 0600 $DEV/tcp52; }
+test -c $DEV/tcp53 || { echo tcp53; $MKNOD $DEV/tcp53 c 43 53; chmod 0666 $DEV/tcp53; }
+test -c $DEV/tcp54 || { echo tcp54; $MKNOD $DEV/tcp54 c 43 54; chmod 0600 $DEV/tcp54; }
+test -c $DEV/tcp55 || { echo tcp55; $MKNOD $DEV/tcp55 c 43 55; chmod 0666 $DEV/tcp55; }
+test -c $DEV/tcp56 || { echo tcp56; $MKNOD $DEV/tcp56 c 43 56; chmod 0600 $DEV/tcp56; }
+test -c $DEV/tcp57 || { echo tcp57; $MKNOD $DEV/tcp57 c 43 57; chmod 0666 $DEV/tcp57; }
+test -c $DEV/tcp58 || { echo tcp58; $MKNOD $DEV/tcp58 c 43 58; chmod 0600 $DEV/tcp58; }
+test -c $DEV/tcp59 || { echo tcp59; $MKNOD $DEV/tcp59 c 43 59; chmod 0666 $DEV/tcp59; }
+test -c $DEV/tcp60 || { echo tcp60; $MKNOD $DEV/tcp60 c 43 60; chmod 0600 $DEV/tcp60; }
+test -c $DEV/tcp61 || { echo tcp61; $MKNOD $DEV/tcp61 c 43 61; chmod 0666 $DEV/tcp61; }
+test -c $DEV/tcp62 || { echo tcp62; $MKNOD $DEV/tcp62 c 43 62; chmod 0600 $DEV/tcp62; }
+test -c $DEV/tcp63 || { echo tcp63; $MKNOD $DEV/tcp63 c 43 63; chmod 0666 $DEV/tcp63; }
+test -c $DEV/tcp64 || { echo tcp64; $MKNOD $DEV/tcp64 c 43 64; chmod 0600 $DEV/tcp64; }
+test -c $DEV/tcp65 || { echo tcp65; $MKNOD $DEV/tcp65 c 43 65; chmod 0666 $DEV/tcp65; }
+test -c $DEV/tcp66 || { echo tcp66; $MKNOD $DEV/tcp66 c 43 66; chmod 0600 $DEV/tcp66; }
+test -c $DEV/tcp67 || { echo tcp67; $MKNOD $DEV/tcp67 c 43 67; chmod 0666 $DEV/tcp67; }
+test -c $DEV/tcp68 || { echo tcp68; $MKNOD $DEV/tcp68 c 43 68; chmod 0600 $DEV/tcp68; }
+test -c $DEV/tcp69 || { echo tcp69; $MKNOD $DEV/tcp69 c 43 69; chmod 0666 $DEV/tcp69; }
+test -c $DEV/tcp70 || { echo tcp70; $MKNOD $DEV/tcp70 c 43 70; chmod 0600 $DEV/tcp70; }
+test -c $DEV/tcp71 || { echo tcp71; $MKNOD $DEV/tcp71 c 43 71; chmod 0666 $DEV/tcp71; }
+test -c $DEV/tcp72 || { echo tcp72; $MKNOD $DEV/tcp72 c 43 72; chmod 0600 $DEV/tcp72; }
+test -c $DEV/tcp73 || { echo tcp73; $MKNOD $DEV/tcp73 c 43 73; chmod 0666 $DEV/tcp73; }
+test -c $DEV/tcp74 || { echo tcp74; $MKNOD $DEV/tcp74 c 43 74; chmod 0600 $DEV/tcp74; }
+test -c $DEV/tcp75 || { echo tcp75; $MKNOD $DEV/tcp75 c 43 75; chmod 0666 $DEV/tcp75; }
+test -c $DEV/tcp76 || { echo tcp76; $MKNOD $DEV/tcp76 c 43 76; chmod 0600 $DEV/tcp76; }
+test -c $DEV/tcp77 || { echo tcp77; $MKNOD $DEV/tcp77 c 43 77; chmod 0666 $DEV/tcp77; }
+test -c $DEV/tcp78 || { echo tcp78; $MKNOD $DEV/tcp78 c 43 78; chmod 0600 $DEV/tcp78; }
+test -c $DEV/tcp79 || { echo tcp79; $MKNOD $DEV/tcp79 c 43 79; chmod 0666 $DEV/tcp79; }
+test -c $DEV/tcp80 || { echo tcp80; $MKNOD $DEV/tcp80 c 43 80; chmod 0600 $DEV/tcp80; }
+test -c $DEV/tcp81 || { echo tcp81; $MKNOD $DEV/tcp81 c 43 81; chmod 0666 $DEV/tcp81; }
+test -c $DEV/tcp82 || { echo tcp82; $MKNOD $DEV/tcp82 c 43 82; chmod 0600 $DEV/tcp82; }
+test -c $DEV/tcp83 || { echo tcp83; $MKNOD $DEV/tcp83 c 43 83; chmod 0666 $DEV/tcp83; }
+test -c $DEV/tcp84 || { echo tcp84; $MKNOD $DEV/tcp84 c 43 84; chmod 0600 $DEV/tcp84; }
+test -c $DEV/tcp85 || { echo tcp85; $MKNOD $DEV/tcp85 c 43 85; chmod 0666 $DEV/tcp85; }
+test -c $DEV/tcp86 || { echo tcp86; $MKNOD $DEV/tcp86 c 43 86; chmod 0600 $DEV/tcp86; }
+test -c $DEV/tcp87 || { echo tcp87; $MKNOD $DEV/tcp87 c 43 87; chmod 0666 $DEV/tcp87; }
+test -c $DEV/tcp88 || { echo tcp88; $MKNOD $DEV/tcp88 c 43 88; chmod 0600 $DEV/tcp88; }
+test -c $DEV/tcp89 || { echo tcp89; $MKNOD $DEV/tcp89 c 43 89; chmod 0666 $DEV/tcp89; }
+test -c $DEV/tcp90 || { echo tcp90; $MKNOD $DEV/tcp90 c 43 90; chmod 0600 $DEV/tcp90; }
+test -c $DEV/tcp91 || { echo tcp91; $MKNOD $DEV/tcp91 c 43 91; chmod 0666 $DEV/tcp91; }
+test -c $DEV/tcp92 || { echo tcp92; $MKNOD $DEV/tcp92 c 43 92; chmod 0600 $DEV/tcp92; }
+test -c $DEV/tcp93 || { echo tcp93; $MKNOD $DEV/tcp93 c 43 93; chmod 0666 $DEV/tcp93; }
+test -c $DEV/tcp94 || { echo tcp94; $MKNOD $DEV/tcp94 c 43 94; chmod 0600 $DEV/tcp94; }
+test -c $DEV/tcp95 || { echo tcp95; $MKNOD $DEV/tcp95 c 43 95; chmod 0666 $DEV/tcp95; }
+test -c $DEV/udp00 || { echo udp00; $MKNOD $DEV/udp00 c 50 0; chmod 0666 $DEV/udp00; }
+test -c $DEV/udp01 || { echo udp01; $MKNOD $DEV/udp01 c 50 1; chmod 0666 $DEV/udp01; }
+test -c $DEV/udp02 || { echo udp02; $MKNOD $DEV/udp02 c 50 2; chmod 0666 $DEV/udp02; }
+test -c $DEV/udp03 || { echo udp03; $MKNOD $DEV/udp03 c 50 3; chmod 0666 $DEV/udp03; }
+test -c $DEV/udp04 || { echo udp04; $MKNOD $DEV/udp04 c 50 4; chmod 0666 $DEV/udp04; }
+test -c $DEV/udp05 || { echo udp05; $MKNOD $DEV/udp05 c 50 5; chmod 0666 $DEV/udp05; }
+test -c $DEV/udp06 || { echo udp06; $MKNOD $DEV/udp06 c 50 6; chmod 0666 $DEV/udp06; }
+test -c $DEV/udp07 || { echo udp07; $MKNOD $DEV/udp07 c 50 7; chmod 0666 $DEV/udp07; }
+test -c $DEV/udp08 || { echo udp08; $MKNOD $DEV/udp08 c 50 8; chmod 0666 $DEV/udp08; }
+test -c $DEV/udp09 || { echo udp09; $MKNOD $DEV/udp09 c 50 9; chmod 0666 $DEV/udp09; }
+test -c $DEV/udp10 || { echo udp10; $MKNOD $DEV/udp10 c 50 10; chmod 0666 $DEV/udp10; }
+test -c $DEV/udp11 || { echo udp11; $MKNOD $DEV/udp11 c 50 11; chmod 0666 $DEV/udp11; }
+test -c $DEV/udp12 || { echo udp12; $MKNOD $DEV/udp12 c 50 12; chmod 0666 $DEV/udp12; }
+test -c $DEV/udp13 || { echo udp13; $MKNOD $DEV/udp13 c 50 13; chmod 0666 $DEV/udp13; }
+test -c $DEV/udp14 || { echo udp14; $MKNOD $DEV/udp14 c 50 14; chmod 0666 $DEV/udp14; }
+test -c $DEV/udp15 || { echo udp15; $MKNOD $DEV/udp15 c 50 15; chmod 0666 $DEV/udp15; }
+test -c $DEV/ip0 || { echo ip0; $MKNOD $DEV/ip0 c 42 0; chmod 0666 $DEV/ip0; }
+test -c $DEV/ipicmp || { echo ipicmp; $MKNOD $DEV/ipicmp c 42 1; chmod 0666 $DEV/ipicmp; }
+test -c $DEV/ip6 || { echo ip6; $MKNOD $DEV/ip6 c 42 6; chmod 0666 $DEV/ip6; }
+test -c $DEV/iptcp || { echo iptcp; $MKNOD $DEV/iptcp c 42 6; chmod 0666 $DEV/iptcp; }
+test -c $DEV/ip16 || { echo ip16; $MKNOD $DEV/ip16 c 42 16; chmod 0666 $DEV/ip16; }
+test -c $DEV/ip17 || { echo ip17; $MKNOD $DEV/ip17 c 42 17; chmod 0666 $DEV/ip17; }
+test -c $DEV/pt/pt00 || { echo pt/pt00; $MKNOD $DEV/pt/pt00 c 18 0; chmod 0666 $DEV/pt/pt00; }
+test -c $DEV/pt/pt01 || { echo pt/pt01; $MKNOD $DEV/pt/pt01 c 18 1; chmod 0666 $DEV/pt/pt01; }
+test -c $DEV/pt/pt02 || { echo pt/pt02; $MKNOD $DEV/pt/pt02 c 18 2; chmod 0666 $DEV/pt/pt02; }
+test -c $DEV/pt/pt03 || { echo pt/pt03; $MKNOD $DEV/pt/pt03 c 18 3; chmod 0666 $DEV/pt/pt03; }
+test -c $DEV/pt/pt04 || { echo pt/pt04; $MKNOD $DEV/pt/pt04 c 18 4; chmod 0666 $DEV/pt/pt04; }
+test -c $DEV/pt/pt05 || { echo pt/pt05; $MKNOD $DEV/pt/pt05 c 18 5; chmod 0666 $DEV/pt/pt05; }
+test -c $DEV/pt/pt06 || { echo pt/pt06; $MKNOD $DEV/pt/pt06 c 18 6; chmod 0666 $DEV/pt/pt06; }
+test -c $DEV/pt/pt07 || { echo pt/pt07; $MKNOD $DEV/pt/pt07 c 18 7; chmod 0666 $DEV/pt/pt07; }
+test -c $DEV/pt/pt08 || { echo pt/pt08; $MKNOD $DEV/pt/pt08 c 18 8; chmod 0666 $DEV/pt/pt08; }
+test -c $DEV/pt/pt09 || { echo pt/pt09; $MKNOD $DEV/pt/pt09 c 18 9; chmod 0666 $DEV/pt/pt09; }
+test -c $DEV/pt/pt10 || { echo pt/pt10; $MKNOD $DEV/pt/pt10 c 18 10; chmod 0666 $DEV/pt/pt10; }
+test -c $DEV/pt/pt11 || { echo pt/pt11; $MKNOD $DEV/pt/pt11 c 18 11; chmod 0666 $DEV/pt/pt11; }
+test -c $DEV/pt/pt12 || { echo pt/pt12; $MKNOD $DEV/pt/pt12 c 18 12; chmod 0666 $DEV/pt/pt12; }
+test -c $DEV/pt/pt13 || { echo pt/pt13; $MKNOD $DEV/pt/pt13 c 18 13; chmod 0666 $DEV/pt/pt13; }
+test -c $DEV/pt/pt14 || { echo pt/pt14; $MKNOD $DEV/pt/pt14 c 18 14; chmod 0666 $DEV/pt/pt14; }
+test -c $DEV/pt/pt15 || { echo pt/pt15; $MKNOD $DEV/pt/pt15 c 18 15; chmod 0666 $DEV/pt/pt15; }
+test -c $DEV/pt/pt16 || { echo pt/pt16; $MKNOD $DEV/pt/pt16 c 18 16; chmod 0666 $DEV/pt/pt16; }
+test -c $DEV/pt/pt17 || { echo pt/pt17; $MKNOD $DEV/pt/pt17 c 18 17; chmod 0666 $DEV/pt/pt17; }
+test -c $DEV/pt/pt18 || { echo pt/pt18; $MKNOD $DEV/pt/pt18 c 18 18; chmod 0666 $DEV/pt/pt18; }
+test -c $DEV/pt/pt19 || { echo pt/pt19; $MKNOD $DEV/pt/pt19 c 18 19; chmod 0666 $DEV/pt/pt19; }
+test -c $DEV/pt/pt20 || { echo pt/pt20; $MKNOD $DEV/pt/pt20 c 18 20; chmod 0666 $DEV/pt/pt20; }
+test -c $DEV/pt/pt21 || { echo pt/pt21; $MKNOD $DEV/pt/pt21 c 18 21; chmod 0666 $DEV/pt/pt21; }
+test -c $DEV/pt/pt22 || { echo pt/pt22; $MKNOD $DEV/pt/pt22 c 18 22; chmod 0666 $DEV/pt/pt22; }
+test -c $DEV/pt/pt23 || { echo pt/pt23; $MKNOD $DEV/pt/pt23 c 18 23; chmod 0666 $DEV/pt/pt23; }
+test -c $DEV/pt/pt24 || { echo pt/pt24; $MKNOD $DEV/pt/pt24 c 18 24; chmod 0666 $DEV/pt/pt24; }
+test -c $DEV/pt/pt25 || { echo pt/pt25; $MKNOD $DEV/pt/pt25 c 18 25; chmod 0666 $DEV/pt/pt25; }
+test -c $DEV/pt/pt26 || { echo pt/pt26; $MKNOD $DEV/pt/pt26 c 18 26; chmod 0666 $DEV/pt/pt26; }
+test -c $DEV/pt/pt27 || { echo pt/pt27; $MKNOD $DEV/pt/pt27 c 18 27; chmod 0666 $DEV/pt/pt27; }
+test -c $DEV/pt/pt28 || { echo pt/pt28; $MKNOD $DEV/pt/pt28 c 18 28; chmod 0666 $DEV/pt/pt28; }
+test -c $DEV/pt/pt29 || { echo pt/pt29; $MKNOD $DEV/pt/pt29 c 18 29; chmod 0666 $DEV/pt/pt29; }
+test -c $DEV/pt/pt30 || { echo pt/pt30; $MKNOD $DEV/pt/pt30 c 18 30; chmod 0666 $DEV/pt/pt30; }
+test -c $DEV/pt/pt31 || { echo pt/pt31; $MKNOD $DEV/pt/pt31 c 18 31; chmod 0666 $DEV/pt/pt31; }
+test -c $DEV/pt/pt32 || { echo pt/pt32; $MKNOD $DEV/pt/pt32 c 18 32; chmod 0666 $DEV/pt/pt32; }
+test -c $DEV/pt/pt33 || { echo pt/pt33; $MKNOD $DEV/pt/pt33 c 18 33; chmod 0666 $DEV/pt/pt33; }
+test -c $DEV/pt/pt34 || { echo pt/pt34; $MKNOD $DEV/pt/pt34 c 18 34; chmod 0666 $DEV/pt/pt34; }
+test -c $DEV/pt/pt35 || { echo pt/pt35; $MKNOD $DEV/pt/pt35 c 18 35; chmod 0666 $DEV/pt/pt35; }
+test -c $DEV/pt/pt36 || { echo pt/pt36; $MKNOD $DEV/pt/pt36 c 18 36; chmod 0666 $DEV/pt/pt36; }
+test -c $DEV/pt/pt37 || { echo pt/pt37; $MKNOD $DEV/pt/pt37 c 18 37; chmod 0666 $DEV/pt/pt37; }
+test -c $DEV/pt/pt38 || { echo pt/pt38; $MKNOD $DEV/pt/pt38 c 18 38; chmod 0666 $DEV/pt/pt38; }
+test -c $DEV/pt/pt39 || { echo pt/pt39; $MKNOD $DEV/pt/pt39 c 18 39; chmod 0666 $DEV/pt/pt39; }
+test -c $DEV/pt/pt40 || { echo pt/pt40; $MKNOD $DEV/pt/pt40 c 18 40; chmod 0666 $DEV/pt/pt40; }
+test -c $DEV/pt/pt41 || { echo pt/pt41; $MKNOD $DEV/pt/pt41 c 18 41; chmod 0666 $DEV/pt/pt41; }
+test -c $DEV/pt/pt42 || { echo pt/pt42; $MKNOD $DEV/pt/pt42 c 18 42; chmod 0666 $DEV/pt/pt42; }
+test -c $DEV/pt/pt43 || { echo pt/pt43; $MKNOD $DEV/pt/pt43 c 18 43; chmod 0666 $DEV/pt/pt43; }
+test -c $DEV/pt/pt44 || { echo pt/pt44; $MKNOD $DEV/pt/pt44 c 18 44; chmod 0666 $DEV/pt/pt44; }
+test -c $DEV/pt/pt45 || { echo pt/pt45; $MKNOD $DEV/pt/pt45 c 18 45; chmod 0666 $DEV/pt/pt45; }
+test -c $DEV/pt/pt46 || { echo pt/pt46; $MKNOD $DEV/pt/pt46 c 18 46; chmod 0666 $DEV/pt/pt46; }
+test -c $DEV/pt/pt47 || { echo pt/pt47; $MKNOD $DEV/pt/pt47 c 18 47; chmod 0666 $DEV/pt/pt47; }
+test -c $DEV/pt/pt48 || { echo pt/pt48; $MKNOD $DEV/pt/pt48 c 18 48; chmod 0666 $DEV/pt/pt48; }
+test -c $DEV/pt/pt49 || { echo pt/pt49; $MKNOD $DEV/pt/pt49 c 18 49; chmod 0666 $DEV/pt/pt49; }
+test -c $DEV/pt/pt50 || { echo pt/pt50; $MKNOD $DEV/pt/pt50 c 18 50; chmod 0666 $DEV/pt/pt50; }
+test -c $DEV/pt/pt51 || { echo pt/pt51; $MKNOD $DEV/pt/pt51 c 18 51; chmod 0666 $DEV/pt/pt51; }
+test -c $DEV/pt/pt52 || { echo pt/pt52; $MKNOD $DEV/pt/pt52 c 18 52; chmod 0666 $DEV/pt/pt52; }
+test -c $DEV/pt/pt53 || { echo pt/pt53; $MKNOD $DEV/pt/pt53 c 18 53; chmod 0666 $DEV/pt/pt53; }
+test -c $DEV/pt/pt54 || { echo pt/pt54; $MKNOD $DEV/pt/pt54 c 18 54; chmod 0666 $DEV/pt/pt54; }
+test -c $DEV/pt/pt55 || { echo pt/pt55; $MKNOD $DEV/pt/pt55 c 18 55; chmod 0666 $DEV/pt/pt55; }
+test -c $DEV/pt/pt56 || { echo pt/pt56; $MKNOD $DEV/pt/pt56 c 18 56; chmod 0666 $DEV/pt/pt56; }
+test -c $DEV/pt/pt57 || { echo pt/pt57; $MKNOD $DEV/pt/pt57 c 18 57; chmod 0666 $DEV/pt/pt57; }
+test -c $DEV/pt/pt58 || { echo pt/pt58; $MKNOD $DEV/pt/pt58 c 18 58; chmod 0666 $DEV/pt/pt58; }
+test -c $DEV/pt/pt59 || { echo pt/pt59; $MKNOD $DEV/pt/pt59 c 18 59; chmod 0666 $DEV/pt/pt59; }
+test -c $DEV/pt/pt60 || { echo pt/pt60; $MKNOD $DEV/pt/pt60 c 18 60; chmod 0666 $DEV/pt/pt60; }
+test -c $DEV/pt/pt61 || { echo pt/pt61; $MKNOD $DEV/pt/pt61 c 18 61; chmod 0666 $DEV/pt/pt61; }
+test -c $DEV/pt/pt62 || { echo pt/pt62; $MKNOD $DEV/pt/pt62 c 18 62; chmod 0666 $DEV/pt/pt62; }
+test -c $DEV/pt/pt63 || { echo pt/pt63; $MKNOD $DEV/pt/pt63 c 18 63; chmod 0666 $DEV/pt/pt63; }
+
+echo '--- nodes present that are NOT in the correct set ---'
+rm -f /tmp/dev.ok
+echo console >> /tmp/dev.ok
+echo starcons >> /tmp/dev.ok
+echo mem >> /tmp/dev.ok
+echo kmem >> /tmp/dev.ok
+echo null >> /tmp/dev.ok
+echo kUmem >> /tmp/dev.ok
+echo mtpr >> /tmp/dev.ok
+echo tty00 >> /tmp/dev.ok
+echo tty01 >> /tmp/dev.ok
+echo tty02 >> /tmp/dev.ok
+echo tty03 >> /tmp/dev.ok
+echo tty04 >> /tmp/dev.ok
+echo tty05 >> /tmp/dev.ok
+echo tty06 >> /tmp/dev.ok
+echo tty07 >> /tmp/dev.ok
+echo rp0a >> /tmp/dev.ok
+echo rrp0a >> /tmp/dev.ok
+echo rp0b >> /tmp/dev.ok
+echo rrp0b >> /tmp/dev.ok
+echo rp0c >> /tmp/dev.ok
+echo rrp0c >> /tmp/dev.ok
+echo rp0d >> /tmp/dev.ok
+echo rrp0d >> /tmp/dev.ok
+echo rp0e >> /tmp/dev.ok
+echo rrp0e >> /tmp/dev.ok
+echo rp0f >> /tmp/dev.ok
+echo rrp0f >> /tmp/dev.ok
+echo rp0g >> /tmp/dev.ok
+echo rrp0g >> /tmp/dev.ok
+echo rp0h >> /tmp/dev.ok
+echo rrp0h >> /tmp/dev.ok
+echo rp1a >> /tmp/dev.ok
+echo rrp1a >> /tmp/dev.ok
+echo rp1b >> /tmp/dev.ok
+echo rrp1b >> /tmp/dev.ok
+echo rp1c >> /tmp/dev.ok
+echo rrp1c >> /tmp/dev.ok
+echo rp1d >> /tmp/dev.ok
+echo rrp1d >> /tmp/dev.ok
+echo rp1e >> /tmp/dev.ok
+echo rrp1e >> /tmp/dev.ok
+echo rp1f >> /tmp/dev.ok
+echo rrp1f >> /tmp/dev.ok
+echo rp1g >> /tmp/dev.ok
+echo rrp1g >> /tmp/dev.ok
+echo rp1h >> /tmp/dev.ok
+echo rrp1h >> /tmp/dev.ok
+echo ra00 >> /tmp/dev.ok
+echo ra01 >> /tmp/dev.ok
+echo ra02 >> /tmp/dev.ok
+echo ra03 >> /tmp/dev.ok
+echo ra04 >> /tmp/dev.ok
+echo ra05 >> /tmp/dev.ok
+echo ra06 >> /tmp/dev.ok
+echo rra00 >> /tmp/dev.ok
+echo rra01 >> /tmp/dev.ok
+echo rra02 >> /tmp/dev.ok
+echo rra03 >> /tmp/dev.ok
+echo rra04 >> /tmp/dev.ok
+echo rra05 >> /tmp/dev.ok
+echo rra06 >> /tmp/dev.ok
+echo rra07 >> /tmp/dev.ok
+echo ra10 >> /tmp/dev.ok
+echo ra11 >> /tmp/dev.ok
+echo ra12 >> /tmp/dev.ok
+echo ra13 >> /tmp/dev.ok
+echo ra14 >> /tmp/dev.ok
+echo ra15 >> /tmp/dev.ok
+echo ra16 >> /tmp/dev.ok
+echo rra10 >> /tmp/dev.ok
+echo rra11 >> /tmp/dev.ok
+echo rra12 >> /tmp/dev.ok
+echo rra13 >> /tmp/dev.ok
+echo rra14 >> /tmp/dev.ok
+echo rra15 >> /tmp/dev.ok
+echo rra16 >> /tmp/dev.ok
+echo rra17 >> /tmp/dev.ok
+echo ra20a >> /tmp/dev.ok
+echo ra21 >> /tmp/dev.ok
+echo ra22 >> /tmp/dev.ok
+echo ra23 >> /tmp/dev.ok
+echo ra24 >> /tmp/dev.ok
+echo ra25 >> /tmp/dev.ok
+echo ra26 >> /tmp/dev.ok
+echo rra20 >> /tmp/dev.ok
+echo rra21 >> /tmp/dev.ok
+echo rra22 >> /tmp/dev.ok
+echo rra23 >> /tmp/dev.ok
+echo rra24 >> /tmp/dev.ok
+echo rra25 >> /tmp/dev.ok
+echo rra26 >> /tmp/dev.ok
+echo rra27 >> /tmp/dev.ok
+echo mt0 >> /tmp/dev.ok
+echo rmt0 >> /tmp/dev.ok
+echo nmt0 >> /tmp/dev.ok
+echo nrmt0 >> /tmp/dev.ok
+echo mt1 >> /tmp/dev.ok
+echo rmt1 >> /tmp/dev.ok
+echo nmt1 >> /tmp/dev.ok
+echo nrmt1 >> /tmp/dev.ok
+echo drum >> /tmp/dev.ok
+echo swap >> /tmp/dev.ok
+echo stdin >> /tmp/dev.ok
+echo stdout >> /tmp/dev.ok
+echo stderr >> /tmp/dev.ok
+echo tty >> /tmp/dev.ok
+echo fd/0 >> /tmp/dev.ok
+echo fd/1 >> /tmp/dev.ok
+echo fd/2 >> /tmp/dev.ok
+echo fd/3 >> /tmp/dev.ok
+echo fd/4 >> /tmp/dev.ok
+echo fd/5 >> /tmp/dev.ok
+echo fd/6 >> /tmp/dev.ok
+echo fd/7 >> /tmp/dev.ok
+echo fd/8 >> /tmp/dev.ok
+echo fd/9 >> /tmp/dev.ok
+echo fd/10 >> /tmp/dev.ok
+echo fd/11 >> /tmp/dev.ok
+echo fd/12 >> /tmp/dev.ok
+echo fd/13 >> /tmp/dev.ok
+echo fd/14 >> /tmp/dev.ok
+echo fd/15 >> /tmp/dev.ok
+echo fd/16 >> /tmp/dev.ok
+echo fd/17 >> /tmp/dev.ok
+echo fd/18 >> /tmp/dev.ok
+echo fd/19 >> /tmp/dev.ok
+echo fd/20 >> /tmp/dev.ok
+echo fd/21 >> /tmp/dev.ok
+echo fd/22 >> /tmp/dev.ok
+echo fd/23 >> /tmp/dev.ok
+echo fd/24 >> /tmp/dev.ok
+echo fd/25 >> /tmp/dev.ok
+echo fd/26 >> /tmp/dev.ok
+echo fd/27 >> /tmp/dev.ok
+echo fd/28 >> /tmp/dev.ok
+echo fd/29 >> /tmp/dev.ok
+echo fd/30 >> /tmp/dev.ok
+echo fd/31 >> /tmp/dev.ok
+echo fd/32 >> /tmp/dev.ok
+echo fd/33 >> /tmp/dev.ok
+echo fd/34 >> /tmp/dev.ok
+echo fd/35 >> /tmp/dev.ok
+echo fd/36 >> /tmp/dev.ok
+echo fd/37 >> /tmp/dev.ok
+echo fd/38 >> /tmp/dev.ok
+echo fd/39 >> /tmp/dev.ok
+echo fd/40 >> /tmp/dev.ok
+echo fd/41 >> /tmp/dev.ok
+echo fd/42 >> /tmp/dev.ok
+echo fd/43 >> /tmp/dev.ok
+echo fd/44 >> /tmp/dev.ok
+echo fd/45 >> /tmp/dev.ok
+echo fd/46 >> /tmp/dev.ok
+echo fd/47 >> /tmp/dev.ok
+echo fd/48 >> /tmp/dev.ok
+echo fd/49 >> /tmp/dev.ok
+echo fd/50 >> /tmp/dev.ok
+echo fd/51 >> /tmp/dev.ok
+echo fd/52 >> /tmp/dev.ok
+echo fd/53 >> /tmp/dev.ok
+echo fd/54 >> /tmp/dev.ok
+echo fd/55 >> /tmp/dev.ok
+echo fd/56 >> /tmp/dev.ok
+echo fd/57 >> /tmp/dev.ok
+echo fd/58 >> /tmp/dev.ok
+echo fd/59 >> /tmp/dev.ok
+echo fd/60 >> /tmp/dev.ok
+echo fd/61 >> /tmp/dev.ok
+echo fd/62 >> /tmp/dev.ok
+echo fd/63 >> /tmp/dev.ok
+echo fd/64 >> /tmp/dev.ok
+echo fd/65 >> /tmp/dev.ok
+echo fd/66 >> /tmp/dev.ok
+echo fd/67 >> /tmp/dev.ok
+echo fd/68 >> /tmp/dev.ok
+echo fd/69 >> /tmp/dev.ok
+echo fd/70 >> /tmp/dev.ok
+echo fd/71 >> /tmp/dev.ok
+echo fd/72 >> /tmp/dev.ok
+echo fd/73 >> /tmp/dev.ok
+echo fd/74 >> /tmp/dev.ok
+echo fd/75 >> /tmp/dev.ok
+echo fd/76 >> /tmp/dev.ok
+echo fd/77 >> /tmp/dev.ok
+echo fd/78 >> /tmp/dev.ok
+echo fd/79 >> /tmp/dev.ok
+echo fd/80 >> /tmp/dev.ok
+echo fd/81 >> /tmp/dev.ok
+echo fd/82 >> /tmp/dev.ok
+echo fd/83 >> /tmp/dev.ok
+echo fd/84 >> /tmp/dev.ok
+echo fd/85 >> /tmp/dev.ok
+echo fd/86 >> /tmp/dev.ok
+echo fd/87 >> /tmp/dev.ok
+echo fd/88 >> /tmp/dev.ok
+echo fd/89 >> /tmp/dev.ok
+echo fd/90 >> /tmp/dev.ok
+echo fd/91 >> /tmp/dev.ok
+echo fd/92 >> /tmp/dev.ok
+echo fd/93 >> /tmp/dev.ok
+echo fd/94 >> /tmp/dev.ok
+echo fd/95 >> /tmp/dev.ok
+echo fd/96 >> /tmp/dev.ok
+echo fd/97 >> /tmp/dev.ok
+echo fd/98 >> /tmp/dev.ok
+echo fd/99 >> /tmp/dev.ok
+echo fd/100 >> /tmp/dev.ok
+echo fd/101 >> /tmp/dev.ok
+echo fd/102 >> /tmp/dev.ok
+echo fd/103 >> /tmp/dev.ok
+echo fd/104 >> /tmp/dev.ok
+echo fd/105 >> /tmp/dev.ok
+echo fd/106 >> /tmp/dev.ok
+echo fd/107 >> /tmp/dev.ok
+echo fd/108 >> /tmp/dev.ok
+echo fd/109 >> /tmp/dev.ok
+echo fd/110 >> /tmp/dev.ok
+echo fd/111 >> /tmp/dev.ok
+echo fd/112 >> /tmp/dev.ok
+echo fd/113 >> /tmp/dev.ok
+echo fd/114 >> /tmp/dev.ok
+echo fd/115 >> /tmp/dev.ok
+echo fd/116 >> /tmp/dev.ok
+echo fd/117 >> /tmp/dev.ok
+echo fd/118 >> /tmp/dev.ok
+echo fd/119 >> /tmp/dev.ok
+echo fd/120 >> /tmp/dev.ok
+echo fd/121 >> /tmp/dev.ok
+echo fd/122 >> /tmp/dev.ok
+echo fd/123 >> /tmp/dev.ok
+echo fd/124 >> /tmp/dev.ok
+echo fd/125 >> /tmp/dev.ok
+echo fd/126 >> /tmp/dev.ok
+echo fd/127 >> /tmp/dev.ok
+echo dk/dkctl >> /tmp/dev.ok
+echo dk/dk01 >> /tmp/dev.ok
+echo dk/dk02 >> /tmp/dev.ok
+echo dk/dk03 >> /tmp/dev.ok
+echo dk/dk04 >> /tmp/dev.ok
+echo dk/dk05 >> /tmp/dev.ok
+echo dk/dk06 >> /tmp/dev.ok
+echo dk/dk07 >> /tmp/dev.ok
+echo dk/dk08 >> /tmp/dev.ok
+echo dk/dk09 >> /tmp/dev.ok
+echo dk/dk10 >> /tmp/dev.ok
+echo dk/dk11 >> /tmp/dev.ok
+echo dk/dk12 >> /tmp/dev.ok
+echo dk/dk13 >> /tmp/dev.ok
+echo dk/dk14 >> /tmp/dev.ok
+echo dk/dk15 >> /tmp/dev.ok
+echo dk/dk16 >> /tmp/dev.ok
+echo dk/dk17 >> /tmp/dev.ok
+echo dk/dk18 >> /tmp/dev.ok
+echo dk/dk19 >> /tmp/dev.ok
+echo dk/dk20 >> /tmp/dev.ok
+echo dk/dk21 >> /tmp/dev.ok
+echo dk/dk22 >> /tmp/dev.ok
+echo dk/dk23 >> /tmp/dev.ok
+echo dk/dk24 >> /tmp/dev.ok
+echo dk/dk25 >> /tmp/dev.ok
+echo dk/dk26 >> /tmp/dev.ok
+echo dk/dk27 >> /tmp/dev.ok
+echo dk/dk28 >> /tmp/dev.ok
+echo dk/dk29 >> /tmp/dev.ok
+echo dk/dk30 >> /tmp/dev.ok
+echo dk/dk31 >> /tmp/dev.ok
+echo dk/dk32 >> /tmp/dev.ok
+echo dk/dk33 >> /tmp/dev.ok
+echo dk/dk34 >> /tmp/dev.ok
+echo dk/dk35 >> /tmp/dev.ok
+echo dk/dk36 >> /tmp/dev.ok
+echo dk/dk37 >> /tmp/dev.ok
+echo dk/dk38 >> /tmp/dev.ok
+echo dk/dk39 >> /tmp/dev.ok
+echo dk/dk40 >> /tmp/dev.ok
+echo dk/dk41 >> /tmp/dev.ok
+echo dk/dk42 >> /tmp/dev.ok
+echo dk/dk43 >> /tmp/dev.ok
+echo dk/dk44 >> /tmp/dev.ok
+echo dk/dk45 >> /tmp/dev.ok
+echo dk/dk46 >> /tmp/dev.ok
+echo dk/dk47 >> /tmp/dev.ok
+echo dk/dk48 >> /tmp/dev.ok
+echo dk/dk49 >> /tmp/dev.ok
+echo dk/dk50 >> /tmp/dev.ok
+echo dk/dk51 >> /tmp/dev.ok
+echo dk/dk52 >> /tmp/dev.ok
+echo dk/dk53 >> /tmp/dev.ok
+echo dk/dk54 >> /tmp/dev.ok
+echo dk/dk55 >> /tmp/dev.ok
+echo dk/dk56 >> /tmp/dev.ok
+echo dk/dk57 >> /tmp/dev.ok
+echo dk/dk58 >> /tmp/dev.ok
+echo dk/dk59 >> /tmp/dev.ok
+echo dk/dk60 >> /tmp/dev.ok
+echo dk/dk61 >> /tmp/dev.ok
+echo dk/dk62 >> /tmp/dev.ok
+echo dk/dk63 >> /tmp/dev.ok
+echo dk/dk64 >> /tmp/dev.ok
+echo dk/dk65 >> /tmp/dev.ok
+echo dk/dk66 >> /tmp/dev.ok
+echo dk/dk67 >> /tmp/dev.ok
+echo dk/dk68 >> /tmp/dev.ok
+echo dk/dk69 >> /tmp/dev.ok
+echo dk/dk70 >> /tmp/dev.ok
+echo dk/dk71 >> /tmp/dev.ok
+echo dk/dk72 >> /tmp/dev.ok
+echo dk/dk73 >> /tmp/dev.ok
+echo dk/dk74 >> /tmp/dev.ok
+echo dk/dk75 >> /tmp/dev.ok
+echo dk/dk76 >> /tmp/dev.ok
+echo dk/dk77 >> /tmp/dev.ok
+echo dk/dk78 >> /tmp/dev.ok
+echo dk/dk79 >> /tmp/dev.ok
+echo dk/dk80 >> /tmp/dev.ok
+echo dk/dk81 >> /tmp/dev.ok
+echo dk/dk82 >> /tmp/dev.ok
+echo dk/dk83 >> /tmp/dev.ok
+echo dk/dk84 >> /tmp/dev.ok
+echo dk/dk85 >> /tmp/dev.ok
+echo dk/dk86 >> /tmp/dev.ok
+echo dk/dk87 >> /tmp/dev.ok
+echo dk/dk88 >> /tmp/dev.ok
+echo dk/dk89 >> /tmp/dev.ok
+echo dk/dk90 >> /tmp/dev.ok
+echo dk/dk91 >> /tmp/dev.ok
+echo dk/dk92 >> /tmp/dev.ok
+echo dk/dk93 >> /tmp/dev.ok
+echo dk/dk94 >> /tmp/dev.ok
+echo dk/dk95 >> /tmp/dev.ok
+echo kmc0 >> /tmp/dev.ok
+echo dn0 >> /tmp/dev.ok
+echo il0 >> /tmp/dev.ok
+echo il1 >> /tmp/dev.ok
+echo il2 >> /tmp/dev.ok
+echo il3 >> /tmp/dev.ok
+echo il4 >> /tmp/dev.ok
+echo il5 >> /tmp/dev.ok
+echo il6 >> /tmp/dev.ok
+echo il7 >> /tmp/dev.ok
+echo tcp00 >> /tmp/dev.ok
+echo tcp01 >> /tmp/dev.ok
+echo tcp02 >> /tmp/dev.ok
+echo tcp03 >> /tmp/dev.ok
+echo tcp04 >> /tmp/dev.ok
+echo tcp05 >> /tmp/dev.ok
+echo tcp06 >> /tmp/dev.ok
+echo tcp07 >> /tmp/dev.ok
+echo tcp08 >> /tmp/dev.ok
+echo tcp09 >> /tmp/dev.ok
+echo tcp10 >> /tmp/dev.ok
+echo tcp11 >> /tmp/dev.ok
+echo tcp12 >> /tmp/dev.ok
+echo tcp13 >> /tmp/dev.ok
+echo tcp14 >> /tmp/dev.ok
+echo tcp15 >> /tmp/dev.ok
+echo tcp16 >> /tmp/dev.ok
+echo tcp17 >> /tmp/dev.ok
+echo tcp18 >> /tmp/dev.ok
+echo tcp19 >> /tmp/dev.ok
+echo tcp20 >> /tmp/dev.ok
+echo tcp21 >> /tmp/dev.ok
+echo tcp22 >> /tmp/dev.ok
+echo tcp23 >> /tmp/dev.ok
+echo tcp24 >> /tmp/dev.ok
+echo tcp25 >> /tmp/dev.ok
+echo tcp26 >> /tmp/dev.ok
+echo tcp27 >> /tmp/dev.ok
+echo tcp28 >> /tmp/dev.ok
+echo tcp29 >> /tmp/dev.ok
+echo tcp30 >> /tmp/dev.ok
+echo tcp31 >> /tmp/dev.ok
+echo tcp32 >> /tmp/dev.ok
+echo tcp33 >> /tmp/dev.ok
+echo tcp34 >> /tmp/dev.ok
+echo tcp35 >> /tmp/dev.ok
+echo tcp36 >> /tmp/dev.ok
+echo tcp37 >> /tmp/dev.ok
+echo tcp38 >> /tmp/dev.ok
+echo tcp39 >> /tmp/dev.ok
+echo tcp40 >> /tmp/dev.ok
+echo tcp41 >> /tmp/dev.ok
+echo tcp42 >> /tmp/dev.ok
+echo tcp43 >> /tmp/dev.ok
+echo tcp44 >> /tmp/dev.ok
+echo tcp45 >> /tmp/dev.ok
+echo tcp46 >> /tmp/dev.ok
+echo tcp47 >> /tmp/dev.ok
+echo tcp48 >> /tmp/dev.ok
+echo tcp49 >> /tmp/dev.ok
+echo tcp50 >> /tmp/dev.ok
+echo tcp51 >> /tmp/dev.ok
+echo tcp52 >> /tmp/dev.ok
+echo tcp53 >> /tmp/dev.ok
+echo tcp54 >> /tmp/dev.ok
+echo tcp55 >> /tmp/dev.ok
+echo tcp56 >> /tmp/dev.ok
+echo tcp57 >> /tmp/dev.ok
+echo tcp58 >> /tmp/dev.ok
+echo tcp59 >> /tmp/dev.ok
+echo tcp60 >> /tmp/dev.ok
+echo tcp61 >> /tmp/dev.ok
+echo tcp62 >> /tmp/dev.ok
+echo tcp63 >> /tmp/dev.ok
+echo tcp64 >> /tmp/dev.ok
+echo tcp65 >> /tmp/dev.ok
+echo tcp66 >> /tmp/dev.ok
+echo tcp67 >> /tmp/dev.ok
+echo tcp68 >> /tmp/dev.ok
+echo tcp69 >> /tmp/dev.ok
+echo tcp70 >> /tmp/dev.ok
+echo tcp71 >> /tmp/dev.ok
+echo tcp72 >> /tmp/dev.ok
+echo tcp73 >> /tmp/dev.ok
+echo tcp74 >> /tmp/dev.ok
+echo tcp75 >> /tmp/dev.ok
+echo tcp76 >> /tmp/dev.ok
+echo tcp77 >> /tmp/dev.ok
+echo tcp78 >> /tmp/dev.ok
+echo tcp79 >> /tmp/dev.ok
+echo tcp80 >> /tmp/dev.ok
+echo tcp81 >> /tmp/dev.ok
+echo tcp82 >> /tmp/dev.ok
+echo tcp83 >> /tmp/dev.ok
+echo tcp84 >> /tmp/dev.ok
+echo tcp85 >> /tmp/dev.ok
+echo tcp86 >> /tmp/dev.ok
+echo tcp87 >> /tmp/dev.ok
+echo tcp88 >> /tmp/dev.ok
+echo tcp89 >> /tmp/dev.ok
+echo tcp90 >> /tmp/dev.ok
+echo tcp91 >> /tmp/dev.ok
+echo tcp92 >> /tmp/dev.ok
+echo tcp93 >> /tmp/dev.ok
+echo tcp94 >> /tmp/dev.ok
+echo tcp95 >> /tmp/dev.ok
+echo udp00 >> /tmp/dev.ok
+echo udp01 >> /tmp/dev.ok
+echo udp02 >> /tmp/dev.ok
+echo udp03 >> /tmp/dev.ok
+echo udp04 >> /tmp/dev.ok
+echo udp05 >> /tmp/dev.ok
+echo udp06 >> /tmp/dev.ok
+echo udp07 >> /tmp/dev.ok
+echo udp08 >> /tmp/dev.ok
+echo udp09 >> /tmp/dev.ok
+echo udp10 >> /tmp/dev.ok
+echo udp11 >> /tmp/dev.ok
+echo udp12 >> /tmp/dev.ok
+echo udp13 >> /tmp/dev.ok
+echo udp14 >> /tmp/dev.ok
+echo udp15 >> /tmp/dev.ok
+echo ip0 >> /tmp/dev.ok
+echo ipicmp >> /tmp/dev.ok
+echo ip6 >> /tmp/dev.ok
+echo iptcp >> /tmp/dev.ok
+echo ip16 >> /tmp/dev.ok
+echo ip17 >> /tmp/dev.ok
+echo pt/pt00 >> /tmp/dev.ok
+echo pt/pt01 >> /tmp/dev.ok
+echo pt/pt02 >> /tmp/dev.ok
+echo pt/pt03 >> /tmp/dev.ok
+echo pt/pt04 >> /tmp/dev.ok
+echo pt/pt05 >> /tmp/dev.ok
+echo pt/pt06 >> /tmp/dev.ok
+echo pt/pt07 >> /tmp/dev.ok
+echo pt/pt08 >> /tmp/dev.ok
+echo pt/pt09 >> /tmp/dev.ok
+echo pt/pt10 >> /tmp/dev.ok
+echo pt/pt11 >> /tmp/dev.ok
+echo pt/pt12 >> /tmp/dev.ok
+echo pt/pt13 >> /tmp/dev.ok
+echo pt/pt14 >> /tmp/dev.ok
+echo pt/pt15 >> /tmp/dev.ok
+echo pt/pt16 >> /tmp/dev.ok
+echo pt/pt17 >> /tmp/dev.ok
+echo pt/pt18 >> /tmp/dev.ok
+echo pt/pt19 >> /tmp/dev.ok
+echo pt/pt20 >> /tmp/dev.ok
+echo pt/pt21 >> /tmp/dev.ok
+echo pt/pt22 >> /tmp/dev.ok
+echo pt/pt23 >> /tmp/dev.ok
+echo pt/pt24 >> /tmp/dev.ok
+echo pt/pt25 >> /tmp/dev.ok
+echo pt/pt26 >> /tmp/dev.ok
+echo pt/pt27 >> /tmp/dev.ok
+echo pt/pt28 >> /tmp/dev.ok
+echo pt/pt29 >> /tmp/dev.ok
+echo pt/pt30 >> /tmp/dev.ok
+echo pt/pt31 >> /tmp/dev.ok
+echo pt/pt32 >> /tmp/dev.ok
+echo pt/pt33 >> /tmp/dev.ok
+echo pt/pt34 >> /tmp/dev.ok
+echo pt/pt35 >> /tmp/dev.ok
+echo pt/pt36 >> /tmp/dev.ok
+echo pt/pt37 >> /tmp/dev.ok
+echo pt/pt38 >> /tmp/dev.ok
+echo pt/pt39 >> /tmp/dev.ok
+echo pt/pt40 >> /tmp/dev.ok
+echo pt/pt41 >> /tmp/dev.ok
+echo pt/pt42 >> /tmp/dev.ok
+echo pt/pt43 >> /tmp/dev.ok
+echo pt/pt44 >> /tmp/dev.ok
+echo pt/pt45 >> /tmp/dev.ok
+echo pt/pt46 >> /tmp/dev.ok
+echo pt/pt47 >> /tmp/dev.ok
+echo pt/pt48 >> /tmp/dev.ok
+echo pt/pt49 >> /tmp/dev.ok
+echo pt/pt50 >> /tmp/dev.ok
+echo pt/pt51 >> /tmp/dev.ok
+echo pt/pt52 >> /tmp/dev.ok
+echo pt/pt53 >> /tmp/dev.ok
+echo pt/pt54 >> /tmp/dev.ok
+echo pt/pt55 >> /tmp/dev.ok
+echo pt/pt56 >> /tmp/dev.ok
+echo pt/pt57 >> /tmp/dev.ok
+echo pt/pt58 >> /tmp/dev.ok
+echo pt/pt59 >> /tmp/dev.ok
+echo pt/pt60 >> /tmp/dev.ok
+echo pt/pt61 >> /tmp/dev.ok
+echo pt/pt62 >> /tmp/dev.ok
+echo pt/pt63 >> /tmp/dev.ok
+cd $DEV
+ls > /tmp/dev.now
+ls fd | sed 's|^|fd/|' >> /tmp/dev.now
+ls dk | sed 's|^|dk/|' >> /tmp/dev.now
+ls pt | sed 's|^|pt/|' >> /tmp/dev.now
+awk 'NR==FNR{ok[$1]=1;next} !ok[$1]' /tmp/dev.ok /tmp/dev.now
+echo '--- (nothing was removed) ---'

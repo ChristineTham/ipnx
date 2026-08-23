@@ -1,0 +1,48 @@
+# /dev repair, part 2 -- RUN AFTER THE REBOOT.
+# Removes the old letter-form ra nodes.  Every one listed here has a
+# digit-form node at the SAME major and minor, created by part 1 and
+# verified before the reboot -- the name is the only thing that changes.
+#
+# NOT removed, deliberately:
+#   ra0h ra1h  section 7, the whole drive.  v8/proto-dev makes no
+#              section-7 block node, so there is no equivalent to move to.
+#   ip1 ip2 ip3  ip minors are IP protocol numbers.  ip1 is ICMP, the same
+#              minor as ipicmp; nothing was found using ip2 or ip3, but
+#              nothing was found ruling it out either.
+#
+# No awk here: it is not on this image.
+cd /dev
+test -e ra0a && { echo "rm ra0a   (kept as ra00)"; rm -f ra0a; }
+test -e rra0a && { echo "rm rra0a  (kept as rra00)"; rm -f rra0a; }
+test -e ra0b && { echo "rm ra0b   (kept as ra01)"; rm -f ra0b; }
+test -e rra0b && { echo "rm rra0b  (kept as rra01)"; rm -f rra0b; }
+test -e ra0c && { echo "rm ra0c   (kept as ra02)"; rm -f ra0c; }
+test -e rra0c && { echo "rm rra0c  (kept as rra02)"; rm -f rra0c; }
+test -e ra0d && { echo "rm ra0d   (kept as ra03)"; rm -f ra0d; }
+test -e rra0d && { echo "rm rra0d  (kept as rra03)"; rm -f rra0d; }
+test -e ra0e && { echo "rm ra0e   (kept as ra04)"; rm -f ra0e; }
+test -e rra0e && { echo "rm rra0e  (kept as rra04)"; rm -f rra0e; }
+test -e ra0f && { echo "rm ra0f   (kept as ra05)"; rm -f ra0f; }
+test -e rra0f && { echo "rm rra0f  (kept as rra05)"; rm -f rra0f; }
+test -e ra0g && { echo "rm ra0g   (kept as ra06)"; rm -f ra0g; }
+test -e rra0g && { echo "rm rra0g  (kept as rra06)"; rm -f rra0g; }
+test -e rra0h && { echo "rm rra0h  (kept as rra07)"; rm -f rra0h; }
+test -e ra1a && { echo "rm ra1a   (kept as ra10)"; rm -f ra1a; }
+test -e rra1a && { echo "rm rra1a  (kept as rra10)"; rm -f rra1a; }
+test -e ra1b && { echo "rm ra1b   (kept as ra11)"; rm -f ra1b; }
+test -e rra1b && { echo "rm rra1b  (kept as rra11)"; rm -f rra1b; }
+test -e ra1c && { echo "rm ra1c   (kept as ra12)"; rm -f ra1c; }
+test -e rra1c && { echo "rm rra1c  (kept as rra12)"; rm -f rra1c; }
+test -e ra1d && { echo "rm ra1d   (kept as ra13)"; rm -f ra1d; }
+test -e rra1d && { echo "rm rra1d  (kept as rra13)"; rm -f rra1d; }
+test -e ra1e && { echo "rm ra1e   (kept as ra14)"; rm -f ra1e; }
+test -e rra1e && { echo "rm rra1e  (kept as rra14)"; rm -f rra1e; }
+test -e ra1f && { echo "rm ra1f   (kept as ra15)"; rm -f ra1f; }
+test -e rra1f && { echo "rm rra1f  (kept as rra15)"; rm -f rra1f; }
+test -e ra1g && { echo "rm ra1g   (kept as ra16)"; rm -f ra1g; }
+test -e rra1g && { echo "rm rra1g  (kept as rra16)"; rm -f rra1g; }
+test -e rra1h && { echo "rm rra1h  (kept as rra17)"; rm -f rra1h; }
+echo '--- what is left that is not a correct node ---'
+ls ra?? ra?? 2>/dev/null | head -1 > /dev/null
+ls | grep 'ra[0-1][a-h]'
+echo '--- (only ra0h ra1h rra... should remain, if any) ---'

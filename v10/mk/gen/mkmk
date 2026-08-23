@@ -1,0 +1,26 @@
+# Bootstrap mk, which cmd/diff, cmd/ed, cmd/ps and cmd/sh are built with.
+#
+# mk's own build is cmd/mk/src/mkfile, which cannot be used because mk is what
+# it needs.  That mkfile is followed exactly otherwise: NAMES gives the 29
+# modules, CFLAGS is -DV9 alone, the binary is linked as nmk, and its install
+# target is `cp nmk /usr/bin/mk; strip /usr/bin/mk'.
+
+PATH=/bin:/usr/bin:/etc:
+export PATH
+
+cd /v10/usr/src/cmd/mk/src || exit 1
+
+cc -DV9 -o nmk \
+	alloc.c arc.c bquote.c builtins.c dir.c expand.c gen.c glob.c \
+	graph.c job.c lex.c main.c makefile.c match.c mk.c parse.c quote.c \
+	recipe.c regexp.c rule.c run.c shprint.c sig.c symtab.c t_ar.c \
+	t_driver.c t_file.c var.c word.c || exit 1
+
+cp nmk /usr/bin/mk || exit 1
+strip /usr/bin/mk
+rm -f nmk *.o
+
+# membername goes with mk -- mk(1) documents the two together, and libc's
+# mkfile:84 calls it to turn libc.a(read.o) into read.o.  One line of sh.
+cp ../export/membername /usr/bin/membername || exit 1
+chmod +x /usr/bin/membername

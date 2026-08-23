@@ -1,0 +1,29 @@
+# What the mkfile needs before it will run.  Silence means everything is there.
+#
+# The compiler's own passes are hardcoded in cc.c:7-12 -- cpp, ccom, c2 in /lib,
+# as and ld in /bin, crt0.o in /lib -- and -B reaches only ccom, c2 and cpp, so
+# those paths are absolute whatever else is set.
+
+PATH=/bin:/usr/bin:/etc:
+export PATH
+
+for c in ar cat chmod cc cp ed grep ln make mk mv ranlib rm sed strip test tr yacc
+do
+	test -f /bin/$c || test -f /usr/bin/$c || echo "MISSING command: $c"
+done
+
+for f in /bin/as /bin/ld /lib/cpp /lib/ccom /lib/c2 /lib/crt0.o /lib/libc.a /etc/chown
+do
+	test -f $f || echo "MISSING file: $f"
+done
+
+# track links -lipc; ld searches /lib, /usr/lib, /usr/local/lib and has no -L.
+test -f /lib/libipc.a || test -f /usr/lib/libipc.a || echo "MISSING library: libipc.a"
+
+# Needed only by `mk world'.  libc's mkfile compiles ten of its members with lcc,
+# lcc's host file names /usr/lib/gcc-cpp and /usr/lib/rcc, and mkfile:84 calls
+# membername.  cmd/cpp and cmd/ccom/vax both run yacc, checked above.
+for f in /usr/bin/lcc /usr/lib/rcc /usr/lib/gcc-cpp /usr/bin/membername
+do
+	test -f $f || echo "for mk world, missing: $f"
+done

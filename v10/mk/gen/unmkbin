@@ -1,0 +1,23 @@
+# Undo what an earlier version of mkbin did to the image.
+#
+# It copied v8's sys/ubavar.h and sys/mbavar.h into /usr/include/sys, and it
+# rewrote csh's sys/ioctl.h include as sys/ttyio.h + sys/nttyio.h with no
+# sys/filio.h.  Both are put back to the state the tape left.
+
+PATH=/bin:/usr/bin:/etc:
+export PATH
+
+SRC=/v10/usr/src
+
+rm -f /usr/include/sys/ubavar.h /usr/include/sys/mbavar.h
+
+cd $SRC/lbin/csh || exit 1
+for f in sh.c sh.err.c sh.func.c sh.print.c sh.proc.c sh.sem.c
+do
+	sed -e '/#include <sys\/nttyio.h>/d' \
+	    -e '/#include <sys\/filio.h>/d' \
+	    -e 's|#include <sys/ttyio.h>|#include <sys/ioctl.h>|' $f > r$$ && mv r$$ $f
+done
+
+cd $SRC/cmd || exit 1
+sed 's|== (struct rt_ent \*)(rt_last +|== (rt_last +|' arff.c > a$$ && mv a$$ arff.c

@@ -1,0 +1,23 @@
+# How the live /usr/include differs from the tape's.  The comparison is against
+# /v10/usr/include, which mkimage extracted from the tar, not against the netfs
+# share of the repository tree: that tree carries the u_ renames the host
+# extractor applies for case collisions -- u_DB.h, CC/u_Regexp.h, CC/u_String.h
+# and their oCC pair -- which are artefacts of a case-insensitive filesystem and
+# are not names the tape has.  Silence means they match.  No find(1) is used:
+# the directory list is written out below, so the walk is a plain glob.
+
+T=/v10/usr/include
+
+for d in . CC CC/common CC/sys lcc libc local oCC oCC/common oCC/sys olcc sys sys/inet
+do
+	for f in $T/$d/*
+	do
+		test -f $f || continue
+		b=`basename $f`
+		if test ! -f /usr/include/$d/$b
+		then	echo "MISSING  $d/$b"
+		else
+			cmp -s $f /usr/include/$d/$b || echo "DIFFERS  $d/$b"
+		fi
+	done
+done

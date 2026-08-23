@@ -691,7 +691,7 @@ time_t mtime;
 						/* Make sure there is room */
 	if(de->rt_len==count)
 		goto overwrite;
-	if(rt_curend[segnum] == (rt_last + (segnum*2*RT_BLOCK))) {
+	if(rt_curend[segnum] == (struct rt_ent *)(rt_last + (segnum*2*RT_BLOCK))) {
 						/* no entries left on segment */
 		if(flag('o'))
 			goto overwrite;

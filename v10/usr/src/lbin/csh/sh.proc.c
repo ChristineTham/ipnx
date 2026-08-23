@@ -4,7 +4,9 @@ static	char *sccsid = "@(#)sh.proc.c	4.6 (Berkeley) 81/05/03";
 #include "sh.dir.h"
 #include "sh.proc.h"
 #include <wait.h>
-#include <sys/ioctl.h>
+#include <sys/ttyio.h>
+#include <sys/nttyio.h>
+#include <sys/filio.h>
 
 /*
  * C Shell - functions that manage processes, handling hanging, termination

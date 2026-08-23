@@ -1,0 +1,22 @@
+# Rename the four ra devices your config files name, to the ra<drive><section>
+# form man4/ra.4 specifies.  Only these four appear in /etc/fstab or /etc/rc:
+#   ra0a -> ra00   root      (fstab)
+#   ra0c -> ra02   /usr      (fstab, rc, mtab)
+#   ra1a -> ra10   /v10      (rc, mtab)
+#   ra1f -> ra15   /v10/usr  (rc, mtab)
+# sed only substitutes, so nothing else in these files changes.
+for f in /etc/fstab /etc/rc /etc/mkimage
+do
+	test -f $f || continue
+	sed -e 's|/dev/ra0a|/dev/ra00|g' \
+	    -e 's|/dev/ra0c|/dev/ra02|g' \
+	    -e 's|/dev/ra1a|/dev/ra10|g' \
+	    -e 's|/dev/ra1f|/dev/ra15|g' \
+	    $f > /tmp/fix.$$
+	cp /tmp/fix.$$ $f
+	rm -f /tmp/fix.$$
+	echo "rewrote $f"
+done
+echo '--- any letter-form ra names left? ---'
+grep 'ra[0-2][a-h]' /etc/fstab /etc/rc /etc/mkimage
+echo '--- (no output above means none) ---'

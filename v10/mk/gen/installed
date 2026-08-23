@@ -1,0 +1,7 @@
+# mk :P: predicate.  mk(1): the program is invoked as `sh -c prog arg1 arg2' and
+# returns 0 exit status if and only if arg1 is not out of date with respect to
+# arg2.  arg1 is the target, so exiting 0 when it exists means an already
+# installed command is left alone whatever its date -- which is the point: the
+# binaries on the image came off the tape and are older than nothing in
+# particular, so comparing times would rebuild the lot.
+test -f "$1"

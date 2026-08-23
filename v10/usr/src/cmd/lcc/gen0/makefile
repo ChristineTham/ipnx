@@ -11,7 +11,7 @@ all:	$(D)/rcc
 OBJS=$(D)/gen.o
 
 $(D)/gen.o:	gen.c
-		$(CC) -c -o $@ $(CFLAGS) $(INCLUDES) gen.c
+		$(CC) -c $(CFLAGS) $(INCLUDES) gen.c && mv gen.o $@
 
 include ../c/makefile
 
