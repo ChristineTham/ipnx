@@ -47,7 +47,10 @@ cd /v10/usr && tar xf $TAPE || exit 1
 # like.  Replace it with this machine's before anything reads $BUILD/mkfile.
 sh $MKB || exit 1
 
-cp /unix /v10/unix || exit 1
+# NO `cp /unix /v10/unix' HERE ANY MORE.  The mkfile builds the kernel from
+# lsys, and its P predicate is `test -f' -- a copy put here first would make
+# /v10/unix look up to date and the build would silently keep the BUILDER's
+# kernel, which is the thing this disk exists to replace.
 sh $BUILD/mkdev /v10/dev || exit 1
 
 mk -f $BUILD/mkfile ROOT=/v10 world || exit 1

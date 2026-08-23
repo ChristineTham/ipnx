@@ -58,7 +58,7 @@ do
 done
 
 test -d $D/usr/src/build/src || mkdir $D/usr/src/build/src || exit 1
-for f in README jump.c local-alloc.c nafsmnt.c sh.local.h
+for f in README ipnx-v10.m jump.c local-alloc.c nafsmnt.c sh.local.h streamio.c
 do
 	cp $B/src/$f $D/usr/src/build/src/$f || exit 1
 done

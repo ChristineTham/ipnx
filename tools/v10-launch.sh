@@ -23,19 +23,35 @@ MACOS="${MACOS:-/}"
 "$NETFSD"    -p "$PORT"  "$MACOS" & NETPID=$!
 "$NETFSD" -w -p "$HPORT" "$HOME"  & HOMEPID=$!
 
+# THE DEVICE SET IS THE KERNEL'S, NOT A PREFERENCE.  simh assigns Unibus
+# addresses by DEC's floating-address algorithm at configure time
+# (IOBA_AUTO/VEC_AUTO), so an address is a property of the SET of devices
+# enabled and of the order they are enabled in -- turning on the fourth MSCP
+# controller moved the Interlan from 0764000 to 0764040 when this was measured.
+# ipnx-v10.m carries those measured addresses compiled in, and lists the seven
+# lines it was measured against; they are reproduced below in its order.  Enable
+# something else here, or in another order, and the kernel probes empty
+# addresses -- autoconfig finds nothing, and the failure shows up later as a
+# device that does not work rather than as a boot that stops.
 cat > "$CONF" <<EOF
 set noasynch
-set cpu 8m
+set cpu 128m
+set vh disable
+set rq enable
+set rqb enable
+set rqc enable
+set rqd enable
+set tq enable
 set dz enable
-set dz lines=8
+set dz lines=32
+set il enable
+set il address=2013E800
+set il vector=E8
 set tto 7b
 set rq0 ra73
 attach rq0 $IMG
 set rq1 ra73
 attach rq1 $NEW
-set il enable
-set il address=2013E800
-set il vector=E8
 attach il nat:
 load -o $ROM FA00
 dep sp 200

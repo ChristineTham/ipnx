@@ -8,5 +8,23 @@ Sources written for this project, not carried by any v10 tape.
                 five fields and none of them holds a host or a port, so this
                 cannot be reached through /etc/mount -a.
 
-./patch stages it into /v10/usr/src/cmd; the mkfile builds it into /etc,
-which is where /etc/rc calls it from.
+    ipnx-v10.m  the kernel configuration: a VAX-11/780 with an RA73 root, 128 MB,
+                sixteen MSCP disks, thirty-two DZ11 lines and an Interlan.  The
+                file itself says where every number came from.  Written here and
+                not in v10/usr/sys/astro, because mktape fills /usr/sys by
+                extracting secombe and moving src/sys over it -- anything left
+                in that tree beforehand is gone -- and nothing copies the
+                repository's own v10/usr/sys to a guest.
+
+    streamio.c  the tape's lsys/os/streamio.c plus the four repairs netfs needs:
+                a stream head big enough for a reply, an istread that returns on
+                a zero count instead of sleeping thirty seconds, one that waits
+                for the full count rather than stopping at the first segment,
+                and one that keeps the tail of a block the caller could not take.
+                PATCHES.md:774-841 argues each.  Carried whole because four edits
+                across fifty lines of C is past what a sed can do idempotently.
+
+./patch stages nafsmnt.c into /v10/usr/src/cmd, streamio.c into
+/v10/usr/sys/os, and ipnx-v10.m into
+/v10/usr/sys/astro; the mkfile builds the first into /etc, which is where
+/etc/rc calls it from, and the second into /v10/unix.

@@ -7,7 +7,9 @@
 PATH=/bin:/usr/bin:/etc:
 export PATH
 
-for c in ar cat chmod cc cp ed grep ln make mk mv ranlib rm sed strip test tr yacc
+# date and sort are the kernel build's: lsys/lib/mk.star's .u rule stamps the
+# banner with `date | sed ...', and lsys/lib/listdep ends `| sort -u'.
+for c in ar cat chmod cc cp date ed grep ln make mk mv ranlib rm sed sort strip test tr yacc
 do
 	test -f /bin/$c || test -f /usr/bin/$c || echo "MISSING command: $c"
 done

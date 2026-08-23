@@ -9,6 +9,7 @@
 # default is for running it by hand against the disk on ra1.
 SRC=${SRC-/v10/usr/src}
 GEN=${GEN-$SRC/build}
+SYS=${SYS-/v10/usr/sys}
 
 # arff.c:694 compares struct rt_ent * (line 69) against char * (line 72).  The
 # file is byte-identical to v8's; v8's cc accepted the mismatch, v10's does not.
@@ -343,4 +344,123 @@ else
 	sed 's|^#include <sgtty.h>$|#include <sgtty.h>\
 #include <sys/filio.h>\
 #include <sys/inio.h>|' tcpconfig.c > t$$ && mv t$$ tcpconfig.c
+fi
+
+# scsi.h, THE DEVICE'S PUBLIC HEADER, installed like stdlib.h and float.h above.
+# io/scsi.c:18-19 and io/nscsi.c:18-19 both read
+#
+#	#include "sys/scsi.h"
+#	#include	<scsi.h>
+#
+# and those are two DIFFERENT headers.  sys/scsi.h has the structures -- struct
+# scsi, struct bag, struct scsipkt -- and <scsi.h> has the seven command flags,
+# SCSI_WR SCSI_RD SCSI_BRESET SCSI_RESET SCSI_SENSE SCSI_LTMOUT SCSI_CERR.
+# Without it the compiler reports six undefined names and io.a stops.
+#
+# scsi(4) IS THE AUTHORITY AND IT IS UNAMBIGUOUS: man4/scsi.4:6 is
+# `.B "#include <scsi.h>"' and the page goes on to document SCSI_WR, SCSI_RD,
+# SCSI_BRESET and SCSI_RESET as the flags of the write(2) format.  So the angle
+# form is the device's documented public header, and r70include simply has not
+# got it -- it carries ./sys/scsi.h and no top-level copy.
+#
+# The only copies on the tapes are cmd/worm/scsi/inc/scsi.h and its oscsi
+# neighbour, which are byte-identical; worm is the program scsi(4) is for, and
+# the o- prefix is the older tree throughout cmd/, so the plain one is taken.
+#
+# INSTALLED, NOT EDITED OUT.  An earlier version of this file deleted the angle
+# include instead, on the reading that it duplicated the quoted one.  It does
+# not, and the deletion is also the wrong SHAPE of repair: patch's edits are
+# re-applied to a tree mkimage re-extracts, so every one of them has to be
+# idempotent, and a line once removed cannot be removed again.
+cp $SRC/cmd/worm/scsi/inc/scsi.h /usr/include/scsi.h || exit 1
+
+# THE FOUR STREAM-HEAD REPAIRS netfs CANNOT RUN WITHOUT.  PATCHES.md:774-841 has
+# each one; they are together because they are one file and one failure.
+#
+#   strdata 512/256 -> 8192/4096.  A netfs reply cannot pass through a 512-byte
+#   stream head.
+#
+#   istread(count == 0) returns at once.  A byte stream never sends the
+#   zero-length write that produced Datakit's delimiter, and tsleep's third
+#   argument is SECONDS, not ticks (slp.c's own comment), so waiting for one
+#   costs thirty of them and then reports failure.
+#
+#   only HUNGUP ends a read early.  The guard was `nc && (OTHERQ(...)->flag &
+#   QDELIM) == 0', which fires only when the downstream read queue advertises
+#   delimiters -- a tcp device never does -- so istread returned short the first
+#   time a reply spanned two TCP segments.  That is this exact symptom:
+#   `neta: read -1 expected 1472' from neta.c:660, after neta.c:653 had already
+#   read the reply header successfully.
+#
+#   bp->rptr += n, and putbq the remainder.  Without it the tail of a block the
+#   caller's buffer could not take is discarded.
+#
+# COPIED, NOT SED'D.  Four edits across fifty lines of C is past what a sed can
+# do idempotently, and this is the pattern cc.c, fsck.c, login.c, mkbitfs.c and
+# mv.c already use.  The file is the tape's, byte for byte, plus these.
+#
+# The kernel that reached a login prompt had all four, because it was built from
+# a patched lsys; this tree is vanilla, so nothing carries them but this line.
+cp $GEN/src/streamio.c $SYS/os/streamio.c || exit 1
+
+# THE KERNEL CONFIGURATION, put where mk.star can find it.  astro/ipnx-v10.m is
+# ours and the tapes have no such file, so it travels here like every other
+# repair: mktape fills /usr/sys by extracting secombe and moving src/sys, which
+# would wipe anything written into that tree beforehand, and the repository's
+# own v10/usr/sys is copied to the guest by nothing at all.
+#
+# The .m is the whole machine description -- mk.star's `%.c.c: $MKDEP %.m' rule
+# gives it to mkconf, which writes the C and the assembler the kernel is built
+# from -- so this file and lib/tab below are together what makes ipnx-v10 a
+# machine rather than a name.
+test -d $SYS/astro || exit 1
+cp $GEN/src/ipnx-v10.m $SYS/astro/ipnx-v10.m || exit 1
+
+# STREAM PIPES GET THEIR MAJOR.  lib/tab:34 is
+#
+#	# cdev 18	pt	# remove?
+#
+# so pt has no major and nothing can open /dev/pt/*, and mkconf rejects the
+# config outright: readconf.c:73 makes a name it cannot find in the tab a hard
+# error, and astro/ipnx-v10.m declares `pt 64'.  V10 ships the driver --
+# io/spipe.c exports spcdev and lib/devs:64 is `pt sp count' -- and V8 runs the
+# same driver at the same major (v8/usr/sys/dev/spipe.c, cdevsw 18), which is
+# where the count of 64 comes from.  PATCHES.md:289 has the argument.
+#
+# DERIVED FROM lib/tab, NEVER CARRIED.  A copy of the whole file kept beside
+# this one would silently lose whatever the tape gained -- lib/tab is Jun 14
+# 1994 and already dropped `ld 20 archosld' and `ld 21 xttyld', both of which
+# ipnx-v10.m declares.  One sed, one line, and the other 44 stay the tape's.
+#
+# sys/mkconf/tab is NOT this file and must not be read as one: mk.star:19 is
+# `mkconf -t $LD/tab', so lib/tab is the authority.  mkconf/tab is two days
+# newer and does exactly this edit -- somebody was trying our patch in the
+# tool's own scratch directory -- but it also comments out `bdev 0 hp', which
+# this config needs.
+#
+# No \t in the replacement: v10's sed writes a literal t, as sh.local.h found.
+cd $SYS/lib || exit 1
+sed 's|^# cdev 18\(	*pt\)	# remove?$|cdev 18\1|' tab > b$$ && mv b$$ tab
+
+# AND THE DRIVER HAS TO BE IN io.a, which is the other half of the same change.
+# io/mkfile's FILES list has no spipe member -- the tape commented the device out
+# of lib/tab and left the driver out of the library to match -- so with pt
+# configured, mkconf emits the cdevsw reference from lib/devs:64
+#
+#	pt	sp	count	data struct queue *spipes; inc sys/stream.h;
+#
+# and the kernel link ends `Undefined: _spcdev'.  spipe.c:15 is
+# `struct cdevsw spcdev = cstrinit(&spinfo);' -- the one symbol -- and spipes[]
+# and spcnt, which it declares extern, are written by mkconf from the same line.
+#
+# .x AND NOT .y.  c2's -i is okio(), c21.c:1448: "0->probable I/O space address",
+# which stops it optimising a dereference that might be a device register.  Every
+# .y in io/mkfile touches registers and every .x does not; spipe.c touches none,
+# moving STREAMS queues and blocks in ordinary memory, so it sits with stream.x,
+# connld.x and mesg.x.  Placed beside stream.x for the same reason.
+cd $SYS/io || exit 1
+if grep 'spipe.x' mkfile > /dev/null
+then	:
+else
+	sed 's|\$L(stream\.x)|$L(stream.x) $L(spipe.x)|' mkfile > m$$ && mv m$$ mkfile
 fi

@@ -64,6 +64,12 @@ IPC=$SRC/ipc
 # nothing here reads a netfs share and root carries none of it -- root is 5 MB
 # (ipnx-v10.m:51) and /etc/mkimage is the only file this project puts there.
 GEN=$SRC/build
+# THE KERNEL IS NOT UNDER /usr/src.  v10-dist.py places lsys/ at /usr/sys --
+# lsys/lib/mk.star:1 is `LD=../lib' and lsys/mkall cds to /usr/sys/$i, so the
+# tree's own files name that path.  KLIB is where every archive, the config
+# tables and mkconf itself live, and mk.star reaches it as ../lib.
+SYS=$ROOT/usr/sys
+KLIB=$SYS/lib
 
 TOOLS=$ROOT/usr/bin/strip $ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/bin/stab
 LIB=$ROOT/lib/cpp $ROOT/lib/ccom $ROOT/lib/c2 $ROOT/lib/libc.a $ROOT/lib/crt0.o $ROOT/lib/mcrt0.o
@@ -72,7 +78,7 @@ LIB=$ROOT/lib/cpp $ROOT/lib/ccom $ROOT/lib/c2 $ROOT/lib/libc.a $ROOT/lib/crt0.o 
 # boot, shut down cleanly and rebuild itself.  sleep, expr and egrep are all
 # on /etc/shutdown's path -- expr on the timed branch `/etc/shutdown 0'
 # takes.  tee is only in mklost+found, so it is not here.
-USRBIN=$ROOT/usr/bin/ranlib $ROOT/usr/bin/yacc $ROOT/usr/bin/sed $ROOT/usr/bin/basename $ROOT/usr/bin/touch $ROOT/usr/bin/tr $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep
+USRBIN=$ROOT/usr/bin/ranlib $ROOT/usr/bin/yacc $ROOT/usr/bin/sed $ROOT/usr/bin/basename $ROOT/usr/bin/touch $ROOT/usr/bin/tr $ROOT/usr/bin/sort $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep
 INC=$ROOT/usr/include/libc.h
 LIBS=$ROOT/usr/lib/yaccpar $ROOT/usr/lib/diffh $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libjobs.a $ROOT/usr/lib/libdmalloc.a
 SRCOK=dirs $CMD/.ranlib $CMD/.patched
@@ -84,8 +90,12 @@ LCCOK=$ROOT/usr/bin/lcc $ROOT/usr/lib/rcc $ROOT/usr/lib/gcc-cpp
 BIN=$DEST/adb $DEST/ar $DEST/arff $DEST/as $DEST/cat $DEST/cc $DEST/chmod $DEST/cmp $DEST/cp $DEST/csh $DEST/date $DEST/dd $DEST/df $DEST/diff $DEST/du $DEST/e $DEST/echo $DEST/ed $DEST/false $DEST/grep $DEST/kill $DEST/ld $DEST/ln $DEST/login $DEST/ls $DEST/make $DEST/mkdir $DEST/mt $DEST/mv $DEST/newgrp $DEST/nice $DEST/nm $DEST/nohup $DEST/od $DEST/passwd $DEST/pr $DEST/ps $DEST/pstat $DEST/pwd $DEST/rm $DEST/rmdir $DEST/sh $DEST/size $DEST/stty $DEST/sync $DEST/tar $DEST/test $DEST/time $DEST/track $DEST/true $DEST/vmstat $DEST/who $DEST/write
 ETCF=$ETC/login $ETC/down $ETC/dipconfig $ETC/tcpconfig $ETC/ac $ETC/accton $ETC/chown $ETC/clri $ETC/cron $ETC/dcheck $ETC/dmesg $ETC/dskcpy $ETC/fsck $ETC/getty $ETC/halt $ETC/hideblock $ETC/icheck $ETC/init $ETC/mkbitfs $ETC/mkfs $ETC/mknod $ETC/mount $ETC/ncheck $ETC/quot $ETC/reboot $ETC/renice $ETC/sa $ETC/savecore $ETC/setlog $ETC/showq $ETC/su $ETC/smash $ETC/swapon $ETC/umount $ETC/update $ETC/wall $ETC/termcap $ETC/finddev $ETC/install $ETC/mklost+found $ETC/shutdown $ETC/group $ETC/whoami $ETC/mtab $ETC/utmp $ETC/ttys $ETC/fstab $ETC/motd $ETC/passwd $ETC/services $ETC/hosts $ETC/networks $ETC/rc $ETC/512restor $ETC/bad144 $ETC/dumpdir $ETC/fstat $ETC/restor $ETC/rp07dump $ETC/rp07rest $ETC/nafsmnt $ETC/mkimage
 PREP=$ROOT/usr/bin/strip $SRCOK
+# THE KERNEL'S OWN PREREQUISITES, in mk.star's order: LIBS is
+# `$LD/asstar.o $LD/fs.a $LD/io.a $LD/star.a $LD/bvax.a $LD/os.a $LD/vm.a
+# $LD/inet.a' and mkconf writes the config before any of them is needed.
+KERN=$KLIB/mkconf $KLIB/asstar.o $KLIB/fs.a $KLIB/io.a $KLIB/star.a $KLIB/bvax.a $KLIB/os.a $KLIB/vm.a $KLIB/inet.a
 all:V:  world
-world:V: tools $INC lib libs usrbin bin etc $ROOT/.profile
+world:V: tools $INC lib libs usrbin bin etc $ROOT/unix $ROOT/.profile
 	sync
 tools:V: $TOOLS
 lib:V:  $LIB
@@ -99,7 +109,11 @@ bin:V:  $BIN
 # /v10/usr/blit and /v10/unix, and mkdev makes /v10/dev, but not the seven
 # below: five are where this mkfile installs, and two are needed at boot --
 # init.c:23 is `char wtmpf[] = "/usr/adm/wtmp"', and /tmp is where cc and lcc
-# write.  /n/macos and /n/home are the netfs mount points, the app's own two
+# write.  EVERY PARENT COMES BEFORE ITS CHILDREN: usr/tmp sat above usr, which
+# only ever worked because /v10/usr was a mounted filesystem and so already
+# there -- run against a /v10 with nothing mounted on it, mkdir had no parent,
+# and mk(1):266-269 feeds the recipe to one `sh -e' so the whole target failed.
+# /n/macos and /n/home are the netfs mount points, the app's own two
 # shares (FileShare.swift:46) -- nafsmnt cannot make its own mount point.  With ROOT empty they all exist and every test is a no-op.
 #
 # Virtual, not stamped: a stamp in the source tree would be one file for two
@@ -111,11 +125,11 @@ dirs:V:
 	test -d $ROOT/etc || mkdir $ROOT/etc
 	test -d $ROOT/lib || mkdir $ROOT/lib
 	test -d $ROOT/tmp || mkdir $ROOT/tmp
-	test -d $ROOT/usr/tmp || mkdir $ROOT/usr/tmp
 	test -d $ROOT/usr || mkdir $ROOT/usr
 	test -d $ROOT/usr/adm || mkdir $ROOT/usr/adm
 	test -d $ROOT/usr/bin || mkdir $ROOT/usr/bin
 	test -d $ROOT/usr/lib || mkdir $ROOT/usr/lib
+	test -d $ROOT/usr/tmp || mkdir $ROOT/usr/tmp
 	test -d $ROOT/proc || mkdir $ROOT/proc
 	test -d $ROOT/n || mkdir $ROOT/n
 	test -d $ROOT/n/macos || mkdir $ROOT/n/macos
@@ -327,6 +341,21 @@ $ROOT/usr/bin/touch:Psh $GEN/installed: $PREP
 $ROOT/usr/bin/tr:Psh $GEN/installed: $PREP
 	cd $CMD; cc -Od2 -o tr tr.c && strip tr && cp tr $ROOT/usr/bin/tr || echo 'tr: FAILED'
 	cd $CMD; rm -f tr tr.o
+
+# sort is for the KERNEL build: lsys/lib/listdep, which mk.star's .hn rule
+# runs to find a config's header dependencies, ends `| sort -u'.
+#
+# cmd/sort.c AND NOT cmd/sort/.  Both are on the tape and they are different
+# programs: the directory is the portable POSIX release -- its README opens
+# "Posix P1003.2-compatible sort utility from Unix research v10 system" and
+# its Makefile probes for memmove and strtoul -- while Admin/large:23 names
+# `sort.c', so the single file is the one this machine's own build system
+# compiles, and it compiles it -O.
+# Built as sortbin for the reason ed is built as edbin: cmd/sort is the other
+# sort, a DIRECTORY, and `cc -o sort' in cmd/ gives `ld: sort: Is a directory'.
+$ROOT/usr/bin/sort:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O -o sortbin sort.c && strip sortbin && cp sortbin $ROOT/usr/bin/sort || echo 'sort: FAILED'
+	cd $CMD; rm -f sortbin sort.o
 
 # ranlib is COMPILED.  cmd/ranlib is also a prebuilt binary on the norman tape
 # -- 12288 bytes, a.out little-endian 32-bit demand paged pure executable,
@@ -1030,7 +1059,7 @@ config:V:
 	sync
 
 verify:V:
-	for f in $TOOLS $INC $LIB $LIBS $USRBIN $BIN $ETCF $ROOT/.profile
+	for f in $TOOLS $INC $LIB $LIBS $USRBIN $BIN $ETCF $ROOT/unix $ROOT/.profile
 	do
 		test -f $f || echo "MISSING  $f"
 	done
@@ -1079,3 +1108,108 @@ $ROOT/usr/bin/stab:Psh $GEN/installed: $PREP
 # strip would print "bprint already stripped" and do nothing.
 $ROOT/usr/bin/bprint:Psh $GEN/installed: $PREP $ROOT/usr/bin/lcc
 	cd $LCC/etc; make bprint CC=lcc && cp bprint $ROOT/usr/bin/bprint || echo 'bprint: FAILED'
+
+# ---- the kernel -------------------------------------------------------------
+# BUILT THE TAPE'S OWN WAY.  lsys/lib/mk.star is the recipe and lsys/mkall is
+# the loop over the directories that fill lib/; nothing below invents a step.
+# mk.star's four rules, in the order they fire for `ipnx-v10.u':
+#
+#	%.c.c: $MKDEP %.m	mkconf -t tab -l low.star -d devs -s $stem.s.s
+#				-c $stem.c.c conf.star $stem.m
+#	%.s.s:N: %.c.c		mkconf wrote both; N updates the time
+#	%.l.o: $LOW %.s.s	as -o $target ml/param.s ml/logen.s $stem.s.s
+#	%.u: %.l.o %.c.o $LIBS	ld -n -X -o $target -T 80000000 -e start ...
+#
+# and $LIBS is `$LD/asstar.o $LD/fs.a $LD/io.a $LD/star.a $LD/bvax.a $LD/os.a
+# $LD/vm.a $LD/inet.a', which is what $KERN lists.  %.c.o has no recipe of its
+# own and takes mk's builtin `%.o: %.c -> $CC $CFLAGS -c $stem.c' (mk.1:386-389)
+# with CFLAGS=-DKERNEL -I.. from mk.star:5.
+#
+# STAR IS THE 780.  DEC's codename, and the tree agrees with itself: lib/star.a
+# holds ubastar, nexstar, mcrstar and cdiskstar, and boot/star/uda.s is the ROM
+# this project already loads at FA00.  astro/o.mkfile puts alice -- the one 780
+# in astro -- under $STARS with `mk -f ../lib/mk.star'.
+#
+# EACH ARCHIVE ARRIVES HERE AS A DIRECTORY, not a file.  v10-tree.py unpacks
+# every ar member as a file, which keeps every byte and destroys the order, so
+# /usr/sys/lib/os.a is 23 files and an ORDER.  ./installed is `test -f "$1"' and
+# a directory does not satisfy it, so the rule fires; `ar r' will not write into
+# a directory, so it is removed first.  After the build each is a real archive
+# and the P predicate skips it -- which is also what happens on a machine that
+# has one already.
+#
+# WHICH IS WHY mkconf HAS A RULE AT ALL.  lib/mkconf is a prebuilt a.out on the
+# tape (37932 bytes, Feb 8 1990) so this rule is normally skipped; it exists so
+# that a tree without one still builds, from lsys/mkconf, which mk.star never
+# does for itself.  sys/mkconf/mkconf is a SECOND prebuilt binary, six months
+# newer, and is not the one mk.star runs.
+$KLIB/mkconf:Psh $GEN/installed: $PREP
+	cd $SYS/mkconf; mk mkconf && cp mkconf $KLIB/mkconf || echo 'mkconf: FAILED'
+	cd $SYS/mkconf; rm -f *.o
+
+# ml/mkfile builds one .o per cpu type and `all' builds six; only the 780's is
+# wanted.  traplist.s and clockparm.s are generated from sys/trap.h and
+# sys/clock.h by that mkfile's own grep-and-sed rules.
+$KLIB/asstar.o:Psh $GEN/installed: $PREP
+	cd $SYS/ml; mk ../lib/asstar.o || echo 'asstar.o: FAILED'
+
+$KLIB/os.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/os.a
+	cd $SYS/os; mk ../lib/os.a || echo 'os.a: FAILED'
+
+$KLIB/vm.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/vm.a
+	cd $SYS/vm; mk ../lib/vm.a || echo 'vm.a: FAILED'
+
+$KLIB/fs.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/fs.a
+	cd $SYS/fs; mk ../lib/fs.a || echo 'fs.a: FAILED'
+
+# inet.a takes two members from assembler rather than C -- goo.z and vecadd.z,
+# through inet/mkfile's own `%.z: %.s' -- so it is not all one rule.
+$KLIB/inet.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/inet.a
+	cd $SYS/inet; mk ../lib/inet.a || echo 'inet.a: FAILED'
+
+# io.a's own FILES list ends `$M(camac.x)', a member of ioicarus.a, and
+# membername reduces it to camac.x like any other -- so camac lands in io.a and
+# ioicarus.a is not built.  The tape's line, left as it is.
+$KLIB/io.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/io.a
+	cd $SYS/io; mk ../lib/io.a || echo 'io.a: FAILED'
+
+# md/ holds every machine type; `all' builds seven archives and this kernel
+# links two of them -- bvax.a, the VAX-common half (machdep, mba, ubamap), and
+# star.a, the 780's own.  Asked for by name so the other five are not compiled.
+$KLIB/bvax.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/bvax.a
+	cd $SYS/md; mk ../lib/bvax.a || echo 'bvax.a: FAILED'
+
+$KLIB/star.a:Psh $GEN/installed: $PREP
+	rm -rf $KLIB/star.a
+	cd $SYS/md; mk ../lib/star.a || echo 'star.a: FAILED'
+
+# THE KERNEL.  Named $ROOT/unix and not by its config, because that is where
+# the boot ROM looks and what mkimage used to copy from the builder.
+#
+# ON A MACHINE THAT IS ALREADY RUNNING ONE, THIS IS SKIPPED, and that is the
+# point: ./installed is `test -f "$1"', so `mk world' with ROOT empty finds
+# /unix present and never overwrites the kernel out from under the machine
+# executing the recipe.  With ROOT=/v10 the disk is new and has none, so it is
+# built.
+#
+# ipnx-v10.m NEEDS THE PATCHED TAB.  It declares `pt 64' and lib/tab:34 leaves
+# `# cdev 18 pt' commented, and readconf.c:73 makes a name absent from the tab a
+# hard error -- not a warning -- so mkconf would refuse the config outright.
+# ./patch adds that one line, derived from the tape's own file.
+# ONE CHAIN, AND THE .u IS NOT KEPT.  v10's ld writes its output even with
+# symbols undefined -- it reports them and clears the execute bits -- so an
+# `|| echo' on the link and a cp on the next line installs a kernel that did
+# not link, and ./installed being `test -f' then calls /v10/unix done and
+# never reaches $KERN again.  That is exactly what a missing _spcdev did
+# here.  mk's exit status is ld's verdict, so && carries it; and the .u is
+# removed either way, because a broken one left in astro/ is newer than its
+# prerequisites and the next run would call THAT up to date too.
+$ROOT/unix:Psh $GEN/installed: $PREP $KERN
+	cd $SYS/astro; mk -f ../lib/mk.star ipnx-v10.u && cp ipnx-v10.u $ROOT/unix || echo 'unix: FAILED'
+	cd $SYS/astro; rm -f ipnx-v10.u
