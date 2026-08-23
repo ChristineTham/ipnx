@@ -1,3 +1,4 @@
 /dev/ra00:/:rw:0:1
 /dev/ra05:/usr:rw:0:2
 /dev/ra01:swap:sw:0:0
+/dev/null:/proc:2:0:0

@@ -14,10 +14,12 @@ autoboot)
 	;;
 esac
 
+# Truncate mtab BEFORE mounting, v8/etc/rc:29-30's order: mount.c's mountfs
+# creats it afresh on each success, so clearing it afterwards throws away the
+# table it just built and leaves umount -a with nothing to read.
+>/etc/mtab
 /etc/mount -a
 /etc/swapon -a
-
-rm -f /etc/mtab
 /etc/mount
 
 cat /etc/motd
@@ -36,3 +38,11 @@ fi
 # block device, and fstab(5) has no field for either.
 test -d /n/v10 && /etc/nafsmnt 10.0.2.2 9350 /n/v10 0
 test -d /n/tapes && /etc/nafsmnt 10.0.2.2 9351 /n/tapes 1
+
+# rc MUST EXIT 0.  init.c:163-165 is `while(wait(&status) != pid); if(status)
+# return(0);' and init.c:72-73 is `if (runcom(oldhowto) == 0) continue;', so a
+# non-zero rc makes init skip merge() and multiple() -- no getty, no login --
+# loop round with howto = RB_SINGLE and drop into single(). The last statement
+# above is a `test -d' that is FALSE on a machine with no /n, which is exactly
+# that, and it reads as a working boot right up to the missing login prompt.
+exit 0

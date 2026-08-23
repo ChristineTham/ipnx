@@ -23,7 +23,7 @@ do
 done
 
 test -d /v10/usr/src/build/etc || mkdir /v10/usr/src/build/etc || exit 1
-for f in fstab group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
+for f in down fstab profile group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
 do
 	cp $B/etc/$f /v10/usr/src/build/etc/$f || exit 1
 done

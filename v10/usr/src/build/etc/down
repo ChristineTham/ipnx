@@ -1,0 +1,11 @@
+cd /
+sync
+if /etc/umount -a
+then
+    sync
+    sync
+    /etc/halt
+else
+    echo 'down: umount failed -- NOT halting'
+    exit 1
+fi

@@ -2,7 +2,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/param.h>
-#include <sys/types.h>
+#include <sys/filio.h>
+#include <sys/enio.h>
+#include <sys/inio.h>
 #include <sgtty.h>
 #include <sys/ethernet.h>
 #include <sys/inet/in.h>

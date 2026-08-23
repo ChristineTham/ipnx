@@ -259,3 +259,25 @@ else
 	sed 's|^#define	_IONBF	04$|#define	_IOFBF	0\
 #define	_IONBF	04|' /usr/include/stdio.h > s$$ && mv s$$ /usr/include/stdio.h
 fi
+
+# dipconfig.c and tcpconfig.c reach for ioctl names that v10 moved out of
+# <sys/ioctl.h> when it split that header: FIOPUSHLD is in <sys/filio.h>, the
+# ENIO* names in <sys/enio.h>, and TCPIOMAXSEG and the IPIO* names in
+# <sys/inio.h>.  Neither <sgtty.h>, <sys/ethernet.h> nor <sys/inet/in.h> brings
+# any of the three, so every one of those constants is undefined.
+#
+# dipconfig.c also takes <sys/param.h> and then <sys/types.h>; param.h:131 ends
+# with `#include "sys/types.h"' and types.h has no guard, so the typedefs are
+# parsed twice -- the same fault as renice.c and toplev.c.  Substituting the
+# three headers for that second include fixes both faults in one edit.
+cd $SRC/ipc/internet || exit 1
+sed 's|^#include <sys/types.h>$|#include <sys/filio.h>\
+#include <sys/enio.h>\
+#include <sys/inio.h>|' dipconfig.c > d$$ && mv d$$ dipconfig.c
+if grep '<sys/inio.h>' tcpconfig.c > /dev/null
+then	:
+else
+	sed 's|^#include <sgtty.h>$|#include <sgtty.h>\
+#include <sys/filio.h>\
+#include <sys/inio.h>|' tcpconfig.c > t$$ && mv t$$ tcpconfig.c
+fi

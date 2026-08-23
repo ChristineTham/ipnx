@@ -1,23 +1,38 @@
 #!/usr/bin/env bash
+# Boot a throwaway copy of the golden.  One disk, no netfsd.
+# The copy is deleted on exit -- booting mounts, and mounting rewrites the
+# superblock, so the golden itself is never attached.
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$ROOT/tools/norun.sh"
+ROOT="/Users/christie/Repositories/Unix/ipnx"
 
-GOLD="$ROOT/images/v10"
-OUT="$ROOT/images/v10-golden"
-PORT="${1:-9350}"
-TPORT=$(( PORT + 1 ))
-NETFSD="$ROOT/netfs/.build/release/netfsd"
-NETPID=""; TAPEPID=""
-trap 'kill $NETPID $TAPEPID 2>/dev/null' EXIT
+IMG="${1:-$ROOT/images/v10-golden}"
+COPY="$ROOT/work/v10-golden-test.img"
+ROM="$ROOT/images/uda"
+CONF="$ROOT/images/v10-golden-test.conf"
+trap 'rm -f "$COPY"' EXIT
 
-no_overlap "$GOLD" "$OUT" || exit 1
-[[ -x "$NETFSD" ]] || ( cd "$ROOT/netfs" && swift build -c release ) || exit 1
+rm -f "$COPY"
+cp -c "$IMG" "$COPY" || exit 1
 
-"$NETFSD" -p "$PORT"  -v "$ROOT/v10"   > "$ROOT/work/netfs-v10.log"   2>&1 & NETPID=$!
-"$NETFSD" -p "$TPORT" -v "$ROOT/tapes" > "$ROOT/work/netfs-tapes.log" 2>&1 & TAPEPID=$!
+cat > "$CONF" <<EOF
+set noasynch
+set cpu 8m
+set dz enable
+set dz lines=8
+set tto 7b
+set rq0 ra73
+attach rq0 $COPY
+set il enable
+set il address=2013E800
+set il vector=E8
+attach il nat:
+load -o $ROM FA00
+dep sp 200
+dep r1 0
+dep r3 0
+dep r5 0
+run FA02
+q
+EOF
 
-rm -f "$OUT"
-dd if=/dev/zero of="$OUT" bs=1 count=0 seek=$(( 3920490 * 512 )) 2>/dev/null
-
-expect "$ROOT/tools/v10-golden.exp" "$GOLD" "$OUT"
+"$ROOT/work/opensimh/BIN/vax780" $CONF

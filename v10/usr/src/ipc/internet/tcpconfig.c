@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <sgtty.h>
+#include <sys/filio.h>
+#include <sys/inio.h>
 #include <signal.h>
 
 extern int tcp_ld;

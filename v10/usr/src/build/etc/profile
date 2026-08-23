@@ -1,0 +1,3 @@
+TERM=vt100
+export TERM
+stty new crt erase '^?' intr '^C'
