@@ -130,7 +130,14 @@ PLACED = {
 
 # tree -> why it is not in the distribution
 LEFT = {
-    "lsys":       "`local sys' -- one machine's kernel tree, and it names "
+    "lsys":       "one machine's WORKING DIRECTORY: .c.o, .l.o, .s.s, linked "
+                  ".u kernels and a nohup.out build log. It contributes NO "
+                  "source sys does not have -- the 65 files that look like "
+                  "source are mkconf output (mk.star: `%.c.c: $MKDEP %.m'), "
+                  "and io/ra.s is cc -S output for the ra.c both trees carry. "
+                  "sys has 111 real source files it lacks, including eight "
+                  "drivers and the whole lib/ioicarus.a. Its 29 unique machine "
+                  "configs ARE taken, into usr/sys. Formerly described as "
                   "itself nowhere. sys/ is the vanilla one: 1,134 files "
                   "against lsys's 922, newer on 111 of 266 differing files "
                   "against 8, and more 780 support (52 `star' paths to 35).",
@@ -180,6 +187,22 @@ def main():
         print("Add each to PLACED with its evidence, or to LEFT with a reason.")
         sys.exit(1)
 
+    # ------------------------------------------------------------ augment ---
+    # lsys IS NOT IN THE DISTRIBUTION -- it is one machine's working directory,
+    # with compiled objects, linked kernels and a nohup.out in it, and it
+    # contributes no source sys does not already have.  But it carries 29
+    # machine configurations sys lacks, and a .m is a description of a real
+    # machine: what devices it had, how its disks were partitioned, which
+    # subsystems were compiled in.  They are the best available evidence of
+    # what a Tenth Edition kernel was actually configured to be, so they come
+    # across for reference.
+    #
+    # NEVER OVERWRITING IS THE CORRECT RULE HERE, not a cautious default.  Of
+    # the eighteen configs both trees carry with different contents, sys's is
+    # newer in EVERY case -- alice.m by three and a half years (1993-04-22
+    # against 1989-10-26).  Copying blind would pull older configs over newer
+    # ones, and the one we build from is among them.
+    n_configs = 0
     n_files = collections.Counter()
     if not args.dry:
         shutil.rmtree(DIST, ignore_errors=True)
@@ -192,6 +215,21 @@ def main():
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copytree(src, dst, symlinks=True)
 
+    if not args.dry and "sys" in plan:
+        lsys = os.path.join(SUPER, "lsys")
+        sysd = os.path.join(DIST, plan["sys"][0])
+        for dp, _dn, fn in os.walk(lsys):
+            for f in sorted(fn):
+                if not f.endswith(".m"):
+                    continue
+                rel = os.path.relpath(os.path.join(dp, f), lsys)
+                dst = os.path.join(sysd, rel)
+                if os.path.exists(dst):
+                    continue          # sys's own is newer, always
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(os.path.join(dp, f), dst)
+                n_configs += 1
+
     total = sum(n_files.values())
     left_total = 0
     for d in LEFT:
@@ -202,6 +240,9 @@ def main():
     for d, (dest, _w) in sorted(plan.items(), key=lambda x: x[1][0]):
         print("   %-28s <- %-12s %6d files" % (dest, d, n_files[d]))
     print("   %d files placed" % total)
+    if n_configs:
+        print("   + %d machine configs from lsys into usr/sys (none overwritten)"
+              % n_configs)
     print("== left in v10superset ==")
     for d in sorted(LEFT):
         if d in tops:

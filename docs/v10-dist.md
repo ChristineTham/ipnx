@@ -59,7 +59,7 @@ Two kinds of evidence were allowed, and only these:
 | `dist` | a distribution working directory, naming itself nowhere. |
 | `dregs` | the name is the tape's own verdict on it. |
 | `history` | five loose files left after history/ix was excluded; they name themselves nowhere. |
-| `lsys` | `local sys' -- one machine's kernel tree, and it names itself nowhere. sys/ is the vanilla one: 1,134 files against lsys's 922, newer on 111 of 266 differing files against 8, and more 780 support (52 `star' paths to 35). |
+| `lsys` | one machine's WORKING DIRECTORY: .c.o, .l.o, .s.s, linked .u kernels and a nohup.out build log. It contributes NO source sys does not have -- the 65 files that look like source are mkconf output (mk.star: `%.c.c: $MKDEP %.m'), and io/ra.s is cc -S output for the ra.c both trees carry. sys has 111 real source files it lacks, including eight drivers and the whole lib/ioicarus.a. Its 29 unique machine configs ARE taken, into usr/sys. Formerly described as itself nowhere. sys/ is the vanilla one: 1,134 files against lsys's 922, newer on 111 of 266 differing files against 8, and more 780 support (52 `star' paths to 35). |
 | `nbstests` | a test corpus, naming itself nowhere. |
 
 1653 files. Leaving a tree behind costs nothing — the superset is committed and validated, and a directory can be promoted in one line once its home is known. Guessing costs the thing this rebuild was for: a tree whose shape is a claim about V10 rather than a record of it.
