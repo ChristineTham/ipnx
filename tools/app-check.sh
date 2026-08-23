@@ -57,9 +57,9 @@ if [[ ! -f "$GOLD" ]]; then
     bad "golden present" "no work/myv8/rp07new (tools/drive-stages48.sh)"
 else
     note "golden present" "$(stat -f%z "$GOLD") bytes"
-    SHAFILE="$ROOT/image/ipnx-v8-rp07.img.xz.sha256"
-    if [[ $FULL == 1 && -f "$SHAFILE" ]]; then
-        want=$(awk '{print $1}' < "$SHAFILE" | head -1)
+    PACKED="$ROOT/image/ipnx-v8-rp07.img.tar.bz2"
+    if [[ $FULL == 1 && -f "$PACKED" ]]; then
+        want=$(tar -xOjf "$PACKED" | shasum -a 256 | cut -d' ' -f1)
         got=$(shasum -a 256 "$GOLD" | cut -d' ' -f1)
         [[ "$want" == "$got" ]] && note "golden matches the committed image" "${got:0:12}" \
                                 || bad  "golden matches the committed image" "have ${got:0:12}, committed ${want:0:12}"
@@ -86,7 +86,7 @@ while IFS= read -r app; do
     fi
     # THE HASH IS THE AUTHORITY WHEN WE HAVE IT.  size+mtime is a cheap proxy
     # for "same file", and it is only a proxy: restoring the golden from the
-    # committed image (tools/image-pack.py unpack, which is the normal repair
+    # committed image (tar -xSjf image/ipnx-v8-rp07.img.tar.bz2, the normal repair
     # after a harness has drifted it) writes byte-identical content with a NEW
     # mtime.  The proxy then disagrees with the sha256 -- and the first cut of
     # this script let the proxy `continue' before the hash was ever consulted,

@@ -15,7 +15,7 @@
 #                                      build actually read
 #   4  what we reproduce            -- compare-built (C4), reported not gated:
 #                                      it is a research number, not a defect
-#   5  the packed copy round-trips  -- image-pack check, if one is committed
+#   5  the packed copy round-trips  -- tar -tjf, if one is committed
 #
 # Deliberately NOT here: booting the disk.  tools/boot-newdisk.sh does that,
 # it costs a VAX boot, and it answers a different question -- these checks are
@@ -68,10 +68,10 @@ python3 "$ROOT/tools/compare-built.py" --tuhs "$TUHS" --ipnx "$IPNX" 2>&1 |
 echo "  (reported, not gated -- see task #54)"
 
 hdr "5. the packed copy in git"
-if [[ -f "$ROOT/image/ipnx-v8-rp07.img.xz" ]]; then
-    run python3 "$ROOT/tools/image-pack.py" check || fail=1
+if [[ -f "$ROOT/image/ipnx-v8-rp07.img.tar.bz2" ]]; then
+    run tar -tjf "$ROOT/image/ipnx-v8-rp07.img.tar.bz2" || fail=1
 else
-    echo "  none committed yet -- tools/image-pack.py pack"
+    echo "  none committed yet -- tar -cjf image/ipnx-v8-rp07.img.tar.bz2 <image>"
 fi
 
 echo

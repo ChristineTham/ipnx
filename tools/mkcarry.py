@@ -329,7 +329,7 @@ def main():
     # OUR disk, not the TUHS one. Both give the same 1405 paths -- that
     # equality is the whole point of the exercise -- so the default is now
     # the image this build produces and the TUHS one is no longer needed.
-    # tools/image-pack.py unpack puts it here.
+    # tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 puts it here.
     ap.add_argument("--image", default=os.path.join(REPO, "work", "myv8", "rp07new"))
     ap.add_argument("--check", action="store_true",
                     help="regenerate and diff against the committed file")

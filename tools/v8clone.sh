@@ -20,8 +20,8 @@
 # NOTHING WAS DAMAGED and that is exactly what makes it dangerous.  The run
 # halted cleanly, every assertion passed, and the exit status was 0.  The only
 # thing that noticed was tools/app-check.sh, comparing the golden against the
-# committed image -- which is precisely why image/ipnx-v8-rp07.img.xz is in git
-# (`tools/image-pack.py unpack' put it back in eight seconds).
+# committed image -- which is precisely why image/ipnx-v8-rp07.img.tar.bz2 is in git
+# (`tar -xSjf image/ipnx-v8-rp07.img.tar.bz2' put it back in eight seconds).
 #
 # So the rule lives here now rather than in three headers that can each be
 # forgotten separately, the same way v8drive.exp holds the console rule.

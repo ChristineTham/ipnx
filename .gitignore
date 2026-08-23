@@ -23,8 +23,11 @@ tools/vendor/
 tools/dmdbridge/.cargo/
 
 # Big historical artifacts — never commit; rebuild locally per docs/spike-a0.md
-# Two exceptions are un-ignored below.  image/ipnx-v8-rp07.img.xz is the
-# disk WE build, and the next build reads it (docs/golden-disk.md).
+# The committed disks are image/*.tar.bz2 -- un-ignored below, because the
+# *.tar.bz2 rule would otherwise take them.  tar because it is the only
+# standard format that restores a hole: `tar -xSjf' writes the zero runs as
+# holes rather than allocated blocks, so a 1.9 GB disk costs its non-zero
+# bytes on disk and not 1.9 GB.  zip cannot do this and neither can xz.
 *.disk
 *.dsk
 *.tap
@@ -35,8 +38,7 @@ tools/dmdbridge/.cargo/
 *.cpio
 *.iso
 *.img
-!image/ipnx-v8-rp07.img.xz
-!image/ipnx-v10-ra81.img.xz
+!image/*.tar.bz2
 app/*.log
 libdmd/build-*.log
 libdmd/*.pgm
@@ -60,6 +62,13 @@ v10superset/READ.jsonl
 # about what we build from is a git grep, while a question about what a
 # particular TAPE says is one extract away and provable against the manifest.
 v10tapes/
+
+# images/ is the working set the launcher boots -- a disk and the boot ROM,
+# copied there so tools/v10-launch.sh has one place to point at.  Both are
+# reproducible: the ROM is v10/usr/sys/boot/star/uda byte for byte, and the
+# disk is a build output.  Note this is images/, PLURAL, and is nothing to do
+# with image/, which holds the two committed .xz goldens named above.
+images/
 
 # THE TAPE ARCHIVES THEMSELVES ARE NOT COMMITTED EITHER.  tapes/ is 505 MB of
 # raw tar -- the six V10 archives plus V8 and batterpudding -- decompressed

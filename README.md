@@ -318,7 +318,7 @@ is **built from this repository's own V8 source** and committed in compressed fo
 fresh clone needs no external media and no workbench:
 
 ```bash
-python3 tools/image-pack.py unpack     # image/ipnx-v8-rp07.img.xz -> work/myv8/rp07new
+tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8   # -> work/myv8/ipnx-v8-rp07.img
 ```
 
 That is the app build's only media prerequisite. To rebuild the disk from source rather

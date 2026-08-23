@@ -132,7 +132,7 @@ simh "at rp2 $targetimg"
 set refimg [lindex $argv 3]
 # Ours. carry.txt derived from this image and from the TUHS one give the
 # same 1405 paths, which is what "the build no longer needs that disk"
-# means in practice. tools/image-pack.py unpack recreates it from git.
+# means in practice. tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 recreates it from git.
 if {$refimg == ""} { set refimg "rp07new" }
 if {[string match "*rp07*" $refimg] || [string match "*ipnx*" $refimg]} {
     set reftype rp07; set refusr f; set refusrminor 29

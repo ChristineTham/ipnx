@@ -753,8 +753,8 @@ the safety rules are in [build-from-source.md](build-from-source.md).
       `STAGE9-CHROOT`, 193 commands with zero failures, a 236,672-byte kernel,
       and the fixpoint holding at `same=14 differ=0` after the `yacc`/`strip`
       move. `retire-check` reports **UNIQUE 0**; `boot-newdisk` boots the image
-      alone and passes all thirteen checks. `image/ipnx-v8-rp07.img.xz` is in
-      git at **7.6 MB**, 1.55% of raw.
+      alone and passes all thirteen checks. `image/ipnx-v8-rp07.img.tar.bz2` is
+      in git at **11.1 MB**.
 
       And the loop is closed: `carry.txt` regenerated from **our** disk gives
       the same 1405 paths as from the TUHS one, so the reference now defaults

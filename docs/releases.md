@@ -140,7 +140,7 @@ The one honest qualification is `v8/mk/gen/carry.txt` — 1,406 paths the tape
 shipped as **machine code with no source**, so no build could ever produce them:
 the jerq/5620 binaries (`mux`, `muxterm`, `jim`), the games, and the manual.
 They are carried from the previous image rather than compiled, which is why
-`image/ipnx-v8-rp07.img.xz` is the single binary allowed into git — it is the
+`image/ipnx-v8-rp07.img.tar.bz2` is the single binary allowed into git — it is the
 *input* to the next build, and with it committed the build's only external input
 is the tapes, which `v8/MANIFEST` already accounts for.
 

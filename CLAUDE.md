@@ -42,7 +42,7 @@ cd app && xcodebuild -project ipnx.xcodeproj -scheme ipnxMac -destination 'platf
 The app build's only media prerequisite — unpacks the committed golden:
 
 ```bash
-python3 tools/image-pack.py unpack
+tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8
 ```
 
 Is the app you would launch right now the latest?
@@ -213,7 +213,7 @@ and disk are consistent only as a pair.
 
 `fsck` restores metadata *consistency*, not data. Several of its repairs destroy data by
 design. A clean pass is not evidence anything survived; a hash against a known-good artefact
-is. That is why `image/ipnx-v8-rp07.img.xz` is committed.
+is. That is why `image/ipnx-v8-rp07.img.tar.bz2` is committed.
 
 **Run every guest harness against a clone, never the golden.** Booting mounts, and mounting
 rewrites the superblock, so a clean successful run still changes the hash. `tools/v8clone.sh`
@@ -261,9 +261,15 @@ simulator running.
 
 ## Conventions
 
-- Big binaries never enter git. Two exceptions, named in `.gitignore` rather than left to a
-  pattern gap: `image/ipnx-v8-rp07.img.xz` and `image/ipnx-v10-ra81.img.xz`. Written only by
-  `tools/image-pack.py`. `tools/hook-block-binaries.sh` enforces this.
+- Big binaries never enter git. The exception is `image/*.tar.bz2` — the disks we build,
+  because each is the *input* to the next build. Both `.gitignore` and
+  `tools/hook-block-binaries.sh` un-block that one path; raw `*.img` stays blocked so the
+  packed form is the only way in.
+- **Unpack a disk with `tar -xSjf`, never without the `S`.** It is the only standard format
+  that restores a *hole*: the zero runs come back as holes rather than allocated blocks, so
+  the 1.9 GB RA73 costs its non-zero bytes on disk. Measured — a dense 100 MB of zeros
+  restores to 0 B. zip cannot do this and neither can xz, and both were tried here first.
+  `tools/v10-reset.sh` restores `images/v10` and `images/v10-golden` that way.
 - V10 must stay authentic. A deviation is allowed only where the tape cannot run as-is, and
   then it is a commit with a stated reason — never a file a harness writes inline, and never
   configuration or branding invented here. `python3 tools/v10-tree.py` is where that

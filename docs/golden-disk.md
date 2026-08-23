@@ -6,7 +6,7 @@ retired without losing anything.
 
 Built by [stage 8](build-from-source.md) — `v8/mk/builddisk.sh` — onto an
 RP07: root 7942 blocks (partition `a`), `/usr` 464,000 blocks (partition `f`).
-Committed to git as `image/ipnx-v8-rp07.img.xz` — **7.6 MB, 1.55% of the raw
+Committed to git as `image/ipnx-v8-rp07.img.tar.bz2` — **11.1 MB of the raw
 492 MB.**
 
 **It is done.** The full pipeline ran from bare source and every stage passed:
@@ -167,22 +167,23 @@ and only because it is the **input to the next build** — stage 8 lifts
 the tapes, which `v8/MANIFEST` already accounts for.
 
 ```bash
-python3 tools/image-pack.py pack     # work/myv8/rp07new -> image/*.img.xz
-python3 tools/image-pack.py unpack   # and back
-python3 tools/image-pack.py check    # verify the committed copy
+tar -cjf  image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8 rp07new   # pack
+tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8           # and back
+tar -tjf  image/ipnx-v8-rp07.img.tar.bz2                        # verify the copy
 ```
 
-xz, not gzip: measured on the dense 40 MB of a V8 image, gzip -9 gives
-14.3%, bzip2 -9 11.5%, xz 8.8% — and the gap widens across a 516 MB volume
-that is mostly free blocks. Python's `lzma` is the same compressor and is in
-the standard library, so this needs no `xz(1)` on the host; macOS ships none.
+**The `S` in `-xSjf` is the whole point.** A disk image is mostly zeros, and
+zip and xz both restore those zeros as *allocated blocks* — a 1.9 GB image
+costs 1.9 GB of disk however small the archive. `tar -xS` writes them as
+holes instead. Measured: a dense 100 MB of zeros restores to 0 B on disk,
+and the content is byte-identical either way. The `S` is only needed on
+extract; the archive is the same size without it.
 
 **Zero the file before the build that makes the artefact.** `mkfs` writes a
 fresh i-list and free list but does not clear data blocks, so a second stage
 8 over the same file leaves the previous run's contents in what the new
 filesystem calls free space. Invisible to the guest; extremely visible to the
-compressor. `image-pack.py pack` reports the nonzero fraction for exactly
-this reason.
+compressor — an archive that is suddenly much larger is the symptom.
 
 ## Building it
 
@@ -283,8 +284,8 @@ The last thing that made the TUHS image necessary was that stage 8 lifted
 **regenerate the lists from the disk we built and see whether they agree.**
 
 They do — **1405 identical paths from either image**. The reference now
-defaults to `work/myv8/rp07new`, which `tools/image-pack.py unpack` recreates
-from git, and the build's only external input is the tapes, which
+defaults to `work/myv8/rp07new`, which `tar -xSjf image/ipnx-v8-rp07.img.tar.bz2`
+recreates from git, and the build's only external input is the tapes, which
 `v8/MANIFEST` already accounts for.
 
 Getting the two to agree needed one rule that was missing. Eight files on our
