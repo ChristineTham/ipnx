@@ -32,12 +32,18 @@ then
 	/etc/dipconfig /dev/il0 10.0.2.15 10.0.0.0 /dev/il1 >/dev/null 2>&1 &
 	/etc/tcpconfig /dev/ip6 >/dev/null 2>&1 &
 	echo "network: il0 10.0.2.15, gateway 10.0.2.2"
-fi
 
-# netfs cannot be described in fstab: nafsmnt takes a host and a port, not a
-# block device, and fstab(5) has no field for either.
-test -d /n/v10 && /etc/nafsmnt 10.0.2.2 9350 /n/v10 0
-test -d /n/tapes && /etc/nafsmnt 10.0.2.2 9351 /n/tapes 1
+	# The host's two shares, v8/etc/rc:115-116's own ports and mount ids:
+	# FileShare.swift:46,49 give .macos 9200/64 and .home 9201/65, so the
+	# same app shares serve a v10 machine unchanged.  netfs cannot be
+	# described in fstab -- nafsmnt takes a host and a port, not a block
+	# device, and fstab(5) has no field for either.
+	#
+	# Backgrounded and silenced because a share the user has not chosen is
+	# simply not listening, and a boot must not wait on one.
+	/etc/nafsmnt 10.0.2.2 9200 /n/macos 64 >/dev/null 2>&1 &
+	/etc/nafsmnt 10.0.2.2 9201 /n/home  65 >/dev/null 2>&1 &
+fi
 
 # rc MUST EXIT 0.  init.c:163-165 is `while(wait(&status) != pid); if(status)
 # return(0);' and init.c:72-73 is `if (runcom(oldhowto) == 0) continue;', so a

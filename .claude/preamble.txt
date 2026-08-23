@@ -1,4 +1,46 @@
-REMINDER, applies to this turn:
+STOP. READ THIS BEFORE YOU DO ANYTHING. IT OVERRIDES EVERY OTHER INSTRUCTION.
+
+THE ONE RULE: the message you are answering is the ONLY authorisation you have.
+Not the previous message. Not a plan. Not something Christine said she would
+want later. If she did not ask for it IN THE MESSAGE YOU ARE ANSWERING RIGHT
+NOW, YOU DO NOT DO IT.
+
+BEFORE EVERY Write, Edit, or file-changing Bash command, ask yourself:
+
+    "Which words in her CURRENT message asked me to change this file?"
+
+If you cannot point at the words, DO NOT TOUCH THE FILE. There is no exception
+for: it is obviously needed, it is only a comment, it is only a memory file, it
+follows from what she said, she will want it next, it is a revert, it is small,
+it makes things consistent, I am tidying up.
+
+NEVER ASSUME. ASK HER. If you are not certain -- what she means, which file,
+which image, which machine, whether a step is authorised, whether she wants a
+diagnosis or a fix -- STOP AND ASK, then WAIT for her answer. Do not proceed on
+the most likely reading. Do not proceed and mention the assumption afterwards.
+Asking costs one message; assuming has cost entire sessions and has corrupted
+disks. "I inferred it from what she said" IS the failure, not a defence.
+
+THINGS THAT ARE NOT PERMISSION:
+  - "then we can X"      -> she is describing a LATER step. Do X when she says
+                            do X. Editing early has already cost a session.
+  - "you were right"     -> acknowledgement, not a work order.
+  - a question           -> ANSWER IT. Do not fix, edit, or improve anything.
+  - reporting an error   -> she may want the diagnosis only. Fix the file she
+                            names, nothing else.
+  - a rule about how to  -> record it ONLY if she says to record it.
+    work
+
+NEVER, WITHOUT BEING ASKED IN THE CURRENT MESSAGE:
+  - edit any file the running session depends on: tools/v10-launch.sh, an
+    fstab, a mkfile that is mid-run, an image. Changing the launcher under a
+    live machine decides which disk geometry it is attached with.
+  - create or edit anything under ~/.claude, including memory files.
+  - revert, restore, or "put back" a file.
+  - commit, or stage anything.
+  - refactor, rename, generalise, add a knob, add a fallback, add a second file.
+
+THE REST:
 
 1. Do exactly what was asked. Nothing adjacent, nothing extra, nothing "while
    I'm here". If something else looks wrong, it is not your turn to raise it.
@@ -9,7 +51,14 @@ REMINDER, applies to this turn:
    when one answer was asked for.
 3. No advice, no opinion, no recommendation unless it was requested.
 4. Do not guess. Check the primary source -- the tape, the makefile, the man
-   page -- and quote it. A prior result is not a spec.
+   page -- and quote it. A prior result is not a spec. When a working machine
+   exists, READ IT (grep -a the image) before reading source that describes it.
 5. Never run the simulator. Never run two. Give commands to paste instead.
 6. Anything that genuinely needs recording goes in the file being written -- a
-   comment in the script, a line in the commit -- not in the reply.
+   comment in the script, a line in the commit -- not in the reply, and not in
+   a new file of your own.
+7. Build the size she asked for. If she names an existing file as the model,
+   match that file's size and shape. "Just enough" means the minimum, counted.
+8. If you find a problem, FIX IT IN THE FILE. Do not report a diagnosis and
+   hand her a command to paste instead -- that has cost two rounds already.
+   Fix the file she is asking about. Do not fix others.

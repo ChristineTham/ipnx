@@ -1,8 +1,8 @@
-# Copy the build system into /v10/usr/src/build.  That is all it does.
+# Copy the build system into <root>/usr/src/build.  That is all it does.
 #
 #	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
 #	mktape    fills a blank /v10/usr from the six archives
-#	mkbuild   puts the build system into /v10/usr/src/build      <-- this
+#	mkbuild   puts the build system into <root>/usr/src/build     <-- this
 #	mkipnx    writes /v10/usr back out as ipnx.tar
 #
 # The disk mkimage makes has to carry the thing that built it, so this runs
@@ -11,68 +11,97 @@
 #
 # Named file by file: v10's cp takes only -z (cp(1)), so there is no -r.
 
-B=/n/v10/usr/src/build
+# BOTH ENDS ARE LOCAL.  The source is this machine's own /usr/src/build and the
+# destination is the disk on ra1; no share is named here, /n/macos being the
+# host's system root and holding nothing of ours.
+#
+#	mkbuild                  /usr/src/build -> /v10/usr/src/build
+#	mkbuild <root> <src>     either end, said explicitly
+#
+# Taking the repository's copy is the developer's call and has to be typed:
+#
+#	sh /usr/src/build/mkbuild / /n/macos/Users/christie/Repositories/Unix/ipnx/v10/usr/src/build
+#
+D=${1-/v10}
+case $D in
+/)	D= ;;
+esac
+B=${2-/usr/src/build}
 
-test -d /v10/usr/src || exit 1
+# Overwriting the running script is safe: the rm below unlinks it and sh keeps
+# reading the old inode, while the cp that follows creates a new file.
 
-rm -f /v10/usr/src/build/*
-test -d /v10/usr/src/build || mkdir /v10/usr/src/build || exit 1
+# Say so.  A bare `|| exit 1' here is how an unmounted /v10 looked like a
+# successful run for two rounds: no output, status 1, nothing copied.
+test -d $D/usr/src || { echo "mkbuild: no $D/usr/src"; exit 1; }
+test -d $B || { echo "mkbuild: no $B"; exit 1; }
+
+# NOT `rm -f $D/usr/src/build/*'.  ipnx.tar lives in this directory, and with
+# D empty that glob deletes the archive mkimage reads -- which it did, and
+# mkimage then blanked ra1 and stopped with nothing to extract.  Every file
+# below is overwritten by its own cp, so this only has to clear what is no
+# longer shipped; ls and grep do that without touching the archive.
+for f in `ls $D/usr/src/build | grep -v '^ipnx.tar$'`
+do
+	rm -f $D/usr/src/build/$f
+done
+test -d $D/usr/src/build || mkdir $D/usr/src/build || exit 1
 for f in PATCHES.md fixbin fixnames inccheck installed makedev makedev2 mkbuild mkcheck mkdev mkfile mkimage mkipnx mkmk mktape patch proto-dev unmkbin
 do
-	cp $B/$f /v10/usr/src/build/$f || exit 1
+	cp $B/$f $D/usr/src/build/$f || exit 1
 done
 
-test -d /v10/usr/src/build/etc || mkdir /v10/usr/src/build/etc || exit 1
+test -d $D/usr/src/build/etc || mkdir $D/usr/src/build/etc || exit 1
 for f in down fstab profile group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
 do
-	cp $B/etc/$f /v10/usr/src/build/etc/$f || exit 1
+	cp $B/etc/$f $D/usr/src/build/etc/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src || mkdir /v10/usr/src/build/src || exit 1
+test -d $D/usr/src/build/src || mkdir $D/usr/src/build/src || exit 1
 for f in README jump.c local-alloc.c nafsmnt.c sh.local.h
 do
-	cp $B/src/$f /v10/usr/src/build/src/$f || exit 1
+	cp $B/src/$f $D/usr/src/build/src/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/cmd || mkdir /v10/usr/src/build/src/cmd || exit 1
+test -d $D/usr/src/build/src/cmd || mkdir $D/usr/src/build/src/cmd || exit 1
 for f in cc.c fsck.c login.c mkbitfs.c mv.c
 do
-	cp $B/src/cmd/$f /v10/usr/src/build/src/cmd/$f || exit 1
+	cp $B/src/cmd/$f $D/usr/src/build/src/cmd/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/include || mkdir /v10/usr/src/build/src/include || exit 1
+test -d $D/usr/src/build/src/include || mkdir $D/usr/src/build/src/include || exit 1
 for f in shares.h
 do
-	cp $B/src/include/$f /v10/usr/src/build/src/include/$f || exit 1
+	cp $B/src/include/$f $D/usr/src/build/src/include/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/include/sys || mkdir /v10/usr/src/build/src/include/sys || exit 1
+test -d $D/usr/src/build/src/include/sys || mkdir $D/usr/src/build/src/include/sys || exit 1
 for f in lnode.h
 do
-	cp $B/src/include/sys/$f /v10/usr/src/build/src/include/sys/$f || exit 1
+	cp $B/src/include/sys/$f $D/usr/src/build/src/include/sys/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/libc || mkdir /v10/usr/src/build/src/libc || exit 1
+test -d $D/usr/src/build/src/libc || mkdir $D/usr/src/build/src/libc || exit 1
 for f in mkfile
 do
-	cp $B/src/libc/$f /v10/usr/src/build/src/libc/$f || exit 1
+	cp $B/src/libc/$f $D/usr/src/build/src/libc/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/libc/gen || mkdir /v10/usr/src/build/src/libc/gen || exit 1
+test -d $D/usr/src/build/src/libc/gen || mkdir $D/usr/src/build/src/libc/gen || exit 1
 for f in atof.c malloc.c memmove.c qsort.c
 do
-	cp $B/src/libc/gen/$f /v10/usr/src/build/src/libc/gen/$f || exit 1
+	cp $B/src/libc/gen/$f $D/usr/src/build/src/libc/gen/$f || exit 1
 done
 
-test -d /v10/usr/src/build/src/libc/stdio || mkdir /v10/usr/src/build/src/libc/stdio || exit 1
+test -d $D/usr/src/build/src/libc/stdio || mkdir $D/usr/src/build/src/libc/stdio || exit 1
 for f in _dtoa.c _fconv.c fconv.h fgets.c fprintf.c fputs.c fscanf.c printf.c rdwr.c scanf.c snprintf.c sprintf.c sscanf.c strtod.c vfprintf.c vfscanf.c vprintf.c
 do
-	cp $B/src/libc/stdio/$f /v10/usr/src/build/src/libc/stdio/$f || exit 1
+	cp $B/src/libc/stdio/$f $D/usr/src/build/src/libc/stdio/$f || exit 1
 done
 
-test -d /v10/usr/src/build/v8 || mkdir /v10/usr/src/build/v8 || exit 1
+test -d $D/usr/src/build/v8 || mkdir $D/usr/src/build/v8 || exit 1
 for f in README finddev.c fstat.c install.sh rp07dump.c rp07rest.c
 do
-	cp $B/v8/$f /v10/usr/src/build/v8/$f || exit 1
+	cp $B/v8/$f $D/usr/src/build/v8/$f || exit 1
 done
 

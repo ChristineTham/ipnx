@@ -49,7 +49,11 @@
 ROOT=
 DEST=$ROOT/bin
 ETC=$ROOT/etc
-SRC=/v10/usr/src
+# SRC FOLLOWS ROOT.  Hardcoding /v10 meant `mk config' on the machine itself
+# still read $GEN off a /v10 that nothing mounts any more.  With ROOT=/v10 it
+# is the disk being built, exactly as before; with ROOT empty it is this
+# machine's own tree, which is what building for this machine means.
+SRC=$ROOT/usr/src
 CMD=$SRC/cmd
 CSH=$SRC/lbin/csh
 JOBS=$SRC/lbin/libjobs
@@ -61,15 +65,16 @@ IPC=$SRC/ipc
 # (ipnx-v10.m:51) and /etc/mkimage is the only file this project puts there.
 GEN=$SRC/build
 
-TOOLS=$ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/bin/stab
+TOOLS=$ROOT/usr/bin/strip $ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/bin/stab
 LIB=$ROOT/lib/cpp $ROOT/lib/ccom $ROOT/lib/c2 $ROOT/lib/libc.a $ROOT/lib/crt0.o $ROOT/lib/mcrt0.o
 # Admin/dest ends `else echo /usr/bin', so a command in none of the four lists
 # installs there.  NOT the whole fallthrough -- only what this disk needs to
 # boot, shut down cleanly and rebuild itself.  sleep, expr and egrep are all
 # on /etc/shutdown's path -- expr on the timed branch `/etc/shutdown 0'
 # takes.  tee is only in mklost+found, so it is not here.
-USRBIN=$ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep
-LIBS=$ROOT/usr/lib/diffh $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libjobs.a $ROOT/usr/lib/libdmalloc.a
+USRBIN=$ROOT/usr/bin/ranlib $ROOT/usr/bin/yacc $ROOT/usr/bin/sed $ROOT/usr/bin/basename $ROOT/usr/bin/touch $ROOT/usr/bin/tr $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep
+INC=$ROOT/usr/include/libc.h
+LIBS=$ROOT/usr/lib/yaccpar $ROOT/usr/lib/diffh $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libjobs.a $ROOT/usr/lib/libdmalloc.a
 SRCOK=dirs $CMD/.ranlib $CMD/.patched
 # lcc is not usable on its own: its driver execs /usr/lib/rcc and
 # /usr/lib/gcc-cpp.  Depending on the driver alone is not enough -- it is
@@ -80,7 +85,7 @@ BIN=$DEST/adb $DEST/ar $DEST/arff $DEST/as $DEST/cat $DEST/cc $DEST/chmod $DEST/
 ETCF=$ETC/login $ETC/down $ETC/dipconfig $ETC/tcpconfig $ETC/ac $ETC/accton $ETC/chown $ETC/clri $ETC/cron $ETC/dcheck $ETC/dmesg $ETC/dskcpy $ETC/fsck $ETC/getty $ETC/halt $ETC/hideblock $ETC/icheck $ETC/init $ETC/mkbitfs $ETC/mkfs $ETC/mknod $ETC/mount $ETC/ncheck $ETC/quot $ETC/reboot $ETC/renice $ETC/sa $ETC/savecore $ETC/setlog $ETC/showq $ETC/su $ETC/smash $ETC/swapon $ETC/umount $ETC/update $ETC/wall $ETC/termcap $ETC/finddev $ETC/install $ETC/mklost+found $ETC/shutdown $ETC/group $ETC/whoami $ETC/mtab $ETC/utmp $ETC/ttys $ETC/fstab $ETC/motd $ETC/passwd $ETC/services $ETC/hosts $ETC/networks $ETC/rc $ETC/512restor $ETC/bad144 $ETC/dumpdir $ETC/fstat $ETC/restor $ETC/rp07dump $ETC/rp07rest $ETC/nafsmnt $ETC/mkimage
 PREP=$ROOT/usr/bin/strip $SRCOK
 all:V:  world
-world:V: tools lib libs usrbin bin etc $ROOT/.profile
+world:V: tools $INC lib libs usrbin bin etc $ROOT/.profile
 	sync
 tools:V: $TOOLS
 lib:V:  $LIB
@@ -94,9 +99,8 @@ bin:V:  $BIN
 # /v10/usr/blit and /v10/unix, and mkdev makes /v10/dev, but not the seven
 # below: five are where this mkfile installs, and two are needed at boot --
 # init.c:23 is `char wtmpf[] = "/usr/adm/wtmp"', and /tmp is where cc and lcc
-# write.  /n/v10 and /n/tapes are the netfs mount points: /etc/rc guards each
-# nafsmnt with `test -d', so without the directory the mount is skipped even
-# when v10-launch.sh has netfsd listening on 9350 and 9351.  With ROOT empty they all exist and every test is a no-op.
+# write.  /n/macos and /n/home are the netfs mount points, the app's own two
+# shares (FileShare.swift:46) -- nafsmnt cannot make its own mount point.  With ROOT empty they all exist and every test is a no-op.
 #
 # Virtual, not stamped: a stamp in the source tree would be one file for two
 # values of ROOT, so building /bin here would leave /v10 without its
@@ -107,14 +111,15 @@ dirs:V:
 	test -d $ROOT/etc || mkdir $ROOT/etc
 	test -d $ROOT/lib || mkdir $ROOT/lib
 	test -d $ROOT/tmp || mkdir $ROOT/tmp
+	test -d $ROOT/usr/tmp || mkdir $ROOT/usr/tmp
 	test -d $ROOT/usr || mkdir $ROOT/usr
 	test -d $ROOT/usr/adm || mkdir $ROOT/usr/adm
 	test -d $ROOT/usr/bin || mkdir $ROOT/usr/bin
 	test -d $ROOT/usr/lib || mkdir $ROOT/usr/lib
 	test -d $ROOT/proc || mkdir $ROOT/proc
 	test -d $ROOT/n || mkdir $ROOT/n
-	test -d $ROOT/n/v10 || mkdir $ROOT/n/v10
-	test -d $ROOT/n/tapes || mkdir $ROOT/n/tapes
+	test -d $ROOT/n/macos || mkdir $ROOT/n/macos
+	test -d $ROOT/n/home || mkdir $ROOT/n/home
 
 # A copied .a has a stale __.SYMDEF and v10's ld then makes one sequential pass,
 # reporting undefined symbols that are all present.
@@ -258,6 +263,87 @@ $ROOT/usr/bin/strip:Psh $GEN/installed: $SRCOK
 	cd $CMD/strip; make stab && strip stab && cp stab $ROOT/usr/bin/stab || echo 'stab: FAILED'
 	cd $CMD/strip; rm -f strip.new; make clean
 
+# /usr/include, INSTALLED LIKE EVERYTHING ELSE.  mktape leaves r70include's 349
+# files in /usr/src/include, the source tree; this copies them where cc looks
+# and where libc/mkfile:150's absolute prerequisite points.
+#
+# The target is libc.h and not the directory, because ./installed is
+# `test -f "$1"' and a directory never satisfies it -- and libc.h is the file
+# that actually has to be there.  v10's cp has no -r (cp(1)), so the tree moves
+# as a tar -- through a FILE in /usr/tmp and not a pipe.  tar.c:158 accepts
+# `-', but tar.c:990 tolerates only ENOTTY from its MTIOCTOP and a pipe
+# answers otherwise: `tar: tape backspace error: No such device or address',
+# after which it has written part of the tree and reported failure.
+$INC:Psh $GEN/installed: $SRCOK
+	test -d $ROOT/usr/include || mkdir $ROOT/usr/include || exit 1
+	cd $SRC/include && tar cf $ROOT/usr/tmp/inc.tar . || echo 'include: FAILED'
+	cd $ROOT/usr/include && tar xf $ROOT/usr/tmp/inc.tar || echo 'include: FAILED'
+	rm -f $ROOT/usr/tmp/inc.tar
+
+# THE BUILD PATH'S OWN TOOLS.  Measured, not listed: every recipe in this file
+# and in the build files of the twenty directories it enters was scanned for the
+# commands it runs, and these four are the ones nothing installed.
+#
+#   yacc     cmd/cpp/mkfile:11 `yacc -d cpy.y', and expr and egrep have a .y
+#            each.  cmd/yacc/Makefile's install is `strip yacc; mv yacc
+#            $(DESTDIR)/usr/bin; cp yaccpar $(DESTDIR)/usr/lib', so both
+#            destinations are the tape's and yaccpar is in Admin/ulibfiles.
+#   sed      cmd/ccom/vax/Makefile:98, libc/mkfile:123's default rule, and
+#            ./patch throughout.
+#   basename cmd/lcc/gen2/Makefile:24-30 -- which ./patch:51-52 puts there, so
+#            our own repair is what needs it.
+#   touch    cmd/make/Makefile:50,54,89 and cmd/strip/Makefile:31,35.
+#
+# None is in any of the four Admin lists, so Admin/dest sends each to /usr/bin.
+$ROOT/usr/bin/yacc:Psh $GEN/installed: $PREP
+	cd $CMD/yacc; make clean; make yacc && strip yacc && cp yacc $ROOT/usr/bin/yacc || echo 'yacc: FAILED'
+	cd $CMD/yacc; make clean
+
+# A data file, copied.  yacc reads it to emit its parser.
+$ROOT/usr/lib/yaccpar:Psh $GEN/installed: $SRCOK
+	cp $CMD/yacc/yaccpar $ROOT/usr/lib/yaccpar || echo 'yaccpar: FAILED'
+
+# cmd/sed/Makefile's install is `cp sed /usr/bin' with no DESTDIR, so the
+# binary is made and copied here rather than by its install target.
+$ROOT/usr/bin/sed:Psh $GEN/installed: $PREP
+	cd $CMD/sed; make clean; make sed && strip sed && cp sed $ROOT/usr/bin/sed || echo 'sed: FAILED'
+	cd $CMD/sed; make clean
+
+# Admin/large holds neither basename.c nor touch.c, so both take Mk's -Od2.
+$ROOT/usr/bin/basename:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o basename basename.c && strip basename && cp basename $ROOT/usr/bin/basename || echo 'basename: FAILED'
+	cd $CMD; rm -f basename basename.o
+
+$ROOT/usr/bin/touch:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o touch touch.c && strip touch && cp touch $ROOT/usr/bin/touch || echo 'touch: FAILED'
+	cd $CMD; rm -f touch touch.o
+
+# mk itself needs tr.  cmd/mk/export/membername -- which libc/mkfile:84 calls
+# to turn `libc.a(x.o)' prerequisites into member names -- is one pipeline,
+# `echo "$@" | tr " " "\012" | sed ... | tr "\012" " "', so a machine
+# without tr cannot build any archive: mk reports `unset prereq names'.
+# tr.c is in none of the four Admin lists, so Admin/dest sends it to
+# /usr/bin, and it is not in Admin/large either, so -Od2.
+$ROOT/usr/bin/tr:Psh $GEN/installed: $PREP
+	cd $CMD; cc -Od2 -o tr tr.c && strip tr && cp tr $ROOT/usr/bin/tr || echo 'tr: FAILED'
+	cd $CMD; rm -f tr tr.o
+
+# ranlib is COMPILED.  cmd/ranlib is also a prebuilt binary on the norman tape
+# -- 12288 bytes, a.out little-endian 32-bit demand paged pure executable,
+# Feb 16 1990 -- but mktape does not take it, and secombe carries the source
+# as ./cmd/ranlib.c, so there is no reason to ship somebody else's a.out.
+# It is in none of the four Admin lists, so Admin/dest sends it to /usr/bin,
+# and Admin/large DOES hold ranlib.c, so it is -O and not Mk's -Od2.  libc.a's
+# own rule ends `ranlib libc.a' and ours runs it again at the destination, so
+# a machine without it cannot build a libc.
+#
+# Built as ranlibbin for the same reason ed is built as edbin: cmd/ranlib is
+# a file on the norman tape, and `cc -o ranlib' in that directory would
+# overwrite it.
+$ROOT/usr/bin/ranlib:Psh $GEN/installed: $PREP
+	cd $CMD; cc -O -o ranlibbin ranlib.c && strip ranlibbin && cp ranlibbin $ROOT/usr/bin/ranlib || echo 'ranlib: FAILED'
+	cd $CMD; rm -f ranlibbin ranlib.o
+
 # Admin/large is keyed on the SOURCE name and does not hold sleep.c, so this
 # takes Mk's default -Od2.
 $ROOT/usr/bin/sleep:Psh $GEN/installed: $PREP
@@ -286,8 +372,12 @@ $ROOT/usr/bin/egrep:Psh $GEN/installed: $PREP
 # `if (rip->i_count > 1 || ifsbusy(rip)) u.u_error = EBUSY' -- a live process
 # whose text sits on /usr makes /usr permanently busy, and /etc/down can
 # never halt.  images/v10 runs both from /etc, which is the same answer.
+#
+# CFLAGS=-O overrides that mkfile's own CFLAGS=-g, because cc.c:281-282 is
+# `if (gflag) av[na++] = "-lsdb";' and ld then wants /usr/local/lib/libsdb.a,
+# which no v10 disk this project builds has.
 $ETC/dipconfig:Psh $GEN/installed: $PREP $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
-	cd $IPC/internet; mk dipconfig && strip dipconfig && cp dipconfig $ETC/dipconfig || echo 'dipconfig: FAILED'
+	cd $IPC/internet; mk dipconfig CFLAGS=-O && strip dipconfig && cp dipconfig $ETC/dipconfig || echo 'dipconfig: FAILED'
 	cd $IPC/internet; rm -f dipconfig dipconfig.o
 
 # internet/mkfile has a rule for dipconfig but leaves it out of ALL, and for
@@ -922,6 +1012,8 @@ $ETC/rp07rest:Psh $GEN/installed: $PREP
 #
 # mtab and utmp are left out: they are runtime state that rc and init rewrite,
 # not configuration.  Works against either root -- `mk ROOT=/v10 config'.
+# /etc/mkimage is here too: it is not under $GEN/etc, so the loop misses it,
+# and its own rule carries ./installed, which never replaces an existing one.
 #
 # Both targets end in sync.  mk does not, and machdep.c:439-446's boot() calls
 # death() without syncing either, so a disk written here and then left by ^E
@@ -932,16 +1024,17 @@ config:V:
 		cp $GEN/etc/$f $ETC/$f
 	done
 	chmod +x $ETC/down $ETC/mklost+found $ETC/rc $ETC/shutdown
+	cp $GEN/mkimage $ETC/mkimage
 	cp $GEN/etc/profile $ROOT/.profile
 	chmod 644 $ROOT/.profile
 	sync
 
 verify:V:
-	for f in $TOOLS $LIB $LIBS $USRBIN $BIN $ETCF $ROOT/.profile
+	for f in $TOOLS $INC $LIB $LIBS $USRBIN $BIN $ETCF $ROOT/.profile
 	do
 		test -f $f || echo "MISSING  $f"
 	done
-	for d in $ROOT/bin $ROOT/etc $ROOT/lib $ROOT/n $ROOT/n/tapes $ROOT/n/v10 $ROOT/proc $ROOT/tmp $ROOT/usr/adm $ROOT/usr/bin $ROOT/usr/lib
+	for d in $ROOT/bin $ROOT/etc $ROOT/lib $ROOT/n $ROOT/n/home $ROOT/n/macos $ROOT/proc $ROOT/tmp $ROOT/usr/adm $ROOT/usr/bin $ROOT/usr/lib $ROOT/usr/tmp
 	do
 		test -d $d || echo "MISSING DIR  $d"
 	done

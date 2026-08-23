@@ -1,20 +1,40 @@
-# Write /v10/usr back out as ipnx.tar, which is the one thing mkimage reads.
+# Write THIS MACHINE'S /usr out as ipnx.tar, which is the one thing mkimage
+# reads.
 #
 #	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
 #	mktape    fills a blank /v10/usr from the six archives
-#	mkbuild   puts the build system into /v10/usr/src/build
-#	mkipnx    writes /v10/usr back out as ipnx.tar               <-- this
+#	mkbuild   puts the build system into <root>/usr/src/build
+#	mkipnx    writes /usr back out as ipnx.tar                   <-- this
 #
-# It extracts nothing and touches no device.  Run it against any /v10/usr that
-# holds what a v10 machine's /usr should hold -- one mktape has just filled, or
-# one an earlier mkimage left behind.
+# ALL OF /usr, NOT THE SOURCE TREE.  A disk that gets only src cannot build: it
+# has no /usr/include, so libc/mkfile:150's absolute /usr/include/libc.h cannot
+# be resolved, and no /usr/bin, so ranlib and lcc are gone.  The archive is a
+# working machine's whole /usr, and the disk mkimage extracts it onto is that
+# machine.  mktape is for the other case -- a /usr from nothing.
 #
-# It copies nothing in: mkbuild does that, and this refuses without it.
+# It touches no device and mounts nothing: /v10 is not involved.
 
-TAPES=/n/tapes
+BUILD=/usr/src/build
+TMP=/usr/tmp
 
-# /v10/usr must hold what a v10 machine's /usr holds, build system included:
-# run mkbuild first.
-test -d /v10/usr/src/build || exit 1
+test -d $BUILD || { echo "mkipnx: no $BUILD"; exit 1; }
+test -d $TMP || { echo "mkipnx: no $TMP"; exit 1; }
 
-cd /v10/usr && tar cf $TAPES/ipnx.tar . || exit 1
+# The old archive goes first, or the new one contains it.
+rm -f $BUILD/ipnx.tar
+
+# AND THE STAMPS, or nothing is ever repaired again.  mkfile:126-135 makes
+# .ranlib and .patched plain files with no P attribute, so their existence is
+# the whole test.  This machine has both; archiving them hands every disk made
+# from here a source tree that claims to be patched and is not, and ./patch
+# writes /usr/include/stdlib.h and float.h, which stdio/fconv.h:28,33 need.
+rm -f /usr/src/cmd/.patched /usr/src/cmd/.ranlib
+
+# WRITTEN OUTSIDE THE TREE IT IS ARCHIVING, then moved in.  tar has no
+# --exclude here, and an archive created under the directory being walked is
+# reached by that walk and copied into itself while it grows.  /usr/tmp is
+# left out for the same reason and is scratch anyway; the rest of the list is
+# read from the directory rather than written down, so a new one is not missed.
+cd /usr && tar cf $TMP/ipnx.tar `ls | grep -v '^tmp$'` || exit 1
+mv $TMP/ipnx.tar $BUILD/ipnx.tar || exit 1
+sync
