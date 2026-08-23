@@ -60,3 +60,10 @@ v10superset/READ.jsonl
 # about what we build from is a git grep, while a question about what a
 # particular TAPE says is one extract away and provable against the manifest.
 v10tapes/
+
+# THE TAPE ARCHIVES THEMSELVES ARE NOT COMMITTED EITHER.  tapes/ is 505 MB of
+# raw tar -- the six V10 archives plus V8 and batterpudding -- decompressed
+# from the copies in work/, which is what tools/v10-tapes.sh actually reads.
+# Committing them would put half a gigabyte of tape into every clone to say
+# what v10superset/ already says, checked, in a form git can diff.
+tapes/
