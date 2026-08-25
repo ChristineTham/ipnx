@@ -30,9 +30,11 @@ on hardware you already carry.
 > signed and notarised.
 >
 > Track A is complete through A5 and Track S built the shipped disk. **Track B — the V10
-> restoration — has started, and its toolchain phase is done**: a Tenth Edition compiler,
-> assembler and libc now run on the Eighth Edition machine. Next is the userland, then a
-> kernel nobody has ever compiled. Details: [docs/roadmap.md](docs/roadmap.md).
+> restoration — now builds itself**: a Tenth Edition compiler, assembler and libc first ran
+> on the Eighth Edition machine, and V10 has since built its own libc, its own `/bin`, and
+> **its own kernel** — the first V10 kernel anyone has compiled. A golden boots to a login
+> prompt and halts cleanly. Next is the build system itself, redesigned:
+> [docs/v10-build.md](docs/v10-build.md). Details: [docs/roadmap.md](docs/roadmap.md).
 >
 > The two numbers belong to two different people: the **edition** is Bell Labs' and is
 > not ours to increment; the **release** counts what this project has made of it, and
@@ -159,9 +161,21 @@ V10's C compiler, its assembler and a complete `libc.a` — and on 2026-08-16 th
 be built from source, and V10's own `ld` was there all along in a file the plan said did
 not exist.
 
-So V8 is now hosting a working Tenth Edition toolchain, and what remains is the userland,
-the kernel and a boot block. A world first if it lands:
-[docs/v10-restoration.md](docs/v10-restoration.md), lab notebook in
+V8 hosted that toolchain long enough for V10 to take over from it, and **V10 now builds
+itself.** In the week to 2026-08-24 it built its own `/bin` under `mk`, then a bootable root
+carrying the build system on the disk, then a golden that boots to a login prompt and halts
+cleanly, then its own `libc`, then **its own kernel**. On 2026-08-25 the whole `world` target
+completes — toolchain, libraries, commands, packages, kernel — with the pascal compiler the
+last package to fall.
+
+The build is two files the machine reads, both edited in this repository at
+`v10/usr/src/build`: an **`mkfile`** with one rule per product, and a **`patch`** script of
+idempotent source repairs run before anything compiles. Every deviation from the tape is a
+block in `patch` with the evidence beside it, and
+`python3 tools/v10-tree.py` prints every file we have changed since the tapes.
+[docs/v10-bootstrap.md](docs/v10-bootstrap.md) is how it works today,
+[docs/v10-build.md](docs/v10-build.md) is where it is going, the restoration narrative is
+[docs/v10-restoration.md](docs/v10-restoration.md), and the lab notebook is
 [docs/v10-log/](docs/v10-log/).
 
 **And there was never a pure Tenth Edition to restore.** This is the track's most
@@ -285,8 +299,9 @@ out of reach for reasons that have nothing to do with engineering.
 | **B0.5** the N track | ✅ | N0–N7: RP07 disk, an Interlan NI1010 modelled for SIMH, **V8 on the Internet**, and **a macOS folder mounted read/write inside V8** over Weinberger's netfs — [n-track-notes.md](docs/n-track-notes.md) |
 | **B0.6** a machine to live in | ✅ | Identity, network up at boot, an account named after the host user, host shares at `/n/macos` and `/n/home` — [machine-config.md](docs/machine-config.md) |
 | **B1** V10 toolchain | ✅ | V10's own compiler, assembler and libc are **in the tarball as linked binaries** and **run on the V8 kernel**; `cpp`, `c2` and `ld` built from source. 9/9 and 10/10 — [v10-log/2026-08-16.md](docs/v10-log/2026-08-16.md) |
-| **B2** the userland | ○ | libc from source against the 1995 archive, the boot path (none of it prebuilt), the r70 header skew — **next** |
-| **B3** kernel + first boot | ○ | `star` is the 780, `alice.m` a real CSRC config, and `hp`/`dz`/`ni1010a` cover the machine we emulate. Nobody has compiled a V10 kernel |
+| **B2** the userland | ✅ | V10 builds its own `libc` and its own `/bin` under `mk`, and as of 2026-08-25 the whole `world` target completes — toolchain, libraries, commands, packages — [v10-bootstrap.md](docs/v10-bootstrap.md) |
+| **B3** kernel + first boot | ✅ | **A V10 kernel has been compiled** — by V10, from `usr/sys`, the tape's own way — and a golden boots to a login prompt and halts cleanly with netfs surviving it |
+| **B3.5** the build, redesigned | ○ | One tool, three archives, one source tree: `installed` deleted for real dependencies, `/usr/src` as the unit, `mk` everywhere — **next**, [v10-build.md](docs/v10-build.md) |
 | **B4–B5** the experience | ○ | Multi-user, `mux`, **`sam`**, then "Edition 10" in the app |
 | **C** ipnx-ports | ○ | Ports tree; `libcompat` first, then V10's games, then BSD's |
 | **D** ipnx-v11 | ○ | Mostly restoration — V10 already ships a 9P server — [v11-plan.md](docs/v11-plan.md) |
@@ -304,6 +319,8 @@ out of reach for reasons that have nothing to do with engineering.
 | `ports/` | *(planned)* the ipnx-ports tree |
 | [RESEARCH.md](RESEARCH.md) | The original feasibility study — frozen evidence, not a living doc |
 | [docs/architecture.md](docs/architecture.md) | Living technical spec |
+| [docs/v10-bootstrap.md](docs/v10-bootstrap.md) | How a Tenth Edition disk is built today |
+| [docs/v10-build.md](docs/v10-build.md) | The build system redesign, and the plan to get there |
 | [docs/roadmap.md](docs/roadmap.md) | Phases and status for both tracks |
 | [docs/licensing.md](docs/licensing.md) | Binding licensing posture for every component |
 | [CLAUDE.md](CLAUDE.md) | Working context for AI-assisted sessions — including the hard-won gotchas |

@@ -1,8 +1,15 @@
 # ipnx-v11 — the edition that never was
 
-*Scope framing, 2026-08-10. Nothing here is committed and nothing should start before
-B4 (V10 boots). The purpose of this document is to make the question answerable:
-**what could an Eleventh Edition contain without ceasing to be Research Unix?***
+*Scope framing, 2026-08-10; streams 5 and 6 added 2026-08-25. Nothing here is committed and
+nothing should start before B4 (V10 boots). The purpose of this document is to make the
+question answerable: **what could an Eleventh Edition contain without ceasing to be Research
+Unix?***
+
+*Six streams. Four of them — Plan 9, Inferno, BSD, the languages — are things that arrive.
+The other two are the tree itself: a **ports subsystem** in the format sense (Stream 5) and
+the **conversion to ANSI C** (Stream 6). Those two are why v11 needs an edition number
+instead of being a layer of ports over v10, and they are only admissible because **v11 is the
+first edition of this project that is genuinely ours.***
 
 ## The admission rule
 
@@ -285,6 +292,92 @@ The honest position on S: it needs someone at TIBCO to say yes. That is a letter
 not a task to schedule — but it is worth writing, because a working S on a VAX would be a
 better memorial to Chambers, Becker and Wilks than any amount of engineering elsewhere.
 
+## Stream 5 — the ports subsystem *(machinery, and this time it is ours)*
+
+Streams 1 to 4 are all "what arrives". This one is "how", and it is in v11 rather than
+beside it because a ports tree is not a build script — it is a **format**, and choosing the
+format is an editorial act of exactly the kind the admission rule governs.
+
+The model is FreeBSD's: one directory per port, and the directory *is* the record. Distfile
+name and origin, a checksum, a patch series applied in order, build and install rules, and a
+declared dependency list. Nothing about a port lives outside its own directory, so a port can
+be read, audited and deleted as one thing.
+
+What this system imposes on that model, and none of it is optional:
+
+- **`mk`, not `make`.** Per [v10-build.md](v10-build.md), the tree is one dialect by then, and
+  the port format inherits it. mk earns its place here rather than merely being consistent:
+  `%` patterns and `:P:` predicates can express "rebuild when the distfile changed", which
+  suffix rules cannot.
+- **The fetch is host-side, and that is not a limitation to fix.** A 1989 system has no
+  HTTPS, no `gzip` (1992) and no `bzip2` (1996) — it carries `compress`(`.Z`) and
+  `pack`(`.z`). So a port's distfile is fetched and decompressed on the Mac and served over
+  netfs, exactly as `tools/v10-tapes.sh` already does for the six tapes. **Decompressing is
+  not extracting**: the archive is unpacked *on the guest*, so case collisions and long names
+  are resolved by the case-sensitive filesystem that will hold them, never by macOS.
+- **14-byte filenames** remain a hard constraint on what a port may contain, and belong in
+  the format as a check rather than a surprise at extraction time.
+- **Generated makefiles coexist rather than compete.** For an autoconf'd upstream, `configure`
+  produces the *answers* — which sources, which defines, which libraries — and the port's
+  mkfile includes that as a fragment. A version bump regenerates the fragment and leaves the
+  port rules alone. There is nothing to do about this in V10: the tree holds zero
+  `configure`, `configure.in`, `Makefile.in` or `config.status` files, because autoconf 1.0
+  is 1991 and every build file on the tape is hand-written.
+
+The relationship to Track C is stated below, and it changed on 2026-08-25.
+
+## Stream 6 — ANSI C throughout *(the tree, not what arrives in it)*
+
+The other five streams add things. This one changes what is already here, and it is the
+reason v11 needs its own edition number rather than being a layer of ports over v10.
+
+**The mess stays in V10.** V10 is a restoration and has to remain authentic; standardising is
+this edition's job. And the mess is real, not aesthetic: V10 was never built from scratch, it
+accreted, and the tape shows it. The `libc/mkfile` that produced the shipped `libc.a` names
+`cc` for members only `lcc` can compile; 25 of the 261 members are already ANSI (`int
+fprintf(FILE *f, const char *fmt, ...)`, `void *`, `size_t`, `<stdarg.h>`); and the tree
+carries **two generations of stdio at once** — the K&R `doprnt.c`/`doscan.c` set `omakefile`
+builds, and the ANSI `_dtoa`/`vfprintf`/`snprintf` set the archive actually contains. So
+V10's per-file compiler requirement is mixed and undocumented, and **no makefile on the tape
+is a reliable guide to which file needs which.** Restoring V10 means living with that. V11 is
+where it stops: one language, one compiler, and the question never asked per file again.
+
+The compiler decides the shape of everything else, and it is not settled. Roadmap
+**D-A1–D-A4** carries the detail; the four facts that matter here:
+
+1. **Plan 9 did target the VAX-11/750 — the machine we emulate.** The Plan 9 wiki's *Other
+   hardware* page: "Vax 750 - The earliest file server port. The compiler binary was recently
+   found but the source appears to have been lost in the mists of time." An earlier draft of
+   the roadmap asserted the opposite from two primary sources that both simply omitted it;
+   absence from the released suite is not absence from history.
+2. **A found binary cannot be the standard compiler of an edition built from source.** It is
+   an oracle — something to compare output against — exactly as V10's prebuilt `ccom` and `as`
+   were for Track B.
+3. **The only ANSI VAX compiler we actually hold is `lcc`**, and it is buildable from source:
+   front end `cmd/lcc/c/`, VAX back end `gen3/gen.c` + `gen2/vax/`, preprocessor
+   `cmd/lcc/ph/`. `sys/inet/` even has an `lccmkfile`, so lcc was compiling real system code
+   on the tape rather than sitting unused.
+4. **The alternative is to reconstruct a VAX back end for the Plan 9 compiler**, which is
+   bounded work rather than a wish: Plan 9 back ends are deliberately small — a shared front
+   end plus a per-architecture generator, which is why the suite carries seven — and VAX code
+   generation is answered twice over in source we own, V8's `cmd/pcc2/` and V10's own
+   `cmd/ccom/vax/`, with `libc/sys/*.s` and `cmd/as/instrs` fixing the encodings and calling
+   convention. The machine description does not have to be rediscovered, only re-expressed.
+
+Two orderings are not preferences:
+
+- **Back end before port.** A converted tree with no compiler to check it against is
+  unverifiable; a back end can be tested against V10's existing binaries the moment it emits
+  anything.
+- **libc before everything.** The same reason stage 2 precedes stage 3 in Track B: everything
+  links against it.
+
+And the conversion runs the *opposite* way to the compatibility work in the next section.
+`libcompat` exists so post-1989 sources can be built by a K&R compiler; this stream retires
+the need for it by making the compiler ANSI. `PATCHES.md:374` already records which direction
+each edition takes: "The conversion direction is ANSI to K&R, and that is deliberate. V10
+keeps the 1989 language; V11 is where the tree becomes ANSI."
+
 ## The real cost, and it is not the games
 
 An earlier draft of this document asserted that V8's libc was "4.1BSD-era" — `index` and
@@ -352,8 +445,22 @@ These two tracks are easy to confuse and should not be:
   which of the above is Research Unix continuing, and which is merely software that
   runs on it.
 
-The BSD games are built by Track C and chosen by Track D. `sam` is the same. Nothing
-about v11 requires new machinery; it requires a decision about what the edition is.
+The BSD games are built by Track C and chosen by Track D. `sam` is the same.
+
+**Revised 2026-08-25.** This section used to end "Nothing about v11 requires new machinery;
+it requires a decision about what the edition is." That is no longer true, and the reason is
+worth stating rather than patching over. **V11 is the first edition of this project that is
+genuinely ours** — V8 and V10 are restorations where the tape decides the contents and every
+deviation must be argued for, whereas everything in streams 1 to 6 is a choice. An edition
+that chooses its own contents needs to say *how* things arrive as well as *what*, so the port
+format is part of the edition (Stream 5) rather than a service it consumes. Track C still
+builds and Track D still chooses; what changed is that the format Track C implements is
+specified here.
+
+That distinction also breaks the numbering rule stated in the README — "the **edition** is
+Bell Labs' and is not ours to increment; the **release** counts what this project has made of
+it". V11 increments the edition. It is the one place that rule does not hold, and that is
+precisely what marks the boundary between restoration and authorship.
 
 ## Open questions
 

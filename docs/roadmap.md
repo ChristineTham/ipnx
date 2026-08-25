@@ -188,8 +188,15 @@ done in the nine years it has been public
 | Objects / archives | 1,525 `0407` objects, 150 `ar` archives — including a complete 262-member `libc.a` |
 | Do they run on V8? | **Yes.** 9/9, `tools/v10-probe.sh` |
 | Syscall slots shared | **112 of 128** identical, `tools/v10-syscalls.py`. Six are V10-only; two of those have a boot-path caller |
-| Build files | Mixed and irrelevant: 205 `mkfile`, 153 `Makefile`, 209 `makefile` — and **no world build, and none at all for the boot path** |
-| Boot media | **None.** That has not changed, and it is the whole of B3 |
+| Build files | Mixed: 205 `mkfile`, 153 `Makefile`, 209 `makefile` — and **no world build, and none at all for the boot path** |
+| Boot media | **None**, as measured. See below — this is the one row time has overtaken |
+
+*Those are the B1 measurements and they still describe the tape. Two of them no longer
+describe us: there is a world build now — `v10/usr/src/build/mkfile`, one rule per product —
+and there is boot media. V10 built its own `/bin`, its own `libc` and **its own kernel** in
+the week to 2026-08-24, and a golden boots to a login prompt and halts cleanly. The world
+build completes as of 2026-08-25. How it works is [v10-bootstrap.md](v10-bootstrap.md); where
+it is going is [v10-build.md](v10-build.md).*
 
 Three consequences that reshape everything after B1:
 

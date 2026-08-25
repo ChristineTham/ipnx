@@ -94,7 +94,7 @@ expect tools/v10-tryboot.exp work/v10gold/v10-golden.img
 |---|---|---|
 | `v10tapes/` | **gitignored** | the six archives, pristine, one root each. Re-extractable; `MANIFEST` has a hash per file. Never edited. |
 | `v10superset/` | **committed** | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut. Validated, not shaped. |
-| `v10/` | **committed** | a **filesystem** — what a running machine sees. `/usr/src/cmd`, `/usr/man`, `/usr/include`. **Our working copy**, edited directly. |
+| `v10/` | **committed** | a **filesystem** — what a running machine sees. `/usr/src/cmd`, `/usr/sys` (**the kernel**), `/usr/man`, `/usr/include`. **Our working copy**, edited directly. `lsys` is a tape root that stayed unplaced in the superset; nothing the build reads is under it. |
 
 `v10superset` is *not* shape-identical to any V10 distribution: its roots are tape
 roots — `cmd`, `man`, `jerq`, `630` side by side — and no Tenth Edition machine ever
@@ -203,7 +203,7 @@ cd /; sync; sync
 ```
 
 Wait for the marker, *then* `quit`. V8 prints `halting`; **V10 prints `death`** and its
-kernel does not sync on halt — `lsys/md/machdep.c`'s `boot()` is two lines, so the userland
+kernel does not sync on halt — `usr/sys/md/machdep.c`'s `boot()` is two lines, so the userland
 sync is the whole flush. V10 also records in the superblock that a filesystem is mounted, so
 halting without `/etc/umount -a` makes the next boot answer `In use` and carry on with an
 empty `/usr` showing through, reporting nothing.
@@ -229,7 +229,7 @@ simulator running.
 - **The tape states its own build.** `src/cmd/Admin/Mk` is the command build system (five
   suffixes; `Admin/dest` gives the install path from `binfiles`/`etcfiles`/`libfiles`/
   `ulibfiles`; `Admin/large` names the 27 programs compiled `-O` not `-Od2`).
-  `lsys/lib/mk.star` is the kernel recipe and `lsys/astro/mk.out` is the tape's own
+  `usr/sys/lib/mk.star` is the kernel recipe and `v10superset/lsys/astro/mk.out` is the tape's own
   *transcript* of it running for thirteen machines. Read those before inferring.
 - **No inheritance.** `cmd/cc.c:9-11` hardcodes `as="/bin/as"`, `ld="/bin/ld"`,
   `crt0="/lib/crt0.o"`, and `-B` reaches only ccom, c2 and cpp — V10's cc has three `-t`
@@ -274,7 +274,7 @@ simulator running.
   `40,3` in any process that inherited fd 3 lands on fd 4 and dups the terminal. Reading
   `fd.c` alone predicts EBADF and is wrong, because it assumes fd 3 is free.
 - **`/dev/pt/*` are STREAM PIPES, not pseudo-ttys.** V8's `cdevsw` shows major 18 is
-  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `lsys/io/spipe.c`.
+  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `usr/sys/io/spipe.c`.
   The tape leaves `cdev 18 pt` commented out with its own `# remove?`; we uncomment it,
   recorded in `PATCHES.md:289`.
 - **`sys/mkconf/` has its own test fixtures; the build reads `sys/lib/`.** `mk.star:19` is
@@ -289,7 +289,7 @@ simulator running.
   `hp` and **enable `cdev 18 pt`**. Somebody was trying our exact patch in the tool's
   scratch directory, which is corroboration for it rather than a reason to distrust
   `lib/tab`.
-  Our patched `lsys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
+  Our patched `usr/sys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
   from that file rather than carried forward, or it silently loses whatever the tape gained
   (it had dropped `ld 20 archosld` and `ld 21 xttyld`, both of which `ipnx-v10.m` declares).
 - **`ra`'s `0100` is per-partition, and units 8..15 do not exist.** `ra.c:39` is
@@ -312,7 +312,7 @@ simulator running.
   `40,3` in any process that inherited fd 3 lands on fd 4 and dups the terminal. Reading
   `fd.c` alone predicts EBADF and is wrong, because it assumes fd 3 is free.
 - **`/dev/pt/*` are STREAM PIPES, not pseudo-ttys.** V8's `cdevsw` shows major 18 is
-  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `lsys/io/spipe.c`.
+  `spinfo` (`v8/usr/sys/dev/spipe.c`) and V10 ships the same driver as `usr/sys/io/spipe.c`.
   The tape leaves `cdev 18 pt` commented out with its own `# remove?`; we uncomment it,
   recorded in `PATCHES.md:289`.
 - **`sys/mkconf/` holds STALE COPIES of `tab` and `devs`; the build reads `sys/lib/`.**
@@ -324,7 +324,7 @@ simulator running.
   configs use. Asking the wrong copy says `pt` has no major and `hp` is an unknown device;
   both are false. `readconf.c:73` makes an unknown name a hard error, so this is the
   difference between a kernel that configures and one that does not.
-  Our patched `lsys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
+  Our patched `usr/sys/lib/tab` is `lib/tab` plus **one** line, `cdev 18 pt` — keep it derived
   from that file rather than carried forward, or it silently loses whatever the tape
   gained (it had dropped `ld 20 archosld` and `ld 21 xttyld`, both of which
   `ipnx-v10.m` declares).
@@ -373,8 +373,8 @@ be non-vanilla and the build was rewritten:
   old `v10/src` overlay are gone; our patches are parked in `work/v10-preserved/` and have
   **not** been reapplied, so `v10/` currently reports zero deviations from the tapes.
 - The kernel config `ipnx780.m` is retained deliberately: of the seventeen configs in
-  `lsys/astro`, alice is the only 780, but its root is behind a UDA50 at `0772160` while
-  `lsys/boot/star/uda.s:157` (`udareg: .long 0772150, 0772160`) makes the ROM's controller 0
+  `usr/sys/astro`, alice is the only 780, but its root is behind a UDA50 at `0772160` while
+  `usr/sys/boot/star/uda.s:157` (`udareg: .long 0772150, 0772160`) makes the ROM's controller 0
   the standard `0772150`. The boot disk selection itself is unchanged from alice.
 
 **The rewritten build has not been run.** Known open items: stage 3 (fixpoint) has 0 rows;

@@ -198,6 +198,1653 @@ sed 's|tell(f), name);|lseek(f, 0L, 1), name);|' bad144.c > b$$ && mv b$$ bad144
 # fstat.c includes <sys/tty.h>, which v10 has not got, and uses nothing from it.
 sed '/^#include <sys\/tty.h>$/d' fstat.c > f$$ && mv f$$ fstat.c
 
+# gtty AND stty ARE NOT IN THIS LIBC, and are not meant to be.  They are the V7
+# wrappers over ioctl, and v10 carries neither: no gtty.c or stty.c in libc/sys,
+# no $L(gtty.o) or $L(stty.o) in libc/mkfile, and no gtty(3) or stty(3) in the
+# manual -- man3 has getpwent.3 and string.3 and nothing of these.  What v10
+# does carry is the interface they wrapped: /usr/include/sgtty.h is four lines,
+# "compatibility hack" over <sys/ttyio.h>, whose line 5 is `struct sgttyb' and
+# whose 104-105 are
+#	#define	TIOCGETP	(('t'<<8)|8)
+#	#define	TIOCSETP	(('t'<<8)|9)
+# Every call site is the same shape -- gtty(fd, &buf) with a struct sgttyb --
+# and every one of the eight files already includes <sgtty.h>, so rewriting the
+# call to the ioctl it stood for needs nothing else.  The eight are 300, 300s,
+# 4014, 450 and hp in cmd/, and clear, paper and descrypt one level down; none
+# of them mentions ioctl otherwise, so this is idempotent by construction.
+cd $SRC/cmd || exit 1
+for f in 300.c 300s.c 4014.c 450.c hp.c clear/clear.c paper/print2621.c descrypt/getpass.c
+do
+	sed -e 's|gtty *(\(.*\), *\(&[A-Za-z_][A-Za-z0-9_]*\))|ioctl(\1, TIOCGETP, \2)|' \
+	    -e 's|stty *(\(.*\), *\(&[A-Za-z_][A-Za-z0-9_]*\))|ioctl(\1, TIOCSETP, \2)|' \
+	    $f > t$$ && mv t$$ $f
+done
+
+# gets WAS DELETED FROM THIS LIBC ON PURPOSE, and stays deleted.  libc/stdio/
+# gets.c-1 opens
+#	/*
+#	 * Deleted from libc.a by td, 88.11.07
+#	 * gets is an unacceptable security hole.
+#	 */
+# -- a decision, not a gap -- so it is not put back into the library.  What is
+# supplied instead is a per-file wrapper over fgets, in the seven sources that
+# call it and nowhere else, which is the same shape as the rewrite this script
+# already makes in 512restor, rp07dump and rp07rest.  fgets keeps the newline
+# where gets stripped it, so the wrapper strips it.  The newline is written as
+# 10 and not as an escape ON PURPOSE: these lines are produced by echo, and an
+# echo that takes escapes without -e would put a real newline in the middle of
+# the C string.  v10's own echo.c escapes only under -e (`if (*cp == 92 &&
+# escflg)'), but the repair should not depend on which echo runs it.
+#
+# ONE FILE PER PROGRAM, AND THE DECLARATION GOES FIRST.  A second definition in
+# the same link would be a duplicate symbol, so the list names the single caller
+# in each: refer's kaiser.c and ml2.c call gets too and are in no target's
+# object list.  The definition is appended -- it needs stdin, and stdio.h is
+# only in scope after the file's own includes -- so `char *gets();' is
+# prepended as well, or the earlier calls default it to extern int and the
+# definition contradicts them.  The bound is the one thing a wrapper cannot
+# know, which is the hole the deletion was about.
+#
+# flcopy.c HAS NO INCLUDES AT ALL, so the wrapper's stdin is undefined there
+# ("flcopy.c":132:stdin undefined) and stdio.h goes in ahead of the
+# declaration.  It is added only where absent: /usr/include/stdio.h guards its
+# struct with `# ifndef FILE' but not its `#define BUFSIZ 4096', so a second
+# include is noisy where one is already there.  IT IS A STEP OF ITS OWN: put
+# inside the `ipnx gets' guard it never ran on a tree where the wrapper was
+# already appended, and flcopy went on answering "stdin undefined".
+# cflow's nmf.c (`_gets' undefined linking dag/lpfx/nmf, cflow/mkfile's own
+# `flip' script) and town/town.c (`_gets' undefined linking town) call gets
+# too, each the only caller in its own binary, so they join the list on the
+# same rule as the eight above.
+cd $SRC/cmd || exit 1
+for f in flcopy.c dired/dired.c refer/deliv1.c wwb/dictadd.c ap/apkeys/dread.c ap/apkeys/flist.c basic/bite/src/input.c weather/weather.c cflow/nmf.c cflow/flip.c town/town.c
+do
+	if grep 'ipnx gets' $f > /dev/null
+	then	:
+	else
+		echo 'char *gets();' > g$$
+		cat $f >> g$$
+		echo '/* ipnx gets -- see PATCHES.md */' >> g$$
+		echo 'char *gets(s) char *s; {' >> g$$
+		echo '	extern char *fgets();' >> g$$
+		echo '	char *p;' >> g$$
+		echo '	if (fgets(s, 1024, stdin) == 0) return 0;' >> g$$
+		echo '	for (p = s; *p; p++) if (*p == 10) { *p = 0; break; }' >> g$$
+		echo '	return s; }' >> g$$
+		mv g$$ $f
+	fi
+done
+
+# wwb/dictadd.c:17 is `while(gets(phrase) != EOF)' and EOF is -1, so once gets
+# is declared char * -- which it has to be, for the wrapper's definition to
+# match -- pcc answers "illegal pointer/integer combination, op !=".  It was
+# never right: V7's gets returns NULL at end of file and NULL != EOF, so this
+# loop never ended on EOF either.  Comparing against 0 is what the return value
+# means.
+cd $SRC/cmd/wwb || exit 1
+sed 's|gets(phrase) != EOF|gets(phrase) != 0|' dictadd.c > d$$ && mv d$$ dictadd.c
+
+# index IS strchr UNDER ITS V7 NAME, and string(3)'s NAME line names strchr and
+# strrchr and neither index nor rindex -- the same evidence as gtty and getpw.
+# weather.c declares it itself at :18, `char *index(), *timezone(), ...', and
+# calls it at :224, :229 and :385; renaming every occurrence fixes the
+# declaration with the calls.
+cd $SRC/cmd/weather || exit 1
+sed 's|index(|strchr(|g' weather.c > w$$ && mv w$$ weather.c
+
+cd $SRC/cmd || exit 1
+if grep 'stdio.h' flcopy.c > /dev/null
+then	:
+else
+	echo '#include <stdio.h>' > s$$
+	cat flcopy.c >> s$$
+	mv s$$ flcopy.c
+fi
+
+# limiter.c USES NOFILE AND NSYSFILE AND INCLUDES NEITHER HEADER THAT HAS THEM.
+# /usr/include/sys/param.h:8-9 are
+#	#define	NOFILE	128		/* max open files per process */
+#	#define	NSYSFILE 4		/* stdin, stdout, stderr, /dev/tty */
+# and limiter.c:1-4 include sys/types.h, sys/filio.h, stdio.h and sys/stream.h.
+# BUT param.h:131 ends `#include "sys/types.h"' unguarded, so adding param.h
+# BESIDE limiter's own sys/types.h line -- as the line above used to -- parses
+# every typedef in types.h twice, the same fault already fixed in toplev.c,
+# renice.c and dipconfig.c:
+#     "/usr/include/sys/types.h":33:illegal type combination
+#     "/usr/include/sys/types.h":63:redeclaration of fd_set from some line 63
+# param.h's own tail supplies types.h, so param.h REPLACES limiter's line
+# instead of joining it.  Guarded on param.h's presence, not run order. so it
+# also repairs a tree the line-above version already patched once: with
+# param.h present already, the stray original sys/types.h line is dropped;
+# without it, sys/types.h is substituted for sys/param.h, same as the else
+# branch always did.
+cd $SRC/cmd || exit 1
+if grep '^#include <sys/param.h>$' limiter.c > /dev/null
+then
+	sed '/^#include <sys\/types.h>$/d' limiter.c > l$$ && mv l$$ limiter.c
+else
+	sed 's|^#include <sys/types.h>$|#include <sys/param.h>|' limiter.c > l$$ && mv l$$ limiter.c
+fi
+
+# stat.c:64 is `tp(S_ISVTX,'t')' AND V10 HAS NO STICKY BIT.  sys/stat.h:22-29
+# name S_ISUID 04000, S_ISGID 02000 and then S_ICCTYP 07000 with S_ISYNC 01000
+# and S_IEXCL 03000 -- 01000, which is S_ISVTX on Berkeley systems, is the
+# concurrent-access type here, so printing `t' for it would be wrong as well as
+# undefined.  The line goes.
+sed '/tp(S_ISVTX/d' stat.c > s$$ && mv s$$ stat.c
+
+# oops.c:62,67,84 declare size_t members and nothing on the tapes defines it:
+# sys/types.h has no size_t and neither has stdio.h.  The kernel counts these
+# in pages and clicks, all int-sized, so unsigned is the type the fields had
+# before somebody wrote size_t over them.  The typedef is PREPENDED and not
+# sedded onto the first #include: oops.c has several, and an unaddressed s|| on
+# ^#include would put the typedef in front of every one of them.
+cd $SRC/cmd/oops || exit 1
+if grep 'ipnx size_t' oops.c > /dev/null
+then	:
+else
+	echo 'typedef unsigned size_t;	/* ipnx size_t */' > o$$
+	cat oops.c >> o$$
+	mv o$$ oops.c
+fi
+
+# punct/mdouble.c:164 is `if(p == EOF)return(0);' where getl returns char *,
+# the same fault as wwb/dictadd.c: EOF is -1 and a pointer is not.
+cd $SRC/cmd/punct || exit 1
+sed 's|if(p == EOF)|if(p == 0)|' mdouble.c > m$$ && mv m$$ mdouble.c
+
+# basic/bas/io.c:59 is `register char *b = file->_base;' and stdio.h:5-6 declare
+# _base as `unsigned char *', which pcc will not assign to a char * without a
+# cast.
+cd $SRC/cmd/basic/bas || exit 1
+sed 's|= file->_base;|= (char *)file->_base;|' io.c > i$$ && mv i$$ io.c
+
+# cflow/nmf.c IS MISSING ITS LAST #endif.  Its conditionals are #if at :2,
+# #else at :65, then #if/#endif at :68/:71 and :73/:76 -- the outer one from
+# line 2 is never closed, and cpp answers "Unexpected EOF within #if".
+cd $SRC/cmd/cflow || exit 1
+if grep 'ipnx endif' nmf.c > /dev/null
+then	:
+else
+	echo '#endif	/* ipnx endif: nmf.c:2 is never closed */' >> nmf.c
+fi
+
+# flex/flexdef.h:61 includes <strings.h> and v10 has string.h -- the same file
+# under the name string(3) gives it.
+cd $SRC/cmd/flex || exit 1
+sed 's|<strings.h>|<string.h>|' flexdef.h > f$$ && mv f$$ flexdef.h
+
+# u9fs/makefile's rule is `%.o: %.c u.h libc.h 9p.h' with `lcc -c $(CFLAGS) $<',
+# and v10 make sets $< to the first out-of-date prerequisite, which is 9p.h --
+# so it compiled the header four times and then found no u9fs.o.  $*.c is the
+# source the stem names.
+cd $SRC/cmd/u9fs || exit 1
+sed 's|lcc -c $(CFLAGS) $<|lcc -c $(CFLAGS) $*.c|' makefile > u$$ && mv u$$ makefile
+
+# efl/icfile.c:3 is `struct { char chars[ 10 ]; };' -- a struct with no tag and
+# no object, which declares nothing and which lcc reports as an empty
+# declaration.  Nothing in the file refers to it.
+cd $SRC/cmd/efl || exit 1
+sed '/^struct { char chars\[ 10 \]; };$/d' icfile.c > e$$ && mv e$$ icfile.c
+
+# libpen's openpl.c CALLS ioctl WITH FIOLOOKLD AND FIOPUSHLD AND INCLUDES ONLY
+# "pen.h".  Both are in /usr/include/sys/filio.h:29,31 --
+#	#define	FIOPUSHLD	(('f'<<8)|3)
+#	#define	FIOLOOKLD	(('f'<<8)|5)
+# -- the line-discipline ioctls it pushes tty_ld with.  The file is a member of
+# pen.c.a, so the repair goes through ar: extract, prepend, replace.  The
+# extracted copy is the guard, and it is removed either way so the directory is
+# left as the tape had it.
+cd $SRC/libplot/libpen || exit 1
+ar x pen.c.a openpl.c
+if grep 'ipnx filio' openpl.c > /dev/null
+then	rm -f openpl.c
+else
+	echo '#include <sys/filio.h>	/* ipnx filio */' > p$$
+	cat openpl.c >> p$$
+	mv p$$ openpl.c
+	ar r pen.c.a openpl.c
+	rm -f openpl.c
+fi
+
+# town.c:6 is `# include "/usr/weather/progs/weath.h"' -- an absolute path to a
+# directory this system has not got.  The header is cmd/weather/weath.h, which
+# is where the program that uses it lives.
+cd $SRC/cmd/town || exit 1
+sed 's|"/usr/weather/progs/weath.h"|"../weather/weath.h"|' town.c > t$$ && mv t$$ town.c
+
+# CREF IS 1982 C, AND EVERY FILE IS DATED Jan 13 1982.  Three faults, all
+# mechanical, none of them a judgement about what the program should do.
+#
+# ONE: initialisers written without `='.  dr.c:30-31 are
+#	char	*ignonl	"/usr/lib/aign";
+#	char	*gtab	"/usr/lib/atab";
+# and ccom/common/cgram.y:396-406 is `init_declarator: nfdeclarator |
+# fdeclarator | xnfdeclarator ASSIGN e | xnfdeclarator ASSIGN LC init_list
+# optcomma RC' -- there is no production without ASSIGN.  Twenty-seven such
+# declarations across the directory.  The form is always
+# type<tab>declarator<tab>value, so `= ' goes in front of the value; the
+# pattern excludes a value already starting with `=', which is what makes the
+# edit idempotent.
+#
+# TWO: the pre-1978 compound operators, ` =+ ` ` =- ` ` =* ` and ` =| `,
+# twenty-three of them.  These are not all caught by the compiler: `argv =+ j'
+# is read as `argv = +j' and fails only because K&R has no unary plus, while
+# `argc =- j' reads as `argc = -j', compiles clean and is WRONG.  Every one is
+# written with a space on both sides, so the substitution is unambiguous.
+#
+# THREE: v6 buffered i/o.  cref opens its input with `fopen(argv[i],ibuf1) < 0'
+# -- the v6 call, which fills a caller's `int ib1[259]' buffer and returns a
+# status -- and v10's is Berkeley's `FILE *fopen(file, mode)' (libc/stdio/
+# fopen.c:6-8), so the buffer is being passed as the MODE STRING.  Five fopen
+# calls in the directory and nine getc; getc needs no change once the pointer
+# is a FILE *, and everything else in cref is raw open/read/write/close.  The
+# two `ibuf1 = &ib1' lines that bound the v6 buffers go, and close() on a
+# stream becomes fclose().
+cd $SRC/cmd/cref || exit 1
+for f in *.c
+do
+	sed -e 's/^\(int	[^	 ;{}]*\)	\([^=	 ]\)/\1	= \2/' \
+	    -e 's/^\(char	[^	 ;{}]*\)	\([^=	 ]\)/\1	= \2/' \
+	    -e 's/ =+ / += /g' \
+	    -e 's/ =- / -= /g' \
+	    -e 's/ =\* / *= /g' \
+	    -e 's/ =| / |= /g' $f > c$$ && mv c$$ $f
+done
+
+# upost.c:165,169 initialise a ONE-ELEMENT ARRAY, not a scalar, so the braces
+# the tape left off are put back rather than leaving `int tp[1] = 1;'.
+sed -e 's|^int	tp\[1\]	= 1;$|int	tp[1]	= {1};|' \
+    -e 's|^char	\*obuf\[1\]	= bsp;$|char	*obuf[1]	= {bsp};|' upost.c > u$$ && mv u$$ upost.c
+
+# ccmn.c is #included by both dr.c and acts.c, so the three stream pointers and
+# the stdio.h they now need are declared once, there.  ib1 and ib2 are left
+# where they are: nothing reads them any more and they cost 2k of bss.
+if grep 'ipnx stdio' ccmn.c > /dev/null
+then	:
+else
+	echo '#include <stdio.h>	/* ipnx stdio -- see PATCHES.md */' > c$$
+	cat ccmn.c >> c$$
+	mv c$$ ccmn.c
+fi
+sed -e 's/^char	\*ibuf;$/FILE	*ibuf;/' \
+    -e 's/^char	\*ibuf1;$/FILE	*ibuf1;/' \
+    -e 's/^char	\*ibuf2;$/FILE	*ibuf2;/' ccmn.c > c$$ && mv c$$ ccmn.c
+
+sed -e 's|if(fopen(argv\[i\],ibuf1) < 0) {|if((ibuf1 = fopen(argv[i],"r")) == 0) {|' \
+    -e 's|^	fopen(ignonl,ibuf1);$|	ibuf1 = fopen(ignonl,"r");|' \
+    -e '/^	ibuf1 = &ib1;$/d' \
+    -e '/^	ibuf2 = &ib2;$/d' \
+    -e 's|^	close(ibuf1);$|	fclose(ibuf1);|' dr.c > d$$ && mv d$$ dr.c
+
+# THE CREF TABLES.  cref reads six files it cannot build for itself:
+# /usr/lib/{a,c,e}tab, the grammar tables, and /usr/lib/{a,c,e}ign, the
+# stop-word tables.  dr.c:30-31 name the assembler pair and the -c and -e
+# branches of flags() name the other two pairs.  Their sources ARE on the
+# tape -- atable/ctable/etable and asym/csym/esym -- and so are the two
+# compilers: mtab.c turns a ?table into a ?tab, make.c turns a ?sym into a
+# ?ign.  Both need repairs of their own beyond the ones above.
+#
+# make.c:5 IS `struct	htab	(' AND LINE 12 IS `		);'.  Round brackets
+# where the braces belong -- the same struct is spelled correctly at
+# ccmn.c:56 and ecmn.h:57.  Corrupt on the tape, and nothing else explains it.
+#
+# THE PDP-11 WORD IS THE REST OF IT.  These two write, and dr.c reads, byte
+# counts computed as though an int were two bytes: mtab.c:176 is
+# `write(fo,tab[i].cl,256)' for an `int cl[NUMC]' with NUMC 128, make.c:116
+# writes its 0100200 magic as `write(ofile,&i,2)', and dr.c:210 and :227 read
+# 256 and 6 back.  On the vax those arrays are twice the size, so mtab would
+# write the first 64 of 128 character classes -- losing every letter, since
+# `A' is 65 -- and dr would read half a header.  Writer and reader are
+# changed together to sizeof, which keeps them consistent and makes the file
+# native to the machine that builds it; these are local caches, not
+# interchange files, built and read on the same disk.
+#
+# dr.c:222 CALLS gtty, which this libc has not got -- see the gtty note above,
+# which covers eight other files but not this one, whose call has a different
+# shape: `gtty(fi, b)' over an `int b[3]', not a &struct sgttyb.  It is asking
+# whether the ignore file is a tty, and TIOCGETP through ioctl answers the
+# same way: -1 for the regular file, which is the branch that then reads the
+# table as binary.  b is twelve bytes and struct sgttyb is six, so it fits.
+cd $SRC/cmd/cref || exit 1
+if grep 'ipnx sgtty' ccmn.c > /dev/null
+then	:
+else
+	echo '#include <sgtty.h>	/* ipnx sgtty -- see PATCHES.md */' > c$$
+	cat ccmn.c >> c$$
+	mv c$$ ccmn.c
+fi
+sed -e 's|if(read(fi,tab\[i\].cl,256) < 256) {|if(read(fi,tab[i].cl,sizeof(tab[i].cl)) < sizeof(tab[i].cl)) {|' \
+    -e 's|if((read(fi,b,6) == 6) \&\& (b\[0\] == 0100200)) {|if((read(fi,b,sizeof(b)) == sizeof(b)) \&\& (b[0] == 0100200)) {|' \
+    -e 's|if(gtty(fi, b) != -1) {|if(ioctl(fi, TIOCGETP, b) != -1) {|' dr.c > d$$ && mv d$$ dr.c
+
+# mtab.c reads its input with v6's getchar, which took its fd from the global
+# `fin' and returned 0 at end of file -- main opens argv[1] onto fin at :36 and
+# never mentions it again.  v10's getchar is getc(stdin) and its EOF is -1, so
+# `while(c = getchar())' over a char would never end.  The v6 one is supplied
+# here instead, with its own fin, and no call site changes.
+sed -e 's|^		write(fo,tab\[i\].cl,256);$|		write(fo,tab[i].cl,sizeof(tab[i].cl));\
+	exit(0);\t\t/* ipnx exit -- see PATCHES.md */|' mtab.c > m$$ && mv m$$ mtab.c
+if grep 'ipnx getchar' mtab.c > /dev/null
+then	:
+else
+	echo 'int	fin;	/* ipnx getchar -- see PATCHES.md */' >> mtab.c
+	echo 'getchar()' >> mtab.c
+	echo '{' >> mtab.c
+	echo '	char c;' >> mtab.c
+	echo '	if (read(fin, &c, 1) != 1) return 0;' >> mtab.c
+	echo '	return c;' >> mtab.c
+	echo '}' >> mtab.c
+fi
+
+# make.c takes the same v6 fopen as dr.c, and its ifile goes unused once the
+# stream itself is the handle.
+if grep 'ipnx stdio' make.c > /dev/null
+then	:
+else
+	echo '#include <stdio.h>	/* ipnx stdio -- see PATCHES.md */' > m$$
+	cat make.c >> m$$
+	mv m$$ make.c
+fi
+sed -e 's|^	return;$|	exit(0);\t\t/* ipnx exit -- see PATCHES.md */|' \
+    -e 's|^struct	htab	($|struct	htab	{|' \
+    -e 's|^		);$|		};|' \
+    -e 's|^char	\*ibuf	= &ib1;$|FILE	*ibuf;|' \
+    -e 's|^	ifile = fopen(argv\[1\],ibuf);$|	ibuf = fopen(argv[1],"r");|' \
+    -e 's|^	if(ifile < 0)err("open",argv\[1\]);$|	if(ibuf == 0)err("open",argv[1]);|' \
+    -e 's|write(ofile,&i,2)|write(ofile,\&i,sizeof(i))|g' \
+    -e 's|write(ofile,&xtab.ssiz,2)|write(ofile,\&xtab.ssiz,sizeof(xtab.ssiz))|g' \
+    -e 's|^	i = 2\*xtab.hsiz;$|	i = sizeof(*xtab.hptr)*xtab.hsiz;|' make.c > m$$ && mv m$$ make.c
+
+# ex HAS NO libpath, AND THAT IS THE WHOLE OF `ex3 undefined'.  ex_tune.h:13
+# takes "local/uparm.h" and :14-15 are
+#	#define	EXRECOVER	libpath(ex3.7recover)
+#	#define	EXPRESERVE	libpath(ex3.7preserve)
+# but /usr/include/local/uparm.h is two lines long and defines usrpath, not
+# libpath:
+#	#define E_TERMCAP	"/etc/termcap"
+#	#define usrpath(file) "/usr/file"
+# so libpath stays a bare identifier, ex3 is an undefined name and .7recover
+# lexes as a floating constant -- `saw FCON' -- which is exactly what ex.c:272
+# and :273 report.  usrpath is the idiom to copy: this cpp substitutes a macro
+# parameter INSIDE a string literal, which is how exrecover.c and expreserve.c
+# already get their /usr/preserve paths, and ex_tune.h:10-11 says which prefix
+# libpath carries -- "if you give /usr/lib/... here, /lib will be tried only
+# for strings".  Defined in ex_tune.h rather than in uparm.h because ex is the
+# only thing on the tapes that wants the macro: cmd/prefer has a C FUNCTION of
+# that name, unrelated, and lbin/mailx is not built.
+cd $SRC/cmd/ex || exit 1
+if grep 'ipnx libpath' ex_tune.h > /dev/null
+then	:
+else
+	sed 's|^#include "local/uparm.h"$|#include "local/uparm.h"\
+#define	libpath(file) "/usr/lib/file"	/* ipnx libpath -- see PATCHES.md */|' ex_tune.h > e$$ && mv e$$ ex_tune.h
+fi
+
+# ostdio's mkfile reads doprnt.S AND THAT IS THE RIGHT NAME HERE.  The
+# u_doprnt.S in the repository is v10-tree.py's renaming of a case collision --
+# doprnt.S and doprnt.s are one name to a case-folding merge, so the lowercase
+# spelling kept it and the other took the u_ prefix.  mktape extracts the tapes
+# onto a case-SENSITIVE v10 filesystem, where both original names survive, so
+# nothing needs renaming and pointing the rule at u_doprnt.S only broke it.
+# An earlier pass of this file DID point it there, and patch edits the source
+# tree in place -- /usr/src survives between builds -- so the wrong name has to
+# be taken back out rather than merely not put in.  On a tree that never saw
+# it the substitution finds nothing and changes nothing.
+cd $SRC/libc/stdio/ostdio || exit 1
+sed 's|u_doprnt.S|doprnt.S|' mkfile > o$$ && mv o$$ mkfile
+
+# oops IS 4BSD ps -- oops.c:1 is `@(#)ps.c 4.13 (Berkeley) 81/07/08' -- and
+# DMMAX IS THE ONE THING IT WANTS THAT v10 DOES NOT HAVE.  The name occurs at
+# oops.c:854 and NOWHERE else in usr/include, lsys or usr/src.  Berkeley's
+# vmparam.h carries DMMIN and DMMAX together; v10's keeps only DMMIN (:65,
+# `#define DMMIN 32') because it made the pair RUNTIME VARIABLES:
+# sys/dmap.h:16-17 is
+#	extern int dmmin;		/* size in clicks of dm_map[0] */
+#	extern int dmmax;		/* max size of swap alloc, in clicks */
+# md/machdep.c:204 defines them, `int dmmin, dmmax, dmtext;', and :223-244
+# computes dmmax at boot -- "dmmax == first power of 2 larger than
+# max?size/(NDMAP-1)" -- from the swap configuration.  vm/vmdrum.c:64,87 is
+# the same walk oops does, `register int blk = dmmin' ... `if (blk < dmmax)'.
+#
+# So there is no constant to supply: a hardcoded 1024 would be wrong on any
+# machine whose swap is not Berkeley's size.  oops already reads _nswap,
+# _maxslp, _ccpu, _ecmx, _nproc, _ntext and _hz out of the kernel by nlist, so
+# _dmmax joins them and the loop reads the variable.  DMMIN is left alone --
+# machdep.c:225 is `dmmin = DMMIN', so the constant and the variable agree.
+cd $SRC/cmd/oops || exit 1
+if grep 'ipnx dmmax' oops.c > /dev/null
+then	:
+else
+	sed -e 's|^	{ "_hz" },$|	{ "_dmmax" },\
+#define	X_DMMAX		10	/* ipnx dmmax -- see PATCHES.md */\
+	{ "_hz" },|' \
+	    -e 's|^#define	X_HZ		10$|#define	X_HZ		11|' \
+	    -e 's|^int	nproc, ntext, hz;$|int	nproc, ntext, hz;\
+int	dmmax;		/* ipnx dmmax -- read from the kernel, see PATCHES.md */|' \
+	    -e 's|^	KMlseek(kmem, (long)nl\[X_MAXSLP\].n_value, 0);$|	KMlseek(kmem, (long)nl[X_DMMAX].n_value, 0);\
+	if (read(kmem, \&dmmax, sizeof (dmmax)) != sizeof (dmmax)) {\
+		cantread("dmmax", kmemf);\
+		exit(1);\
+	}\
+	KMlseek(kmem, (long)nl[X_MAXSLP].n_value, 0);|' \
+	    -e 's|^		if (blk < DMMAX)$|		if (blk < dmmax)|' oops.c > o$$ && mv o$$ oops.c
+fi
+
+# pascal/eyacc/ey3.c IS BERKELEY 4.1 AND ITS CASTS PREDATE THE TYPES.  Nine
+# errors, one per site, and every one is a pointer written as an int or a cast
+# that names a type nothing declares.  ey3.c:32 is
+#	pfirst = (looksets ***)yalloc(nnonter+1);
+# where ey0.c:66 is `struct looksets **pfirst' -- no typedef of that name
+# exists anywhere, so `looksets' is an undefined identifier AND the cast has one
+# star too many.  Berkeley's own 5.1 of the same file (4/29/85) writes it
+# `(struct looksets **)', and corrects the other eight the same way; only those
+# eight are taken here, and a ninth below.  5.1 also renames aryfil, resizes
+# pempty and adds a lambdarule, which are later behaviour and no business of
+# this tape.
+#
+# THE NINTH IS A PRECEDENCE BUG AND IT IS THE ONE THAT FAULTS.  ey3.c:14 is
+#	if (*prdptr[j] == c) *mem++ =  (int)prdptr[j]+1;
+# and prdptr is `int *prdptr[]' (ey0.c:36), so `(int)prdptr[j]+1' casts first
+# and adds ONE BYTE.  5.1 writes `(int)(prdptr[j]+1)', which advances one int.
+# What goes into mem is read back through pres[] as an `int **' (:11,:19) and
+# dereferenced at :36, so a one-byte offset is a misaligned word: eyacc
+# compiled, ran, and took a memory fault on pas.y.  It is the only occurrence
+# of the shape in either eyacc or pi.
+#
+# The types they are cast to, each from its own declaration:
+#   ey.h:29   struct item { int *pitem; struct looksets *look; }  -- so one
+#             `int s' cannot hold both k->pitem and k->look
+#   ey0.c:31  int *mem                 -- pstate is struct item *[] (ey0.c:25)
+#   ey0.c:67  int *pempty              -- and ey.h never declares yalloc, so it
+#             defaults to int; ey1.c:282 is `int *yalloc(n)'
+#   ey0.c:30  int mem0[]               -- jip-mem0 needs jip an int *
+cd $SRC/cmd/pascal/eyacc || exit 1
+sed -e 's|^		if (\*prdptr\[j\] == c) \*mem++ =  (int)prdptr\[j\]+1;$|		if (*prdptr[j] == c) *mem++ =  (int)(prdptr[j]+1);|' \
+    -e 's|^  pfirst = (looksets \*\*\*)yalloc(nnonter+1);$|  pfirst = (struct looksets **)yalloc(nnonter+1);|' \
+    -e 's|^	int s,size1,size2;$|	int *s,size1,size2;\
+	struct looksets *lp;|' \
+    -e 's|^			s = k->look;$|			lp = k->look;|' \
+    -e 's|^			l->look = s;$|			l->look = lp;|' \
+    -e 's|^	struct item \*i, \*j, \*jip;$|	struct item *i, *j;\
+	int *jip;|' \
+    -e 's|^	jip = j;$|	jip = (int *)j;|' \
+    -e 's|^  pempty = yalloc( nnonter );$|  pempty = (int *)yalloc( nnonter );|' \
+    -e 's|^  pstate\[0\] = pstate\[1\] = mem;$|  pstate[0] = pstate[1] = (struct item *)mem;|' ey3.c > e$$ && mv e$$ ey3.c
+
+# PASCAL CALLS chown AND chgrp TOO, in five of its seven subdirectories --
+# eyacc, libpc, pi, px and pxp, eleven lines between them -- and in
+# pascal/install.sh, whose ch() is `chown bin,bin $1'.  Same fault and same
+# answer as the PostScript note above: v10 has no chgrp at all and its chown is
+# /etc/chown, which make cannot exec by that name.  Its build is a shell loop
+# over the seven (`for i in eyacc libpc pc0 pascal pi px pxp'), so the first
+# one to reach an install would stop it.  pc0 and pascal have neither in their
+# makefiles, and sed over a file with neither is a no-op, so the loop covers
+# all seven -- every one is a lowercase `makefile' -- and install.sh with it.
+# THE TOP-LEVEL ONE IS `Makefile', CAPITAL M, and it is the only one in the
+# whole pascal tree that is -- which is why `*/makefile' caught the seven and
+# missed this one.  It is the file that HOLDS that loop, at :25, and it calls
+# chown and chgrp itself two lines later:
+#	install:
+#		for i in $(DIRS); do (cd $$i; echo ==$$i; make -o; make -o install); done
+#		rm -f $B/pascal
+#		cp pascal.sh $B/pascal
+#		chown bin $B/pascal
+#		chgrp bin $B/pascal
+# so every subdirectory installs and then the last three lines stop the build
+# with `Make: Cannot load chown'.  git records the case the tape cut, which is
+# how this was settled: a case-insensitive host cannot tell the two apart, and
+# there is no u_Makefile beside it, so the tape carries exactly one name.
+cd $SRC/cmd/pascal || exit 1
+# pascal/pascal/makefile:9 is `./install.sh $D $L'.  make execs the command
+# itself rather than handing the line to a shell -- the same behaviour the
+# chgrp note above records, `Make: Cannot load chown' -- so a script named on
+# its own answers `Make: Cannot load ./install.sh.  Stop.'.  Naming the shell
+# is the whole fix.
+sed 's|^	./install.sh |	sh install.sh |' pascal/makefile > p$$ && mv p$$ pascal/makefile
+
+# pi/makefile:14 is `TMPDIR = tmp' and :63-67 run mkstr through it --
+#	${RM} ${TMPDIR}/$*.c
+#	${MKSTR} - ${ERRORSTRINGS} ${TMPDIR}/ $*.c
+#	cd ${TMPDIR} ; ${CC} ${CFLAGS} -I.. -c $*.c
+# -- but the directory is on no tape, and its own `clean' only removes
+# ${TMPDIR}/*.c, so nothing ever creates it.  mkstr then answers
+# `tmp/case.c: No such file or directory'.  pi is the only one of the seven
+# with a TMPDIR.
+test -d pi/tmp || mkdir pi/tmp
+
+for f in Makefile */makefile */mkfile pascal/install.sh
+do
+	sed -e 's|chgrp |: |g' -e 's|chown |: |g' $f > c$$ && mv c$$ $f
+done
+
+# sys/types.h HAS NO INCLUDE GUARD, and four commands have now tripped over it:
+# toplev.c, renice.c and dipconfig.c each got a per-file workaround above, and
+# limiter is the fourth.  The fault is always the same -- some header pulls
+# types.h and then the source pulls it again, and every typedef in it reads as
+# a redeclaration:
+#     "/usr/include/sys/types.h":33:illegal type combination
+#     "/usr/include/sys/types.h":63:redeclaration of fd_set from some line 63
+# sys/param.h:131 is the usual first path, `#include "sys/types.h"', unguarded.
+#
+# _TYPES_ IS THE NAME THE TAPE ITSELF EXPECTS.  cmd/gcc/toplev.c:42 is
+# `#ifndef _TYPES_' guarding its own second include -- that source was written
+# against a types.h which defined it, and v10's does not.  Supplying it makes
+# toplev.c's own guard work as its author intended and closes the whole class,
+# so no fifth command has to be found and worked around one at a time.  The
+# per-file repairs above are left where they are: each is correct on its own
+# and a guarded header makes them harmless rather than wrong.
+#
+# BOTH COPIES ARE GUARDED.  The mkfile's $INC rule keys its P attribute on
+# /usr/include/libc.h, so once that file exists the rule is skipped and
+# $SRC/include is never copied over /usr/include again -- a guard added only to
+# the source tree would sit there unread while the compiler goes on using the
+# installed header.  patch already edits an installed header in place, the
+# dumprestor.h sed above, so the second one goes the same way.
+for t in $SRC/include/sys/types.h /usr/include/sys/types.h
+do
+	if grep '_TYPES_' $t > /dev/null
+	then	:
+	else
+		echo '#ifndef	_TYPES_		/* ipnx guard -- see PATCHES.md */' > t$$
+		echo '#define	_TYPES_' >> t$$
+		cat $t >> t$$
+		echo '#endif	/* _TYPES_ */' >> t$$
+		mv t$$ $t
+	fi
+done
+
+# pi/case.c KEEPS ITS PARSE TREE IN AN int *, and v10's ccom will not assign
+# between that and a struct pointer.  Twenty-three errors, every one a call to
+# ccom/common/trees.c:981's combo() -- "illegal pointer combination" and
+# "illegal pointer/integer combination" -- plus the two that follow from them,
+# `range needs reference to struct/union'.  The types, each from its own
+# declaration in case.c:27-36 and 0.h:
+#   p     struct nl *      cl, cs   int * (cs by implicit int)
+#   ctab  struct ct *      i        int
+#   brtab short *          brtab0, csend, lc (0.h:707)  char *
+# and r, the argument, is int *, so r[3] and cl[1] and cs[2] are PLAIN INTS
+# holding tree pointers.  malloc and getlab (put.c:726) are declared nowhere,
+# so both default to returning int.
+#
+# 4.4BSD's answer to this file was to retype the whole tree -- tree_ty.h,
+# WHI_CAS, NLNIL, typed nodes -- which is a different compiler, not a repair.
+# The casts below say the same thing about this one, in the same style as the
+# eyacc note above, and change no behaviour: every one is the identity on a
+# vax, where a pointer and an int are both 32 bits.  cl is left an int *,
+# which is what it is for most of the function; its four uses as a struct nl *
+# are cast at the point of use rather than given a second variable.
+cd $SRC/cmd/pascal/pi || exit 1
+sed -e 's|^			cl = p;$|			cl = (int *)p;|' \
+    -e 's|^				cl = p->type;$|				cl = (int *)p->type;|' \
+    -e 's|^				low = cl->range\[0\];$|				low = ((struct nl *)cl)->range[0];|' \
+    -e 's|^				high = cl->range\[1\];$|				high = ((struct nl *)cl)->range[1];|' \
+    -e 's|for (cl = r\[3\]; cl != NIL; cl = cl\[2\])|for (cl = (int *)r[3]; cl != NIL; cl = (int *)cl[2])|g' \
+    -e 's|^		cs = cl\[1\];$|		cs = (int *)cl[1];|' \
+    -e 's|for (cs = cs\[2\]; cs != NIL; cs = cs\[2\])|for (cs = (int *)cs[2]; cs != NIL; cs = (int *)cs[2])|g' \
+    -e 's|^	ctab = i = malloc(n \* sizeof \*ctab);$|	ctab = (struct ct *)(i = malloc(n * sizeof *ctab));|' \
+    -e 's|^		brtab = brtab0 = lc;$|		brtab = (short *)(brtab0 = lc);|' \
+    -e 's|^	csend = getlab();$|	csend = (char *)getlab();|' case.c > c$$ && mv c$$ case.c
+
+# pi REACHES struct nl's UNION MEMBERS BY BARE NAME, which is pre-K&R C: in
+# that language a member name was a global offset, so `p->range[0]' worked on
+# any pointer.  v10's ccom checks membership and answers `range not in this
+# struct/union'.  0.h:244-263 nests all five inside one union:
+#	union {
+#		struct { int value[5]; } vals;
+#		struct { double real; } reals;
+#		struct { long range[2]; } rngs;
+#		struct { int *ptr[4]; int entloc; } ptrs;
+#	} u;
+# so each needs its path.  214 uses across 21 files, and the substitution is
+# safe to make blind: no other struct in pi declares any of the five names,
+# nothing uses them as a member with a prefix (->ranges, ->values and so on do
+# not occur), and there are no dot-form uses at all -- every one is written
+# with the arrow, some of them spaced as `p -> range[0]'.
+#
+# BERKELEY'S OWN ANSWER WAS THE SAME PATHS BEHIND MACROS.  4.4BSD's 0.h:287-291
+# is `#define range nl_un.un_range' and four more like it, which is why its
+# case.c:103 still reads `cl->range[0]'.  Macros are not used here because
+# put.c:601 and p2put.c:274 both take a parameter called `value' and both
+# include 0.h, so `#define value' would rewrite their declarations.  The paths
+# go in at the point of use instead, where nothing else can see them.
+# ELEVEN FUNCTIONS THAT RETURN A POINTER ARE NOT DECLARED.  0.h:718-744 is a
+# block of exactly these declarations -- `struct nl *lookup();', `char
+# *savestr();', twenty-seven of them -- and eleven more are missing, so every
+# call to one defaults to int and every assignment of the result to a pointer
+# is an error.  The eleven, each with the type its own definition gives it, go
+# in beside the others rather than being cast at each of their call sites.
+cd $SRC/cmd/pascal/pi || exit 1
+if grep 'ipnx decls' 0.h > /dev/null
+then	:
+else
+	sed 's|^struct nl	\*asgnop1();$|struct nl	*asgnop1();\
+struct nl	*flvalue();	/* ipnx decls -- see PATCHES.md */\
+struct nl	*funchdr();\
+struct nl	*gen();\
+struct nl	*pclvalue();\
+struct nl	*plist();\
+struct nl	*stklval();\
+struct nl	*stkrval();\
+char		*charname();\
+char		*tokname();\
+char		*myctime();\
+char		*ctime();|' 0.h > h$$ && mv h$$ 0.h
+fi
+
+# const.c's cn is an `int *' tree pointer (:114) and cp a `char *' (:115), so
+# cn[1] is a plain int in both cases; con.cpval is `int *' (0.h:521) while
+# savestr returns `char *' (0.h:728).
+sed -e 's|^			cn = cn\[1\];$|			cn = (int *)cn[1];|' \
+    -e 's|^			cp = cn\[1\];$|			cp = (char *)cn[1];|' \
+    -e 's|^			con.cpval = savestr(cp);$|			con.cpval = (int *)savestr(cp);|' const.c > k$$ && mv k$$ const.c
+
+cd $SRC/cmd/pascal/pi || exit 1
+for f in *.c
+do
+	sed -e 's|-> *range|->u.rngs.range|g' \
+	    -e 's|-> *value|->u.vals.value|g' \
+	    -e 's|-> *real|->u.reals.real|g' \
+	    -e 's|-> *ptr|->u.ptrs.ptr|g' \
+	    -e 's|-> *entloc|->u.ptrs.entloc|g' $f > n$$ && mv n$$ $f
+done
+
+# THE REST OF pi'S TYPE MODEL, 154 assignments in 21 files.  The compiler
+# keeps its parse tree in an `int *' and assigns freely between that,
+# `struct nl *' and `char *'; v10's ccom calls every one of them through
+# trees.c:981's combo() and stops.  Each is the identity on a vax -- pointers
+# and ints are both 32 bits -- so a cast at the point of assignment is the
+# whole repair, exactly as in case.c and const.c above.
+#
+# THE LIST IS NOT GUESSED.  It was taken by compiling every file in pi with a
+# checking compiler and keeping only the diagnostics v10 itself acts on:
+# assignment and initialisation, since ccom has no prototypes and so checks
+# neither arguments nor returns -- which is why call.c and clas.c compiled
+# clean here while a modern compiler objects to both.  int * against long *
+# is dropped too: SZLONG and SZINT are equal on the vax and combo() does not
+# fire.  The pass was then repeated until it found nothing, which took two
+# rounds; the second turned up seven sites the first had hidden.
+cd $SRC/cmd/pascal/pi || exit 1
+sed \
+    -e 's|^	double \*dp = dub;$|	double *dp = (double *)dub;|' \
+    conv.c > z$$ && mv z$$ conv.c
+sed \
+    -e 's|^	    e = r\[2\];$|	    e = (int *)r[2];|' \
+    -e 's|^	    e = e\[1\];$|	    e = (int *)e[1];|' \
+    -e 's|^		    e = e\[1\];$|		    e = (int *)e[1];|' \
+    -e 's|^	while ( el = r\[2\] ) {$|	while ( el = (int *)r[2] ) {|' \
+    -e 's|^		e = el\[1\];$|		e = (int *)el[1];|' \
+    -e 's|^			ip = el\[2\];$|			ip = (int *)el[2];|' \
+    -e 's|^			el\[2\] = pairp;$|			el[2] = (int)pairp;|' \
+    -e 's|^			pairp = r\[2\];$|			pairp = (int *)r[2];|' \
+    -e 's|^			r\[2\] = ip;$|			r[2] = (int)ip;|' \
+    -e 's|^			ip = el\[2\];$|			ip = (int *)el[2];|' \
+    -e 's|^			el\[2\] = singp;$|			el[2] = (int)singp;|' \
+    -e 's|^			singp = r\[2\];$|			singp = (int *)r[2];|' \
+    -e 's|^			r\[2\] = ip;$|			r[2] = (int)ip;|' \
+    -e 's|^		for ( el = singp ; el\[2\] != NIL ; el = el\[2\] ) /\* void \*/;$|		for ( el = (int *)singp ; el[2] != NIL ; el = (int *)el[2] ) /* void */;|' \
+    -e 's|^		el\[2\] = pairp;$|		el[2] = (int)pairp;|' \
+    -e 's|^		r\[2\] = singp;$|		r[2] = (int)singp;|' \
+    -e 's|^		r\[2\] = pairp;$|		r[2] = (int)pairp;|' \
+    -e 's|^	    for ( el = r\[2\] ; el != NIL ; el = el\[2\] ) {$|	    for ( el = (int *)r[2] ; el != NIL ; el = (int *)el[2] ) {|' \
+    -e 's|^		e = el\[1\];$|		e = (int *)el[1];|' \
+    -e 's|^		for ( el = r\[2\] ; el != NIL ; el = el\[2\] ) {$|		for ( el = (int *)r[2] ; el != NIL ; el = (int *)el[2] ) {|' \
+    -e 's|^		    e = el\[1\];$|		    e = (int *)el[1];|' \
+    cset.c > z$$ && mv z$$ cset.c
+sed \
+    -e 's|^	fp->u\.ptrs\.ptr\[2\] = nlp;$|	fp->u.ptrs.ptr[2] = (int *)nlp;|' \
+    fdec.c > z$$ && mv z$$ fdec.c
+sed \
+    -e 's|^	blk = bundle\[2\];$|	blk = (int *)bundle[2];|' \
+    fend.c > z$$ && mv z$$ fend.c
+sed \
+    -e 's|^		    il = r\[4\];$|		    il = (int *)r[4];|' \
+    -e 's|^			    il = gtype(il);$|			    il = (int *)gtype(il);|' \
+    -e 's|^			p->u\.ptrs\.ptr\[NL_FVAR\] = cp;$|			p->u.ptrs.ptr[NL_FVAR] = (int *)cp;|' \
+    -e 's|^		for (rl = r\[3\]; rl; rl = rl\[2\]) {$|		for (rl = (int **)r[3]; rl; rl = (int **)rl[2]) {|' \
+    -e 's|^	p ->u\.ptrs\.ptr\[ NL_FCHAIN \] = p -> chain;$|	p ->u.ptrs.ptr[ NL_FCHAIN ] = (int *)p -> chain;|' \
+    -e 's|^	for (formalp = formalist; formalp != NIL; formalp = formalp\[2\]) {$|	for (formalp = (int **)formalist; formalp != NIL; formalp = (int **)formalp[2]) {|' \
+    -e 's|^		typ = formal\[2\];$|		typ = (int *)formal[2];|' \
+    -e 's|^		for (idlist = formal\[1\]; idlist != NIL; idlist = idlist\[2\]) {$|		for (idlist = (int *)formal[1]; idlist != NIL; idlist = (int *)idlist[2]) {|' \
+    fhdr.c > z$$ && mv z$$ fhdr.c
+sed \
+    -e 's|^	lhs = ( (int \*) arg\[2\] )\[2\];$|	lhs = (int *)( (int *) arg[2] )[2];|' \
+    -e 's|^	init = ( (int \*) arg\[2\] )\[3\];$|	init = (int *)( (int *) arg[2] )[3];|' \
+    -e 's|^	term = arg\[3\];$|	term = (int *)arg[3];|' \
+    -e 's|^	stat = arg\[4\];$|	stat = (int *)arg[4];|' \
+    forop.c > z$$ && mv z$$ forop.c
+sed \
+    -e 's|^	argv = r\[3\];$|	argv = (int *)r[3];|' \
+    -e 's|^	for (al = argv; al != NIL; al = al\[2\])$|	for (al = (int *)argv; al != NIL; al = (int *)al[2])|' \
+    -e 's|^				tr\[1\] = tr2;$|				tr[1] = (int)tr2;|' \
+    -e 's|^				tr2\[2\] = input->symbol;$|				tr2[2] = (int)input->symbol;|' \
+    func.c > z$$ && mv z$$ func.c
+sed \
+    -e 's|^	for (ll = r; ll != NIL; ll = ll\[2\]) {$|	for (ll = (int *)r; ll != NIL; ll = (int *)ll[2]) {|' \
+    lab.c > z$$ && mv z$$ lab.c
+sed \
+    -e 's|^	c = r\[3\];$|	c = (int *)r[3];|' \
+    -e 's|^			trp\[1\] = tr;$|			trp[1] = (int)tr;|' \
+    -e 's|^	for (; c != NIL; c = c\[2\]) {$|	for (; c != NIL; c = (int *)c[2]) {|' \
+    -e 's|^		co = c\[1\];$|		co = (int *)c[1];|' \
+    -e 's|^	for (; c != NIL; c = c\[2\]) {$|	for (; c != NIL; c = (int *)c[2]) {|' \
+    -e 's|^		co = c\[1\];$|		co = (int *)c[1];|' \
+    -e 's|^			el = el\[2\];$|			el = (int *)el[2];|' \
+    -e 's|^				    el = el\[2\];$|				    el = (int *)el[2];|' \
+    -e 's|^		    el = el\[2\];$|		    el = (int *)el[2];|' \
+    -e 's|^		el = el\[2\];$|		el = (int *)el[2];|' \
+    -e 's|^			el = el\[2\];$|			el = (int *)el[2];|' \
+    lval.c > z$$ && mv z$$ lval.c
+sed \
+    -e 's|^	intset = \*cp++;$|	intset = (struct nl *)*cp++;|' \
+    -e 's|^	q = p;$|	q = (int *)p;|' \
+    -e 's|^		nlp = cp;$|		nlp = (struct nl *)cp;|' \
+    -e 's|^	p1 = p;$|	p1 = (int *)p;|' \
+    -e 's|^	p = p2 = defnl(0, 0, 0, 0);$|	p = (struct nl *)(p2 = (int *)defnl(0, 0, 0, 0));|' \
+    -e 's|^	i = rp->symbol;$|	i = (int)rp->symbol;|' \
+    nl.c > z$$ && mv z$$ nl.c
+sed \
+    -e 's|^	argv = r\[3\];$|	argv = (int *)r[3];|' \
+    -e 's|^	for (al = argv; al != NIL; al = al\[2\])$|	for (al = (int *)argv; al != NIL; al = (int *)al[2])|' \
+    -e 's|^		} else if (argv != NIL && (al = argv\[1\])\[0\] != T_WEXP) {$|		} else if (argv != NIL \&\& (al = (int *)argv[1])[0] != T_WEXP) {|' \
+    -e 's|^				argv = argv\[2\];$|				argv = (int *)argv[2];|' \
+    -e 's|^				file = argv\[1\];$|				file = (int *)argv[1];|' \
+    -e 's|^				argv = argv\[2\];$|				argv = (int *)argv[2];|' \
+    -e 's|^		for (; argv != NIL; argv = argv\[2\]) {$|		for (; argv != NIL; argv = (int *)argv[2]) {|' \
+    -e 's|^			al = argv\[1\];$|			al = (int *)argv[1];|' \
+    -e 's|^				alv = al\[1\];$|				alv = (int *)al[1];|' \
+    -e 's|^					strptr = con\.cpval;$|					strptr = (char *)con.cpval;|' \
+    -e 's|^					strptr = con\.cpval;$|					strptr = (char *)con.cpval;|' \
+    -e 's|^				argv = argv\[2\];$|				argv = (int *)argv[2];|' \
+    -e 's|^				file = argv\[1\];$|				file = (int *)argv[1];|' \
+    -e 's|^				argv = argv\[2\];$|				argv = (int *)argv[2];|' \
+    -e 's|^		for (; argv != NIL; argv = argv\[2\]) {$|		for (; argv != NIL; argv = (int *)argv[2]) {|' \
+    -e 's|^			al = argv\[1\];$|			al = (int *)argv[1];|' \
+    -e 's|^			al = argv\[2\];$|			al = (int *)argv[2];|' \
+    -e 's|^			al = stkrval(al\[1\], NOFLAGS , RREQ );$|			al = (int *)stkrval(al[1], NOFLAGS , RREQ );|' \
+    -e 's|^			al = argv\[2\];$|			al = (int *)argv[2];|' \
+    -e 's|^			al = stkrval(al\[1\], NOFLAGS , RREQ );$|			al = (int *)stkrval(al[1], NOFLAGS , RREQ );|' \
+    -e 's|^		argv = argv\[2\];$|		argv = (int *)argv[2];|' \
+    -e 's|^			for (; argv != NIL; argv = argv\[2\]) {$|			for (; argv != NIL; argv = (int *)argv[2]) {|' \
+    -e 's|^				for (ap = ap->u\.ptrs\.ptr\[NL_VARNT\]; ap != NIL; ap = ap->chain)$|				for (ap = (struct nl *)ap->u.ptrs.ptr[NL_VARNT]; ap != NIL; ap = ap->chain)|' \
+    -e 's|^				ap = ap->u\.ptrs\.ptr\[NL_VTOREC\];$|				ap = (struct nl *)ap->u.ptrs.ptr[NL_VTOREC];|' \
+    -e 's|^		al = argv\[2\];$|		al = (int *)argv[2];|' \
+    -e 's|^		al = argv\[2\];$|		al = (int *)argv[2];|' \
+    -e 's|^		pu = "pack(a,i,z)";$|		pu = (int)"pack(a,i,z)";|' \
+    -e 's|^		pua = argv\[1\];$|		pua = (int *)argv[1];|' \
+    -e 's|^		al = argv\[2\];$|		al = (int *)argv[2];|' \
+    -e 's|^		pui = al\[1\];$|		pui = (int *)al[1];|' \
+    -e 's|^		alv = al\[2\];$|		alv = (int *)al[2];|' \
+    -e 's|^		puz = alv\[1\];$|		puz = (int *)alv[1];|' \
+    -e 's|^		pu = "unpack(z,a,i)";$|		pu = (int)"unpack(z,a,i)";|' \
+    -e 's|^		puz = argv\[1\];$|		puz = (int *)argv[1];|' \
+    -e 's|^		al = argv\[2\];$|		al = (int *)argv[2];|' \
+    -e 's|^		pua = al\[1\];$|		pua = (int *)al[1];|' \
+    -e 's|^		alv = al\[2\];$|		alv = (int *)al[2];|' \
+    -e 's|^		pui = alv\[1\];$|		pui = (int *)alv[1];|' \
+    -e 's|^		al = (struct nl \*) stklval(puz, op == O_UNPACK ? NOFLAGS : MOD\|NOUSE);$|		al = (int *)(struct nl *) stklval(puz, op == O_UNPACK ? NOFLAGS : MOD\|NOUSE);|' \
+    -e 's|^		al = (struct nl \*) stklval(puz, op == O_UNPACK ? NOFLAGS : MOD\|NOUSE);$|		al = (int *)(struct nl *) stklval(puz, op == O_UNPACK ? NOFLAGS : MOD\|NOUSE);|' \
+    proc.c > z$$ && mv z$$ proc.c
+sed \
+    -e 's|^	oldlc = lc;$|	oldlc = (int)lc;|' \
+    -e 's|^			short	\*sp = &p\[1\];$|			short	*sp = (short *)\&p[1];|' \
+    -e 's|^	    oldlc = lc;$|	    oldlc = (int)lc;|' \
+    -e 's|^	    ap->u\.vals\.value\[ NL_ELABEL \] = lc;$|	    ap->u.vals.value[ NL_ELABEL ] = (int)lc;|' \
+    -e 's|^	strptr = getnext(ap, &next);$|	strptr = (char *)getnext(ap, \&next);|' \
+    -e 's|^			    strptr = getnext(next, &next);$|			    strptr = (char *)getnext(next, \&next);|' \
+    -e 's|^			    strptr = getnext(next, &next);$|			    strptr = (char *)getnext(next, \&next);|' \
+    put.c > z$$ && mv z$$ put.c
+sed \
+    -e 's|^	for (fp = r; fp != NIL; fp = fp\[2\]) {$|	for (fp = (int *)r; fp != NIL; fp = (int *)fp[2]) {|' \
+    -e 's|^		tp = fp\[1\];$|		tp = (int *)fp[1];|' \
+    -e 's|^		for (ip = tp\[2\]; ip != NIL; ip = ip\[2\])$|		for (ip = (int *)tp[2]; ip != NIL; ip = (int *)ip[2])|' \
+    -e 's|^	p->u\.ptrs\.ptr\[NL_TAG\] = deffld(p, r\[2\], ct);$|	p->u.ptrs.ptr[NL_TAG] = (int *)deffld(p, r[2], ct);|' \
+    -e 's|^	for (vc = r\[4\]; vc != NIL; vc = vc\[2\]) {$|	for (vc = (int *)r[4]; vc != NIL; vc = (int *)vc[2]) {|' \
+    -e 's|^		v = vc\[1\];$|		v = (int *)vc[1];|' \
+    -e 's|^		vr = tyrec1(v\[3\], p->u\.vals\.value\[NL_FLDSZ\], 0);$|		vr = (int *)tyrec1(v[3], p->u.vals.value[NL_FLDSZ], 0);|' \
+    -e 's|^		for (v = v\[2\]; v != NIL; v = v\[2\])$|		for (v = (int *)v[2]; v != NIL; v = (int *)v[2])|' \
+    -e 's|^	av->chain = p->u\.ptrs\.ptr\[NL_VARNT\];$|	av->chain = (struct nl *)p->u.ptrs.ptr[NL_VARNT];|' \
+    -e 's|^	p->u\.ptrs\.ptr\[NL_VARNT\] = av;$|	p->u.ptrs.ptr[NL_VARNT] = (int *)av;|' \
+    -e 's|^	av->u\.ptrs\.ptr\[NL_VTOREC\] = vr;$|	av->u.ptrs.ptr[NL_VTOREC] = (int *)vr;|' \
+    -e 's|^	for (vt = p->u\.ptrs\.ptr\[NL_VARNT\]; vt != NIL; vt = vt->chain)$|	for (vt = (struct nl *)p->u.ptrs.ptr[NL_VARNT]; vt != NIL; vt = vt->chain)|' \
+    rec.c > z$$ && mv z$$ rec.c
+sed \
+    -e 's|^				    cp = p->u\.ptrs\.ptr\[0\];$|				    cp = (char *)p->u.ptrs.ptr[0];|' \
+    -e 's|^	    rt = r\[3\];$|	    rt = (int *)r[3];|' \
+    -e 's|^			cp = r\[2\];$|			cp = (char *)r[2];|' \
+    -e 's|^			cn = cn\[2\];$|			cn = (int *)cn[2];|' \
+    -e 's|^			cp = cn\[2\];$|			cp = (char *)cn[2];|' \
+    -e 's|^			con\.cpval = cp;$|			con.cpval = (int *)cp;|' \
+    rval.c > z$$ && mv z$$ rval.c
+sed \
+    -e 's|^	for (sl=r; sl != NIL; sl=sl\[2\])$|	for (sl=(int *)r; sl != NIL; sl=(int *)sl[2])|' \
+    -e 's|^		s = s\[3\];$|		s = (int *)s[3];|' \
+    -e 's|^	swl = withlist;$|	swl = (int *)withlist;|' \
+    -e 's|^	for (p = s\[2\]; p != NIL; p = p\[2\]) {$|	for (p = (int *)s[2]; p != NIL; p = (int *)p[2]) {|' \
+    -e 's|^	withlist = swl;$|	withlist = (struct nl *)swl;|' \
+    -e 's|^	av = r\[2\];$|	av = (int *)r[2];|' \
+    -e 's|^	r = r\[2\];$|	r = (int *)r[2];|' \
+    stat.c > z$$ && mv z$$ stat.c
+sed \
+    -e 's|^				cp = p->u\.ptrs\.ptr\[0\];$|				cp = (char *)p->u.ptrs.ptr[0];|' \
+    -e 's|^				    p = funccod(r);$|				    p = (struct nl *)funccod(r);|' \
+    -e 's|^			    p = funccod(r);$|			    p = (struct nl *)funccod(r);|' \
+    -e 's|^			cp = r\[2\];$|			cp = (char *)r[2];|' \
+    stkrval.c > z$$ && mv z$$ stkrval.c
+sed \
+    -e 's|^	pfp = pflist;$|	pfp = (int *)pflist;|' \
+    -e 's|^	if ((p1 = malloc(nbyte)) == 0)$|	if ((p1 = (int)malloc(nbyte)) == 0)|' \
+    -e 's|^	p2 = p1;$|	p2 = (int *)p1;|' \
+    -e 's|^	os1 = s1;$|	os1 = (int)s1;|' \
+    subr.c > z$$ && mv z$$ subr.c
+sed \
+    -e 's|^		spacep = cp;$|		spacep = (int *)cp;|' \
+    -e 's|^		tract->tr_low = cp;$|		tract->tr_low = (int *)cp;|' \
+    -e 's|^	cp = spacep;$|	cp = (char *)spacep;|' \
+    -e 's|^	spacep = cp + i;$|	spacep = (int *)cp + i;|' \
+    tree.c > z$$ && mv z$$ tree.c
+sed \
+    -e 's|^			np = tyscal(r);$|			np = (struct nl *)tyscal(r);|' \
+    -e 's|^			np = tyrang(r);$|			np = (struct nl *)tyrang(r);|' \
+    -e 's|^			np ->u\.ptrs\.ptr\[0\] = r\[2\];$|			np ->u.ptrs.ptr[0] = (int *)r[2];|' \
+    -e 's|^			np = tyrec(r\[2\], 0);$|			np = (struct nl *)tyrec(r[2], 0);|' \
+    -e 's|^	v = r\[2\];$|	v = (int *)r[2];|' \
+    -e 's|^	for (; v != NIL; v = v\[2\]) {$|	for (; v != NIL; v = (int *)v[2]) {|' \
+    -e 's|^	for (tl = r\[2\]; tl != NIL; tl = tl\[2\]) {$|	for (tl = (int *)r[2]; tl != NIL; tl = (int *)tl[2]) {|' \
+    type.c > z$$ && mv z$$ type.c
+sed \
+    -e 's|^	for (; vidl != NIL; vidl = vidl\[2\]) {$|	for (; vidl != NIL; vidl = (int *)vidl[2]) {|' \
+    var.c > z$$ && mv z$$ var.c
+sed \
+    -e 's|^	top = vroot\[2\];$|	top = (int *)vroot[2];|' \
+    -e 's|^	vroot\[2\] = spacep;$|	vroot[2] = (int)spacep;|' \
+    -e 's|^	top = vroot\[2\];$|	top = (int *)vroot[2];|' \
+    -e 's|^		init = newlist(init);$|		init = (int *)newlist(init);|' \
+    yytree.c > z$$ && mv z$$ yytree.c
+
+# SEVENTEEN OF pi's SOURCES WERE NEVER CHECKED BY THE PASS ABOVE.  Every file
+# that includes yy.h -- error, hash, main, yycopy, yycosts, yyerror, yyget,
+# yyid, yylex, yymain, yyoptions, yypanic, yyparse, yyprint, yyput, yyrecover,
+# yyseman -- includes y.tab.h through it, and y.tab.h does not exist until
+# eyacc has run on pas.y.  A checking compiler stops at the missing include
+# and reports nothing else, so those seventeen came back clean without a line
+# of them being looked at, and the pass "converged" on two thirds of pi.  The
+# rerun that produced this block synthesised y.tab.h from pas.y's own %term
+# list and staged usr/include/a.out.h, which is what yymain.c wants.
+#
+# WHAT ccom ACTUALLY CHECKS, from its own table.  trees.c:208 is the only call
+# to chkpun -- `if( (actions&PUN) && (o!=CAST||cflag) )' -- and opact sets PUN
+# for ASSIGN and RETURN (:1845-1849), for COLON (:1829-1833), for MINUS on two
+# pointers (:1879), and for EQ NE LT LE GT GE (:1815-1818).  So COMPARISONS
+# ARE CHECKED TOO, which the earlier note did not say; hash.c:168 and
+# yylex.c:93 both bound an `int *' against the keyword table and against
+# lastkey, and each is three pointer types in one expression.
+# int * against long * stays dropped: the machine compiled conv.c with
+# `long *lp = dub;' and dub an int *, which is the answer whatever the table
+# reads like.
+
+# nl_block IS NOT A MEMBER -- IT WAS RENAMED nl_flags.  0.h:238 is
+# `char class, nl_flags;' and 0.h:271-275 says the low 5 bits of that byte
+# "are the nl_block", with BLOCKNO() at 0.h:277 as the accessor.  Eleven uses
+# of the old name survived the rename, five of them live and six behind
+# `#ifdef PC', which pi does not define -- which is why only five of the
+# eleven showed up as errors.  Every one is `& 037' or BLOCKNO(), the low five
+# bits, and the single assignment (nl.c:685, `p->nl_block = cbn') is safe as a
+# whole-byte store because defnl has just zeroed the entry three lines above.
+# forop.c:256 is the tape's own `forvar -> nl_flags = cbn;' -- the identical
+# assignment already written in the new name, which settles it.  The comment
+# at forop.c:248 keeps the old word: it is describing the concept, not a
+# member, so the substitution is on the arrow forms only.
+cd $SRC/cmd/pascal/pi || exit 1
+for f in *.c
+do
+	sed 's|-> *nl_block|->nl_flags|g' $f > z$$ && mv z$$ $f
+done
+
+# BADUSE ENTRIES CHAIN A struct udinfo OFF nl.chain, which is declared
+# `struct nl *chain' (0.h:241).  yyid.c:102-105 is the whole mechanism --
+# `udp = esavestr(&ud); udp->ud_line = line; udp->ud_next = p->chain;
+# p->chain = udp;' -- so the list hanging off chain is udinfo (0.h:679-683),
+# not nl, and the two readers of it ask for ud_next and ud_line by name.
+# Pre-K&R C let them: the member was a global offset.  Casts go at the two
+# reads and at the two writes that build the list.
+sed \
+    -e 's|^					if (p->chain->ud_next == NIL)$|					if (((struct udinfo *)p->chain)->ud_next == NIL)|' \
+    fend.c > z$$ && mv z$$ fend.c
+sed \
+    -e 's|^	if (p->chain != NIL \&\& p->chain->ud_line == line)$|	if (p->chain != NIL \&\& ((struct udinfo *)p->chain)->ud_line == line)|' \
+    -e 's|^	udp->ud_next = p->chain;$|	udp->ud_next = (struct udinfo *)p->chain;|' \
+    -e 's|^	p->chain = udp;$|	p->chain = (struct nl *)udp;|' \
+    yyid.c > z$$ && mv z$$ yyid.c
+
+# FOUR MORE int * VARIABLES REACHED AS struct nl *, cast at the use as cl was
+# in case.c above rather than given a second variable.  proc.c's `al' is the
+# clearest: above the packunp: label it walks the parse tree as argv[2], al[1],
+# al[2]; below it, from `al = stklval(...)' at :1024 onwards, it is only ever
+# an nl -- class, type, chain, u.rngs.range.  fhdr.c:209 and proc.c:859 index
+# u.ptrs.ptr[], which 0.h:259 declares `int *ptr[4]' though every slot holds an
+# nl; rec.c's `vr' (rec.c:115) takes tyrec1's return.
+sed \
+    -e 's|^		    p->u\.ptrs\.ptr\[NL_FVAR\]->u\.vals\.value\[NL_LINENO\] = r\[1\];$|		    ((struct nl *)p->u.ptrs.ptr[NL_FVAR])->u.vals.value[NL_LINENO] = r[1];|' \
+    fhdr.c > z$$ && mv z$$ fhdr.c
+sed \
+    -e 's|(ap->u\.ptrs\.ptr\[NL_TAG\])->type|((struct nl *)ap->u.ptrs.ptr[NL_TAG])->type|' \
+    -e 's|^		if (al->class != ARRAY) {$|		if (((struct nl *)al)->class != ARRAY) {|' \
+    -e 's|^		if (al->type == NIL \|\| ap->type == NIL)$|		if (((struct nl *)al)->type == NIL \|\| ap->type == NIL)|' \
+    -e 's|^		if (al->type != ap->type) {$|		if (((struct nl *)al)->type != ap->type) {|' \
+    -e 's|^		al = al->chain;$|		al = (int *)((struct nl *)al)->chain;|' \
+    -e 's|^		if (ap->chain != NIL \|\| al->chain != NIL) {$|		if (ap->chain != NIL \|\| ((struct nl *)al)->chain != NIL) {|' \
+    -e 's|^		j = al->u\.rngs\.range\[1\] - al->u\.rngs\.range\[0\] + 1;$|		j = ((struct nl *)al)->u.rngs.range[1] - ((struct nl *)al)->u.rngs.range[0] + 1;|' \
+    proc.c > z$$ && mv z$$ proc.c
+sed \
+    -e 's|^		if (vr->u\.vals\.value\[NL_OFFS\] > p->u\.vals\.value\[NL_OFFS\])$|		if (((struct nl *)vr)->u.vals.value[NL_OFFS] > p->u.vals.value[NL_OFFS])|' \
+    -e 's|^			p->u\.vals\.value\[NL_OFFS\] = vr->u\.vals\.value\[NL_OFFS\];$|			p->u.vals.value[NL_OFFS] = ((struct nl *)vr)->u.vals.value[NL_OFFS];|' \
+    rec.c > z$$ && mv z$$ rec.c
+
+# 0.h:761-772 DECLARES FOUR ANONYMOUS STRUCTS WHOSE ONLY PURPOSE IS THEIR
+# MEMBER NAMES -- `struct { char pchar; };', pint, plong, pdouble, each its
+# sole member and so each at offset 0, under the tape's own heading "pointers
+# in wild and wooly ways".  They are the pre-K&R global offset used
+# deliberately: `f.plong' on a double is "the first four bytes of f as a
+# long", `sym->pchar' on an int * is "the first byte".  There is no struct to
+# name, so a path cannot be given as it was for the nl union; the reads become
+# what they always compiled to.  hash.c:170 also calls strcmp(sym, cp), which
+# ccom does not check -- it has no prototypes.
+sed \
+    -e 's|^			if (sym->pchar == \*cp \&\& strcmp(sym, cp) == 0)$|			if (\*(char \*)sym == \*cp \&\& strcmp(sym, cp) == 0)|' \
+    hash.c > z$$ && mv z$$ hash.c
+for f in rval.c stkrval.c
+do
+	sed 's|^					    l = f\.plong;$|					    l = *(long *)\&f;|' $f > z$$ && mv z$$ $f
+done
+
+# AND THE ASSIGNMENT CASTS FOR THE SEVENTEEN, generated the same way as the
+# block above and by the same rule -- assignment, initialisation and now
+# comparison, int * against long * dropped -- rerun until it found nothing.
+sed \
+    -e 's|^char	\*lastkey	= &yykey\[sizeof yykey/sizeof yykey\[0\]\];$|char	*lastkey	= (char *)\&yykey[sizeof yykey/sizeof yykey[0]];|' \
+    -e 's|^	for (ip = yykey; \*ip; ip += 2)$|	for (ip = (int *)yykey; *ip; ip += 2)|' \
+    -e 's|^		hash(ip\[0\], 0)\[0\] = ip;$|		hash(ip[0], 0)[0] = (int)ip;|' \
+    -e 's|^			htp->ht_low = cp;$|			htp->ht_low = (int *)cp;|' \
+    -e 's|^					\*h = s;$|					*h = (int)s;|' \
+    -e 's|^			sym = \*h;$|			sym = (int *)*h;|' \
+    -e 's|^			if (sym < lastkey && sym >= yykey)$|			if (sym < (int *)lastkey \&\& sym >= (int *)yykey)|' \
+    -e 's|^				sym = \*sym;$|				sym = (int *)*sym;|' \
+    hash.c > z$$ && mv z$$ hash.c
+sed \
+    -e 's|^	register int	\*r0 = & OY;$|	register int	*r0 = (int *)\& OY;|' \
+    -e 's|^	register int	\*r1 = & Y;$|	register int	*r1 = (int *)\& Y;|' \
+    yycopy.c > z$$ && mv z$$ yycopy.c
+sed \
+    -e 's|^	cp = skipbl(cp);$|	cp = (char *)skipbl(cp);|' \
+    -e 's|^	ip->Printed = printed;$|	ip->Printed = (int)printed;|' \
+    -e 's|^		printed = ip->Printed;$|		printed = (char *)ip->Printed;|' \
+    yyget.c > z$$ && mv z$$ yyget.c
+sed \
+    -e 's|^struct	udinfo ud = { ~0 , ~0 , 0};$|struct	udinfo ud = { ~0 , (struct udinfo *)~0 , 0};|' \
+    -e 's|^	udp = esavestr(&ud);$|	udp = (struct udinfo *)esavestr(\&ud);|' \
+    yyid.c > z$$ && mv z$$ yyid.c
+sed \
+    -e 's|^			ip = hash(0, 1);$|			ip = (int **)hash(0, 1);|' \
+    -e 's|^			if (\*ip < yykey \|\| \*ip >= lastkey) {$|			if (*ip < (int *)yykey \|\| *ip >= (int *)lastkey) {|' \
+    -e 's|^				yylval = \*ip;$|				yylval = (int)*ip;|' \
+    yylex.c > z$$ && mv z$$ yylex.c
+sed \
+    -e 's|^	unsigned	\*ubuf = buf;$|	unsigned	*ubuf = (unsigned *)buf;|' \
+    yymain.c > z$$ && mv z$$ yymain.c
+sed \
+    -e 's|^	\*++yypv = yyval;$|	*++yypv = (int)yyval;|' \
+    -e 's|^			yyval = yylval;$|			yyval = (int *)yylval;|' \
+    -e 's|^			yyval = yypv\[1\];$|			yyval = (int *)yypv[1];|' \
+    yyparse.c > z$$ && mv z$$ yyparse.c
+sed \
+    -e 's|^			cp = tp->Yylval;$|			cp = (char *)tp->Yylval;|' \
+    yyprint.c > z$$ && mv z$$ yyprint.c
+sed \
+    -e 's|^		bp = tree(6, T_BOTTLE, yyline, yylinpt, filename, yyseqid);$|		bp = (struct B *)tree(6, T_BOTTLE, yyline, yylinpt, filename, yyseqid);|' \
+    yyput.c > z$$ && mv z$$ yyput.c
+sed \
+    -e 's|^			ps = loccor(ps, &ntok);$|			ps = (int *)loccor(ps, \&ntok);|' \
+    -e 's|^			ps = loccor(ps, &YC\[origin++\]);$|			ps = (int *)loccor(ps, \&YC[origin++]);|' \
+    yyrecover.c > z$$ && mv z$$ yyrecover.c
+
+# malloc IS NOT DECLARED, AND THE CHECKING PASS COULD NOT SEE IT.  0.h:718-744
+# declares tmpalloc, alloc, calloc and savestr but not malloc, so on this
+# machine it returns int and `cp = malloc(...)' with cp a char * is
+# trees.c:928's combo("pointer/integer").  The host compiler used for the pass
+# above declares malloc itself -- as a BUILTIN, so even -nostdinc keeps it --
+# and char * = void * is perfectly legal there, so all four sites came back
+# clean.  Rerun with -fno-builtin and against v10's own usr/include instead of
+# the host's, which is what the guest actually compiles against, and the four
+# appear -- along with nothing else, and with const.c, getline, sys_errlist
+# and clock dropping out as the host artefacts they were.
+# THE CAST IS THE TAPE'S OWN: subr.c:108 is `if ((p1 = (int)malloc(nbyte)) ==
+# 0)', hash.c:138 is `cp = (char *) calloc(...)', case.c:84 and pccaseop.c:131
+# both cast too.  These four are the ones that were missed.
+cd $SRC/cmd/pascal/pi || exit 1
+sed \
+    -e 's|^		cp = malloc(NLINC \* sizeof \*nlp);$|		cp = (char *)malloc(NLINC * sizeof *nlp);|' \
+    -e 's|^			cp = malloc((NLINC / 2) \* sizeof \*nlp);$|			cp = (char *)malloc((NLINC / 2) * sizeof *nlp);|' \
+    nl.c > z$$ && mv z$$ nl.c
+sed \
+    -e 's|^		strngp = malloc(STRINC);$|		strngp = (char *)malloc(STRINC);|' \
+    string.c > z$$ && mv z$$ string.c
+sed \
+    -e 's|^		cp = malloc(i \* sizeof ( int ));$|		cp = (char *)malloc(i * sizeof ( int ));|' \
+    tree.c > z$$ && mv z$$ tree.c
+
+# AND THE REPAIR FOR nl.c:735.  The guest's /usr/src persists between builds,
+# so an earlier run of this script has already rewritten that line in place --
+# to `p = (int *)p2 = (struct nl *)defnl(...)', an lvalue cast, which this
+# compiler parses and then rejects twice, once per assignment.  The sed at the
+# top of this file matches the tape's form and so no longer fires there;
+# a bad edit has to be repaired, not merely stopped.  Both patterns lead to
+# the same line and neither matches it, so this stays idempotent.
+sed \
+    -e 's|^	p = (int \*)p2 = (struct nl \*)defnl(0, 0, 0, 0);$|	p = (struct nl *)(p2 = (int *)defnl(0, 0, 0, 0));|' \
+    nl.c > z$$ && mv z$$ nl.c
+
+# pas.y's ACTIONS ARE THE LAST OF pi, AND THEY ARE NOT A FILE ON DISK.  eyacc
+# turns pas.y into y.tab.c and `ex - y.tab.c <gram' then rewrites it, so a sed
+# on y.tab.c would be undone by the next build; the repair belongs in pas.y and
+# in 0.h.  gram's FIRST command is `/yyval/s//*&/', which retypes yacc's
+# `int yyval;' to `int *yyval;', and its append after the yyactr line gives
+# `register int **yyYpv;' with `yyYpv = yypv;' -- so in every action $$ is an
+# `int *' and $n is `yyYpv[n]', also an `int *', while $n[k] is a plain int.
+# ## sits at pas.y:99 and gram deletes through it, so y.tab.c:1 is pas.y:100.
+#
+# TWELVE MORE UNDECLARED POINTER FUNCTIONS, found by rebuilding the action
+# function from pas.y with gram's two substitutions applied and #line back to
+# pas.y.  treen.c's tree1..tree5 CARRY NO return STATEMENT AT ALL -- each just
+# calls tree(1..5, ...) and falls off the end, which works because pcc leaves
+# the callee's value in r0 and the caller reads r0 -- and tree.c:70 is
+# `int *tree(cnt, a)', so that is what they return.  0.h:724 already declares
+# `int *tree();' beside them.  newlist, addlist, fixlist, setupvar, setuptyrec
+# and setupfield (yytree.c:51-154) return tree3/tree4/tree5 results or an
+# `int *' local; funcbody (fdec.c:82) takes and returns a `struct nl *'.
+# Together they account for sixty of the seventy-four sites.
+# THE GUARD IS A SECOND ONE ON PURPOSE.  The eleven declarations above are
+# behind `grep 'ipnx decls' 0.h', which is already true of a guest that has run
+# this script before, so adding to that list would never reach it.  This block
+# has its own marker and anchors on `int *tree();', which the tape has and the
+# first insert does not touch.
+cd $SRC/cmd/pascal/pi || exit 1
+if grep 'ipnx tree decls' 0.h > /dev/null
+then	:
+else
+	sed 's|^int		\*tree();$|int		*tree();\
+int		*tree1();	/* ipnx tree decls -- see PATCHES.md */\
+int		*tree2();\
+int		*tree3();\
+int		*tree4();\
+int		*tree5();\
+int		*newlist();\
+int		*addlist();\
+int		*fixlist();\
+int		*setupvar();\
+int		*setuptyrec();\
+int		*setupfield();\
+struct nl	*funcbody();|' 0.h > h$$ && mv h$$ 0.h
+fi
+
+# AND THE FOURTEEN THAT A DECLARATION CANNOT FIX: three assign a `struct nl *'
+# to $$, four assign an integer constant to it -- chkpun exempts only a ZERO
+# ICON (trees.c:920-923), so `$$ = T_PDEC' is combo("pointer/integer") -- four
+# store an `int *' into $1[3], and three are the T_IF peephole at pas.y:491-501
+# reading a tree slot into gram's own p and q.
+sed \
+    -e 's|^		= \$\$ = funcbody(funchdr(tree5(T_PROG, lineof(\$1), \$2, fixlist(\$4), NIL)));$|		= $$ = (int *)funcbody(funchdr(tree5(T_PROG, lineof($1), $2, fixlist($4), NIL)));|' \
+    -e 's|^			\$\$ = funcbody(funchdr(tree5(T_PROG, lineof(\$1), NIL, NIL, NIL)));$|			$$ = (int *)funcbody(funchdr(tree5(T_PROG, lineof($1), NIL, NIL, NIL)));|' \
+    -e 's|^		= \$\$ = funchdr(tree5(\$1, lineof(\$5), \$2, \$3, \$4));$|		= $$ = (int *)funchdr(tree5($1, lineof($5), $2, $3, $4));|' \
+    -e 's|^		= \$\$ = T_PDEC;$|		= $$ = (int *)T_PDEC;|' \
+    -e 's|^		= \$\$ = T_FDEC;$|		= $$ = (int *)T_FDEC;|' \
+    -e 's|^			if ((p = \$1) != NIL && (q = p\[1\])\[0\] == T_IFX) {$|			if ((p = $1) != NIL \&\& (q = (int *)p[1])[0] == T_IFX) {|' \
+    -e 's|^				q\[4\] = \$2;$|				q[4] = (int)$2;|' \
+    -e 's|^		= if ((q = \$1) != NIL && (p = q\[1\]) != NIL && p\[0\] == T_IF) {$|		= if ((q = $1) != NIL \&\& (p = (int *)q[1]) != NIL \&\& p[0] == T_IF) {|' \
+    -e 's|^		= \$1\[3\] = fixlist(\$1\[3\]);$|		= $1[3] = (int)fixlist($1[3]);|' \
+    -e 's|^		= \$1\[3\] = addlist(\$1\[3\], tree2(T_ARY, fixlist(\$3)));$|		= $1[3] = (int)addlist($1[3], tree2(T_ARY, fixlist($3)));|' \
+    -e 's|^		= \$1\[3\] = addlist(\$1\[3\], setupfield(\$3, NIL));$|		= $1[3] = (int)addlist($1[3], setupfield($3, NIL));|' \
+    -e 's|^		= \$1\[3\] = addlist(\$1\[3\], tree1(T_PTR));$|		= $1[3] = (int)addlist($1[3], tree1(T_PTR));|' \
+    -e 's|^		= \$\$ = OCT;$|		= $$ = (int *)OCT;|' \
+    -e 's|^		= \$\$ = HEX;$|		= $$ = (int *)HEX;|' \
+    pas.y > z$$ && mv z$$ pas.y
+
+# AND THE DEFINITIONS HAVE TO SAY IT TOO.  ccom has no prototypes, so it does
+# not check arguments and does not check `return' either -- func.c compiles
+# with seventeen `struct nl *' returns from an int function, and proc.c, rval.c
+# and stat.c pass ints to pointer parameters throughout.  But pftn.c DOES
+# compare a definition against an earlier declaration, and pftn.c:254 is a
+# hard `uerror("redeclaration of %s from some line %d")'.  The eleven
+# declarations further up were safe because each took the type its own
+# definition already carried; these twelve do not carry one -- treen.c's
+# tree1..tree5 have no return statement at all and the six in yytree.c none
+# either -- so each definition gets the type it has always returned.  Nothing
+# about the generated code changes: a function with no return statement still
+# leaves r0 exactly as its callee left it.
+sed \
+    -e 's|^funcbody(fp)$|struct nl *funcbody(fp)|' \
+    fdec.c > z$$ && mv z$$ fdec.c
+sed \
+    -e 's|^tree1 ( arg1 )$|int *tree1 ( arg1 )|' \
+    -e 's|^tree2 ( arg1 , arg2 )$|int *tree2 ( arg1 , arg2 )|' \
+    -e 's|^tree3 ( arg1 , arg2 , arg3 )$|int *tree3 ( arg1 , arg2 , arg3 )|' \
+    -e 's|^tree4 ( arg1 , arg2 , arg3 , arg4 )$|int *tree4 ( arg1 , arg2 , arg3 , arg4 )|' \
+    -e 's|^tree5 ( arg1 , arg2 , arg3 , arg4 , arg5 )$|int *tree5 ( arg1 , arg2 , arg3 , arg4 , arg5 )|' \
+    treen.c > z$$ && mv z$$ treen.c
+sed \
+    -e 's|^newlist(new)$|int *newlist(new)|' \
+    -e 's|^addlist(vroot, new)$|int *addlist(vroot, new)|' \
+    -e 's|^fixlist(vroot)$|int *fixlist(vroot)|' \
+    -e 's|^setupvar(var, init)$|int *setupvar(var, init)|' \
+    -e 's|^setuptyrec( line , fldlst )$|int *setuptyrec( line , fldlst )|' \
+    -e 's|^setupfield( field , other )$|int *setupfield( field , other )|' \
+    yytree.c > z$$ && mv z$$ yytree.c
+
+# THE SEVENTEEN OPERATOR PRODUCTIONS ARE WRITTEN ON ONE LINE, and that is why
+# they were missed the first time round.  pas.y:785 is
+#	'='	= $$ = T_EQ;
+# with the action on the same line as the production, where every other action
+# in the file starts its own line with `='.  The pass that found the other
+# fourteen split on a leading `=' and so skipped all seventeen of these; they
+# came back as y.tab.c:241-257, seventeen consecutive lines, because eyacc
+# emits one case per production in order.  Splitting instead on the first `='
+# outside a quoted character and outside braces finds 174 actions where the
+# first attempt found 157, and the seventeen are the whole difference.
+# Each is `$$ = <constant>' and chkpun exempts only a ZERO icon, exactly as
+# with T_PDEC and OCT above.
+cd $SRC/cmd/pascal/pi || exit 1
+sed \
+    -e 's|\$\$ = T_EQ;|$$ = (int *)T_EQ;|g' \
+    -e 's|\$\$ = T_LT;|$$ = (int *)T_LT;|g' \
+    -e 's|\$\$ = T_GT;|$$ = (int *)T_GT;|g' \
+    -e 's|\$\$ = T_NE;|$$ = (int *)T_NE;|g' \
+    -e 's|\$\$ = T_LE;|$$ = (int *)T_LE;|g' \
+    -e 's|\$\$ = T_GE;|$$ = (int *)T_GE;|g' \
+    -e 's|\$\$ = T_IN;|$$ = (int *)T_IN;|g' \
+    -e 's|\$\$ = T_ADD;|$$ = (int *)T_ADD;|g' \
+    -e 's|\$\$ = T_SUB;|$$ = (int *)T_SUB;|g' \
+    -e 's|\$\$ = T_OR;|$$ = (int *)T_OR;|g' \
+    -e 's|\$\$ = T_MULT;|$$ = (int *)T_MULT;|g' \
+    -e 's|\$\$ = T_DIVD;|$$ = (int *)T_DIVD;|g' \
+    -e 's|\$\$ = T_DIV;|$$ = (int *)T_DIV;|g' \
+    -e 's|\$\$ = T_MOD;|$$ = (int *)T_MOD;|g' \
+    -e 's|\$\$ = T_AND;|$$ = (int *)T_AND;|g' \
+    pas.y > z$$ && mv z$$ pas.y
+
+# AND y.tab.c:22 IS A LINE gram WRITES ITSELF.  pas.y:22-26 says gram "Loads
+# the variable yypv into a register as yyYpv so that the arguments $1, ... are
+# available as yyYpv[1] etc", and it does that by appending three lines after
+# the yyactr line: `register int **yyYpv;', `register int *p, *q;' and
+# `yyYpv = yypv;'.  yyparse.c:15 declares `int *yypv;' -- the stack is an array
+# of ints holding tree pointers, which is why yyparse.c:133 reads `yyval =
+# yypv[1]' -- while the actions want yyYpv[n] to BE a tree pointer, so gram
+# declares the same array as `int **'.  The two views are deliberate and the
+# cast is the bridge between them; without it the assignment joining them is
+# combo("pointer").  It is the third line gram appends, which lands at
+# y.tab.c:22.
+sed \
+    -e 's|^	yyYpv = yypv;$|	yyYpv = (int **)yypv;|' \
+    gram > z$$ && mv z$$ gram
+
+# EXPO.c WANTS index() AND THIS LIBC HAS strchr.  V10 moved from the BSD names
+# to the System V ones and left the old sources behind unbuilt: libc/omakefile,
+# the older of the two, has `o/index.o: gen/index.c' at :140 and
+# `o/rindex.o: gen/rindex.c' at :176 with both in its object list at :22 and
+# :35, while libc/mkfile -- the one the build reads -- lists strchr.o (:57,
+# :235) and strrchr.o (:59, :245) and neither index nor rindex.  gen/index.c
+# and gen/rindex.c are still on the tape, complete and correct, in no archive:
+# no member of libc.a or liboc.a defines _index, and gen/strchr.s declares only
+# _strchr with no second entry point.
+# THEY ARE THE SAME FUNCTION.  strchr.s's own header carries the C program it
+# replaces -- "Return the ptr in sp at which the character c appears; NULL if
+# not found" -- which is gen/index.c line for line, and calls it "the
+# `standard' for the C-library".  Same arguments, same return, same result on
+# not-found.
+# ONE CALLER.  libpc/EXPO.c is the only file in cmd/pascal that names index at
+# all, at :13 for the declaration and :18 for the call.  Rewriting it makes
+# EXPO.c newer than the tape's prebuilt EXPO.o, so libpc's makefile:45-48
+# recompiles that one object and re-archives -- on the guest `libpc' is the
+# tape's ar file, which is why it read as up to date until now (the host
+# checkout shows it unpacked into a directory of members, which is v10-tree.py's
+# doing and not what mktape extracts).
+# The two seds avoid matching 'e' -- a single quote inside a single-quoted sed
+# expression ends the string, which is how the seventeen operator casts above
+# silently did nothing on their first attempt.
+cd $SRC/cmd/pascal/libpc || exit 1
+sed \
+    -e 's|extern char \*index();|extern char *strchr();|' \
+    -e 's|cp = index(buf, |cp = strchr(buf, |' \
+    EXPO.c > z$$ && mv z$$ EXPO.c
+
+# pxp IS THE PROFILER AND IT HAS ITS OWN COPY OF EVERYTHING.  Same design as
+# pi, same parse tree carried in `int *', and so the same three classes over
+# again in 27 of its 43 units: tree pointers assigned between an int and an
+# int *, hash.c's keyword table bounded against a char * and a struct kwtab *,
+# and 0.h's pchar pseudo-member read off an int *.  The casts below were taken
+# the same way -- every unit in the makefile's own OBJS and OBJS2 lists
+# compiled against v10's usr/include with -fno-builtin and -DPXP, keeping only
+# what ccom acts on -- and rerun until it found nothing.
+# doprnt.c AND oy.tab.c ARE NOT COMPILED: makefile:22-25 sends doprnt.c through
+# `cc -E' to assembly, and oy.tab.c is in neither list.
+#
+# ITS y.tab.c IS A SOURCE FILE, NOT A GENERATED ONE.  makefile:26-28 has the
+# whole eyacc rule commented out --
+#	#y.tab.c: pas.y
+#	#	${EYACC} pas.y
+#	#	${ED} - y.tab.c < gram
+# -- so the tape's y.tab.c is what compiles and the casts go straight into it.
+# That is the opposite of pi, where the same sed would be thrown away by the
+# next eyacc run, and it is why pas.y and gram are left alone here: nothing
+# reads them.  Its line 20 still needs gram's own `yyYpv = yypv' cast, because
+# the tape ran gram before the rule was commented out.
+#
+# TWO THE PASS GOT WRONG, both from where a cast binds.  pmon.c:177 is
+# `cp = zpf = alloc(...)' with cp a char *, zpf a struct pftab * and 0.h:220
+# declaring `char *alloc()', so casting each assignment separately writes an
+# lvalue cast; the inner assignment has to be parenthesised instead.
+# string.c:59 is `strngp = (int)(...) &~ (...)' -- a cast placed after the `='
+# takes the (int) subexpression and leaves the &~ outside it, so the whole
+# right-hand side is parenthesised.
+# AND TWO THE PASS COULD NOT SEE.  pmon.c:175 and :178 are `if (cp == -1)',
+# the V7 failure test for alloc.  trees.c:1815-1818 gives EQ `PTMATCH+PUN' and
+# chkpun exempts only an icon whose value is ZERO (trees.c:920-923), so a
+# pointer against -1 is combo("pointer/integer") -- while a modern compiler
+# says nothing at all about it, at any warning level.  Those two come from
+# reading the table, not from the pass.
+cd $SRC/cmd/pascal/pxp || exit 1
+sed \
+    -e 's|^			al = argv\[1\];$|			al = (int *)argv[1];|' \
+    -e 's|^			argv = argv\[2\];$|			argv = (int *)argv[2];|' \
+    call.c > z$$ && mv z$$ call.c
+sed \
+    -e 's|^	for (cl = r\[3\]; cl != NIL;) {$|	for (cl = (int *)r[3]; cl != NIL;) {|' \
+    -e 's|^		cs = cl\[1\];$|		cs = (int *)cl[1];|' \
+    -e 's|^		cs = cs\[2\];$|		cs = (int *)cs[2];|' \
+    -e 's|^				cs = cs\[2\];$|				cs = (int *)cs[2];|' \
+    -e 's|^		cs = cs\[3\];$|		cs = (int *)cs[3];|' \
+    -e 's|^		cl = cl\[2\];$|		cl = (int *)cl[2];|' \
+    case.c > z$$ && mv z$$ case.c
+sed \
+    -e 's|^			cn = cn\[1\];$|			cn = (int *)cn[1];|' \
+    const.c > z$$ && mv z$$ const.c
+sed \
+    -e 's|^	el = r\[2\];$|	el = (int *)r[2];|' \
+    -e 's|^			e = el\[1\];$|			e = (int *)el[1];|' \
+    -e 's|^			el = el\[2\];$|			el = (int *)el[2];|' \
+    cset.c > z$$ && mv z$$ cset.c
+sed \
+    -e 's|^		rl = r\[3\];$|		rl = (int **)r[3];|' \
+    -e 's|^					rl = rl\[2\];$|					rl = (int **)rl[2];|' \
+    -e 's|^				il = rl\[1\]\[1\];$|				il = (int *)rl[1][1];|' \
+    -e 's|^						il = il\[2\];$|						il = (int *)il[2];|' \
+    -e 's|^				rl = rl\[2\];$|				rl = (int **)rl[2];|' \
+    -e 's|^	blk = bundle\[2\];$|	blk = (int *)bundle[2];|' \
+    fdec.c > z$$ && mv z$$ fdec.c
+sed \
+    -e 's|^char	\*lastkey	= &yykey\[sizeof yykey/sizeof yykey\[0\]\];$|char	*lastkey	= (char *)\&yykey[sizeof yykey/sizeof yykey[0]];|' \
+    -e 's|^	for (ip = yykey; \*ip; ip += 2)$|	for (ip = (int *)yykey; *ip; ip += 2)|' \
+    -e 's|^		hash(ip\[0\], 0)\[0\] = ip;$|		hash(ip[0], 0)[0] = (int)ip;|' \
+    -e 's|^			htp->ht_low = cp;$|			htp->ht_low = (int *)cp;|' \
+    -e 's|^					\*h = s;$|					*h = (int)s;|' \
+    -e 's|^			sym = \*h;$|			sym = (int *)*h;|' \
+    -e 's|^			if (sym < lastkey && sym >= yykey)$|			if (sym < (int *)lastkey \&\& sym >= (int *)yykey)|' \
+    -e 's|^				sym = \*sym;$|				sym = (int *)*sym;|' \
+    -e 's|^			if (sym->pchar == \*cp && strcmp(sym, cp) == 0)$|			if (*(char *)sym == *cp \&\& strcmp(sym, cp) == 0)|' \
+    hash.c > z$$ && mv z$$ hash.c
+sed \
+    -e 's|^			ll = ll\[2\];$|			ll = (int *)ll[2];|' \
+    lab.c > z$$ && mv z$$ lab.c
+sed \
+    -e 's|^	for (c = r\[3\]; c != NIL; c = c\[2\]) {$|	for (c = (int *)r[3]; c != NIL; c = (int *)c[2]) {|' \
+    -e 's|^		co = c\[1\];$|		co = (int *)c[1];|' \
+    -e 's|^			el = el\[2\];$|			el = (int *)el[2];|' \
+    lval.c > z$$ && mv z$$ lval.c
+sed \
+    -e 's|^	if (cp == -1)$|	if (cp == (char *)-1)|' \
+    -e 's|^	cp = zpf = alloc(zpfcnt \* sizeof \*zpf);$|	cp = (char *)(zpf = (struct pftab *)alloc(zpfcnt * sizeof *zpf));|' \
+    pmon.c > z$$ && mv z$$ pmon.c
+sed \
+    -e 's|^			tp = fp\[1\];$|			tp = (int *)fp[1];|' \
+    -e 's|^				ip = tp\[2\];$|				ip = (int *)tp[2];|' \
+    -e 's|^						ip = ip\[2\];$|						ip = (int *)ip[2];|' \
+    -e 's|^			fp = fp\[2\];$|			fp = (int *)fp[2];|' \
+    -e 's|^	v = r\[2\];$|	v = (int *)r[2];|' \
+    -e 's|^	for (vc = r\[4\]; vc != NIL;) {$|	for (vc = (int *)r[4]; vc != NIL;) {|' \
+    -e 's|^		v = vc\[1\];$|		v = (int *)vc[1];|' \
+    -e 's|^		v = v\[2\];$|		v = (int *)v[2];|' \
+    -e 's|^				v = v\[2\];$|				v = (int *)v[2];|' \
+    -e 's|^		vc = vc\[2\];$|		vc = (int *)vc[2];|' \
+    rec.c > z$$ && mv z$$ rec.c
+sed \
+    -e 's|^			al = r\[2\];$|			al = (int *)r[2];|' \
+    -e 's|^			al = r\[3\];$|			al = (int *)r[3];|' \
+    rval.c > z$$ && mv z$$ rval.c
+sed \
+    -e 's|^			sl = sl\[2\];$|			sl = (int *)sl[2];|' \
+    -e 's|^	p = s\[2\];$|	p = (int *)s[2];|' \
+    -e 's|^			p = p\[2\];$|			p = (int *)p[2];|' \
+    -e 's|^	s = r\[3\];$|	s = (int *)r[3];|' \
+    -e 's|^		s = r\[4\];$|		s = (int *)r[4];|' \
+    stat.c > z$$ && mv z$$ stat.c
+sed \
+    -e 's|^	strngp = (int)(strngp + (sizeof (int) - 1)) &~ (sizeof (int) - 1);$|	strngp = (char *)((int)(strngp + (sizeof (int) - 1)) \&~ (sizeof (int) - 1));|' \
+    string.c > z$$ && mv z$$ string.c
+sed \
+    -e 's|^	cpp = ctime(tv);$|	cpp = (char *)ctime(tv);|' \
+    -e 's|^	pfp = pflist;$|	pfp = (int *)pflist;|' \
+    subr.c > z$$ && mv z$$ subr.c
+sed \
+    -e 's|^		cp = malloc(i \* sizeof ( int ));$|		cp = (char *)malloc(i * sizeof ( int ));|' \
+    -e 's|^		spacep = cp;$|		spacep = (int *)cp;|' \
+    -e 's|^		tract->tr_low = cp;$|		tract->tr_low = (int *)cp;|' \
+    -e 's|^	cp = spacep;$|	cp = (char *)spacep;|' \
+    -e 's|^	spacep = cp + i;$|	spacep = (int *)cp + i;|' \
+    tree.c > z$$ && mv z$$ tree.c
+sed \
+    -e 's|^	r = r\[2\];$|	r = (int *)r[2];|' \
+    -e 's|^			r = r\[2\];$|			r = (int *)r[2];|' \
+    -e 's|^	tl = r\[2\];$|	tl = (int *)r[2];|' \
+    -e 's|^			tl = tl\[2\];$|			tl = (int *)tl[2];|' \
+    type.c > z$$ && mv z$$ type.c
+sed \
+    -e 's|^			vidl = vidl\[2\];$|			vidl = (int *)vidl[2];|' \
+    var.c > z$$ && mv z$$ var.c
+# ONE sed PER CHUNK, NOT ONE FOR THE FILE.  These are 124 expressions and
+# 18 KB of argument, over the 16 KB that include/sys/param.h:10 allows an
+# exec (`#define NCARGS (16*1024)') -- the shell cannot start sed at all and
+# says `Arg list too long'.  It would also have come within 2 KB of sed's own
+# compiled-command space, sed.h:27's `#define RESIZE 20000'.  Split into
+# passes of about 5 KB each, which clears both by a wide margin.  Every other
+# sed in this file is a few hundred bytes; this is the only one that needed it.
+sed \
+    -e 's|^	yyYpv = yypv;$|	yyYpv = (int **)yypv;|' \
+    -e 's|^case 2: yyval = funcbody(funchdr(tree5(T_PROG, lineof(yyYpv\[1\]), yyYpv\[2\], fixlist(yyYpv\[4\]), NIL))); break;$|case 2: yyval = (int *)funcbody(funchdr(tree5(T_PROG, lineof(yyYpv[1]), yyYpv[2], fixlist(yyYpv[4]), NIL))); break;|' \
+    -e 's|^			yyval = funcbody(funchdr(tree5(T_PROG, lineof(yyYpv\[1\]), NIL, NIL, NIL)));$|			yyval = (int *)funcbody(funchdr(tree5(T_PROG, lineof(yyYpv[1]), NIL, NIL, NIL)));|' \
+    -e 's|^			yyval = tree3(T_BSTL, lineof(yyYpv\[1\]), fixlist(yyYpv\[2\]));$|			yyval = (int *)tree3(T_BSTL, lineof(yyYpv[1]), fixlist(yyYpv[2]));|' \
+    -e 's|^case 13: yyval = newlist(yyYpv\[1\] == NIL ? NIL : \*hash(yyYpv\[1\], 1)); break;$|case 13: yyval = (int *)newlist(yyYpv[1] == NIL ? NIL : *hash(yyYpv[1], 1)); break;|' \
+    -e 's|^case 14: yyval = addlist(yyYpv\[1\], yyYpv\[3\] == NIL ? NIL : \*hash(yyYpv\[3\], 1)); break;$|case 14: yyval = (int *)addlist(yyYpv[1], yyYpv[3] == NIL ? NIL : *hash(yyYpv[3], 1)); break;|' \
+    -e 's|^case 32: yyval = funchdr(tree5(yyYpv\[1\], lineof(yyYpv\[5\]), yyYpv\[2\], yyYpv\[3\], yyYpv\[4\])); break;$|case 32: yyval = (int *)funchdr(tree5(yyYpv[1], lineof(yyYpv[5]), yyYpv[2], yyYpv[3], yyYpv[4])); break;|' \
+    -e 's|^case 33: yyval = T_PDEC; break;$|case 33: yyval = (int *)T_PDEC; break;|' \
+    -e 's|^case 34: yyval = T_FDEC; break;$|case 34: yyval = (int *)T_FDEC; break;|' \
+    -e 's|^case 35: yyval = fixlist(yyYpv\[2\]); break;$|case 35: yyval = (int *)fixlist(yyYpv[2]); break;|' \
+    -e 's|^case 37: yyval = tree3(T_PVAL, fixlist(yyYpv\[1\]), yyYpv\[3\]); break;$|case 37: yyval = (int *)tree3(T_PVAL, fixlist(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^case 38: yyval = tree3(T_PVAR, fixlist(yyYpv\[2\]), yyYpv\[4\]); break;$|case 38: yyval = (int *)tree3(T_PVAR, fixlist(yyYpv[2]), yyYpv[4]); break;|' \
+    -e 's|^case 39: yyval = tree3(T_PFUNC, fixlist(yyYpv\[2\]), yyYpv\[4\]); break;$|case 39: yyval = (int *)tree3(T_PFUNC, fixlist(yyYpv[2]), yyYpv[4]); break;|' \
+    -e 's|^case 40: yyval = tree2(T_PPROC, fixlist(yyYpv\[2\])); break;$|case 40: yyval = (int *)tree2(T_PPROC, fixlist(yyYpv[2])); break;|' \
+    -e 's|^case 43: yyval = newlist(yyYpv\[1\]); break;$|case 43: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 44: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 44: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 45: yyval = tree2(T_CSTRNG, yyYpv\[1\]); break;$|case 45: yyval = (int *)tree2(T_CSTRNG, yyYpv[1]); break;|' \
+    -e 's|^case 47: yyval = tree2(T_PLUSC, yyYpv\[2\]); break;$|case 47: yyval = (int *)tree2(T_PLUSC, yyYpv[2]); break;|' \
+    -e 's|^case 48: yyval = tree2(T_MINUSC, yyYpv\[2\]); break;$|case 48: yyval = (int *)tree2(T_MINUSC, yyYpv[2]); break;|' \
+    -e 's|^case 49: yyval = tree2(T_ID, yyYpv\[1\]); break;$|case 49: yyval = (int *)tree2(T_ID, yyYpv[1]); break;|' \
+    -e 's|^case 50: yyval = tree2(T_CINT, yyYpv\[1\]); break;$|case 50: yyval = (int *)tree2(T_CINT, yyYpv[1]); break;|' \
+    -e 's|^case 51: yyval = tree2(T_CBINT, yyYpv\[1\]); break;$|case 51: yyval = (int *)tree2(T_CBINT, yyYpv[1]); break;|' \
+    -e 's|^case 52: yyval = tree2(T_CFINT, yyYpv\[1\]); break;$|case 52: yyval = (int *)tree2(T_CFINT, yyYpv[1]); break;|' \
+    -e 's|^case 53: yyval = newlist(yyYpv\[1\]); break;$|case 53: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 54: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 54: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 56: yyval = tree3(T_TYPTR, lineof(yyYpv\[1\]), tree2(T_ID, yyYpv\[2\])); break;$|case 56: yyval = (int *)tree3(T_TYPTR, lineof(yyYpv[1]), tree2(T_ID, yyYpv[2])); break;|' \
+    -e 's|^case 58: yyval = tree3(T_TYPACK, lineof(yyYpv\[1\]), yyYpv\[2\]); break;$|case 58: yyval = (int *)tree3(T_TYPACK, lineof(yyYpv[1]), yyYpv[2]); break;|' \
+    -e 's|^case 60: yyval = tree3(T_TYSCAL, lineof(yyYpv\[1\]), fixlist(yyYpv\[2\])); break;$|case 60: yyval = (int *)tree3(T_TYSCAL, lineof(yyYpv[1]), fixlist(yyYpv[2])); break;|' \
+    -e 's|^case 61: yyval = tree4(T_TYRANG, lineof(yyYpv\[2\]), yyYpv\[1\], yyYpv\[3\]); break;$|case 61: yyval = (int *)tree4(T_TYRANG, lineof(yyYpv[2]), yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 62: yyval = tree4(T_TYARY, lineof(yyYpv\[1\]), fixlist(yyYpv\[3\]), yyYpv\[6\]); break;$|case 62: yyval = (int *)tree4(T_TYARY, lineof(yyYpv[1]), fixlist(yyYpv[3]), yyYpv[6]); break;|' \
+    -e 's|^case 63: yyval = tree3(T_TYFILE, lineof(yyYpv\[1\]), yyYpv\[3\]); break;$|case 63: yyval = (int *)tree3(T_TYFILE, lineof(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^case 64: yyval = tree3(T_TYSET, lineof(yyYpv\[1\]), yyYpv\[3\]); break;$|case 64: yyval = (int *)tree3(T_TYSET, lineof(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^			yyval = tree3(T_TYREC, lineof(yyYpv\[1\]), yyYpv\[2\]);$|			yyval = (int *)tree3(T_TYREC, lineof(yyYpv[1]), yyYpv[2]);|' \
+    -e 's|^case 66: yyval = newlist(yyYpv\[1\]); break;$|case 66: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    y.tab.c > z$$ && mv z$$ y.tab.c
+sed \
+    -e 's|^case 67: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 67: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 68: yyval = tree4(T_FLDLST, lineof(NIL), fixlist(yyYpv\[1\]), yyYpv\[2\]); break;$|case 68: yyval = (int *)tree4(T_FLDLST, lineof(NIL), fixlist(yyYpv[1]), yyYpv[2]); break;|' \
+    -e 's|^case 69: yyval = newlist(yyYpv\[1\]); break;$|case 69: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 70: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 70: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 73: yyval = tree4(T_RFIELD, lineof(yyYpv\[2\]), fixlist(yyYpv\[1\]), yyYpv\[3\]); break;$|case 73: yyval = (int *)tree4(T_RFIELD, lineof(yyYpv[2]), fixlist(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^case 75: yyval = tree5(T_TYVARPT, lineof(yyYpv\[1\]), NIL, yyYpv\[2\], fixlist(yyYpv\[4\])); break;$|case 75: yyval = (int *)tree5(T_TYVARPT, lineof(yyYpv[1]), NIL, yyYpv[2], fixlist(yyYpv[4])); break;|' \
+    -e 's|^case 76: yyval = tree5(T_TYVARPT, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], fixlist(yyYpv\[6\])); break;$|case 76: yyval = (int *)tree5(T_TYVARPT, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], fixlist(yyYpv[6])); break;|' \
+    -e 's|^case 77: yyval = newlist(yyYpv\[1\]); break;$|case 77: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 78: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 78: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 81: yyval = tree4(T_TYVARNT, lineof(yyYpv\[2\]), fixlist(yyYpv\[1\]), yyYpv\[4\]); break;$|case 81: yyval = (int *)tree4(T_TYVARNT, lineof(yyYpv[2]), fixlist(yyYpv[1]), yyYpv[4]); break;|' \
+    -e 's|^case 82: yyval = tree4(T_TYVARNT, lineof(yyYpv\[2\]), fixlist(yyYpv\[1\]), NIL); break;$|case 82: yyval = (int *)tree4(T_TYVARNT, lineof(yyYpv[2]), fixlist(yyYpv[1]), NIL); break;|' \
+    -e 's|^case 83: yyval = newlist(yyYpv\[1\]); break;$|case 83: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^			if ((p = yyYpv\[1\]) != NIL && (q = p\[1\])\[0\] == T_IFX) {$|			if ((p = yyYpv[1]) != NIL \&\& (q = (int *)p[1])[0] == T_IFX) {|' \
+    -e 's|^				q\[4\] = yyYpv\[2\];$|				q[4] = (int)yyYpv[2];|' \
+    -e 's|^				yyval = addlist(yyYpv\[1\], yyYpv\[2\]);$|				yyval = (int *)addlist(yyYpv[1], yyYpv[2]);|' \
+    -e 's|^case 85: if ((q = yyYpv\[1\]) != NIL && (p = q\[1\]) != NIL && p\[0\] == T_IF) {$|case 85: if ((q = yyYpv[1]) != NIL \&\& (p = (int *)q[1]) != NIL \&\& p[0] == T_IF) {|' \
+    -e 's|^case 86: yyval = newlist(yyYpv\[1\]); break;$|case 86: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 87: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 87: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 90: yyval = tree4(T_CSTAT, lineof(yyYpv\[2\]), fixlist(yyYpv\[1\]), yyYpv\[3\]); break;$|case 90: yyval = (int *)tree4(T_CSTAT, lineof(yyYpv[2]), fixlist(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^case 91: yyval = tree4(T_CSTAT, lineof(yyYpv\[1\]), NIL, yyYpv\[2\]); break;$|case 91: yyval = (int *)tree4(T_CSTAT, lineof(yyYpv[1]), NIL, yyYpv[2]); break;|' \
+    -e 's|^case 94: yyval = tree4(T_LABEL, lineof(yyYpv\[2\]), yyYpv\[1\] == NIL ? NIL : \*hash(yyYpv\[1\], 1), yyYpv\[3\]); break;$|case 94: yyval = (int *)tree4(T_LABEL, lineof(yyYpv[2]), yyYpv[1] == NIL ? NIL : *hash(yyYpv[1], 1), yyYpv[3]); break;|' \
+    -e 's|^case 95: yyval = tree4(T_PCALL, lineof(yyline), yyYpv\[1\], NIL); break;$|case 95: yyval = (int *)tree4(T_PCALL, lineof(yyline), yyYpv[1], NIL); break;|' \
+    -e 's|^case 96: yyval = tree4(T_PCALL, lineof(yyYpv\[2\]), yyYpv\[1\], fixlist(yyYpv\[3\])); break;$|case 96: yyval = (int *)tree4(T_PCALL, lineof(yyYpv[2]), yyYpv[1], fixlist(yyYpv[3])); break;|' \
+    -e 's|^			yyval = tree3(T_BLOCK, lineof(yyYpv\[1\]), fixlist(yyYpv\[2\]));$|			yyval = (int *)tree3(T_BLOCK, lineof(yyYpv[1]), fixlist(yyYpv[2]));|' \
+    -e 's|^			yyval = tree4(T_CASE, lineof(yyYpv\[1\]), yyYpv\[2\], fixlist(yyYpv\[4\]));$|			yyval = (int *)tree4(T_CASE, lineof(yyYpv[1]), yyYpv[2], fixlist(yyYpv[4]));|' \
+    -e 's|^case 101: yyval = tree4(T_WITH, lineof(yyYpv\[1\]), fixlist(yyYpv\[2\]), yyYpv\[4\]); break;$|case 101: yyval = (int *)tree4(T_WITH, lineof(yyYpv[1]), fixlist(yyYpv[2]), yyYpv[4]); break;|' \
+    -e 's|^case 102: yyval = tree4(T_WHILE, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\]); break;$|case 102: yyval = (int *)tree4(T_WHILE, lineof(yyYpv[1]), yyYpv[2], yyYpv[4]); break;|' \
+    -e 's|^case 103: yyval = tree4(T_REPEAT, lineof(yyYpv\[3\]), fixlist(yyYpv\[2\]), yyYpv\[4\]); break;$|case 103: yyval = (int *)tree4(T_REPEAT, lineof(yyYpv[3]), fixlist(yyYpv[2]), yyYpv[4]); break;|' \
+    -e 's|^case 104: yyval = tree5(T_FORU, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], yyYpv\[6\]); break;$|case 104: yyval = (int *)tree5(T_FORU, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], yyYpv[6]); break;|' \
+    y.tab.c > z$$ && mv z$$ y.tab.c
+sed \
+    -e 's|^case 105: yyval = tree5(T_FORD, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], yyYpv\[6\]); break;$|case 105: yyval = (int *)tree5(T_FORD, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], yyYpv[6]); break;|' \
+    -e 's|^case 106: yyval = tree3(T_GOTO, lineof(yyYpv\[1\]), \*hash(yyYpv\[2\], 1)); break;$|case 106: yyval = (int *)tree3(T_GOTO, lineof(yyYpv[1]), *hash(yyYpv[2], 1)); break;|' \
+    -e 's|^case 107: yyval = tree5(T_IF, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], NIL); break;$|case 107: yyval = (int *)tree5(T_IF, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], NIL); break;|' \
+    -e 's|^case 108: yyval = tree5(T_IFEL, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], yyYpv\[6\]); break;$|case 108: yyval = (int *)tree5(T_IFEL, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], yyYpv[6]); break;|' \
+    -e 's|^case 109: yyval = tree5(T_IFEL, lineof(yyYpv\[1\]), yyYpv\[2\], yyYpv\[4\], NIL); break;$|case 109: yyval = (int *)tree5(T_IFEL, lineof(yyYpv[1]), yyYpv[2], yyYpv[4], NIL); break;|' \
+    -e 's|^case 110: yyval = tree3(T_ASRT, lineof(yyYpv\[1\]), yyYpv\[3\]); break;$|case 110: yyval = (int *)tree3(T_ASRT, lineof(yyYpv[1]), yyYpv[3]); break;|' \
+    -e 's|^case 112: yyval = tree4(T_ASGN, lineof(yyYpv\[2\]), yyYpv\[1\], yyYpv\[4\]); break;$|case 112: yyval = (int *)tree4(T_ASGN, lineof(yyYpv[2]), yyYpv[1], yyYpv[4]); break;|' \
+    -e 's|^case 114: yyval = tree4(yyYpv\[2\], yyYpv\[1\]\[1\] == SAWCON ? yyYpv\[3\]\[1\] : yyYpv\[1\]\[1\], yyYpv\[1\], yyYpv\[3\]); break;$|case 114: yyval = (int *)tree4(yyYpv[2], yyYpv[1][1] == SAWCON ? yyYpv[3][1] : yyYpv[1][1], yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 115: yyval = tree3(T_PLUS, yyYpv\[2\]\[1\], yyYpv\[2\]); break;$|case 115: yyval = (int *)tree3(T_PLUS, yyYpv[2][1], yyYpv[2]); break;|' \
+    -e 's|^case 116: yyval = tree3(T_MINUS, yyYpv\[2\]\[1\], yyYpv\[2\]); break;$|case 116: yyval = (int *)tree3(T_MINUS, yyYpv[2][1], yyYpv[2]); break;|' \
+    -e 's|^case 117: yyval = tree4(yyYpv\[2\], yyYpv\[1\]\[1\] == SAWCON ? yyYpv\[3\]\[1\] : yyYpv\[1\]\[1\], yyYpv\[1\], yyYpv\[3\]); break;$|case 117: yyval = (int *)tree4(yyYpv[2], yyYpv[1][1] == SAWCON ? yyYpv[3][1] : yyYpv[1][1], yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 118: yyval = tree4(yyYpv\[2\], yyYpv\[1\]\[1\] == SAWCON ? yyYpv\[3\]\[1\] : yyYpv\[1\]\[1\], yyYpv\[1\], yyYpv\[3\]); break;$|case 118: yyval = (int *)tree4(yyYpv[2], yyYpv[1][1] == SAWCON ? yyYpv[3][1] : yyYpv[1][1], yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 119: yyval = tree2(T_NIL, NOCON); break;$|case 119: yyval = (int *)tree2(T_NIL, NOCON); break;|' \
+    -e 's|^case 120: yyval = tree3(T_STRNG, SAWCON, yyYpv\[1\]); break;$|case 120: yyval = (int *)tree3(T_STRNG, SAWCON, yyYpv[1]); break;|' \
+    -e 's|^case 121: yyval = tree3(T_INT, NOCON, yyYpv\[1\]); break;$|case 121: yyval = (int *)tree3(T_INT, NOCON, yyYpv[1]); break;|' \
+    -e 's|^case 122: yyval = tree3(T_BINT, NOCON, yyYpv\[1\]); break;$|case 122: yyval = (int *)tree3(T_BINT, NOCON, yyYpv[1]); break;|' \
+    -e 's|^case 123: yyval = tree3(T_FINT, NOCON, yyYpv\[1\]); break;$|case 123: yyval = (int *)tree3(T_FINT, NOCON, yyYpv[1]); break;|' \
+    -e 's|^case 126: yyval = tree4(T_FCALL, NOCON, yyYpv\[1\], fixlist(yyYpv\[3\])); break;$|case 126: yyval = (int *)tree4(T_FCALL, NOCON, yyYpv[1], fixlist(yyYpv[3])); break;|' \
+    -e 's|^case 128: yyval = tree3(T_NOT, NOCON, yyYpv\[2\]); break;$|case 128: yyval = (int *)tree3(T_NOT, NOCON, yyYpv[2]); break;|' \
+    -e 's|^case 129: yyval = tree3(T_CSET, SAWCON, fixlist(yyYpv\[2\])); break;$|case 129: yyval = (int *)tree3(T_CSET, SAWCON, fixlist(yyYpv[2])); break;|' \
+    -e 's|^case 130: yyval = tree3(T_CSET, SAWCON, NIL); break;$|case 130: yyval = (int *)tree3(T_CSET, SAWCON, NIL); break;|' \
+    -e 's|^case 131: yyval = newlist(yyYpv\[1\]); break;$|case 131: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 132: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 132: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 134: yyval = tree3(T_RANG, yyYpv\[1\], yyYpv\[3\]); break;$|case 134: yyval = (int *)tree3(T_RANG, yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^			yyval = setupvar(yyYpv\[1\], NIL);$|			yyval = (int *)setupvar(yyYpv[1], NIL);|' \
+    -e 's|^case 137: yyval = setupvar(yyYpv\[1\], tree2(T_ARY, fixlist(yyYpv\[3\]))); break;$|case 137: yyval = (int *)setupvar(yyYpv[1], tree2(T_ARY, fixlist(yyYpv[3]))); break;|' \
+    -e 's|^case 139: yyval = setupvar(yyYpv\[1\], tree3(T_FIELD, yyYpv\[3\], NIL)); break;$|case 139: yyval = (int *)setupvar(yyYpv[1], tree3(T_FIELD, yyYpv[3], NIL)); break;|' \
+    -e 's|^case 141: yyval = setupvar(yyYpv\[1\], tree1(T_PTR)); break;$|case 141: yyval = (int *)setupvar(yyYpv[1], tree1(T_PTR)); break;|' \
+    -e 's|^case 144: yyval = tree4(T_WEXP, yyYpv\[1\], yyYpv\[3\], NIL); break;$|case 144: yyval = (int *)tree4(T_WEXP, yyYpv[1], yyYpv[3], NIL); break;|' \
+    y.tab.c > z$$ && mv z$$ y.tab.c
+sed \
+    -e 's|^case 145: yyval = tree4(T_WEXP, yyYpv\[1\], yyYpv\[3\], yyYpv\[5\]); break;$|case 145: yyval = (int *)tree4(T_WEXP, yyYpv[1], yyYpv[3], yyYpv[5]); break;|' \
+    -e 's|^case 146: yyval = tree4(T_WEXP, yyYpv\[1\], NIL, yyYpv\[2\]); break;$|case 146: yyval = (int *)tree4(T_WEXP, yyYpv[1], NIL, yyYpv[2]); break;|' \
+    -e 's|^case 147: yyval = tree4(T_WEXP, yyYpv\[1\], yyYpv\[3\], yyYpv\[4\]); break;$|case 147: yyval = (int *)tree4(T_WEXP, yyYpv[1], yyYpv[3], yyYpv[4]); break;|' \
+    -e 's|^case 148: yyval = OCT; break;$|case 148: yyval = (int *)OCT; break;|' \
+    -e 's|^case 149: yyval = HEX; break;$|case 149: yyval = (int *)HEX; break;|' \
+    -e 's|^case 150: yyval = newlist(yyYpv\[1\]); break;$|case 150: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 151: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 151: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 152: yyval = newlist(yyYpv\[1\]); break;$|case 152: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 153: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 153: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 154: yyval = T_EQ; break;$|case 154: yyval = (int *)T_EQ; break;|' \
+    -e 's|^case 155: yyval = T_LT; break;$|case 155: yyval = (int *)T_LT; break;|' \
+    -e 's|^case 156: yyval = T_GT; break;$|case 156: yyval = (int *)T_GT; break;|' \
+    -e 's|^case 157: yyval = T_NE; break;$|case 157: yyval = (int *)T_NE; break;|' \
+    -e 's|^case 158: yyval = T_LE; break;$|case 158: yyval = (int *)T_LE; break;|' \
+    -e 's|^case 159: yyval = T_GE; break;$|case 159: yyval = (int *)T_GE; break;|' \
+    -e 's|^case 160: yyval = T_IN; break;$|case 160: yyval = (int *)T_IN; break;|' \
+    -e 's|^case 161: yyval = T_ADD; break;$|case 161: yyval = (int *)T_ADD; break;|' \
+    -e 's|^case 162: yyval = T_SUB; break;$|case 162: yyval = (int *)T_SUB; break;|' \
+    -e 's|^case 163: yyval = T_OR; break;$|case 163: yyval = (int *)T_OR; break;|' \
+    -e 's|^case 164: yyval = T_OR; break;$|case 164: yyval = (int *)T_OR; break;|' \
+    -e 's|^case 165: yyval = T_MULT; break;$|case 165: yyval = (int *)T_MULT; break;|' \
+    -e 's|^case 166: yyval = T_DIVD; break;$|case 166: yyval = (int *)T_DIVD; break;|' \
+    -e 's|^case 167: yyval = T_DIV; break;$|case 167: yyval = (int *)T_DIV; break;|' \
+    -e 's|^case 168: yyval = T_MOD; break;$|case 168: yyval = (int *)T_MOD; break;|' \
+    -e 's|^case 169: yyval = T_AND; break;$|case 169: yyval = (int *)T_AND; break;|' \
+    -e 's|^case 170: yyval = T_AND; break;$|case 170: yyval = (int *)T_AND; break;|' \
+    -e 's|^case 173: yyval = newlist(yyYpv\[1\]); break;$|case 173: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 174: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 174: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^case 175: yyval = newlist(yyYpv\[1\]); break;$|case 175: yyval = (int *)newlist(yyYpv[1]); break;|' \
+    -e 's|^case 176: yyval = addlist(yyYpv\[1\], yyYpv\[3\]); break;$|case 176: yyval = (int *)addlist(yyYpv[1], yyYpv[3]); break;|' \
+    -e 's|^			yyval = tree3(T_TYID, lineof(yyline), yyYpv\[1\]);$|			yyval = (int *)tree3(T_TYID, lineof(yyline), yyYpv[1]);|' \
+    y.tab.c > z$$ && mv z$$ y.tab.c
+sed \
+    -e 's|^	cp = tree5(NIL, cmdelim, NIL, cmjust, yyseqid);$|	cp = (struct comment *)tree5(NIL, cmdelim, NIL, cmjust, yyseqid);|' \
+    -e 's|^		kp = getcmline(cmdelim);$|		kp = (struct commline *)getcmline(cmdelim);|' \
+    -e 's|^	kp = tree3(NIL, yycol, NIL);$|	kp = (struct commline *)tree3(NIL, yycol, NIL);|' \
+    -e 's|^	kp->cmtext = copystr(token);$|	kp->cmtext = (char *)copystr(token);|' \
+    yycomm.c > z$$ && mv z$$ yycomm.c
+sed \
+    -e 's|^	register int	\*r0 = & OY;$|	register int	*r0 = (int *)\& OY;|' \
+    -e 's|^	register int	\*r1 = & Y;$|	register int	*r1 = (int *)\& Y;|' \
+    yycopy.c > z$$ && mv z$$ yycopy.c
+sed \
+    -e 's|^	cp = skipbl(cp);$|	cp = (char *)skipbl(cp);|' \
+    -e 's|^	filename = savestr(cp);$|	filename = (char *)savestr(cp);|' \
+    yyget.c > z$$ && mv z$$ yyget.c
+sed \
+    -e 's|^			ip = hash(0, 1);$|			ip = (int **)hash(0, 1);|' \
+    -e 's|^			if (\*ip < yykey \|\| \*ip >= lastkey) {$|			if (*ip < (int *)yykey \|\| *ip >= (int *)lastkey) {|' \
+    -e 's|^				yylval = \*ip;$|				yylval = (int)*ip;|' \
+    yylex.c > z$$ && mv z$$ yylex.c
+sed \
+    -e 's|^	\*++yypv = yyval;$|	*++yypv = (int)yyval;|' \
+    -e 's|^			yyval = yylval;$|			yyval = (int *)yylval;|' \
+    -e 's|^			yyval = yypv\[1\];$|			yyval = (int *)yypv[1];|' \
+    yyparse.c > z$$ && mv z$$ yyparse.c
+sed \
+    -e 's|^			cp = tp->Yylval;$|			cp = (char *)tp->Yylval;|' \
+    yyprint.c > z$$ && mv z$$ yyprint.c
+sed \
+    -e 's|^		bp = tree(6, T_BOTTLE, yyline, yylinpt, filename, yyseqid);$|		bp = (struct B *)tree(6, T_BOTTLE, yyline, yylinpt, filename, yyseqid);|' \
+    yyput.c > z$$ && mv z$$ yyput.c
+sed \
+    -e 's|^			ps = loccor(ps, &ntok);$|			ps = (int *)loccor(ps, \&ntok);|' \
+    -e 's|^			ps = loccor(ps, &YC\[origin++\]);$|			ps = (int *)loccor(ps, \&YC[origin++]);|' \
+    yyrecover.c > z$$ && mv z$$ yyrecover.c
+sed \
+    -e 's|^	top = vroot\[2\];$|	top = (int *)vroot[2];|' \
+    -e 's|^	vroot\[2\] = spacep;$|	vroot[2] = (int)spacep;|' \
+    -e 's|^		init = newlist(init);$|		init = (int *)newlist(init);|' \
+    yytree.c > z$$ && mv z$$ yytree.c
+
+# FIVE MORE alloc FAILURE TESTS, the same class as pmon.c above and the same
+# reason the pass cannot see them: `if (cp == -1)' with cp a char * is EQ with
+# one pointer and one integer, which trees.c:1815-1818 gives PUN, and
+# chkpun exempts only an icon whose value is ZERO (trees.c:920-923).  NIL is
+# 0.h:180's `#define NIL 0' so every `== NIL' in these files is exempt and only
+# the -1 tests are not.  A modern compiler emits nothing for a pointer against
+# -1 at any warning level, so these came from grepping every comparison
+# against a non-zero literal in the units the makefile compiles and checking
+# each name's declaration:
+#	hash.c:149    register char *cp   (:118)
+#	nl.c:600,604  char *cp
+#	string.c:43   char *strngp        (:24, `STATIC char *strngp = strings')
+#	tree.c:120    register char *cp
+# The other seven hits are ints -- constcnt, typecnt, varcnt, yychar,
+# OY.Yychar and getline() -- and yyget.c:243 is inside a comment.  The same
+# grep over pi finds nothing but ints and a comment, which is corroborated by
+# pi having compiled clean.
+# Substituting on the expression rather than the whole line keeps this clear of
+# the two indentations nl.c uses and of any quoting.
+cd $SRC/cmd/pascal/pxp || exit 1
+for f in hash.c nl.c tree.c
+do
+	sed 's|cp == -1|cp == (char *)-1|g' $f > z$$ && mv z$$ $f
+done
+sed 's|strngp == -1|strngp == (char *)-1|g' string.c > z$$ && mv z$$ string.c
+
+# pmon.c:174 IS char * AGAINST long *, AND THE PASS WAS DROPPING IT ON PURPOSE.
+# The note on the pi block above says int * against long * is not a combination
+# ccom acts on, and the evidence for that is the machine: it compiled conv.c
+# with `long *lp = dub;' and dub an int *.  That is true of THAT PAIR ONLY --
+# SZLONG and SZINT are equal -- and the filter built from it threw away every
+# diagnostic naming long * at all, including this one, which is a different
+# pair: pmon.c:44 is `STATIC long *zbuf;', 0.h:220 is `char *alloc();', and
+# chkpun compares type codes after DECREF, so CHAR against LONG fires where
+# INT against LONG does not.  Narrowing the filter to the int*/long* pair alone
+# turns up this line and nothing else in either pxp or pi.
+#	cp = zbuf = alloc(i = (zcnt + 1) * sizeof *zbuf);
+# is two assignments, char * = long * and long * = char *, so it takes the same
+# shape as :177 three lines below it: the inner assignment parenthesised, each
+# side cast to what it is declared.
+cd $SRC/cmd/pascal/pxp || exit 1
+sed \
+    -e 's|^	cp = zbuf = alloc(i = (zcnt + 1) \* sizeof \*zbuf);$|	cp = (char *)(zbuf = (long *)alloc(i = (zcnt + 1) * sizeof *zbuf));|' \
+    pmon.c > z$$ && mv z$$ pmon.c
+
+# atrun.c:109 CALLS setupshares AND V10 HAS NO FAIRSHARE.  The line is
+#	(void)setupshares(stbuf.st_uid, (void (*)())0);
+# and libc has no such member -- it was left out by choice, like gets -- so the
+# call goes.  atrun keeps setlogname, setupgroups, setgid and setuid on the
+# lines around it, which are what it needs to become the submitting user.  The
+# whole line is replaced rather than matched on its argument list, because
+# `(void (*)())0' is nothing but sed metacharacters.
+cd $SRC/cmd/at || exit 1
+sed 's|.*setupshares(stbuf.st_uid.*|/* ipnx: no fairshare in v10 -- see PATCHES.md */|' atrun.c > a$$ && mv a$$ atrun.c
+
+# groups.c:10 IS `#include <trace.h>' AND THERE IS NO SUCH HEADER.  The only
+# trace.h on the tapes is cmd/trace's, which defines INP, DFL, SPN and the rest
+# of that program's opcodes and has nothing to do with this; satisfying the
+# include with it leaves `Undefined: _Trace' at the link.  What groups.c wants
+# is the tracing macro: its calls are groups.c:98,105,115
+#	Trace(("prgr(%d), gid %d\n", n-1, groups[n-1]));
+# -- the double-parenthesis form, which exists only for a macro that expands
+# either to a printf-style call or to nothing.  groups.c:18 has the flag it
+# would test, Traceflag, set by -t.  With tracing compiled out the macro is
+# empty, and that is what this substitutes.  charge.c includes it too and is
+# not built for other reasons.
+cd $SRC/cmd || exit 1
+sed 's|^#include[ 	]*<trace.h>|#define Trace(x)|' groups.c > t$$ && mv t$$ groups.c
+
+# at/makefile:8 is `cc -Od2 -o at at.c' with the flag written into the recipe
+# rather than taken from CFLAGS, so it cannot be overridden on the command line
+# like dc, numdate, ul, pp, compact and style are.  -Od2 reaches as as -d2,
+# word displacements, and at.o overflows them.
+cd $SRC/cmd/at || exit 1
+sed 's|cc -Od2 -o at at.c|cc -O -o at at.c|' makefile > a$$ && mv a$$ makefile
+
+# THERE IS NO chgrp ON THIS SYSTEM.  No cmd/chgrp.c, no chgrp in binfiles or
+# etcfiles, no manual page: v10 sets both halves with /etc/chown, which takes
+# `owner,group'.  The DWB PostScript package calls chgrp beside every chown in
+# twenty-six of its .mk files and make stops at the first one, so each is turned
+# into the shell's null command.  chown GOES THE SAME WAY: it is /etc/chown, and
+# make answers `Make: Cannot load chown.  Stop.' -- it execs the command itself
+# rather than handing the line to a shell that would search /etc.  THE LOOP IS
+# OVER EVERY .mk AND NOT A grep: v10's grep is the V7 matcher and has no \|
+# alternation, so `grep -l 'chgrp\|chown'' matched nothing and the substitution
+# never ran.  sed on a file with neither is a no-op.
+cd $SRC/cmd/postscript || exit 1
+for f in */*.mk
+do
+	sed -e 's|chgrp |: |g' -e 's|chown |: |g' $f > c$$ && mv c$$ $f
+done
+
+# getpw IS NOT IN THIS LIBC EITHER, for the same reason and with the same
+# evidence: no source, no member, and getpwent(3) is the only password manual
+# page -- "getpwent, getpwuid, getpwnam, setpwent, endpwent, pwdecode".  Only
+# getuid.c calls it, twice, and both times it wants the raw /etc/passwd line,
+# because everything downstream is field(buf, n, ':').  So getpw is supplied
+# here rather than the callers rewritten: getpwuid gives the struct and this
+# puts the seven fields back into the line they came from, in the order
+# pwd.h declares them.  It is NOT static -- getuid.c calls it before this
+# definition and K&R defaults an undeclared function to extern int, which a
+# later `static' would contradict.  The marker in the comment is the guard.
+cd $SRC/cmd || exit 1
+if grep 'ipnx getpw' getuid.c > /dev/null
+then	:
+else
+	echo '#include <pwd.h>' > g$$
+	cat getuid.c >> g$$
+	echo '/* ipnx getpw -- see PATCHES.md */' >> g$$
+	echo 'getpw(u, b) char *b; {' >> g$$
+	echo '	struct passwd *p;' >> g$$
+	echo '	if ((p = getpwuid(u)) == 0) return 1;' >> g$$
+	echo '	sprintf(b, "%s:%s:%d:%d:%s:%s:%s", p->pw_name, p->pw_passwd,' >> g$$
+	echo '		p->pw_uid, p->pw_gid, p->pw_gecos, p->pw_dir, p->pw_shell);' >> g$$
+	echo '	return 0; }' >> g$$
+	mv g$$ getuid.c
+fi
+
 # The libc repairs stage 2 made, parked in work/v10-preserved and reapplied here.
 # PATCHES.md, beside this script, has a section per file.  Every one is "a 1993
 # ANSI member, converted to K&R" -- not handed to lcc, because lcc's prebuilt
@@ -464,3 +2111,93 @@ then	:
 else
 	sed 's|\$L(stream\.x)|$L(stream.x) $L(spipe.x)|' mkfile > m$$ && mv m$$ mkfile
 fi
+
+# library/makefile:64,65,68 call $(INS) with -m MODE -f DIR -- /etc/install
+# is v8/install.sh (this file's own $ETC/install rule), whose whole argument
+# parser is `case $1 in -s) ...;; -c) ...;; esac': -m matches neither case,
+# so it falls through and runs `mv -m 444 ...', reported back exactly as
+# `mv: cannot access -m'.  No V10 tape carries an install(1) source to give
+# -m/-f their intended meaning, so the recipe is rewritten with cp and
+# chmod, which do what -m 444 and -m 555 asked for without teaching a flag
+# to a script that was never V10's own.
+cd $SRC/cmd/library || exit 1
+# An earlier pass of this file sed'd `makefile' here, which does not exist --
+# sed then read its STDIN and the mv left a junk lowercase makefile behind.
+# v10's make reads makefile before Makefile (main.c:219-220), so that file
+# hides the real one and every target reads as unknown.  It goes.  The test is
+# on its CONTENT, not its name: on a case-folding filesystem the two names are
+# one file, and an unguarded rm would take the real one with it.
+if test -f makefile && grep INSLIB makefile > /dev/null
+then	:
+else	rm -f makefile
+fi
+sed 's|$(INS) -m 444 -f $(INSLIB) $(TESTDIR)/$$i|cp $(TESTDIR)/$$i $(INSLIB)/$$i \&\& chmod 444 $(INSLIB)/$$i|' Makefile > l$$ && mv l$$ Makefile
+sed 's|$(INS) -m 555 -f $(INSDIR) $(TESTDIR)/library|cp $(TESTDIR)/library $(INSDIR)/library \&\& chmod 555 $(INSDIR)/library|' Makefile > l$$ && mv l$$ Makefile
+sed 's|$(INS) -f $(MAN) -m 444 library.1|cp library.1 $(MAN)/library.1 \&\& chmod 444 $(MAN)/library.1|' Makefile > l$$ && mv l$$ Makefile
+# Its mkdir branch calls chown and chgrp too (Makefile:60-61), which this
+# system has neither of -- the same substitution as the PostScript and pascal
+# notes, and the reason is recorded there.
+sed -e 's|chgrp |: |g' -e 's|chown |: |g' Makefile > l$$ && mv l$$ Makefile
+
+# xref/lib.a HOLDS PDP-11 OBJECTS.  xref/divide.s is PDP-11 assembly (`jsr
+# r5,csv' / `div r3,r0'), and V10's VAX ld reports its archived form as
+# "lib.a(ctype.o): too small (old format .o?)" -- the tape's lib.a is a
+# PDP-11-era prebuilt, not something this VAX ld can use.  ctype.c, input.c,
+# output.c and string.c are present as source and compile clean; only
+# divide.s has no VAX equivalent.  output.c:198's only call is
+# `divide(&n, base)' inside printn's base-conversion loop, peeling one
+# remainder digit off n (an EXPR, defs.h:51's `long') per pass -- exactly
+# what C's / and % already do on a machine with hardware long division, so
+# a three-line C replacement stands in for the PDP-11 routine.  xrefa and
+# xrefb then link the five objects directly and lib.a goes unused.
+cd $SRC/cmd/xref || exit 1
+# An earlier pass of this file sed'd `makefile' here, which does not exist --
+# sed then read its STDIN and the mv left a junk lowercase makefile behind.
+# v10's make reads makefile before Makefile (main.c:219-220), so that file
+# hides the real one and every target reads as unknown.  It goes.  The test is
+# on its CONTENT, not its name: on a case-folding filesystem the two names are
+# one file, and an unguarded rm would take the real one with it.
+if test -f makefile && grep xrefa makefile > /dev/null
+then	:
+else	rm -f makefile
+fi
+if grep 'ipnx divide' divide.c > /dev/null 2>&1
+then	:
+else
+	echo 'divide(np, base)' > d$$
+	echo 'long *np;' >> d$$
+	echo '{	/* ipnx divide -- see PATCHES.md */' >> d$$
+	echo '	int r = *np % base;' >> d$$
+	echo '	*np /= base;' >> d$$
+	echo '	return r;' >> d$$
+	echo '}' >> d$$
+	mv d$$ divide.c
+fi
+# ctype.c:4 is `char	_ctype[] {' -- an initialiser with no `=', the same
+# 1970s spelling cref is full of and the same production cgram.y:396-406 has
+# not got.  It is the only one in the directory, and there are no `=+' style
+# operators here either.
+sed 's|^char	_ctype\[\] {$|char	_ctype[] = {|' ctype.c > c$$ && mv c$$ ctype.c
+
+# input.c:41 DECLARES initf's ARGUMENT A FILE, AND IT IS A FILE DESCRIPTOR.
+# input.h:8 is `STRUCT fileblk *FILE', so the parameter is a pointer, while
+# :22 makes the field it is assigned to `UFD fdes' and defs.h:63 is
+# `TYPE int UFD' -- so input.c:45's `f->fdes=fd' is an int taking a pointer,
+# which is the one `illegal pointer/integer combination'.  The only call is
+# xrefb.c:25, `initf(0)', a descriptor and not a stream.  UFD is the type the
+# field already has.
+sed 's|^	FILE		fd;$|	UFD		fd;|' input.c > i$$ && mv i$$ input.c
+
+# output.c:47-49 declares print's second argument `INT value', and its body
+# reads value.p_expr, value.p_int, value.p_char, value.p_string and
+# value.p_real -- output.h:5-13 is `UNION _printf PRINTF' over exactly those
+# six members.  An int has no members, which is the five
+# `p_xxx needs reference to struct/union'.  PRINTF is the type it is used as.
+sed -e 's|^	INT		value;$|	PRINTF		value;|' \
+    -e 's|^			s=ecvt(value.p_real, prec, \&decpt, \&n);$|			s=(STRING)ecvt(value.p_real, prec, \&decpt, \&n);|' \
+    -e 's|^	REG STRING	timeptr = ctime(\&tvec);$|	REG STRING	timeptr = (STRING)ctime(\&tvec);|' output.c > o$$ && mv o$$ output.c
+
+sed 's|^xrefa:	xrefa.o lib.a$|xrefa:	xrefa.o ctype.o input.o output.o string.o divide.o|' Makefile > m$$ && mv m$$ Makefile
+sed 's|^	cc -o xrefa xrefa.o -ll lib.a$|	cc -o xrefa xrefa.o ctype.o input.o output.o string.o divide.o -ll|' Makefile > m$$ && mv m$$ Makefile
+sed 's|^xrefb:	xrefb.o lib.a$|xrefb:	xrefb.o ctype.o input.o output.o string.o divide.o|' Makefile > m$$ && mv m$$ Makefile
+sed 's|^	cc -o xrefb xrefb.o lib.a$|	cc -o xrefb xrefb.o ctype.o input.o output.o string.o divide.o|' Makefile > m$$ && mv m$$ Makefile
