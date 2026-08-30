@@ -22,9 +22,9 @@ $L(%.o):	%.c
 	$CC -c $CFLAGS $stem.c && $AR r $L $stem.o && rm -f $stem.o
 $ALL libfb:	/usr/include/picfile.h
 clean:
-	rm -f core *.o
+	rm -f core *.[oO]
 touch:
-	ar x $L && touch *.o && ar u $L && ranlib $L && rm -f *.o
+	ar x $L && touch *.[oO] && ar u $L && ranlib $L && rm -f *.[oO]
 listing:
 	pr *.h *.c | lp -dpsu
 install:

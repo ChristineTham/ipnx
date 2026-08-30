@@ -1,0 +1,27 @@
+ALL = wdefine ldefine odefine colthlook colthread slanglook  \
+	oedread namelook namelook1 nameread
+
+all:V:	${ALL}
+	:
+
+install: ${ALL}
+	strip ${ALL}
+	cp ${ALL} /usr/lib/dict
+	cp dict.sh /usr/bin/dict
+
+clean:
+	rm -f *.o ${ALL} lex.yy.c
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+oedread.o: oedread.l
+	lex oedread.l && cc -c lex.yy.c && mv lex.yy.o oedread.o; rm -f lex.yy.c
+
+oedread: oedread.o
+	cc -o oedread oedread.o -ll
+
+'^([^./]+)$':R:	'\1'.c
+	cc -o $stem1 $stem1.c

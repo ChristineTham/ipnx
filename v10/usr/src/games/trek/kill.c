@@ -10,15 +10,15 @@ int	ix, iy;
 	register int		i;
 
 	printf("   *** Klingon at %d,%d destroyed ***\n", ix, iy);
-	Status.kling =- 1;
+	Status.kling -= 1;
 	Sect[ix][iy] = EMPTY;
-	Quad[Quadx][Quady].qkling =- 1;
-	Quad[Quadx][Quady].scanned =- 100;
-	Game.gkillk =+ 1;
+	Quad[Quadx][Quady].qkling -= 1;
+	Quad[Quadx][Quady].scanned -= 100;
+	Game.gkillk += 1;
 	for (i = 0; i < Nkling; i++)
 		if (ix == Kling[i].x && iy == Kling[i].y)
 		{
-			Nkling =- 1;
+			Nkling -= 1;
 			for (; i < Nkling; i++)
 				bmove(&Kling[i+1], &Kling[i], sizeof Kling[i]);
 			break;
@@ -44,7 +44,7 @@ int	qx, qy;
 	if (q->bases <= 0)
 		return;
 	q->bases = 0;
-	Status.bases =- 1;
+	Status.bases -= 1;
 	for (b = Base; ; b++)
 		if (qx == b->x && qy == b->y)
 			break;
@@ -62,7 +62,7 @@ int	qx, qy;
 	if(!Damage[SSRADIO]) {
 		/* then update starchart */
 		if (q->scanned < 1000)
-			q->scanned =- 10;
+			q->scanned -= 10;
 		else
 			if (q->scanned > 1000)
 				q->scanned = -1;
@@ -92,7 +92,7 @@ int	f;	/* f != 0 -- this quad;  f < 0 -- Enterprise's fault */
 		printf("Inhabited starsystem %s at %d,%d destroyed\n",
 			Systemname[i], x, y);
 		if (f < 0)
-			Game.killinhab =+ 1;
+			Game.killinhab += 1;
 	}
 	else
 	{
@@ -108,7 +108,7 @@ int	f;	/* f != 0 -- this quad;  f < 0 -- Enterprise's fault */
 		unschedule(e);
 	}
 	q->systemname = 0;
-	q->stars =- 1;
+	q->stars -= 1;
 }
 
 

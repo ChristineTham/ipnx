@@ -11,7 +11,7 @@ cyntax: $COBJS
 	cyntax -Vlogconsole:1 -Vlogevent:1 $COBJS && touch cyntax
 
 $L: $OBJS
-	ar rv $L *.o && rm *.o
+	ar rv $L *.[oO] && rm *.[oO]
 	ranlib $L
 
 clean:V:

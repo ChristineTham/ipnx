@@ -72,7 +72,7 @@ int *i;
 	FI
 	IF digit(c)
 	THEN	r = 0;
-		REP r =* 10; r =+ c-'0'; PER digit(c=readchar()) DONE
+		REP r *= 10; r += c-'0'; PER digit(c=readchar()) DONE
 		IF minus THEN r=(-r); FI
 		*i = r; backspace();
 		rc = 1;
@@ -100,15 +100,15 @@ float *a;
 	r = 0; rc = 0;
 	IF digit(c)
 	THEN	rc = 1;
-		REP r =* 10; r =+ c-'0'; PER digit(c=readchar()) DONE
+		REP r *= 10; r += c-'0'; PER digit(c=readchar()) DONE
 	FI
 	fr = 0;
 	IF c=='.'
 	THEN	WHILE digit(c=readchar())
-		DO r =* 10; r =+ c-'0'; fr++; OD
+		DO r *= 10; r += c-'0'; fr++; OD
 		IF fr THEN rc = 1; FI
 	FI
-	WHILE fr-- DO r =/ 10; OD
+	WHILE fr-- DO r /= 10; OD
 	IF minus THEN r = (-r); FI
 	IF rc THEN backspace(); FI
 	*a = r;

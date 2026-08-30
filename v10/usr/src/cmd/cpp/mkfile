@@ -28,4 +28,4 @@ install:	cpp
 	strip /lib/cpp
 
 clean:
-	rm -f cpp y.tab.c y.tab.h cpy.c rodata* *.o
+	rm -f cpp y.tab.c y.tab.h cpy.c rodata* *.[oO]

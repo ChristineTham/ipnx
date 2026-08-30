@@ -32,7 +32,7 @@ int	fl;
 			continue;
 		/* compute distance to move */
 		motion = ranf(75) - 25;
-		motion =* k->avgdist * Param.movefac[2 * Move.newquad + fl];
+		motion *= k->avgdist * Param.movefac[2 * Move.newquad + fl];
 		/* compute direction */
 		dx = Sectx - k->x + ranf(3) - 1;
 		dy = Secty - k->y + ranf(3) - 1;
@@ -63,19 +63,19 @@ int	fl;
 				qx = Quadx;
 				qy = Quady;
 				if (lookx < 0)
-					qx =- 1;
+					qx -= 1;
 				else
 					if (lookx >= NSECTS)
-						qx =+ 1;
+						qx += 1;
 				if (looky < 0)
-					qy =- 1;
+					qy -= 1;
 				else
 					if (looky >= NSECTS)
-						qy =+ 1;
+						qy += 1;
 				if(movkling(Quadx,Quady,qx,qy)) {
 					printf("Klingon at %d,%d escapes to quadrant %d,%d\n",
 						k->x, k->y, qx, qy);
-					Nkling =- 1;
+					Nkling -= 1;
 					Sect[k->x][k->y] = EMPTY;
 					bmove(&Kling[Nkling], k, sizeof *k);
 				}
@@ -124,11 +124,11 @@ int	qx, qy;
 		return(0);
 	qs = Quad[qx][qy].scanned;
 	if (qs >= 0 && qs < 1000)
-		Quad[qx][qy].scanned =+ 100;
+		Quad[qx][qy].scanned += 100;
 	qs = Quad[fqx][fqy].scanned;
 	if (qs >= 0 && qs < 1000)
-		Quad[fqx][fqy].scanned =- 100;
-	Quad[fqx][fqy].qkling =- 1;
-	Quad[qx][qy].qkling =+ 1;
+		Quad[fqx][fqy].scanned -= 100;
+	Quad[fqx][fqy].qkling -= 1;
+	Quad[qx][qy].qkling += 1;
 	return(1);
 }

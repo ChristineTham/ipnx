@@ -15,7 +15,7 @@ pupu:	$OBJDIR $OBJPUPU
 	cc $CFLAGS $OBJPUPU $OBJDIR $LIBS -o pupu
 
 clean:
-	rm -f *.o pupu dkcc
+	rm -f *.[oO] pupu dkcc
 
 install:	ALL
 	rm -f $DEST/dkcc $DEST/npush $DEST/npull $PUPU

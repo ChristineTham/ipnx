@@ -5,7 +5,7 @@
 
 #include <dk.h>
 #include <dkmgr.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
 #include <stdio.h>
 #include <errno.h>
 

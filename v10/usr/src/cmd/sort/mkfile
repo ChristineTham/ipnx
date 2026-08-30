@@ -22,5 +22,5 @@ test: checksum
 	$CC $CFLAGS -c $stem.c
 
 clean:V:
-	rm -f *.o sort in in1 in2 out xx xsort ysort *.out 
+	rm -f *.[oO] sort in in1 in2 out xx xsort ysort *.[oO]ut 
 	rm -f unwritablefile linecount -k - -o checksum* xx.c

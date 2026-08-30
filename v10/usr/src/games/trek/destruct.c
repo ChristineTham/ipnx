@@ -47,7 +47,7 @@ destruct()
 		if (Kling[i].power * Kling[i].dist <= zap)
 			killk(Kling[i].x, Kling[i].y);
 		else
-			i =+ 1;
+			i += 1;
 	}
 	lose(L_DSTRCT);
 }

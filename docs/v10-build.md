@@ -423,63 +423,277 @@ and `plot.c.a`.
 *Proves it:* a full `ipnxbuild` from a swept tree produces the same binaries, and `mk clean`
 twice in a row is quiet. *Unblocks:* phases 2 and 3.
 
-### Phase 2 — one name per path
+### Phase 2 — one name per path — *decided, mechanised, and the rule installed in the tool*
 
-Apply Rule 0. The ~19 real-code cases individually; the rest mechanically. Record the table
-where `mkv10` will read it. Then `v10-tree.py`'s computed renaming should find nothing to do.
+Rule 0: the survivor is whatever the directory's own build file names — **not** whatever is
+lowercase. Lowercase-wins was wrong twice over: `ostdio/olibcmkfile:123` is
+`doprnt.o: stdio/doprnt.S`, so it renamed the one spelling the build reads; and
+`cfront/libstring/makefile` names `String.h` seven times and `string.h` never.
 
-*Proves it:* `git ls-files v10 | grep -c u_` is 0, and a case-insensitive checkout of `v10/`
-has the same file count as `/usr/src`. *Unblocks:* phase 5, and it retires the whole class of
-`patch` block that repairs a name this project's own tooling changed.
+**Done.** All 229 collisions decided from primary sources, and the table is
+[`v10/usr/src/build/casenames`](../v10/usr/src/build/casenames) — rewritten as a plain mapping
+(`NAME <tape path> <our path>`, `DROP <tape path>`; 162 and 102 records, no path in both) that
+**`mkv10` applies when it lays the tapes down**. That is the mechanism the phase needed: the
+renaming is now declared in one file, applied by one command, and reversible.
 
-### Phase 3 — dependencies
+- 11 deletions: six zero-byte `ipc/bin` merge artefacts, `sail`'s hard link,
+  `libstring/string.h` which no source includes and no build file names, and three files the
+  build **regenerates from the sibling they collide with** (`compress/makefile:10-11`,
+  `pc0/MKFILE:62-63`, `px/makefile:37-39`).
+- 91 cyntax `.O` outputs deleted; the three `libfw.a` members kept, because they **differ**
+  despite identical sizes and `ORDER` names both.
+- 4 swaps where the build names the capitalised spelling; 3 renames with their build-file and
+  `#include` edits (`Mazewar.c`→`rmtmazewar.c`, `README`→`README.f2c`, `hash.h`→`odihash.h`).
+- `olibcmkfile:276` deleted: mk **requires** a prerequisite named by a recipe-less duplicate
+  rule (measured), so that boilerplate was load-bearing rather than dead, and `:123` supersedes
+  it.
 
-Delete `build/installed` and every `:Psh $GEN/installed:` with it. Turn `.patched` and
-`.ranlib` into ordinary targets with `patch` as a prerequisite. Make the install-out step
-unconditional. Delegate each package's up-to-date decision to its own build file.
+**`grep -c u_` is not 0, and every one of the 159 that remain is inert.** Checked, not assumed:
+nothing in the tree includes `DB.h` (23 files include `db.h`); `libstring/Regexp.c:1` includes
+`"Regexp.h"` and resolves to its own local copy, not the include tree's; the 29 `String.h`
+includes are libstring's own and now resolve to the file that kept the name. And the one class
+that genuinely **cannot** be renamed — the 34 troff font descriptions, where `devpost/Hb` is
+`name Hb / Helvetica-Narrow-Bold` against `HB`'s `Helvetica-Bold` and troff resolves a `.ft`
+request to a file of that name at run time — **reaches no install rule at all**: the mkfile
+installs no postscript fonts. The breakage is latent, and the fix when a rule is written is to
+install under the tape's name, which is what the table is for.
 
-*Proves it:* touch one source file, run `ipnxbuild`, and exactly the affected objects rebuild
-— which no run of this build system has ever done. And `rm -f .patched` never appears again.
+**Rule 0 now lives in `tools/v10-tree.py`, not only in the table.** `:239` was
+`keep = lower[0] if lower else sorted(spellings)[0]` — all-lowercase-wins — so a re-bootstrap
+would have quietly undone the four swaps and renamed `doprnt.S` back to the spelling
+`olibcmkfile:123` does not read. It now consults a `CAPWINS` table first, four entries, each
+carrying its evidence on the line. Lowercase-wins remains the default because it is right for
+almost every collision; Rule 0 only overrides it where a build file names the capitalised
+spelling.
 
-### Phase 4 — `/usr/src` as the unit
+*Proved by the tool itself.* `python3 tools/v10-tree.py` reconstructs from the tapes and
+compares against `v10superset`, and across **28,697 files it now reports exactly eight
+differences** — `String.h`/`u_string.h`, `hash.H`/`u_hash.h`, `Qsnap.c`/`u_qsnap.c`,
+`doprnt.S`/`u_doprnt.s`. Those are the four swaps and nothing else: the corpus still holds what
+lowercase-wins produced, because it has not been re-bootstrapped, and `--bootstrap` deletes its
+output tree so it is not something to run in passing.
 
-Move `include`, `man` and `sys` into the source tree and install them out. Retire
-`mktape:79`'s `mv /v10/usr/src/sys /v10/usr/sys` — the tape's shape stands and the build does
-the moving.
+**`core.ignorecase` is `true` here**, so git records a case-only rename under the *old* name:
+after `mv u_String.h String.h` the index still says `string.h` and reports a content change.
+The four swaps need `git mv -f` or they commit the new bytes under the names this phase removes.
 
-*Proves it:* a disk holding only `/usr/src` plus the boot toolchain builds to completion.
-*Unblocks:* phase 5.
+### Phase 3 — dependencies — *done, and proved on the machine*
 
-### Phase 5 — the archives and the verbs
+The predicate is gone (424 `:Psh $GEN/installed:` and the script), the split holds (306
+build/install pairs), and the phase's stated proof has now been **run on the machine**: touch
+`cmd/basename.c`, run `ipnxbuild`, and the log carries exactly one compile —
+`cc -Od2 -o basename basename.c` — with everything else `up to date`. A second untouched run
+exits 0. No run of the old build system ever did either.
 
-`mkv10` (reading the phase-2 table), `mkipnx`, `taripnx`, `mkimage` on the new flow,
-`ipnx.tar` at `/usr/ipnx/`. Retire `mkbuild` and `mktape`.
+Getting there surfaced four behaviours of V10's own mk, each measured on the machine and each
+now recorded where it is worked around:
 
-*Proves it:* `mkv10` twice produces byte-identical `v10.tar`; `mkipnx v10.tar` then
-`ipnxbuild` gives a working machine; `mkimage` makes a disk from a blank ra1 without a
-hand-typed step.
+- **A multi-target invocation mis-handles a shared missing intermediate.** `mk tek hplot
+  trplot penplot` with two targets already present links `trplot` against a `driver.o` nothing
+  built. Reproduced against the host build of mk with the same command. Every multi-target
+  child call in the mkfile is now one `mk` per target.
+- **A wide virtual aggregate dies at its first fork.** `build:V:` over 300 artefacts — or over
+  four virtual quarters — fails with `mk fork: Not enough memory`; each quarter alone runs to
+  completion. `ipnxbuild` drives four quarters as four processes.
+- **The arithmetic behind that is the swap slice.** `ra.c`'s partition `b` is 20,480 blocks —
+  10 MB — and V10 reserves swap eagerly per process. The glob prerequisites an earlier attempt
+  added (every package's `*.c` as prereqs) fattened mk's graph enough that child forks began
+  failing. The globs are gone; each package artefact now depends on a **virtual probe** that
+  runs the package's own mk — the child owns its source dependencies, is one fork and a few
+  stats when clean, and touches the artefact only when something was stale.
+- **mk stats a node once.** A file the probe's child creates is still `absent` to the parent,
+  so every probed artefact carries a `test -f` recipe: mk re-stats the target after it runs,
+  and a package that failed to produce its artefact becomes one honest line.
 
-### Phase 6 — mk everywhere
+The remaining failures in a full `ipnxbuild` are **14 packages, all source- or
+toolchain-level** — at, awk, cref, eqn, neqn, grap, pic, gre, qsnap, sign, struct, spell,
+worm, libdmalloc — the same class of per-package porting the pascal work was, and none of them
+a fault of the build system. (worm's was the one true self-reference in the tree:
+`CFLAGS="$CFLAGS -A"`, which make resolved from the environment and mk expands for ever; fixed
+in its mkfile.)
 
-344 conversions. `$(VAR)`→`${VAR}` is 219 files and mechanical; the 81 that need real editing
-are identifiable up front. Revive the five mkfiles that are newer than their makefile, write
-new ones for `eqn`, `f2c` and `cbt`, stamp each superseded makefile `HISTORICAL` as part of
-its own conversion.
+### Phase 4 — `/usr/src` as the unit — *reversed by decision*
 
-*Proves it:* the mkfile drives everything with `mk` and no `make`, and the four `patch` blocks
-that exist for make's exec behaviour are deleted. *Unblocks:* the v11 port system.
+Run on the machine and then **reversed**: once `taripnx` existed, the archive of record had to
+carry the whole of `/usr` — `blit`, `jerq`, `630`, `maps`, `vol2` live beside `src` and were
+falling out of every tar of `src` alone — so `ipnx.tar` became **a tar of `/usr`**, and `sys`,
+`man` and `include` moved back out of the source tree to live at `/usr` directly. The `$INC`
+and `$MAN` install rules dissolved with the move: those trees now live at their installed
+paths. `build/usrtrees` is the single statement of the shape — `taripnx` tars exactly its
+list, `mkv10`/`mkipnx`/`mkimage` build to it and verify against it — because a component list
+that appears twice will disagree. `bin` and `lib` are absent from the list deliberately:
+they are product, not shape, installed onto a disk by a running machine and never carried.
 
-Phase 6 is the largest and the least urgent, and it is the only one that can run in parallel
-with the others — its per-directory work does not touch what phases 3 to 5 change.
+What follows below in this section is the record of the earlier direction — kept because it
+ran and its measurements are real, but every "under `/usr/src`" statement in it is the state
+the reversal undid.
 
-## What this does not settle
+`include` (338 files), `man` (1,523) and `sys` (1,138) were under `/usr/src`, and the build
+installed them out. `mktape`'s `mv /v10/usr/src/sys /v10/usr/sys` was retired, and is back
+in spirit: `mkv10` performs the move once at assembly, and a machine already carrying the
+old layout is migrated by `updatebuild` — `sys` moved out by one rename, `man` replaced,
+`include` **merged file-by-file, only-missing** (the installed tree holds lcc's headers,
+`stdlib.h` and every in-place repair; an `rm -r` here once took a clone's compilers down).
 
-- **Whether `ipnxbuild` refuses to run with `/n/macos` unmounted, or falls back to the
-  machine's own `/usr/src/build`.** Refusing means never building stale; falling back means
-  still working with the share down.
-- **`cbt`/`libcbt`** — same-day mkfiles with opposite verdicts, needing a read rather than a
-  rule.
-- **The `Readme`/`readme` class** (58 paths) — how many are the same text, which only a diff
-  answers.
-- **Whether the 320 directories with no mkfile convert in one pass or per package**, and in
-  what order relative to the case work. Both touch the same files.
+**The tape's shape was never the installed shape**, which is what made this the right move
+rather than a rearrangement. `mktape:85` justified the move with "the kernel is /usr/sys on a
+running machine" — true, and not what the tape ships: it ships `src/sys`, and the mv existed
+only to undo that. The include tape was already untarred straight into `/v10/usr/src/include`
+because `libc/mkfile:150,155,205` name `/usr/include/libc.h` as an absolute prerequisite, so
+that tree was source-in-`/usr/src`-installed-out from the start. `man` was neither: nothing
+installed it, because stage 8 never ran.
+
+- `mkfile:128` is `SYS=$SRC/sys`; mk resolves `/unix` to depend on
+  `/usr/src/sys/astro/ipnx-v10.u` and the kernel rules to `/usr/src/sys/lib/*`.
+- `$MAN` is a new sentinel (`$ROOT/usr/man/man1/a.out`) with a rule modelled on `$INC`'s —
+  tar out, tar in, no pipe, for the reason `$INC`'s comment already gives.
+- `world` lists `$MAN`. 745 rules and 5 metarules by mk's count.
+- `tools/v10-dist.py`'s placement table now says `usr/src/{man,sys,include}` with the tape
+  evidence for each, so a re-run does not undo this; `tools/v10-proto.py` reads
+  `v10/usr/src/sys/lib/tab`. `tools/v10-check.py` still reports VALID.
+
+*Run on the machine:* starting from an image still carrying the old layout, `updatebuild`
+migrated it — `mv /usr/sys /usr/src/sys` (one rename, same filesystem), `/usr/src/man` filled
+file-by-file from the repository (tar dies with a bus error when its working directory is on
+the share; ls and cp are how every build reads its source), 432 tree build files shipped from
+the manifest — and the next `ipnxbuild` built through all four quarters and exited 0, kernel
+included: `ipnx-v10.u`, from the migrated tree, with spipe in io.a.
+That is a guest run.
+
+`CLAUDE.md` describes `v10/usr/sys` as the kernel's home, which the reversal made true again.
+
+*After the reversal, on the machine:* the ship channels themselves needed the same audit as
+the shape. updatebuild's mkfile loop read the **guest's** manifest (refreshed only by the
+end-of-run handoff, so new rows never shipped) and gated on `/usr/src/`dirname`` while rows
+had become /usr-relative — every row silently skipped. All three lists (mkfiles, casefix,
+arcfix) are now read from `$REPO` directly. The tar of `/usr` also widened the case and
+archive discipline to the beside-src trees — blit, jerq, 630, vol2, include — 29 archive
+rows and 17 case rows classified from the repository and the tape manifests
+(docs/v10-log/2026-08-29.md has the evidence); PDP11's four generated mkfiles were removed
+as inventions, that tree building with `make` from its own Makefiles as it always did.
+
+### Phase 5 — the archives and the verbs — *done*
+
+**Three archives, each answering a different question.** `mkv10` replaces `mktape`: the six
+tapes in, `v10.tar` out — pristine, one name per path, nothing of ours in it — so a question
+about the tapes no longer means fetching 430 MB and blanking ra1. `mkipnx` is that plus
+`/usr/src/build`, written as `ipnxorig.tar`: the starting point for a build from nothing.
+`taripnx` replaces the old `mkipnx` and archives a machine that has already built. Only the
+last one contains binaries.
+
+`taripnx` archives **`/usr/src` alone** — which Phase 4 is what made possible. The old script
+had to take all of `/usr`, and said why: "a disk that gets only src cannot build: it has no
+`/usr/include`, so `libc/mkfile:150`'s absolute `/usr/include/libc.h` cannot be resolved".
+With include, man and sys inside `/usr/src` and installed out, that reason is gone.
+`/usr/bin` and `/usr/lib` are build products and are not archived.
+
+`mkv10` is **the only command that reads `casenames`**, and the table was rewritten as a plain
+mapping derived from the tree rather than from the decisions: `NAME <tape path> <our path>`,
+`DROP <tape path>`, 162 and 102 records, no path in both. The earlier version described the
+tree as it was *before* the swaps were applied, which would have renamed `doprnt.S` back to
+the spelling the build does not read.
+
+`ipnx.tar` and `v10.tar` live at `/usr/ipnx/`: outside the tree `taripnx` walks, and not part
+of the build system, which they are not. `mkimage` reads from there and gives the new disk its
+own copy in the same place. The bootstrap is now `mkimage, mkv10, mkipnx, mkimage`.
+
+**`mkbuild` is kept deliberately**, against the plan's own wording. It is the one file list —
+`updatebuild` and `mkipnx` both call it rather than restating eighteen names and nine
+subdirectories, and a component list that appears twice will disagree. It did: adding
+`updatebuild` to the repository copied everything except `updatebuild`.
+
+*Retired:* `mktape`, and the old `mkipnx`. No reference to either survives in the build kit —
+including the three in `patch`, one of which had the `sys` move as its stated premise.
+
+### Phase 6 — mk everywhere — *497 of 503 converted; the 6 left hold no build commands*
+
+**The conversion is a correctness change, not a style one**, and every item below was
+established by running mk, not by reading it. Nine make constructs differ, and six are
+*silently* wrong — a file left unconverted builds and looks fine:
+
+- **`$(VAR)` is shell command substitution.** mk's `varsub` takes `${VAR}` and bare `$VAR` only
+  (`quote.c:202-205`), so `$(VAR)` reaches the recipe's `/bin/sh` intact and the shell tries to
+  *execute* `VAR`.
+- **`.c.o:` is an ordinary target to mk.** A suffix rule left alone does not fail — mk quietly
+  uses its own built-in `%.o: %.c`. The recipe that ran was `cc -c x.c`, not the file's own.
+- **A rule colon must be followed by space, tab, or an attribute list** (`parse.c:139`). make
+  accepts `lalex.o:lalex.c`; mk calls `l` an unknown attribute. mk's attribute set is
+  `< D N P Q R U V`, so `:&` — another dialect's — goes too.
+- **An assignment whose value contains `=` is a syntax error**, reported on the *following*
+  line. `PPFLAGS=-DDFSIZ=8192`. The inner `=` is escaped.
+- **A column-0 comment inside a recipe ends the recipe**, orphaning every line after it; an
+  indented one does not.
+- **A blank line before a recipe line ends the recipe** — and the lookahead has to skip
+  comments, because `basic/basic` writes `<tab>cmd / blank / #banner / <tab>cmd`.
+- mk honours neither `-` nor `@` — and stripping one tab before looking for them misses every
+  recipe indented with two, which is how `basic/basic` writes its ed scripts.
+- `$@`/`$<`/`$*`/`$?` → `$target`/`$prereq`/`$stem`/`$newprereq`.
+- `include f` → `<f`, **and the include target itself**: `include ../tst/makefile` became
+  `<../tst/makefile`, pointing mk at a file still written in make, which is why six `lcc`
+  directories failed on their parent rather than on themselves.
+
+**Two hazards checked; one absent, one real.** mk joins every recipe line into a *single* shell
+invocation where make runs each in its own, so a bare `cd sub` alone on a line means opposite
+things — no converted mkfile has one. But `"` is a quote character to mk's parser, so `\"`
+loses its backslash: `blit/src/proof/host` and `jerq/src/proof/host` build four `-D` whose
+values are C **string literals**, and cc would have received an expression. Those two got
+hand-written mkfiles that move the quoting to where quoting belongs — `'"'`, supplied by the
+shell — which reproduces make's `-DJERQM="/usr/jerq/mbin/proof.m"` exactly, verified by
+preprocessing a file and reading back `char *p = "/x/y";`.
+
+Writing them also turned up **damage in the tape**: `blit/src/proof/host/makefile` carries, twice
+at column 0, `.$(JERQFONT) -DJLD=\"$(JLD)\" -c main.c` — debris from a mangled continuation, the
+recipe above it already ending the same way. make reads it as a target nothing asks for, so it
+has never been noticed. The mkfile records it and does not carry it over.
+
+*Done:* **497 of 503 makefiles converted**, every one **parsed by mk before it was written**, and
+463 superseded makefiles stamped `HISTORICAL`. 173 mkfiles became 636. `eqn`, `f2c` and `cbt`
+all have one.
+
+**The six that remain contain no build commands at all.** That is a better reason than "they
+are nmake", and it took reading them rather than their first line. Three are a single line —
+`:MAKE: lib - cmd`, `:MAKE: probe - ccc cpp - *`, `:MAKE: libx - *` — nmake's recursive
+descent, which mk expresses in three lines. The other three are declarations, not recipes:
+
+	odelta :LIBRARY: update.h suftree.h delta.c mtchstring.c suftree.c update.c
+	pax :: RELEASE HISTORY pax.1 pax.h bio.c convert.c ... -lodelta -lx
+	x $(VERSION) :LIBRARY: ... with `.SOURCE :' search paths over ten directories
+
+nmake infers the compile, the archive and the link from those; there is not one command in the
+122 lines. Converting them therefore means **authoring** the build nmake would have inferred —
+every `-I` from `.SOURCE.h : include`, the two archives, the link order — for a package the
+distribution does not build: the mkfile's only mention of `odist` is a comment. That is
+inventing work, not finishing it.
+
+**All but one call site now runs mk.** 155 switched, and none blind — a site moved only where
+the directory's mkfile actually defines the target asked for, with that mkfile's *own* variables
+expanded first (`netfs/libnetb`'s target is `$L` and `libcc`'s is `${ARCHIVE}`; a literal match
+missed both). Three needed the call site corrected rather than switched: `libcbt` and `sign`
+have the tape's own mk-native mkfiles, which name `libcbt.a` and `$X` and have no `all` — the
+`make all` was written against the makefile beside them. And `apsend` needs no rule at all:
+it is a checked-in binary with no source, and mk reports an existing ruleless file
+`is up to date`.
+
+**Five `make` words remain and four are prose inside comments.** The one real invocation is
+`cd $CMD/postscript; make -f postscript.mk ROOT=$ROOT install`, and it is a **decided
+delegation, not an unconverted file** — the mkfile has carried the reason since before this
+work: `postscript.mk:105` is `SYSTEM=V9`, the nearest thing the package offers to a Tenth
+Edition, and `:111-117` put FONTDIR, HOSTDIR, MAN1DIR, POSTBIN, POSTLIB and TMACDIR all under
+`$(ROOT)`. The package configures itself for our root, which is precisely why the build hands
+the job to it.
+
+Converting it would be a port rather than a conversion, and measured rather than assumed: 219
+lines that re-invoke themselves — `$(MAKE) -e -f $(MAKEFILE) ACTION=$@ $(TARGETS)` — to fan a
+verb out over eleven subdirectories, then recurse again into each one's own `.mk`; `-e`, so the
+environment overrides the file; and `$(TARGETS) ::`, a double-colon rule, which mk has no form
+of. Reimplementing that in mk means reimplementing the self-configuration the comment above the
+call site exists to preserve.
+
+**And one more mk/make difference found on the way: mk has no implicit `%: %.c`.** make links a
+single-file program from its source automatically; mk answers `don't know how to make 'prog'`.
+Its whole built-in set is `%.o:` from `.c .s .f .l .y` and nothing else.
+
+*Two things the parse test surfaced that are not conversion faults:* mk resolves `<path` against
+the **cwd**, not the including file, and make resolves `include` the same way — so `lcc/gen2`'s
+chain fails identically before and after. And an included fragment cannot be parse-tested alone:
+`lcc/c/makefile:30` is `$(OBJS):`, and `OBJS` is defined by whichever file includes it.

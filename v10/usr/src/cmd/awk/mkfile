@@ -1,0 +1,58 @@
+YFLAGS = -d
+CFLAGS = -g -N -I/usr/include/lcc -A
+CC = lcc
+
+OFILES = b.o main.o parse.o proctab.o tran.o lib.o run.o 
+
+SOURCE = awk.h proto.h awk.g.y awk.lx.l b.c main.c maketab.c parse.c lib.c run.c tran.c
+CSOURCE = y.tab.c lex.yy.c b.c main.c proctab.c parse.c lib.c run.c tran.c
+
+a.out:	awk.g.o awk.lx.o ${OFILES} ${ALLOC} awk.h
+	${CC} ${CFLAGS} awk.g.o awk.lx.o ${OFILES} ${ALLOC}  -lm
+
+${OFILES} awk.lx.o:	awk.h prevy.tab.h proto.h
+
+awk.g.o:	awk.h proto.h
+
+prevy.tab.h:	y.tab.h
+	cmp -s y.tab.h prevy.tab.h || (cp y.tab.h prevy.tab.h; echo change maketab) || :
+
+proctab.c:	maketab
+	./maketab >proctab.c
+
+maketab:	prevy.tab.h maketab.c
+	${CC} ${CFLAGS} maketab.c -o maketab
+
+bundle:
+	bundle README FIXES ${SOURCE} makefile awk.1 ansi2knr.c deansify.awk 
+
+bowell:	${SOURCE} makefile NEW FIXES awktest
+	push bowell $newprereq /usr/src/cmd/awk
+	touch bowell
+
+profile:
+	make 'CFLAGS=-p'
+
+install:	a.out
+	cp a.out /usr/bin/awk
+	strip /usr/bin/awk
+
+clean:
+	rm -f a.out *.[oO] t.* *temp* *.[oO]ut *junk* y.tab.* lex.yy.c prevy.tab.h maketab proctab.c foo* glop*
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+awk.g.c y.tab.h: awk.g.y
+	yacc -d awk.g.y && mv y.tab.c awk.g.c
+
+awk.g.o: awk.g.c
+	${CC} ${CFLAGS} -c awk.g.c
+
+awk.lx.o: awk.lx.l
+	lex awk.lx.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o awk.lx.o; rm -f lex.yy.c

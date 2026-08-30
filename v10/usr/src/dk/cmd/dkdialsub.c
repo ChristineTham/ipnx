@@ -4,7 +4,7 @@
 #include <dk.h>
 #include <pwd.h>
 #include <signal.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
 #include "dkdial.h"
 #include <sys/stat.h>
 #include <dkwindow.h>

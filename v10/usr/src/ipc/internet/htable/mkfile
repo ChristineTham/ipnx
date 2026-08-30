@@ -1,0 +1,30 @@
+CFLAGS=	-g
+LIBC=	/lib/libc.a
+SRCS=	htable.c parse.c scan.c
+OBJS=	htable.o parse.o scan.o
+MAN=	htable.0
+
+all:V: htable
+	:
+
+htable: ${OBJS} ${LIBC} y.tab.h
+	${CC} -o $target ${CFLAGS} ${OBJS}
+
+y.tab.h:
+	yacc -d parse.y
+	rm -f y.tab.c
+
+clean:
+	rm -f ${OBJS} core htable parse.c scan.c y.tab.h
+
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+scan.o: scan.l
+	lex scan.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o scan.o; rm -f lex.yy.c

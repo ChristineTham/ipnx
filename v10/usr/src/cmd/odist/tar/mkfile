@@ -26,7 +26,7 @@ tarx: tarx.$O lib.a
 lib.a: ${LIBOBJ:%=lib.a(%)}
 	$RL lib.a
 
-lib.a(%): %
+lib.a(%):N: %
 	ar r lib.a $stem
 
 clean:V:

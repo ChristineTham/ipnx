@@ -4,7 +4,7 @@
  **	shield and cloaking device control
  **/
 
-CVNTAB Udtab[]
+CVNTAB Udtab[] =
 {
 	"d",		"own",
 	"u",		"p",
@@ -66,7 +66,7 @@ int	sw;
 		return;
 	if (i)
 		if(sw!=CLOAK)
-			Status.energy =- Param.shupengy;
+			Status.energy -= Param.shupengy;
 		else
 			Status.cloakdate = Status.date;
 	Move.free = 0;

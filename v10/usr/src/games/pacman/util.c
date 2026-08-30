@@ -5,6 +5,7 @@
 #include <termio.h>
 #else
 #include <sgtty.h>
+#include <sys/filio.h>
 #endif
 #include <pwd.h>
 #include "pacdefs.h"

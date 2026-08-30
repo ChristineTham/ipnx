@@ -57,9 +57,9 @@ double	d;
 	dist = d;
 	time = Param.warptime * dist / Status.warp2;
 	power = (dist + 0.05) * Status.warp3;
-	power =+ Status.cloaked * Param.cloakenergy * time;
+	power += Status.cloaked * Param.cloakenergy * time;
 	percent = 100 * power / Status.energy + 0.5;
-	percent =* (Status.shldup+1);
+	percent *= (Status.shldup+1);
 	if (percent >= 85)
 	{
 		printf("Scotty: That would consume %d%% of our remaining energy.\n",
@@ -78,15 +78,15 @@ double	d;
 	if (ranf(200) < 25 * (Status.warp - 6.0))
 	{
 		frac = franf();
-		dist =* frac;
-		time =* frac;
+		dist *= frac;
+		time *= frac;
 		damage(WARP, (frac + 1.0) * Status.warp * (franf() + 0.25) * 0.20);
 		printf("Damage occurred to warp engines\n");
 	}
 	speed = Status.warp2 / Param.warptime;
 	Move.delta = newpos(ramflg, course, time, speed);
 	dist = Move.delta * speed;
-	Status.energy =- dist * Status.warp3 * (Status.shldup + 1);
+	Status.energy -= dist * Status.warp3 * (Status.shldup + 1);
 	if (Status.warp <= 9.0)
 		return;
 	printf("___ Speed exceeding warp nine ___\n");
@@ -107,7 +107,7 @@ double	d;
 		if (percent < 35 || !Game.snap)
 		{
 			time = (Status.warp - 8.0) * dist * (franf() + 1.0);
-			Status.date =+ time;
+			Status.date += time;
 			printf("Positive time portal entered -- it is now Stardate %.2f\n",
 				Status.date);
 			for (i = 0; i < MAXEVENTS; i++)
@@ -116,11 +116,11 @@ double	d;
 		} else {
 			time = Status.date;
 			bmove(i=Snapshot, &Status.bases, 2);
-			bmove(i =+ 2, &Status.date, 12);
-			bmove(i =+ 12, &Quad, sizeof Quad);
-			bmove(i =+ sizeof Quad, &Event, sizeof Event);
-			bmove(i =+ sizeof Event, &Base, sizeof Base);
-			bmove(i =+ sizeof Base, &Etc, sizeof Etc);
+			bmove(i += 2, &Status.date, 12);
+			bmove(i += 12, &Quad, sizeof Quad);
+			bmove(i += sizeof Quad, &Event, sizeof Event);
+			bmove(i += sizeof Event, &Base, sizeof Base);
+			bmove(i += sizeof Base, &Etc, sizeof Etc);
 			printf("Negative time portal entered -- it is now Stardate %.2f\n",
 				Status.date);
 			for (i = 0; i < MAXEVENTS; i++)

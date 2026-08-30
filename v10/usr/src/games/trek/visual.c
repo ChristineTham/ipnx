@@ -4,7 +4,7 @@
  **	visual scan
  **/
 
-XY		Visdelta[11]
+XY		Visdelta[11] =
 {
 	-1,	-1,
 	-1,	 0,

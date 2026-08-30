@@ -47,5 +47,5 @@ impulse()
 	}
 	Move.delta = newpos(0, course, time, ISPEED);
 	dist = Move.delta * ISPEED;
-	Status.energy =- 20 + 100 * dist;
+	Status.energy -= 20 + 100 * dist;
 }

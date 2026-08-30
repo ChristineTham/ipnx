@@ -1,6 +1,6 @@
 #include <dk.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
 
 tdkexec(hname, cmd)
 char *hname, *cmd;

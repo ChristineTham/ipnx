@@ -1,0 +1,53 @@
+ROOT = 
+CC = cc
+INC = ${ROOT}/usr/include
+MAKE = ${ROOT}/bin/make
+INCSYS = ${ROOT}/usr/include/sys
+SHELL = /bin/sh
+TESTDIR= .
+INS = ${ROOT}/etc/install
+INSDIR = ${ROOT}/usr/bin
+INSLIB = ${ROOT}/usr/lib/library
+MAN = ${ROOT}/usr/lman/u_man/man1
+LFILES=[2456].* *help* known.list
+
+LDFLAGS= -s ${LDLIBS}
+# following is for BSD machines.
+# BSD=`if [ -x /bin/sun ]; then if /bin/sun; then echo "-DBSD4_2 -Dstrchr=index -Dstrrchr=rindex"; fi; fi`
+BSD=-DBSD4_2
+DFLAGS=-DWHERE\=\"${INSLIB}\" ${BSD}
+CFLAGS=-O -I.  ${DFLAGS}
+
+FILES=library
+OFILES=library.o option1.o option3.o reader.o option2.o checkdoc.o gnamef.o uppercase.o
+
+all:V: ${FILES}
+	:
+
+library: ${OFILES}
+	${CC} ${CFLAGS} -o ${TESTDIR}/library ${OFILES} ${LDFLAGS}
+
+lint:
+	lint  ${LFLAGS} ${DFLAGS} *.c
+
+install: library
+	if test ! -d ${INSLIB} ; \
+	then \
+	    mkdir ${INSLIB}; \
+	    chown bin ${INSLIB}; \
+	    chgrp bin ${INSLIB}; \
+	    chmod 775 ${INSLIB}; \
+	    fi
+	for i in ${LFILES}; do ${INS} -m 444 -f ${INSLIB} ${TESTDIR}/$i; done;
+	${INS} -m 555 -f ${INSDIR} ${TESTDIR}/library
+	if test  -d ${MAN} ; \
+	then \
+	    ${INS} -f ${MAN} -m 444 library.1 ; \
+	    fi
+
+clean: 
+	rm -f *.[oO]
+
+clobber: clean
+	rm -f library
+

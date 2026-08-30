@@ -27,7 +27,7 @@ OBJECTS = LR0.o allocate.o closure.o conflicts.o derives.o files.o	\
 start:N: bison
 
 clean:
-	rm -f *.o core bison
+	rm -f *.[oO] core bison
 
 BINS=$BINDIR/bison $PARSERDIR/$PFILE1 $PARSERDIR/$PFILE
 install:V:	$BINS

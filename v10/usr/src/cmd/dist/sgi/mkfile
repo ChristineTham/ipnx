@@ -29,4 +29,4 @@ $LIB: $LIBOBJ
 	ar r $LIB $LIBOBJ
 
 clean:V:
-	rm -f $LPROG $LIB *.o
+	rm -f $LPROG $LIB *.[oO]

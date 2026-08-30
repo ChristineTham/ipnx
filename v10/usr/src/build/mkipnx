@@ -1,40 +1,64 @@
-# Write THIS MACHINE'S /usr out as ipnx.tar, which is the one thing mkimage
-# reads.
+# Turn v10.tar into a disk that can build itself: the tape's tree plus the build
+# system, written out as ipnxorig.tar.
 #
-#	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
-#	mktape    fills a blank /v10/usr from the six archives
-#	mkbuild   puts the build system into <root>/usr/src/build
-#	mkipnx    writes /usr back out as ipnx.tar                   <-- this
+#	mkv10     the six tapes -> v10.tar, pristine, once
+#	mkipnx    v10.tar + the build system -> ipnxorig.tar      <-- this
+#	taripnx   this machine's live /usr/src -> ipnx.tar
+#	mkimage   makes the disk and extracts an archive into it
 #
-# ALL OF /usr, NOT THE SOURCE TREE.  A disk that gets only src cannot build: it
-# has no /usr/include, so libc/mkfile:150's absolute /usr/include/libc.h cannot
-# be resolved, and no /usr/bin, so ranlib and lcc are gone.  The archive is a
-# working machine's whole /usr, and the disk mkimage extracts it onto is that
-# machine.  mktape is for the other case -- a /usr from nothing.
+# THREE ARCHIVES AND EACH ANSWERS A DIFFERENT QUESTION.  v10.tar is what the
+# tapes hold, one name per path and nothing of ours in it -- so a question about
+# the tapes has an answer that does not require fetching 430 MB again.
+# ipnxorig.tar is that plus /usr/src/build, which is the starting point for a
+# build from nothing.  ipnx.tar is a machine that has already built, which is
+# what mkimage normally extracts.  Only the last one contains binaries.
 #
-# It touches no device and mounts nothing: /v10 is not involved.
+# WHY THIS IS NOT `mkv10 THEN mkbuild BY HAND'.  It is exactly that, and that is
+# the point: the sequence was typed, and a typed sequence is one that can be
+# half-done.  A disk holding v10.tar's tree without /usr/src/build has no mkfile
+# and no patch, so it looks like a source tree and cannot build.
+#
+# IT DOES NOT RUN patch.  The repairs are mk's job -- mkfile makes $CMD/.patched
+# a target whose prerequisite is $GEN/patch -- so an archive that had them
+# applied would carry a source tree the stamp cannot describe.  Everything here
+# is either the tape's or the build system's, and the difference stays visible.
+GEN=/usr/src/build
+OUT=/v10/usr/ipnx
+ARCH=$OUT/v10.tar
+REPO=${1-$GEN}
 
-BUILD=/usr/src/build
-TMP=/usr/tmp
+test -d /v10/usr || { echo "mkipnx: no /v10/usr -- run mkimage first"; exit 1; }
+test -f $ARCH || { echo "mkipnx: no $ARCH -- run mkv10 first"; exit 1; }
+if test -d /v10/usr/src
+then
+	echo "mkipnx: /v10/usr already holds a source tree"
+	echo "mkipnx: run mkimage first -- it blanks ra1 and mounts it"
+	exit 1
+fi
 
-test -d $BUILD || { echo "mkipnx: no $BUILD"; exit 1; }
-test -d $TMP || { echo "mkipnx: no $TMP"; exit 1; }
+# the archive is a tar of /usr -- build/usrtrees is the one list of its shape
+cd /v10/usr && tar xf $ARCH || exit 1
+for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+do
+	test -d /v10/usr/$d || { echo "mkipnx: usrtrees names $d and the archive lacked it"; exit 1; }
+done
 
-# The old archive goes first, or the new one contains it.
-rm -f $BUILD/ipnx.tar
+# THE BUILD SYSTEM COMES FROM ONE PLACE AND mkbuild IS IT.  Naming the files
+# again here would be a second list, and a component list that appears twice
+# will disagree -- which it did: adding updatebuild to the repository copied
+# everything except updatebuild.
+sh $GEN/mkbuild /v10 $REPO || exit 1
 
-# AND THE STAMPS, or nothing is ever repaired again.  mkfile:126-135 makes
-# .ranlib and .patched plain files with no P attribute, so their existence is
-# the whole test.  This machine has both; archiving them hands every disk made
-# from here a source tree that claims to be patched and is not, and ./patch
-# writes /usr/include/stdlib.h and float.h, which stdio/fconv.h:28,33 need.
-rm -f /usr/src/cmd/.patched /usr/src/cmd/.ranlib
+# WRITTEN OUTSIDE THE TREE IT IS ARCHIVING.  tar has no --exclude here, and an
+# archive created under the directory being walked is reached by that walk and
+# copied into itself while it grows.
+rm -f $OUT/ipnxorig.tar
+cd /v10/usr && tar cf $OUT/ipnxorig.tar `ls | grep -v '^ipnx$' | grep -v '^tmp$'` || exit 1
 
-# WRITTEN OUTSIDE THE TREE IT IS ARCHIVING, then moved in.  tar has no
-# --exclude here, and an archive created under the directory being walked is
-# reached by that walk and copied into itself while it grows.  /usr/tmp is
-# left out for the same reason and is scratch anyway; the rest of the list is
-# read from the directory rather than written down, so a new one is not missed.
-cd /usr && tar cf $TMP/ipnx.tar `ls | grep -v '^tmp$'` || exit 1
-mv $TMP/ipnx.tar $BUILD/ipnx.tar || exit 1
+# v10's kernel does not sync on halt -- md/machdep.c's boot() calls death()
+# without one -- so an archive written here and then left by ^E is not on the
+# disk at all.
+cd /
 sync
+sync
+echo "mkipnx: $OUT/ipnxorig.tar written"

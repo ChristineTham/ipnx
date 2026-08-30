@@ -1,0 +1,173 @@
+# Sweep derived files out of a source tree.
+#
+#	ipnxclean              this machine's /usr/src and /usr/sys
+#	ipnxclean /v10         the disk on ra1
+#	ipnxclean -n           say what would go, remove nothing
+#
+# /usr/sys IS IN SCOPE since the tar became a tar of /usr: the kernel build
+# leaves its objects and the seven sys/lib link libraries (fs.a, io.a, star.a,
+# bvax.a, os.a, vm.a, inet.a) under /usr/sys, all remade by the next build.
+# The tape ships no loose .o under sys -- counted zero -- and the kernel
+# inputs it does ship as objects are .x and .y members under sys/lib and
+# sys/md, which no pattern here touches.  blit, jerq and 630 are NOT in
+# scope: nothing builds them, so nothing accumulates, and their tape content
+# includes loose .o inputs (630/lib/crtm.o) that a sweep would destroy.
+#
+# WHAT IS DERIVED CANNOT BE DECIDED BY EXTENSION ALONE, and the ways that bites
+# are all recorded below.  This sweep takes only the five patterns that are
+# unambiguous everywhere in this tree, and it is deliberately narrower than it
+# looks like it could be:
+#
+#   *.o        compiler output.  1,506 of them -- EXCLUDING archive members,
+#              see below.
+#   *.O        cyntax output, v10's lint.  ipc/libin/mkfile:28-29 is
+#              `%.O: %.c / cyntax -DLINT $INCS $stem.c' and :12 puts cyntax in
+#              the DEFAULT target, so 22 build files regenerate these on every
+#              build.  They collide with *.o only on a case-insensitive host, so
+#              on the machine they were never a problem and on the Mac they are
+#              94 of the 265 renamed paths.
+#   a.out      26 of them, left in the tree by whoever cut the tape.
+#   nohup.out  13.
+#   core       12.
+#
+# NOT *.out, AND THIS IS THE ONE THAT WOULD HAVE HURT.  228 files match it in
+# this tree, and the one that settles it is:
+#	strip.out   mkfile:330-331 -- "strip.out is the tape's own prebuilt
+#	            binary and make clean does not remove it".  The strip rule
+#	            invokes the freshly built binary as ./strip on a scratch copy
+#	            precisely because strip cannot strip itself into place, and
+#	            without strip.out that bootstrap has nothing to start from.
+# Then 7 make.out, which are build transcripts, and the rest are test
+# expected-output files -- inputs to a comparison, not junk.  So *.out is
+# excluded and only the two exact names above are taken.
+#
+# Two near misses worth recording, because both look like counter-examples and
+# are not: mk.out, the tape's own transcript of the kernel build for thirteen
+# machines that CLAUDE.md cites as evidence, is at v10superset/lsys/astro/mk.out
+# and so is not in this tree at all; and DESC.out is not a file here either --
+# mkfile:2519-2520 has d202.c:452,527 holding the only `%s/dev%s/DESC.out' in
+# the tree, which is a path the driver WRITES at runtime.
+#
+# PRODUCT ARCHIVES ARE SWEPT NOW.  The paragraph below is from before
+# build/arcfix existed, when a .a on this machine could be tape source in
+# archive form and telling the kinds apart needed the magic number.  arcfix
+# dissolved every source archive, so any .a remaining in this tree is a build
+# product (libc-style link libraries the build remakes, lfactor's mp.a) --
+# archive objects, which cannot be included in the tar -- EXCEPT four tape
+# files that merely end in .a and are not archives at all:
+#
+#	cmd/awk/awktest/t.a  cmd/awk/test/t.a    awk test data
+#	cmd/odist/opkg/libx.a                    zero-filled tape file
+#	cmd/sml/lib/twig/analyzer.l..a           sml source
+#
+# Those four are spared by exact name below; everything else named .a goes.
+#
+# ARCHIVE MEMBERS NO LONGER NEED PROTECTING.  This sweep once excluded paths
+# under `*.a/' directories -- v10-tree.py's unpacking of ar archives, ORDER
+# beside the members -- because a CONTAINER archive's members ARE the source
+# (cmd/ccom/vax/tests/all.a holds 50 .i test inputs, tek.c.a holds .c files).
+# Two things retired the exclusion: the extraction directories were renamed to
+# bare stems (folders cannot have extensions), which killed the pattern, and
+# arcfix's d and r rows deleted every OBJECT member, so what remains under a
+# dissolved directory is source and matches no pattern here anyway.
+#
+# NOT y.tab.c AND NOTHING LIKE IT.  The same filename is derived in one
+# directory and source in another: eyacc regenerates cmd/pascal/pi/y.tab.c,
+# while cmd/pascal/pxp/makefile:26-28 comments the rule out and its y.tab.c is
+# checked in.  No extension rule separates those, which is why driving each
+# directory's own `clean' is the eventual answer for the ambiguous cases -- and
+# why it is not this script: mkfile:32-38 records that sixteen of those clean
+# targets fail on an unbuilt tree and nine do not exist.
+#
+# A FULL BUILD DOES NOT FOLLOW FROM THIS, YET.  Every rule still carries
+# ./installed as its P predicate, which is `test -f' on the INSTALLED file, so
+# removing an object in the source tree changes nothing about what mk considers
+# out of date.  Until the build/install split lands and that predicate goes,
+# this is housekeeping and disk space; it is a PRECONDITION for the split rather
+# than a way to force a rebuild.
+DRY=false
+case $1 in
+-n)	DRY=true; shift ;;
+esac
+
+TARGET=${1-/}
+case $TARGET in
+/)	SRC=/usr/src SYS=/usr/sys ;;
+/v10)	SRC=/v10/usr/src SYS=/v10/usr/sys ;;
+*)	echo "ipnxclean: target is / or /v10, not $TARGET"; exit 1 ;;
+esac
+
+test -d $SRC || { echo "ipnxclean: no $SRC"; exit 1; }
+test -d $SYS || { echo "ipnxclean: no $SYS"; exit 1; }
+
+# `grep -v' RATHER THAN find -prune, because find.c has no -prune -- its
+# predicates are -name, -print, -user, -group and the rest (find.c:165,171).
+# One pattern per grep for the same reason: v10's grep is the V7 matcher and has
+# no \| alternation, which is recorded in CLAUDE.md and has cost a round before.
+# icl.$$, NOT ipnxclean.$$: sys/dir.h:2 is `#define DIRSIZ 14', and with a
+# five-digit pid `ipnxclean.17405' is fifteen characters -- creat answers
+# ENOENT and every append, the count and the sweep all fail.  A four-digit pid
+# fits, which is why this survived every clone round and broke on a machine
+# whose pids had passed 10000.  Same disease updatebuild's stamp had.
+LIST=/usr/tmp/icl.$$
+rm -f $LIST
+# No `grep -v .a/' on the object sweep any more: it protected archive members
+# back when extraction directories were named after their archive, and the
+# bare-stem renames retired the name.  Nothing needs protecting now -- arcfix's
+# d and r rows deleted every object member, so no .o survives under a
+# dissolved directory to be swept.
+# One root per find: v10's find takes a single path -- two answered
+# `find: missing conjunction' and the sweep ran on neither.
+for R in $SRC $SYS
+do
+	for pat in '*.o' '*.O'
+	do
+		find $R -name $pat -print >> $LIST
+	done
+	for name in a.out nohup.out core
+	do
+		find $R -name $name -print >> $LIST
+	done
+	find $R -name '*.a' -print | grep -v 'awk/awktest/t\.a' | grep -v 'awk/test/t\.a' | grep -v 'opkg/libx\.a' | grep -v 'analyzer\.l\.\.a' >> $LIST
+done
+
+# libcc's touch-stamps go with its archive: the mkfile compiles each member,
+# archives it, deletes the .o and touches <name>.t, so a sweep that takes
+# libcc.a but leaves the stamps makes the next build run `ar r libcc.a *.o'
+# with no objects.  Exact names -- wwb's *.t are tape troff data.
+for f in balloc.t getbitmap.t inbitmap.t outbitmap.t
+do
+	test -f $SRC/libcc/$f && echo $SRC/libcc/$f >> $LIST
+done
+
+# compress's USERMEM is generated by its own usermem script every build; the
+# script stays, the output goes, or the tar carries a case-twin pair.
+test -f $SRC/cmd/compress/USERMEM && echo $SRC/cmd/compress/USERMEM >> $LIST
+
+# efl's build makes the Efix and cpt tools and fills the efix/ workspace with
+# generated sources; Efix beside efix/ is a case-twin pair on the Mac.  All
+# three are products, remade by the next build.
+test -f $SRC/cmd/efl/Efix && echo $SRC/cmd/efl/Efix >> $LIST
+test -f $SRC/cmd/efl/cpt && echo $SRC/cmd/efl/cpt >> $LIST
+
+n=`wc -l < $LIST`
+echo "ipnxclean: $n derived files under $SRC and $SYS"
+
+if $DRY
+then
+	cat $LIST
+	rm -f $LIST
+	exit 0
+fi
+
+# xargs, not a while-read loop.  Both work -- rm's effect survives the subshell
+# that a redirected compound command forks, unlike a variable assignment -- but
+# xargs is one exec per batch instead of one per file, and this is 1,679 files.
+# GUARDED: with nothing swept the list is empty, and V10's xargs still runs
+# its command once -- `rm -f' with no operand, which is a usage error.
+test -s $LIST && xargs rm -f < $LIST
+# efix/ is a directory of generated sources, which the list-and-xargs form
+# cannot carry; it goes here, below the dry-run gate.
+rm -rf $SRC/cmd/efl/efix
+rm -f $LIST
+echo "ipnxclean: done"

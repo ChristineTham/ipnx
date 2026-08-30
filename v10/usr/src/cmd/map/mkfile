@@ -36,6 +36,6 @@ install: map libmap.a
 	ranlib /usr/lib/libmap.a
 
 clean:
-	rm -f map *.o libmap.a new.results
+	rm -f map *.[oO] libmap.a new.results
 	cd libmap
 	mk clean

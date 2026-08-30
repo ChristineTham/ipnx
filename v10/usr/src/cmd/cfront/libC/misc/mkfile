@@ -1,0 +1,11 @@
+CC = nCC
+CFLAGS = -O
+
+OBJ = ../obj/_ctor.o ../obj/_dtor.o ../obj/_main.o \
+	../obj/dtors.o ../obj/open.o ../obj/pure.o ../obj/Bits.o ../obj/Pool.o
+
+all:V: ${OBJ}
+	:
+
+../obj/%.o: %.c
+	${CC} ${CFLAGS} -c $stem.c && mv $stem.o ../obj

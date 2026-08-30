@@ -1,0 +1,25 @@
+PARTS=	header *.ti trailer
+COMPILE=../screen/tic
+
+install: ${PARTS}
+	${COMPILE} $newprereq
+	make terminfo.src
+	touch install
+
+terminfo.src:	${PARTS}
+	cat ${PARTS} > terminfo.src
+
+all:	terminfo.src
+	${COMPILE} -v terminfo.src
+	touch install
+
+clean:
+	rm -f terminfo.src install
+
+tabset:	/tmp
+	mkdir /usr/lib/tabset || :
+	cp tabset/* /usr/lib/tabset
+
+VGRIND=
+vgrind:
+	${VGRIND} -n -h "Terminal Information Data Base" ${PARTS}

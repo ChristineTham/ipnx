@@ -1,0 +1,51 @@
+YFLAGS= -d
+CFLAGS= -O 
+SRC= lexio.c init.c queues.c lex.l parse.y vis.c nodes.c screen.c hashing.c macros.c
+LSRC= lexio.c init.c queues.c vis.c nodes.c screen.c hashing.c lex.yy.c y.tab.c macros.c
+OBJ= vis.o init.o parse.o lex.o lexio.o queues.o nodes.o screen.o hashing.o macros.o
+all:V:	visi
+	:
+
+
+visi:	${OBJ}
+	cc ${OBJ} -o visi -lm -ly -ll -lcurses -ltermlib
+
+${OBJ}:	vis.h
+
+hashing.o lex.o:	vis.h y.tab.h
+
+print:
+	pr -n vis.h ${SRC} makefile
+
+lint:
+	lex lex.l
+	yacc parse.y
+	lint ${LSRC}
+
+install:
+	strip visi
+	mv visi /usr/bin
+	cp helpfile /usr/lib/vis.help
+
+clean:
+	rm -f visi *.o
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+parse.c y.tab.h: parse.y
+	yacc -d parse.y && mv y.tab.c parse.c
+
+parse.o: parse.c
+	cc ${CFLAGS} -c parse.c
+
+lex.o: lex.l
+	lex lex.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o lex.o; rm -f lex.yy.c
+
+lex: lex.o
+	cc ${CFLAGS} -o lex lex.o -ll

@@ -1,0 +1,17 @@
+MHOME = /usr/lib/monk
+
+LIBS = \
+	prefs \
+	tmac.p
+
+all:
+
+clean:
+
+clobber:V: clean
+	:
+
+install: all
+	cp ${LIBS} ${MHOME}
+	cp sample/* ${MHOME}/sample
+	pinvert -p ${MHOME}/prefs ${MHOME}/prefs || :

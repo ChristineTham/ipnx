@@ -1,0 +1,16 @@
+xref:V:	xrefa xrefb
+	:
+xrefa:	xrefa.o lib.a
+	cc -o xrefa xrefa.o -ll lib.a
+xrefb:	xrefb.o lib.a
+	cc -o xrefb xrefb.o lib.a
+
+%.o: %.c
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+xrefa.o: xrefa.l
+	lex xrefa.l && cc -c lex.yy.c && mv lex.yy.o xrefa.o; rm -f lex.yy.c

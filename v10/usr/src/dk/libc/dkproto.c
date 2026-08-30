@@ -1,7 +1,8 @@
 /*
  * Make sure that URP protocol is enabled on a datakit file.
  */
-#include "sys/ioctl.h"
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
+#include <sys/dkio.h>
 
 dkproto(file, linedis)
 {

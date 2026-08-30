@@ -1,3 +1,10 @@
+# The tape's makefile offers two settings -- `CC = cc  # the usual situation'
+# then `CC = lcc  # you will probably want to remove this' -- an instruction
+# to pick one.  Picked: lcc, the state the tape itself was in.  One assignment,
+# no trailing comment: awk's is the proven shape.
+CC = lcc
+CFLAGS = -g -A -N -I/usr/include/lcc -I/usr/include
+
 CFLAGS = -g
 YFLAGS = -d
 
@@ -10,7 +17,7 @@ FILES =  main.o tuning.o diacrit.o eqnbox.o font.o fromto.o funny.o glob.o integ
  pile.o shift.o size.o sqrt.o text.o eqn.o
 
 a.out:	$FILES
-	cc $CFLAGS $FILES 
+	$CC $CFLAGS $FILES 
 
 y.tab.h eqn.o:	eqn.y
 	$YACC $YFLAGS eqn.y
@@ -28,11 +35,11 @@ prcan:	README $SOURCE makefile
 bundle:
 	bundle $SOURCE makefile README
 
-backup:	README $SOURCE makefile eqntest.a
+backup:	README $SOURCE makefile eqntest
 	push snb $? eqn
 	touch backup
 
-bowell:	README $SOURCE makefile eqntest.a
+bowell:	README $SOURCE makefile eqntest
 	push bowell $? /src/cmd/eqn
 	touch bowell
 
@@ -41,4 +48,4 @@ install:
 	strip /usr/bin/eqn
 
 clean:
-	rm a.out *.o make.out *y.tab.h
+	rm -f a.out *.[oO] make.out *y.tab.h

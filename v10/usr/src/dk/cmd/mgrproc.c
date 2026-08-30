@@ -7,7 +7,7 @@
 #include <pwd.h>
 #include <stdio.h>
 #include <signal.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
 #include <utmp.h>
 #include <errno.h>
 #include <sys/types.h>

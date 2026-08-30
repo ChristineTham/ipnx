@@ -25,18 +25,18 @@ float	speed;
 	/* initialize delta factors for move */
 	angle = course * 0.0174532925;
 	if (Damage[SINS])
-		angle =+ Param.navigcrud[1] * (franf() - 0.5);
+		angle += Param.navigcrud[1] * (franf() - 0.5);
 	else
 		if (Status.sinsbad)
-			angle =+ Param.navigcrud[0] * (franf() - 0.5);
+			angle += Param.navigcrud[0] * (franf() - 0.5);
 	dx = -cos(angle);
 	dy = sin(angle);
 	bigger = fabs(dx);
 	dist = fabs(dy);
 	if (dist > bigger)
 		bigger = dist;
-	dx =/ bigger;
-	dy =/ bigger;
+	dx /= bigger;
+	dy /= bigger;
 
 	/* check for LRTB */
 	evtime = Etc.eventptr[E_LRTB]->date - Status.date;
@@ -56,8 +56,8 @@ float	speed;
 
 	for (i = 0; i < n; i++)
 	{
-		ix = (x =+ dx);
-		iy = (y =+ dy);
+		ix = (x += dx);
+		iy = (y += dy);
 		if (x < 0.0 || y < 0.0 || x >= sectsize || y >= sectsize)
 		{
 			/* enter new quadrant */
@@ -89,14 +89,14 @@ float	speed;
 			} else if(Sect[ix][iy]==BLACKHOLE) {
 				printf("Spock: Captain, We are approaching a black hole\n");
 				barrier("black hole");
-				Status.resource =- Status.kling * (franf() + 0.5);
+				Status.resource -= Status.kling * (franf() + 0.5);
 				n = 0;
 			} else {
 				ix = x - dx;
 				iy = y - dy;
 				printf("Computer reports navigation error; %s stopped at %d,%d\n",
 					Status.shipname, ix, iy);
-				Status.energy =- Param.stopengy * speed;
+				Status.energy -= Param.stopengy * speed;
 			}
 			break;
 		}

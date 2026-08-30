@@ -36,7 +36,7 @@ reg int	(*func)(); {
 			char	buf[80];
 over:
 			printf("Debug file:");
-			gets(buf);
+			*buf = 0; fgets(buf, sizeof buf, stdin); buf[strcspn(buf, "\n")] = 0;
 			if ((outf = fopen(buf, "w")) == NULL) {
 				perror(buf);
 				goto over;

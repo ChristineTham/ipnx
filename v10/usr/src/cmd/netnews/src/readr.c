@@ -842,7 +842,7 @@ followup_command()
 	/* Give the user a chance to hit BREAK and back out. */
 	hascaught = 0;
 	oldsig = (char *) signal(SIGINT, catchintr);
-	gets(edcmdbuf);
+	*edcmdbuf = 0; fgets(edcmdbuf, sizeof edcmdbuf, stdin); edcmdbuf[strcspn(edcmdbuf, "\n")] = 0;
 	signal(SIGINT, oldsig);
 	if (hascaught)
 		return;
@@ -1027,7 +1027,7 @@ nextart2:
 			xxit(0);
 		fprintf(ofp, "Abort (n)?  ");
 		fflush(ofp);
-		gets(bfr);
+		*bfr = 0; fgets(bfr, sizeof bfr, stdin); bfr[strcspn(bfr, "\n")] = 0;
 		if (*bfr == 'y' || *bfr == 'Y')
 			xxit(0);
 		sigtrap = FALSE;
@@ -1085,7 +1085,7 @@ hdr()
 		fflush(ofp);
 		holdup = FALSE;
 		bfr[0] = '\0';
-		gets(bfr);
+		*bfr = 0; fgets(bfr, sizeof bfr, stdin); bfr[strcspn(bfr, "\n")] = 0;
 		if (bfr[0])
 			explaincolon();
 	}

@@ -1,0 +1,284 @@
+# Refresh /usr/src/build from the repository on the Mac.  THE ONLY COMMAND IN
+# THIS DIRECTORY THAT TOUCHES /n.
+#
+#	updatebuild            from the path below
+#	updatebuild <dir>      from somewhere else, said explicitly
+#
+# The repository is the source of truth for the build system, so pulling from it
+# is not a decision -- it is the first half of every round.  The ninety-character
+# share path was typed by hand every time before this existed, which meant it
+# could be forgotten, and a forgotten pull builds the previous edit while saying
+# nothing about it.  Here it is a default.
+#
+# ipnxbuild reads no share at all.  That is deliberate: one command needs the
+# Mac and the other does not, so a build never fails for a reason that has
+# nothing to do with building.
+REPO=${1-/n/macos/Users/christie/Repositories/Unix/ipnx/v10/usr/src/build}
+
+# SAY SO.  netfs unmounted looks exactly like an empty directory, and mkbuild's
+# per-file `cp' would then fail eighteen times over rather than once clearly.
+test -d $REPO || {
+	echo "updatebuild: no $REPO"
+	echo "updatebuild: is /n/macos mounted?  /etc/nafsmnt"
+	exit 1
+}
+test -f $REPO/mkfile || {
+	echo "updatebuild: $REPO holds no mkfile -- wrong directory?"
+	exit 1
+}
+
+# THE MACHINE FOLLOWS THE REPOSITORY'S LAYOUT, and this is where it catches
+# up.  ipnx.tar became a tar of /usr (build/usrtrees is the one list), and
+# sys, man and include moved back OUT of the source tree -- the reversal of
+# the earlier migration, hers, recorded in docs/v10-build.md.  A machine
+# already in shape is three quiet tests.
+if test -d /usr/src/sys -a ! -d /usr/sys
+then
+	mv /usr/src/sys /usr/sys || exit 1
+	echo "updatebuild: /usr/src/sys -> /usr/sys"
+fi
+if test -d /usr/src/man
+then
+	test -d /usr/man && rm -r /usr/man
+	mv /usr/src/man /usr/man || exit 1
+	echo "updatebuild: /usr/src/man -> /usr/man"
+fi
+# include MERGES -- it must never replace.  The installed tree holds more than
+# the source copy ever did: lcc's headers, stdlib.h, and every repair patch
+# made in place (dumprestor.h) live only there, and an rm -r took a clone's
+# compilers down wholesale -- lcc lost its include directory and libc lost
+# stdlib.h in one stroke.  So the source copy is overlaid file by file onto
+# the installed tree, three levels (include/CC/... is the deepest), and then
+# removed; anything only the installed tree had survives.
+if test -d /usr/src/include
+then
+	test -d /usr/include || mkdir /usr/include || exit 1
+	for a in `ls /usr/src/include`
+	do
+		if test -d /usr/src/include/$a
+		then
+			test -d /usr/include/$a || mkdir /usr/include/$a || exit 1
+			for b in `ls /usr/src/include/$a`
+			do
+				if test -d /usr/src/include/$a/$b
+				then
+					test -d /usr/include/$a/$b || mkdir /usr/include/$a/$b || exit 1
+					for c in `ls /usr/src/include/$a/$b`
+					do
+						test -f /usr/include/$a/$b/$c || cp /usr/src/include/$a/$b/$c /usr/include/$a/$b/$c || exit 1
+					done
+				else
+					test -f /usr/include/$a/$b || cp /usr/src/include/$a/$b /usr/include/$a/$b || exit 1
+				fi
+			done
+		else
+			test -f /usr/include/$a || cp /usr/src/include/$a /usr/include/$a || exit 1
+		fi
+	done
+	rm -r /usr/src/include
+	echo "updatebuild: /usr/src/include merged into /usr/include"
+fi
+
+# ONE NAME PER PATH, ON THIS MACHINE TOO.  build/casefix is the fixed
+# operation list (its header carries the rule and the evidence); each line
+# runs once -- a mv whose source is gone or whose target exists is already
+# done, and rm -f/-r of something absent is silence.  Paths are /usr-relative.
+if test -f $REPO/casefix
+then
+	# read takes a fourth field so a row may carry a comment; junk is
+	# never looked at.  The mv guard admits directories -- vol2/Preface
+	# is a directory rename -- so it is `exists at all' on the source and
+	# `nothing there yet' on the target, spelled with -f and -d because
+	# this test has no -e.
+	while read op a b junk
+	do
+		case $op in
+		mv)	if test -f /usr/$a -o -d /usr/$a
+			then
+				if test ! -f /usr/$b -a ! -d /usr/$b
+				then mv /usr/$a /usr/$b
+				fi
+			fi ;;
+		rm)	if test "$b" = DIR
+			then rm -r /usr/$a 2>/dev/null || :
+			else rm -f /usr/$a
+			fi ;;
+		esac
+	done < $REPO/casefix
+fi
+
+# NO ARCHIVES IN THE TREE.  build/arcfix dissolves every ar archive: source
+# members extracted into a directory named by the archive's bare stem, in tape
+# order recorded to ORDER; object members and all-object archives deleted.
+# Idempotent: a missing archive is a line already done.  /usr-relative paths.
+if test -f $REPO/arcfix
+then
+	while read op a b
+	do
+		case $op in
+		x)	if test -f /usr/$a
+			then
+				D=`dirname /usr/$a`
+				# A stem directory already there means the tape's
+				# archive was dissolved on an earlier round and
+				# this .a is the build's own remake (sys/lib);
+				# extracting again would mv the temp dir INSIDE
+				# it -- the .ax$$ nests found in a tar.  The
+				# remade product just goes.
+				if test -d $D/$b
+				then
+					rm /usr/$a
+				else
+					(cd $D && mkdir .ax$$ && cd .ax$$ && ar x ../`basename $a`) || exit 1
+					ar t /usr/$a > $D/.ax$$/ORDER || exit 1
+					rm /usr/$a
+					mv $D/.ax$$ $D/$b || exit 1
+					echo "arcfix: $a -> $b/"
+				fi
+			fi ;;
+		m)	if test -f /usr/$a
+			then mv /usr/$a `dirname /usr/$a`/$b
+			fi ;;
+		d)	rm -f /usr/$a ;;
+		r)	rm -f /usr/$a ;;
+		esac
+	done < $REPO/arcfix
+fi
+
+# THE MANUALS.  A machine that has none gets the repository's copy -- the
+# SELLERS tape's man byte for byte -- file by file: tar with its working
+# directory on the share dies with a bus error, while ls and cp over the same
+# share are how every build reads its source.  Guarded on man1, not on the
+# directory, so an interrupted fill is finished rather than skipped.
+M=$REPO/../../man
+if test ! -d /usr/man/man1 -a -d $M/man1
+then
+	echo "updatebuild: filling /usr/man from the repository (sellers, the documentation tape)"
+	test -d /usr/man || mkdir /usr/man || exit 1
+	for a in `ls $M`
+	do
+		if test -d $M/$a
+		then
+			test -d /usr/man/$a || mkdir /usr/man/$a || exit 1
+			for b in `ls $M/$a`
+			do
+				if test -d $M/$a/$b
+				then
+					test -d /usr/man/$a/$b || mkdir /usr/man/$a/$b || exit 1
+					for c in `ls $M/$a/$b`
+					do
+						cp $M/$a/$b/$c /usr/man/$a/$b/$c || exit 1
+					done
+				else
+					cp $M/$a/$b /usr/man/$a/$b || exit 1
+				fi
+			done
+		else
+			cp $M/$a /usr/man/$a || exit 1
+		fi
+	done
+	echo "updatebuild: /usr/man filled"
+fi
+
+# THE TREE'S BUILD FILES, FROM THE SAME PLACE.  Phase 6 converted the source
+# tree's makefiles to mkfiles, and those conversions live in the repository's
+# tree -- v10/usr/src/cmd/yacc/mkfile is the file, not a patch that makes it --
+# so no round of patch and no extraction from the tapes ever puts them on the
+# machine.  The first ipnxbuild proved it: 84 rules failed with mk: don't know
+# how to make, every one a call site switched to mk whose mkfile had never left
+# the Mac.  $REPO/mkfiles is the list read here -- the repository's copy, not
+# the machine's: the machine's copy is only refreshed by the handoff at the
+# END of this script, so reading it here would apply LAST round's list and a
+# row added since would never ship.  Every entry is copied every round -- cmp
+# first would read both sides over the wire anyway, so the copy IS the cheap
+# form.  cp's effect survives the subshell that this shell forks for a
+# redirected loop; only variable assignments are lost in it, which is why
+# nothing here counts.
+if test -f $REPO/mkfiles
+then
+	# Every real entry starts with a lowercase path component; a comment
+	# starts with # -- which cannot appear in a case pattern, it opens a
+	# comment there -- and a blank line matches nothing.  So the match is on
+	# what IS a path rather than on what is not.
+	while read f
+	do
+		case $f in
+		[a-z]*)	# A package the machine does not have gets no mkfile: the
+			# five o* directories are norman-only and were never
+			# extracted, and a cp into them fails on every round with
+			# a message that reads like breakage.  A missing TARGET
+			# DIRECTORY is the skip; a failed copy into one that
+			# exists is still said out loud.
+			if test -d /usr/`dirname $f`
+			then
+				cp $REPO/../../$f /usr/$f || echo "updatebuild: $f: copy failed"
+			fi ;;
+		esac
+	done < $REPO/mkfiles
+	echo "updatebuild: tree mkfiles refreshed"
+fi
+
+# THE STAMP IS NOW mk's JOB, AND THIS KEEPS IT HONEST.  mkfile makes
+# $CMD/.patched a plain target whose PREREQUISITE IS $GEN/patch, so mk re-runs
+# the repairs when the script is newer than the stamp and `rm -f .patched' --
+# typed on every round of every session -- is not a thing to remember any more.
+#
+# But mkbuild copies every file whether it changed or not, and a copy is always
+# newer, so patch would read as changed on every single round and everything
+# gated by $SRCOK would rebuild.  So the comparison still has to happen; only
+# its ACTION is inverted.  Before, it deleted the stamp when patch changed.  Now
+# it REFRESHES the stamp when patch did not, which puts the stamp back in front
+# of the copy and leaves mk with nothing to do.
+#
+# Written with echo rather than a date-preserving copy because v10's cp takes
+# only -z (cp(1)) -- there is no -p to carry an mtime across.
+#
+# .ranlib is left alone.  It stands for libc.a's table of contents, which no
+# edit to this directory can invalidate.
+WAS=/usr/tmp/patch.was
+rm -f $WAS
+test -f /usr/src/build/patch && cp /usr/src/build/patch $WAS
+
+# AND OF ITSELF.  A change to this script otherwise takes effect one run late:
+# the copy on disk makes the decisions, the pull installs the new one, and the
+# new behaviour -- a migration, a changed message -- waits for the next round,
+# which looks exactly like the change not working.  sh keeps reading the old
+# unlinked inode after mkbuild's rm+cp (mkbuild's own comment), so the running
+# text is saved here and compared after the pull; if the installed copy
+# differs, it is handed the rest of the round.  $U2 stops a second handoff.
+# ub.was, NOT updatebuild.was: sys/dir.h:2 is `#define DIRSIZ 14' and
+# `updatebuild.was' is fifteen characters, so creat answered ENOENT, rm -f
+# stayed silent, and cmp -s read the missing file as `differs' -- which made
+# every run take the self-handoff pass whether this script had changed or not.
+# Found by sh -x on the machine.
+WAS2=/usr/tmp/ub.was
+rm -f $WAS2
+cp /usr/src/build/updatebuild $WAS2
+
+# ONE FILE LIST, AND IT IS mkbuild's.  Naming the eighteen files and nine
+# subdirectories again here would be a second list, and a component list that
+# appears twice will disagree.  mkbuild folds a `/' destination to empty itself.
+sh /usr/src/build/mkbuild / $REPO || exit 1
+
+if test -f $WAS && cmp -s $WAS /usr/src/build/patch
+then
+	# unchanged: put the stamp back in front of the fresh copy
+	test -f /usr/src/cmd/.patched && echo done > /usr/src/cmd/.patched
+else
+	echo "updatebuild: patch changed -- mk will re-run it"
+fi
+rm -f $WAS
+
+if cmp -s $WAS2 /usr/src/build/updatebuild
+then
+	rm -f $WAS2
+else
+	rm -f $WAS2
+	if test -z "$U2"
+	then
+		echo "updatebuild: updatebuild changed -- running the new one"
+		U2=done
+		export U2
+		exec sh /usr/src/build/updatebuild $REPO
+	fi
+fi

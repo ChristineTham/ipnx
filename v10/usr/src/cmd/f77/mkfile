@@ -61,5 +61,5 @@ ${DESTDIR}/usr/lib/f77pass1 : f77pass1
 	cp f77pass1 ${DESTDIR}/usr/lib/f77pass1
 
 clean:
-	set +e; rm gram.c *.o f77 f77pass1 tokdefs compiler; set -e
+	set +e; rm gram.c *.[oO] f77 f77pass1 tokdefs compiler; set -e
 	du; set -e

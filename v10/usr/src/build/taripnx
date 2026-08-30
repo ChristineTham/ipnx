@@ -1,0 +1,16 @@
+# Archive this machine's /usr as /usr/ipnx/ipnx.tar.
+#
+# ONE tar, NO fixes.  build/usrtrees is the single statement of the shape --
+# the same list mkipnx builds to and mkimage verifies against -- and this
+# script's whole job is to hand that list to tar.  The tree itself is kept
+# collision-free and archive-free (updatebuild owns that), so the archive
+# extracts cleanly on a case-insensitive filesystem.  Clean first if a clean
+# tree is wanted: sh /usr/src/build/ipnxclean.
+test -f /usr/src/build/usrtrees || { echo "taripnx: no usrtrees"; exit 1; }
+test -d /usr/ipnx || mkdir /usr/ipnx || exit 1
+rm -f /usr/ipnx/ipnx.tar
+
+cd /usr && tar cf /usr/ipnx/ipnx.tar `grep '^[a-z0-9]' /usr/src/build/usrtrees` || exit 1
+
+sync
+echo "taripnx: /usr/ipnx/ipnx.tar written"

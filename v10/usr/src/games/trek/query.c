@@ -12,7 +12,7 @@ char *Color[4]
 	"RED"
 };
 
-CVNTAB Infotab[]
+CVNTAB Infotab[] =
 {
 	"st",  "ardate",
 	"c",  "ondition",

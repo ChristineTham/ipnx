@@ -14,4 +14,4 @@ install: ps
 	chmod a=rx,u+ws /bin/ps
 
 clean:
-	rm -f a.out *.o ps core
+	rm -f a.out *.[oO] ps core

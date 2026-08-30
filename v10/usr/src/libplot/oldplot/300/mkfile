@@ -1,0 +1,7 @@
+lib300.a:	*.c
+	make `ls *.c|sed 's/\.c/.o/`
+%.o: %.c
+	cc -c -O $stem.c
+	ar r lib300.a $target
+install:
+	cp lib300.a /usr/lib

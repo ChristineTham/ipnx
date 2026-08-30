@@ -55,7 +55,7 @@ float	*f;
  **	get yes/no parameter
  **/
 
-CVNTAB	Yntab[]
+CVNTAB	Yntab[] =
 {
 	"n",	"o",
 	"y",	"es",
@@ -136,7 +136,7 @@ char buf[];
 	} b;
 
 	s=signal(SIGINT,1);
-	gtty(0,&b); m=b.mode; b.mode =& ~ECHO; stty(0,&b);
+	gtty(0,&b); m=b.mode; b.mode &= ~ECHO; stty(0,&b);
 	flushin();
 	printf("Enter password: %n");
 	

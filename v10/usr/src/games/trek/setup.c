@@ -4,7 +4,7 @@
  **	initialize game
  **/
 
-CVNTAB	Lentab[]
+CVNTAB	Lentab[] =
 {
 	"restart",	"",
 	"s",		"hort",
@@ -14,7 +14,7 @@ CVNTAB	Lentab[]
 	0
 };
 
-CVNTAB	Skitab[]
+CVNTAB	Skitab[] =
 {
 	"n",		"ovice",
 	"f",		"air",
@@ -93,7 +93,7 @@ setup(two)
 	Param.damprob[XPORTER] = 80;	/* transporter		 8.0% */
 	/* check to see that I didn't blow it */
 	for (i = j = 0; i < NDEV; i++)
-		j =+ Param.damprob[i];
+		j += Param.damprob[i];
 	if (j != 1000)
 		syserr("Device probabilities sum to %d", j);
 	Param.dockfac = 0.5;
@@ -104,7 +104,7 @@ setup(two)
 	i = Game.skill;
 	Param.klingpwr = 100 + 150 * i;
 	if (i >= 6)
-		Param.klingpwr =+ 150;
+		Param.klingpwr += 150;
 	Param.phasfac = 0.8;
 	Param.hitfac = 0.5;
 	Param.moveprob[KM_OB] = 45;
@@ -221,8 +221,8 @@ setup(two)
 			q = &Quad[ix][iy];
 			if (q->qkling + klump > 9)
 				continue;
-			q->qkling =+ klump;
-			i =- klump;
+			q->qkling += klump;
+			i -= klump;
 			break;
 		}
 	}

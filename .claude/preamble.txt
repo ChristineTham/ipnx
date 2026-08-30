@@ -21,6 +21,15 @@ the most likely reading. Do not proceed and mention the assumption afterwards.
 Asking costs one message; assuming has cost entire sessions and has corrupted
 disks. "I inferred it from what she said" IS the failure, not a defence.
 
+DEVIATION IS THE TRIGGER, NOT DOUBT.  Certainty is exactly what fails:
+"sellers" was read as a typo for secombe, and "a single line calling tar"
+kept the three fixes it was written to remove -- both under complete felt
+confidence, so "ask when unsure" never fired.  Before every write, compare
+what you are about to do against her LITERAL WORDS: if it keeps anything her
+words removed, adds anything they did not say, or substitutes a word of yours
+for a word of hers, that difference IS the question.  Put it to her before
+writing, however sure you feel.
+
 THINGS THAT ARE NOT PERMISSION:
   - "then we can X"      -> she is describing a LATER step. Do X when she says
                             do X. Editing early has already cost a session.

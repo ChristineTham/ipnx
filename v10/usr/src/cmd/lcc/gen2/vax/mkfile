@@ -1,0 +1,8 @@
+CFLAGS=
+LDFLAGS=-s
+OS=bsd
+
+all:V:	rcc
+	:
+
+<../mkfile

@@ -19,7 +19,7 @@ install:V: compile
 	cp $LPROG $LDIR
 
 clean:V:
-	rm -f $LPROG $LIB *.o
+	rm -f $LPROG $LIB *.[oO]
 
 connect: connect.o
 	$CC -o $target $prereq -lipc

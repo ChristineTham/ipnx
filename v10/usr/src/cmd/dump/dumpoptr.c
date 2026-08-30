@@ -288,8 +288,8 @@ getfstab()
 		for (nfstab = 0, dt = fstab; nfstab < MAXFSTAB;){
 			if ( (fsp = getfsent()) == 0)
 				break;
-			if (   (strcmp(fsp->fs_type, FSTAB_RW) == 0)
-			    || (strcmp(fsp->fs_type, FSTAB_RO) == 0) ){
+			if (   fsp->fs_ftype != FSNONE
+			    && fsp->fs_ftype != FSSWAP ){
 				*dt = *fsp;
 				nfstab++; 
 				dt++;

@@ -25,12 +25,12 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
 #include <sys/ethernet.h>
 
 #define CONFIG_DIR  "/usr/ether"
 
-extern int dump_ld;
+int dump_ld = -1;	/* ipnx: dumpld discipline is on no tape; -dump fails cleanly */
 
 #define MAX_ARGS 10
 

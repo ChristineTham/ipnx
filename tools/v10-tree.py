@@ -221,8 +221,25 @@ def select():
     # filesystem the second copy lands in the first one's slot and the first
     # is simply gone -- fifteen files, silently, with no error anywhere.
     #
-    # The same rule the extractor uses applies here: the all-lowercase
-    # spelling keeps the name, the others take `u_' in front of their own.
+    # RULE 0: THE SURVIVOR IS WHATEVER THE DIRECTORY'S OWN BUILD FILE NAMES.
+    # All-lowercase-wins is the default and is right for almost every collision,
+    # but it is wrong wherever the build reads the capitalised spelling -- and
+    # then it renames the one file that had to keep its name, after which a
+    # block in build/patch has to undo it on the machine, at build time.
+    # v10/usr/src/build/casenames carries the whole decision; these four are the
+    # cases where it overrides the default, and the evidence is on each line.
+    CAPWINS = {
+        # olibcmkfile:123 is `doprnt.o: stdio/doprnt.S'
+        ("libc/stdio/ostdio",     "doprnt.s"): "doprnt.S",
+        # makefile names String.h at :11,14,17,23,26,50,53 and string.h never
+        ("cmd/cfront/libstring",  "string.h"): "String.h",
+        # makefile:113 is `hash.o: hash.c hash.H'
+        ("cmd/cfront/ooptcfront", "hash.h"):   "hash.H",
+        # makefile:12-13 build qsnap from Qsnap.c
+        ("cmd/qsnap",             "qsnap.c"):  "Qsnap.c",
+    }
+    # Otherwise the extractor's rule: the all-lowercase spelling keeps the name,
+    # the others take `u_' in front of their own.
     kids = collections.defaultdict(set)
     for dest in chosen:
         parts = dest.split("/")
@@ -236,8 +253,12 @@ def select():
         for _low, spellings in g.items():
             if len(spellings) < 2:
                 continue
-            lower = [n for n in spellings if n == n.lower()]
-            keep = lower[0] if lower else sorted(spellings)[0]
+            over = CAPWINS.get((parent, _low))
+            if over and over in spellings:
+                keep = over
+            else:
+                lower = [n for n in spellings if n == n.lower()]
+                keep = lower[0] if lower else sorted(spellings)[0]
             for n in sorted(spellings):
                 if n != keep:
                     ren[(parent, n)] = "u_" + n

@@ -1,4 +1,5 @@
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
+#include <sys/dkio.h>
 #include <stdio.h>
 
 static	char *names[] = {

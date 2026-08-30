@@ -37,8 +37,8 @@ int	ix, iy;
 	sleep(2);
 	printf("%s extensively damaged.\n", Status.shipname);
 	i = 15 + ranf(10 * Game.skill);
-	Game.deaths =+ i;
-	Status.crew =- i;
+	Game.deaths += i;
+	Status.crew -= i;
 	printf("McCoy: Take it easy Jim; we had %d casualties.\n", i);
 	for (i = 0; i < NDEV; i++)
 	{

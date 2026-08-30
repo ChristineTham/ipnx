@@ -1,0 +1,40 @@
+# HAND-WRITTEN over the mechanical conversion -- kas0 is one grammar and one
+# scanner feeding a single object, and the converter's appended yacc pin
+# bypassed the file's own kas0.c/kas.yh machinery, leaving kas2.o's kas.yh
+# unbuildable.
+#
+# THE FLOW IS THE ORIGINAL MAKEFILE'S: yacc -d makes kas0.c AND kas.yh in one
+# run (both spelled as targets of the one rule, mk's form for a side effect),
+# lex makes kas0.yl which kas0.c includes, and kas0.o compiles kas0.c
+# explicitly -- an explicit recipe, because with kas0.y, kas0.l and kas0.c all
+# present the builtin metarules see three chains and stop at `ambiguous'.
+CFLAGS = -g ${CCFLAGS}
+
+all:V:	kasb
+	:
+
+kasb:	kas0.o kas1.o kas2.o kas3.o
+	${CC} ${CFLAGS} -o kasb kas0.o kas1.o kas2.o kas3.o -ll
+
+kas0.o:	kas.h kas0.c kas0.yl
+	${CC} ${CFLAGS} -c kas0.c
+
+kas1.o:	kas.h kas1.c
+kas2.o:	kas.h kas2.c kas.yh
+kas3.o:	kas.h kas3.c
+
+kas0.c kas.yh:	kas0.y
+	yacc -d kas0.y
+	mv y.tab.c kas0.c
+	mv y.tab.h kas.yh
+
+kas0.yl:	kas0.l
+	lex kas0.l
+	mv lex.yy.c kas0.yl
+
+install:V:	kasb
+	cp kasb /bin
+	strip /bin/kasb
+
+clean:V:
+	rm -f kasb *.[oO] kas.yh kas0.c kas0.yl y.tab.c y.tab.h lex.yy.c

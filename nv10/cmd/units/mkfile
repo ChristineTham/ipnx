@@ -1,0 +1,20 @@
+units:V:		cdate.h
+	:
+cdate.h:	units.y mkcdate
+		./mkcdate >cdate.h
+clean:
+	rm -f *.o cdate.h mkcdate
+install:
+	strip units
+	cp units /usr/bin
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+units.o: units.y
+	yacc units.y && cc -c y.tab.c && mv y.tab.o units.o; rm -f y.tab.c
+
+'^([^./]+)$':R:	'\1'.c
+	cc -o $stem1 $stem1.c

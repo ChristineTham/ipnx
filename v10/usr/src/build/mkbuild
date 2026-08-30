@@ -1,12 +1,12 @@
 # Copy the build system into <root>/usr/src/build.  That is all it does.
 #
 #	mkimage   makes the disk and extracts a prebuilt ipnx.tar into it
-#	mktape    fills a blank /v10/usr from the six archives
+#	mkv10     the six tapes -> v10.tar, and mkipnx adds this to it
 #	mkbuild   puts the build system into <root>/usr/src/build     <-- this
 #	mkipnx    writes /v10/usr back out as ipnx.tar
 #
 # The disk mkimage makes has to carry the thing that built it, so this runs
-# before mkipnx.  A /v10/usr that mktape has just filled does not have it
+# before mkipnx.  A /v10/usr that mkv10's archive has just filled does not have it
 # either -- nothing puts it there but this.
 #
 # Named file by file: v10's cp takes only -z (cp(1)), so there is no -r.
@@ -21,6 +21,12 @@
 # Taking the repository's copy is the developer's call and has to be typed:
 #
 #	sh /usr/src/build/mkbuild / /n/macos/Users/christie/Repositories/Unix/ipnx/v10/usr/src/build
+#
+# THAT LINE IS NOW updatebuild, which is the only thing here that names a share.
+# It calls this script -- the file list below stays the one list -- and then
+# clears $CMD/.patched if the patch it just installed differs from the one it
+# replaced, which is the other half of what used to be typed by hand.  Reach for
+# mkbuild directly only to write into a target other than this machine.
 #
 D=${1-/v10}
 case $D in
@@ -46,13 +52,28 @@ do
 	rm -f $D/usr/src/build/$f
 done
 test -d $D/usr/src/build || mkdir $D/usr/src/build || exit 1
-for f in PATCHES.md fixbin fixnames inccheck installed makedev makedev2 mkbuild mkcheck mkdev mkfile mkimage mkipnx mkmk mktape patch proto-dev unmkbin
+# THE LIST IS THE DIRECTORY.  This was twenty names written down, and a name
+# written down is a list that appears twice: adding updatebuild to the
+# repository copied everything EXCEPT updatebuild, because the mkbuild doing the
+# copying still held the old nineteen.  A new file took two runs to arrive and
+# the first run looked like a success -- no output, status 0, and the file
+# absent.  Enumerating $B instead means the source directory is the only list
+# and it cannot disagree with itself.
+#
+# The three subdirectories below are still named one by one, because v10's cp
+# takes only -z (cp(1)) and so cannot recurse; `test -d' is what keeps them out
+# of this loop.  Written as if/then/else rather than `&& continue' to match the
+# rest of this build system and to depend on nothing but test.
+for f in `ls $B`
 do
-	cp $B/$f $D/usr/src/build/$f || exit 1
+	if test -d $B/$f
+	then	:
+	else	cp $B/$f $D/usr/src/build/$f || exit 1
+	fi
 done
 
 test -d $D/usr/src/build/etc || mkdir $D/usr/src/build/etc || exit 1
-for f in down fstab profile group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
+for f in crontab down fstab profile group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
 do
 	cp $B/etc/$f $D/usr/src/build/etc/$f || exit 1
 done

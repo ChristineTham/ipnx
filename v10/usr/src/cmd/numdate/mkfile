@@ -1,0 +1,20 @@
+CFLAGS = -Od2
+OBJ = numdate.o getdate.o
+
+numdate: ${OBJ}
+	cc ${CFLAGS} -o numdate ${OBJ}
+
+install: numdate
+	strip numdate
+	mv numdate /usr/bin
+
+clean:
+	rm -f ${OBJ}
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+getdate.o: getdate.y
+	yacc getdate.y && cc ${CFLAGS} -c y.tab.c && mv y.tab.o getdate.o; rm -f y.tab.c

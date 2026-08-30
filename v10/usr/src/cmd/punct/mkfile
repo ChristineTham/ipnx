@@ -1,0 +1,11 @@
+CFLAGS = -s
+punct: cbtype.o mdouble.o npunct.o
+	cc cbtype.o mdouble.o npunct.o -ll -o punct
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+npunct.o: npunct.l
+	lex npunct.l && cc ${CFLAGS} -c lex.yy.c && mv lex.yy.o npunct.o; rm -f lex.yy.c

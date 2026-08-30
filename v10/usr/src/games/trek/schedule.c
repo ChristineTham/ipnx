@@ -41,7 +41,7 @@ reschedule(e, delta)
 EVENT		*e;
 float		delta;
 {
-	e->date =+ delta;
+	e->date += delta;
 	return;
 }
 

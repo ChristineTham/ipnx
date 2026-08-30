@@ -1,3 +1,4 @@
+#include <sys/filio.h>	/* ipnx filio */
 #define DKMSGS 1
 #include <dk.h>
 #include <dkerr.h>

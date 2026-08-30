@@ -14,7 +14,7 @@ goo:V:	nmk
 	nmk
 
 clean:V:
-	rm -f cyntax nmk *.o O/*
+	rm -f cyntax nmk *.[oO] O/*
 
 install:V:	nmk
 	cp nmk /usr/bin/mk

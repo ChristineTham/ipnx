@@ -4,7 +4,7 @@
  **	instruction read and main play loop
  **/
 
-CVNTAB	Comtab[]
+CVNTAB	Comtab[] =
 {
 	"!",			"shell",
 	"m",			"ove",

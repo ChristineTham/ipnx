@@ -1,0 +1,31 @@
+xref:V:	xrefa xrefb
+	:
+xrefa:	xrefa.o lib.a
+	cc -o xrefa xrefa.o -ll lib.a
+xrefb:	xrefb.o lib.a
+	cc -o xrefb xrefb.o lib.a
+
+# (dropped: a recipe-less metarule overrides mk's builtin with nothing)
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+xrefa.o: xrefa.l
+	lex xrefa.l && cc -c lex.yy.c && mv lex.yy.o xrefa.o; rm -f lex.yy.c
+
+# divide.s is PDP-11 assembly -- tst/bge/dec mnemonics; the VAX as refuses
+# every line -- so the tape's xref never rebuilt on a VAX and the machine's
+# divide.c is the working port of it.  The explicit rule below settles what
+# would otherwise be an ambiguity between mk's %.o:%.c and %.o:%.s builtins
+# with both sources present.
+divide.o: divide.c
+	cc -c divide.c
+
+# lib.a was the tape's prebuilt archive of these five, dissolved with every
+# other archive; its sources sit right here, so it is a build product now.
+# Member order is the tape's (lib/ORDER).
+lib.a: ctype.o divide.o input.o output.o string.o
+	ar rc lib.a ctype.o divide.o input.o output.o string.o
+	ranlib lib.a

@@ -47,7 +47,7 @@ pp:
 	smallpr mkfile worm.h *.c
 
 clean:V:
-	rm -f *.o *.a $ALL core O/*
+	rm -f *.[oO] *.a $ALL core O/*
 
 install:V:	$BALL
 

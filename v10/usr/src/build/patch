@@ -8,7 +8,13 @@
 # hardcoding /v10 made `mk' with ROOT empty repair the wrong tree.  The
 # default is for running it by hand against the disk on ra1.
 SRC=${SRC-/v10/usr/src}
-GEN=${GEN-$SRC/build}
+# GEN's DEFAULT IS THE BUILDER'S, not $SRC/build, and it no longer matches SRC
+# on purpose.  SRC is the tree being repaired -- /v10's, by hand -- while GEN is
+# where the replacement files come from, and mkfile:109 pins that to this
+# machine for the reasons given there.  Taking it from $SRC would read repair
+# inputs off the disk being written, which is a copy that can be a generation
+# behind the one the mkfile just used.
+GEN=${GEN-/usr/src/build}
 SYS=${SYS-/v10/usr/sys}
 
 # arff.c:694 compares struct rt_ent * (line 69) against char * (line 72).  The
@@ -391,20 +397,18 @@ sed '/^struct { char chars\[ 10 \]; };$/d' icfile.c > e$$ && mv e$$ icfile.c
 # "pen.h".  Both are in /usr/include/sys/filio.h:29,31 --
 #	#define	FIOPUSHLD	(('f'<<8)|3)
 #	#define	FIOLOOKLD	(('f'<<8)|5)
-# -- the line-discipline ioctls it pushes tty_ld with.  The file is a member of
-# pen.c.a, so the repair goes through ar: extract, prepend, replace.  The
-# extracted copy is the guard, and it is removed either way so the directory is
-# left as the tape had it.
-cd $SRC/libplot/libpen || exit 1
-ar x pen.c.a openpl.c
+# -- the line-discipline ioctls it pushes tty_ld with.  The file was a member
+# of pen.c.a until arcfix dissolved that archive into pen/, so the repair now
+# edits pen/openpl.c in place; the marker comment is the guard.  The earlier
+# ar-based form of this step, run after the dissolve, manufactured a fresh
+# pen.c.a holding one file -- a stray archive the tar rules then had to sweep.
+cd $SRC/libplot/libpen/pen || exit 1
 if grep 'ipnx filio' openpl.c > /dev/null
-then	rm -f openpl.c
+then	:
 else
 	echo '#include <sys/filio.h>	/* ipnx filio */' > p$$
 	cat openpl.c >> p$$
 	mv p$$ openpl.c
-	ar r pen.c.a openpl.c
-	rm -f openpl.c
 fi
 
 # town.c:6 is `# include "/usr/weather/progs/weath.h"' -- an absolute path to a
@@ -581,16 +585,18 @@ else
 #define	libpath(file) "/usr/lib/file"	/* ipnx libpath -- see PATCHES.md */|' ex_tune.h > e$$ && mv e$$ ex_tune.h
 fi
 
-# ostdio's mkfile reads doprnt.S AND THAT IS THE RIGHT NAME HERE.  The
-# u_doprnt.S in the repository is v10-tree.py's renaming of a case collision --
-# doprnt.S and doprnt.s are one name to a case-folding merge, so the lowercase
-# spelling kept it and the other took the u_ prefix.  mktape extracts the tapes
-# onto a case-SENSITIVE v10 filesystem, where both original names survive, so
-# nothing needs renaming and pointing the rule at u_doprnt.S only broke it.
-# An earlier pass of this file DID point it there, and patch edits the source
-# tree in place -- /usr/src survives between builds -- so the wrong name has to
-# be taken back out rather than merely not put in.  On a tree that never saw
-# it the substitution finds nothing and changes nothing.
+# ostdio's mkfile reads doprnt.S AND THAT IS THE RIGHT NAME HERE.  THIS LINE IS
+# NOW ONLY A REPAIR FOR DAMAGE ALREADY DONE, kept because patch edits the source
+# tree in place and /usr/src survives between builds -- a tree that saw the
+# earlier pass still holds the wrong name and nothing else takes it back out.
+# On a tree that never saw it the substitution finds nothing and changes nothing.
+#
+# The cause is gone.  The old rule for case collisions was lowercase-wins, which
+# renamed doprnt.S -- the one spelling olibcmkfile:123 actually reads -- and left
+# doprnt.s holding the name.  Rule 0 in ./casenames reverses that: the survivor
+# is whatever the directory's own build file names, mkv10 applies the table when
+# it lays the tapes down, and the repository now holds doprnt.S and u_doprnt.s
+# the same way the guest does.  Nothing renames the name the build reads again.
 cd $SRC/libc/stdio/ostdio || exit 1
 sed 's|u_doprnt.S|doprnt.S|' mkfile > o$$ && mv o$$ mkfile
 
@@ -735,13 +741,11 @@ done
 # per-file repairs above are left where they are: each is correct on its own
 # and a guarded header makes them harmless rather than wrong.
 #
-# BOTH COPIES ARE GUARDED.  The mkfile's $INC rule keys its P attribute on
-# /usr/include/libc.h, so once that file exists the rule is skipped and
-# $SRC/include is never copied over /usr/include again -- a guard added only to
-# the source tree would sit there unread while the compiler goes on using the
-# installed header.  patch already edits an installed header in place, the
-# dumprestor.h sed above, so the second one goes the same way.
-for t in $SRC/include/sys/types.h /usr/include/sys/types.h
+# ONE COPY NOW.  /usr/include IS the living tree under the tar-of-/usr shape
+# -- the $INC install rule dissolved with the move back -- so the header the
+# compiler reads is the one edited here.  (This loop once guarded both the
+# source-tree copy and the installed copy; there is only one.)
+for t in $ROOT/usr/include/sys/types.h
 do
 	if grep '_TYPES_' $t > /dev/null
 	then	:
@@ -1406,7 +1410,7 @@ sed \
 # recompiles that one object and re-archives -- on the guest `libpc' is the
 # tape's ar file, which is why it read as up to date until now (the host
 # checkout shows it unpacked into a directory of members, which is v10-tree.py's
-# doing and not what mktape extracts).
+# doing and not what mkv10 extracts).
 # The two seds avoid matching 'e' -- a single quote inside a single-quoted sed
 # expression ends the string, which is how the seventeen operator casts above
 # silently did nothing on their first attempt.
@@ -1772,6 +1776,89 @@ sed \
     -e 's|^	cp = zbuf = alloc(i = (zcnt + 1) \* sizeof \*zbuf);$|	cp = (char *)(zbuf = (long *)alloc(i = (zcnt + 1) * sizeof *zbuf));|' \
     pmon.c > z$$ && mv z$$ pmon.c
 
+# TWENTY-FIVE `clean' TARGETS ABANDON THEMSELVES ON AN UNBUILT TREE.  mk(1)
+# 266-269 hands a recipe to `/bin/sh -e' and -e quits the whole recipe at the
+# first command that returns non-zero, so `rm libdbm.a' in a directory where
+# nothing has been built takes the rest of the recipe with it.  mkfile:29-39
+# carries a `|| :' on all 220 of its `make clean' calls for exactly this, which
+# works and hides the cause; these are the cause.
+#
+# THE COUNT IN THAT COMMENT IS WRONG IN BOTH DIRECTIONS, and this is what a scan
+# of all 444 build files says instead:
+#   - 26 clean targets run `rm' with no -f, not sixteen.  One of the 26,
+#     cmd/f77/mkfile:64, already wraps its rm in `set +e ... set -e' and is
+#     left alone, so 25 are repaired here.
+#   - 111 build files have no clean target at all, not nine -- but the nine the
+#     comment names include `ex', and cmd/ex/makefile:93-96 has one, written
+#     `-rm -f' twice over.  Absence is already handled by the `|| :', so the 111
+#     are recorded and not invented; what fails is the unguarded rm, not the
+#     missing target.
+#
+# `rm -f' rather than make's `-' prefix, because seven of these are mkfiles and
+# mk has no such prefix -- one form works in both dialects and this tree is
+# converging on mk anyway.
+cd $SRC/cmd/adb/11v || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/68v || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/cray || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/g || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/null || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/seq || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/adb/vax || exit 1
+sed 's|^	rm adb \$(FILES)$|	rm -f adb $(FILES)|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/btree/gbt || exit 1
+sed 's|^	rm \*\.o \*\.x btlib$|	rm -f *.o *.x btlib|' makefile > c$$ && mv c$$ makefile
+cd $SRC/cmd/btree || exit 1
+sed 's|^	rm \*\.o \*\.x btlib$|	rm -f *.o *.x btlib|' makefile > c$$ && mv c$$ makefile
+cd $SRC/cmd/docgen || exit 1
+sed 's|^	rm cstrans lex\.yy\.c$|	rm -f cstrans lex.yy.c|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/eqn || exit 1
+sed 's|^	rm a\.out \*\.o make\.out \*y\.tab\.h$|	rm -f a.out *.o make.out *y.tab.h|' mkfile > c$$ && mv c$$ mkfile
+cd $SRC/cmd/ideal || exit 1
+sed 's|^	rm \$(OBJECTS) y\.tab\.c lex\.yy\.c$|	rm -f $(OBJECTS) y.tab.c lex.yy.c|' makefile > c$$ && mv c$$ makefile
+cd $SRC/cmd/learn || exit 1
+sed 's|^	rm \*\.o a\.out$|	rm -f *.o a.out|' makefile > c$$ && mv c$$ makefile
+cd $SRC/cmd/movie || exit 1
+sed 's|^	rm \*\.o$|	rm -f *.o|' makefile > c$$ && mv c$$ makefile
+# omovie IS NORMAN'S ALONE AND THE MACHINE DOES NOT HAVE IT.  The repository
+# carries it (the superset takes everything the six tapes hold) but mkv10's
+# norman selection does not, so a tree extracted from the tapes has no such
+# directory and a hard `cd || exit 1' here killed the whole of patch on the
+# first ipnxbuild -- everything after this line, streamio.c and the kernel
+# config included, silently never ran.  Nothing in the mkfile builds omovie
+# (its one mention is a comment), so on a tree without it there is no makefile
+# to repair and skipping is exact, not lenient.
+if test -d $SRC/cmd/omovie
+then
+	cd $SRC/cmd/omovie || exit 1
+	sed 's|^	rm \*\.o$|	rm -f *.o|' makefile > c$$ && mv c$$ makefile
+fi
+cd $SRC/cmd/pic || exit 1
+sed 's|^	rm \*\.o a\.out \*y\.tab\.h$|	rm -f *.o a.out *y.tab.h|' makefile > c$$ && mv c$$ makefile
+cd $SRC/cmd/poly || exit 1
+sed 's|^	rm polypr polypic$|	rm -f polypr polypic|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/cmd/troff/Old || exit 1
+sed 's|^	rm \*\.o a\.out make\.out$|	rm -f *.o a.out make.out|' makefile > c$$ && mv c$$ makefile
+cd $SRC/ipc/libin || exit 1
+sed 's|^	rm \*\.\[oOa\] cyntax$|	rm -f *.[oOa] cyntax|' mkfile > c$$ && mv c$$ mkfile
+cd $SRC/ipc/libipc || exit 1
+sed 's|^	rm \*\.\[oOa\] cyntax$|	rm -f *.[oOa] cyntax|' mkfile > c$$ && mv c$$ mkfile
+cd $SRC/lbin/libjobs || exit 1
+sed 's|^	rm libjobs\.a \*\.o$|	rm -f libjobs.a *.o|' makefile > c$$ && mv c$$ makefile
+cd $SRC/libdbm || exit 1
+sed 's|^	rm libdbm\.a$|	rm -f libdbm.a|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/libj || exit 1
+sed 's|^	rm \$(OBJ) libj\.a$|	rm -f $(OBJ) libj.a|' Makefile > c$$ && mv c$$ Makefile
+cd $SRC/libplot/libplot || exit 1
+sed 's|^	rm \*\.o libplot\.a \*\.c$|	rm -f *.o libplot.a *.c|' makefile > c$$ && mv c$$ makefile
+cd $SRC/libplot/libram || exit 1
+sed 's|^	rm libram\.a ramtek$|	rm -f libram.a ramtek|' makefile > c$$ && mv c$$ makefile
+
 # atrun.c:109 CALLS setupshares AND V10 HAS NO FAIRSHARE.  The line is
 #	(void)setupshares(stbuf.st_uid, (void (*)())0);
 # and libc has no such member -- it was left out by choice, like gets -- so the
@@ -2052,9 +2139,12 @@ cp $GEN/src/streamio.c $SYS/os/streamio.c || exit 1
 
 # THE KERNEL CONFIGURATION, put where mk.star can find it.  astro/ipnx-v10.m is
 # ours and the tapes have no such file, so it travels here like every other
-# repair: mktape fills /usr/sys by extracting secombe and moving src/sys, which
-# would wipe anything written into that tree beforehand, and the repository's
-# own v10/usr/sys is copied to the guest by nothing at all.
+# repair.  The reason has changed and the conclusion has not: mkv10 fills
+# src/sys from secombe, and mkv10 moves it out to /usr/sys, where it lives
+# under the tar-of-/usr shape ($SYS is /usr/sys again) -- and the
+# repository's own v10/usr/src/sys is copied to the guest by nothing at all.
+# ipnxorig.tar carries the tapes plus /usr/src/build, and this file is in the
+# second half.
 #
 # The .m is the whole machine description -- mk.star's `%.c.c: $MKDEP %.m' rule
 # gives it to mkconf, which writes the C and the assembler the kernel is built
@@ -2201,3 +2291,171 @@ sed 's|^xrefa:	xrefa.o lib.a$|xrefa:	xrefa.o ctype.o input.o output.o string.o d
 sed 's|^	cc -o xrefa xrefa.o -ll lib.a$|	cc -o xrefa xrefa.o ctype.o input.o output.o string.o divide.o -ll|' Makefile > m$$ && mv m$$ Makefile
 sed 's|^xrefb:	xrefb.o lib.a$|xrefb:	xrefb.o ctype.o input.o output.o string.o divide.o|' Makefile > m$$ && mv m$$ Makefile
 sed 's|^	cc -o xrefb xrefb.o lib.a$|	cc -o xrefb xrefb.o ctype.o input.o output.o string.o divide.o|' Makefile > m$$ && mv m$$ Makefile
+
+# THE GAMES CAME FROM MACHINES V10 LEFT BEHIND, and each repair below is one
+# vintage gap, named.  gets stays deleted (td, 88.11.07, above); the call
+# sites get the same fgets idiom as 512restor's.
+cd $SRC/games || exit 1
+sed -e 's|if(gets(gbuf)==NULL)|if(fgets(gbuf, sizeof gbuf, stdin) == NULL)|' hangman.c > g$$ && mv g$$ hangman.c
+sed -e 's|char fid\[100\], rid\[100\], rline\[113\], \*gets(), fname\[100\], buf\[200\],|char fid[100], rid[100], rline[113], fname[100], buf[200],|' \
+    -e 's|^	gets(tuid);$|	*tuid = 0; fgets(tuid, sizeof tuid, stdin); tuid[strcspn(tuid, "\\n")] = 0;|' \
+    -e 's|^	gets(tm);$|	*tm = 0; fgets(tm, sizeof tm, stdin); tm[strcspn(tm, "\\n")] = 0;|' \
+    -e 's|^	gets(fid);$|	*fid = 0; fgets(fid, sizeof fid, stdin); fid[strcspn(fid, "\\n")] = 0;|' \
+    -e 's|^	gets(rid);$|	*rid = 0; fgets(rid, sizeof rid, stdin); rid[strcspn(rid, "\\n")] = 0;|' \
+    -e 's|^	gets(ndline);$|	*ndline = 0; fgets(ndline, sizeof ndline, stdin); ndline[strcspn(ndline, "\\n")] = 0;|' \
+    -e 's|^	   gets(fname);$|	   *fname = 0; fgets(fname, sizeof fname, stdin); fname[strcspn(fname, "\\n")] = 0;|' \
+    -e 's|else if(gets(buf) == NULL) goto quit;|else if(fgets(buf, sizeof buf, stdin) == NULL) goto quit; else buf[strcspn(buf, "\\n")] = 0;|' \
+    imp.c > g$$ && mv g$$ imp.c
+
+cd $SRC/games/rogue || exit 1
+sed -e 's|^	gets(prbuf);$|	*prbuf = 0; fgets(prbuf, sizeof prbuf, stdin); prbuf[strcspn(prbuf, "\\n")] = 0;|' \
+    -e 's|^		gets(prbuf);$|		*prbuf = 0; fgets(prbuf, sizeof prbuf, stdin); prbuf[strcspn(prbuf, "\\n")] = 0;|' \
+    rip.c > g$$ && mv g$$ rip.c
+
+cd $SRC/games/mille || exit 1
+sed -e 's|^			gets(buf);$|			*buf = 0; fgets(buf, sizeof buf, stdin); buf[strcspn(buf, "\\n")] = 0;|' \
+    varpush.c > g$$ && mv g$$ varpush.c
+
+# sail: vwait(&status, flags, 0) is the V8 job-control wait; V10 libc ships
+# wait3 with the identical BSD signature.  player1.c's gets gets the idiom.
+cd $SRC/games/sail || exit 1
+sed -e 's|pid = vwait(&status, WNOHANG|pid = wait3(\&status, WNOHANG|' \
+    -e 's|^		gets(comm);$|		*comm = 0; fgets(comm, sizeof comm, stdin); comm[strcspn(comm, "\\n")] = 0;|' \
+    player1.c > g$$ && mv g$$ player1.c
+
+# trek is pre-K&R: 124 archaic `=+' and `=-' assignments that the seventh
+# edition's cc took and this machine's refuses (`saw +').  Spaces on both
+# sides in every occurrence, so the sed cannot touch `i = -1'.
+cd $SRC/games/trek || exit 1
+for f in *.c
+do
+	sed -e 's| =+ | += |g' -e 's| =- | -= |g' $f > g$$ && mv g$$ $f
+done
+
+# pacman uses FIONREAD, which v10 has (sys/filio.h:37); the source never
+# includes the header because BSD's sgtty.h dragged it in.
+cd $SRC/games/pacman || exit 1
+grep -s 'sys/filio' util.c > /dev/null || {
+	sed 's|^#include <sgtty.h>$|#include <sgtty.h>\
+#include <sys/filio.h>|' util.c > g$$ && mv g$$ util.c
+}
+
+# trek round two: the archaic assignment family is larger than =+ and =-.
+cd $SRC/games/trek || exit 1
+for f in *.c
+do
+	sed -e 's, =\* , *= ,g' -e 's, =/ , /= ,g' -e 's, =% , %= ,g' \
+	    -e 's, =| , |= ,g' -e 's, =\& , \&= ,g' -e 's, =^ , ^= ,g' \
+	    $f > g$$ && mv g$$ $f
+done
+
+# dump selects filesystems by BSD's fstab strings; v10's fstab is typed --
+# fs_ftype, FSNONE, FSSWAP (fstab.h) -- so the test becomes `a real,
+# non-swap filesystem'.
+cd $SRC/cmd/dump || exit 1
+sed -e 's|if (   (strcmp(fsp->fs_type, FSTAB_RW) == 0)|if (   fsp->fs_ftype != FSNONE|' \
+    -e 's|    \|\| (strcmp(fsp->fs_type, FSTAB_RO) == 0) ){|    \&\& fsp->fs_ftype != FSSWAP ){|' \
+    dumpoptr.c > g$$ && mv g$$ dumpoptr.c
+
+# dk's tdkdial pushes line disciplines with FIOPUSHLD/FIOPOPLD and never
+# includes sys/filio.h -- libpen's story exactly.
+cd $SRC/dk/libc || exit 1
+grep -s 'sys/filio' tdkdial.c > /dev/null || {
+	sed '1i\
+#include <sys/filio.h>	/* ipnx filio */' tdkdial.c > g$$ && mv g$$ tdkdial.c
+}
+
+# sys/ioctl.h is on no tape -- the include tape never carried it -- and the
+# two sources that ask for it use only the line-discipline ioctls that
+# sys/filio.h declares.  The include is redirected rather than the header
+# invented.
+cd $SRC/dk/libc || exit 1
+for f in *.c ../cmd/*.c
+do
+	grep -s 'sys/ioctl.h' $f > /dev/null || continue
+	sed -e 's|^#include <sys/ioctl.h>$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */|' \
+	    -e 's|^#include "sys/ioctl.h"$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */|' $f > g$$ && mv g$$ $f
+done
+# dkproto and dkctlchan want the KIOC*/DIOC* controller ioctls too, and
+# those live in sys/dkio.h -- alongside filio, not instead of it.
+for f in dkproto.c dkctlchan.c
+do
+	grep -s 'sys/dkio' $f > /dev/null || {
+		sed 's|^#include <sys/filio.h>	/\* ipnx: sys/ioctl.h is on no tape \*/$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */\
+#include <sys/dkio.h>|' $f > g$$ && mv g$$ $f
+	}
+done
+# dcon's tchars and ltchars live in sys/nttyio.h on this machine.
+grep -s 'sys/nttyio' ../cmd/dcon.c > /dev/null || {
+	sed 's|^#include <sys/filio.h>	/\* ipnx: sys/ioctl.h is on no tape \*/$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */\
+#include <sys/nttyio.h>|' ../cmd/dcon.c > g$$ && mv g$$ ../cmd/dcon.c
+}
+cd $SRC/cmd/ether || exit 1
+for f in netconfig.c arpconfig.c ipconfig.c
+do
+	grep -s 'sys/ioctl.h' $f > /dev/null || continue
+	sed -e 's|^#include <sys/ioctl.h>$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */|' \
+	    -e 's|^#include "sys/ioctl.h"$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */|' $f > g$$ && mv g$$ $f
+done
+
+# dump's -w arithmetic wants BSD's fs_freq, the dump-interval field v10's
+# five-field fstab does not have.  fs_passno is the closest survivor: zero
+# for filesystems fsck skips, small and positive for real ones, so `dump
+# when passno days have gone by' keeps -w meaningful.
+cd $SRC/cmd/dump || exit 1
+grep -s 'ipnx fs_freq' dump.h > /dev/null || {
+	sed 's|^#include <fstab.h>$|#include <fstab.h>\
+#define fs_freq fs_passno	/* ipnx fs_freq: v10 fstab has no freq field */|' dump.h > g$$ && mv g$$ dump.h
+}
+
+# netconfig's -dump pushes the dumpld line discipline, whose driver and
+# number are on no tape (the dumpcatch record above).  A defined -1 keeps
+# the link whole and makes -dump fail cleanly at the ioctl.
+cd $SRC/cmd/ether || exit 1
+sed 's|^extern int dump_ld;$|int dump_ld = -1;	/* ipnx: dumpld discipline is on no tape; -dump fails cleanly */|' netconfig.c > g$$ && mv g$$ netconfig.c
+
+# trek's oldest layer: arrays initialized the pre-K&R way, a bare `{' with
+# no `=' after the declarator -- ten of them across the tree.  The pattern
+# is a column-0 TYPE NAME[] line; parameter declarations all end in `;' and
+# stay untouched.
+cd $SRC/games/trek || exit 1
+for f in *.c
+do
+	sed 's|^\([A-Z][A-Za-z]*[ 	][ 	]*[A-Z][A-Za-z]*\[[0-9]*\]\)[ 	]*$|\1 =|' $f > g$$ && mv g$$ $f
+done
+
+# netnews' five real gets sites (everything else already reads with fgets or
+# its own hfgets); the fgets idiom from 512restor's stanza above.
+cd $SRC/cmd/netnews/src || exit 1
+sed -e 's|^	gets(edcmdbuf);$|	*edcmdbuf = 0; fgets(edcmdbuf, sizeof edcmdbuf, stdin); edcmdbuf[strcspn(edcmdbuf, "\\n")] = 0;|' \
+    -e 's|^		gets(bfr);$|		*bfr = 0; fgets(bfr, sizeof bfr, stdin); bfr[strcspn(bfr, "\\n")] = 0;|' \
+    readr.c > g$$ && mv g$$ readr.c
+sed -e 's|while(gets(buf) != NULL) {|while(fgets(buf, sizeof buf, stdin) != NULL) { buf[strcspn(buf, "\\n")] = 0;|' \
+    -e 's|if (gets(buf) == NULL)|if (fgets(buf, sizeof buf, stdin) == NULL)|' \
+    unbatch.c > g$$ && mv g$$ unbatch.c
+
+# arpconfig and ipconfig use the ENIO* ethernet ioctls, which live in the
+# machine's own sys/enio.h -- one more header Bell's sys/ioctl.h evidently
+# gathered.
+cd $SRC/cmd/ether || exit 1
+for f in arpconfig.c ipconfig.c
+do
+	grep -s 'sys/enio' $f > /dev/null || {
+		sed 's|^#include <sys/filio.h>	/\* ipnx: sys/ioctl.h is on no tape \*/$|#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */\
+#include <sys/enio.h>|' $f > g$$ && mv g$$ $f
+	}
+done
+# ipconfig's IPIO* set is one header further along, in sys/inio.h.
+grep -s 'sys/inio' ipconfig.c > /dev/null || {
+	sed 's|^#include <sys/enio.h>$|#include <sys/enio.h>\
+#include <sys/inio.h>|' ipconfig.c > g$$ && mv g$$ ipconfig.c
+}
+
+# ndcon includes <dk.h> -- which reaches sys/stream.h and its caddr_t --
+# before <sys/types.h>.  track.c already orders them correctly.
+cd $SRC/dk/cmd || exit 1
+grep -s 'ipnx types first' ndcon.c > /dev/null || {
+	sed 's|^#include <dk.h>$|#include <sys/types.h>	/* ipnx types first: dk.h reaches stream.h */\
+#include <sys/filio.h>\
+#include <dk.h>|' ndcon.c > g$$ && mv g$$ ndcon.c
+}

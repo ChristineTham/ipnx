@@ -27,7 +27,7 @@ help()
 		return;
 	}
 
-	Game.helps =+ 1;
+	Game.helps += 1;
 	if((l=findbase(&dist))>=0) {
 		Quadx=Base[l].x;
 		Quady=Base[l].y;

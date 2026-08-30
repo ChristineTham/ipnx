@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate a proto-dev for a kernel, from that kernel's own config.
 
-	tools/v10-proto.py <config.m> [--tab v10/usr/sys/lib/tab]
+	tools/v10-proto.py <config.m> [--tab v10/usr/src/sys/lib/tab]
 
 Two inputs and no third: the .m says which devices exist and how many, and
 sys/lib/tab says what major each driver got.  Nothing is taken from a disk.
@@ -321,7 +321,7 @@ def gen(cfg, tabpath):
 
 def main():
     cfg = sys.argv[1]
-    tab = sys.argv[3] if len(sys.argv) > 3 else os.path.join(REPO, "v10/usr/sys/lib/tab")
+    tab = sys.argv[3] if len(sys.argv) > 3 else os.path.join(REPO, "v10/usr/src/sys/lib/tab")
     out, notes = gen(cfg, tab)
     print("# The Tenth Edition /dev for %s." % os.path.basename(cfg))
     print("#")

@@ -4,7 +4,7 @@
  **	on-board computer
  **/
 
-CVNTAB	Cputab[]
+CVNTAB	Cputab[] =
 {
 	"r",			"ecord",
 	"m",			"ove",
@@ -103,7 +103,7 @@ computer()
 	    case 'p':			/* phasers effective */
 		if(getfltpar("Range", &dist)==0 ||
 			chkdist(dist)==0) break;
-		dist =* 10.0;
+		dist *= 10.0;
 		cost = pow(0.90, dist) * 100 + 0.5;
 		printf("Phasers are %d%% effective at that range.\n", cost);
 		break;
@@ -114,10 +114,10 @@ computer()
 			getfltpar("Warp factor", &warpfac)==0) break;
 		cost = (dist + 0.05) * warpfac * warpfac * warpfac;
 		if(Status.shldup)
-			cost =* 2;
+			cost *= 2;
 		time = Param.warptime * dist / (warpfac * warpfac);
 		if(Status.cloaked)
-			cost =+ Param.cloakenergy*time;
+			cost += Param.cloakenergy*time;
 		printf("Distance %.2f cost %.2f stardates %d units",
 			dist, time, cost);
 		if(Status.shldup)
@@ -142,7 +142,7 @@ computer()
 		{
 			e = &Event[i];
 			if ((e->systemname&E_NREPORT)==0)
-				j =| report(e);
+				j |= report(e);
 		}
 		if (j==0)
 			printf("No known distress calls are active.\n");
@@ -207,7 +207,7 @@ float *dist;
 	dy = (tqy + tsy / quadsize) - (Quady + Secty / quadsize);
 	angle = atan2(dy, dx);
 	if (angle < 0.0)
-		angle =+ 6.283185307;
+		angle += 6.283185307;
 	course = angle * 57.29577951 + 0.5;
 	dx = sqrt(dx*dx + dy*dy);
 	*dist=dx;
@@ -268,7 +268,7 @@ prsect(flg,i,j)
 		if (n < 0)
 			printf(" ...");
 		else {
-			k=n/100; b=(n =% 100)/10; n =% 10;
+			k=n/100; b=(n %= 100)/10; n %= 10;
 			if(i==Quadx && j==Quady)
 				b=Status.ship;
 			else	if(b)	b='#';

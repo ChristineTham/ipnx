@@ -9,7 +9,7 @@ ostdio.a: $o
 	ranlib $target
 
 clean:
-	rm -f *.o
+	rm -f *.[oO]
 
 doprnt.o:
 	cp doprnt.S doprnt.c

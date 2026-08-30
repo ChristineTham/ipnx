@@ -111,4 +111,4 @@ ship:	install
 	/usr/lib/libview2d.a
 
 clean:
-	rm -f core *.o *.m $PROG libview2d.a wedge makemap num.a
+	rm -f core *.[oO] *.m $PROG libview2d.a wedge makemap num.a

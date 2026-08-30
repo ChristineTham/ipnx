@@ -10,4 +10,4 @@ authmgr: $OBJS
 $OBJS: authmgr.h
 
 clean:V:
-	rm -f *.o authmgr makekey
+	rm -f *.[oO] authmgr makekey

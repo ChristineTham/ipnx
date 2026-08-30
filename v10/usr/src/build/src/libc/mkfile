@@ -79,15 +79,50 @@ all:V:	libc.a libdmalloc.a
 #	ar ma flsbuf.o libc.a exit.o
 #	ar m libc.a cleanup.o
 
-libc.a:Q:	$OBJ
-	unset prereq
-	names=`membername $newprereq`
-	ar rv libc.a $names && rm $names
-	ranlib libc.a
+# THIS RECIPE MUST NOT NAME $newprereq AT ALL.  mk substitutes the variable
+# into the recipe TEXT and hands the whole recipe to sh as one argument, and
+# dovars (run.c:260) puts prereq and newprereq into the recipe's environment
+# besides -- on a full build after ipnxclean the member list is ~430 names,
+# so recipe-plus-environment lands over NCARGS 16K (sys/param.h:10) and sh
+# answers `Arg list too long' before a single command runs.  Three forms of
+# this rule died that way: membername with the list as argv, ar with $names,
+# and an echo of $newprereq that merely moved the list into the recipe text.
+# Bell never saw any of it -- their libc.a always existed and newprereq
+# stayed a handful.  So the members are picked up from the directory: every
+# compile below drops its .o here, and the only non-member .o that can be
+# present are crt0.o, mcrt0.o and libdmalloc's goo.o, excluded by name.
+# ...and the fourth death: even a recipe of pure pipeline commands failed,
+# because dovars' environment ALONE -- prereq plus newprereq, ~15K together --
+# leaves no room under NCARGS for any exec at all.  So the big list lives on
+# a rule whose recipe is `:', the shell builtin, which execs nothing; libc.a
+# itself depends only on that rule and works in a small environment.  .members
+# is virtual and recipe-less -- the fifth death was sh itself: with the full
+# list in the environment execve(/bin/sh) is already over NCARGS, so the rule
+# that carries the list may spawn NOTHING.  A dependency-only :V: aggregate
+# (the world target's own pattern) builds the members without a shell.  The
+# pair re-fires on every run -- the test -s guard makes the empty re-fire
+# cost nothing and keeps ar off a memberless command line (v10 xargs runs
+# its command once even on empty input).
+libc.a:Q:	.members
+	ls | grep '\.o$' | grep -v '^crt0.o$' | grep -v '^mcrt0.o$' | grep -v '^goo.o$' > /usr/tmp/lca.$pid
+	if test -s /usr/tmp/lca.$pid
+	then
+		xargs -n30 ar rv libc.a < /usr/tmp/lca.$pid
+		xargs rm -f < /usr/tmp/lca.$pid
+		ranlib libc.a
+	fi
+	rm -f /usr/tmp/lca.$pid
 
+.members:V:	$OBJ
+
+# cc, NOT lcc: malloc.c includes <stdlib.h>, and lcc resolves that to its own
+# /usr/include/lcc/stdlib.h whose malloc/free/realloc prototypes conflict with
+# this K&R source (`pointer to union store' vs `pointer to char').  Bell's
+# lcc headers evidently matched their malloc.c; the tape's pair does not.
+# cc compiles it clean -- probed on the machine, exit 0.
 libdmalloc.a:	gen/malloc.c
 	cp $prereq goo.c
-	lcc $CFLAGS -Ddebug -c goo.c
+	cc $CFLAGS -Ddebug -c goo.c
 	ar rv libdmalloc.a goo.o && rm goo.[co]
 
 clean:

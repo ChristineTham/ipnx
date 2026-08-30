@@ -56,6 +56,36 @@ final class Handle {
 
     deinit { if fd >= 0 { close(fd) } }
 
+    /// Drop a cached descriptor that no longer refers to the file at `path`.
+    ///
+    /// A HELD DESCRIPTOR FOLLOWS THE INODE, NOT THE NAME. An editor that writes
+    /// a temporary file and renames it over this one -- which is what most of
+    /// them do, and what this project's own tooling does -- leaves `fd` pointing
+    /// at the old, now-unlinked inode, and it stays that way for as long as the
+    /// handle lives. Handles live as long as the client's inode cache does, so
+    /// in practice that is the whole mount.
+    ///
+    /// The failure is silent and it looks like nothing at all. `handle(forIno:)`
+    /// re-lstats, so NGET and NSTAT report the NEW size, while NREAD serves the
+    /// OLD bytes and hits EOF early. v10's `cp` is
+    /// `while(n = read(fold, iobuf, bsize))` -- it loops to EOF and never
+    /// consults st_size -- so it writes a SHORT FILE and exits 0. That is how a
+    /// 182617-byte mkfile arrived on the guest as 179348 bytes, five builds
+    /// running, with every edit to it invisible and no error anywhere.
+    ///
+    /// Comparing st_dev as well as st_ino costs nothing and is correct across a
+    /// share that spans filesystems.
+    func revalidate() {
+        guard fd >= 0 else { return }
+        var now = stat(), have = stat()
+        guard lstat(path, &now) == 0, fstat(fd, &have) == 0 else { return }
+        if now.st_ino != have.st_ino || now.st_dev != have.st_dev {
+            close(fd)
+            fd = -1
+            writable = false
+        }
+    }
+
     var isDir: Bool { st.st_mode & S_IFMT == S_IFDIR }
     var isLink: Bool { st.st_mode & S_IFMT == S_IFLNK }
     var isReg: Bool { st.st_mode & S_IFMT == S_IFREG }
@@ -366,6 +396,7 @@ final class Export {
             let end = min(bytes.count, start + Int(count))
             return .success(Array(bytes[start..<end]))
         }
+        h.revalidate()
         if h.fd < 0 {
             h.fd = open(h.path, O_RDONLY)
             guard h.fd >= 0 else { return .failure(V8Fault(V8Errno.from(host: errno))) }
@@ -387,6 +418,7 @@ final class Export {
     /// `p->how` disagrees with what is now wanted.
     func write(_ h: Handle, offset: Int32, data: [UInt8]) -> UInt8 {
         guard !h.isDir else { return V8Errno.EISDIR }
+        h.revalidate()
         if h.fd < 0 || !h.writable {
             if h.fd >= 0 { close(h.fd) }
             h.fd = open(h.path, O_RDWR)

@@ -222,29 +222,53 @@ corridor. So most of v11 is **restoration rather than importation**, which is bo
 and much more defensible. Scope, evidence and the open questions:
 [docs/v11-plan.md](docs/v11-plan.md).
 
-### ipnx-v12 — a wish
+## Where this project ends
 
-*Not a plan, not a track, not even a maybe. Weaker than Inferno's "maybe, depending on
-licensing", and recorded only so the direction is written down somewhere.*
+**ipnx terminates at the Eleventh Edition.** There will be no v12 here. The work that would
+have been a twelfth edition is a different project with a different premise, and it lives at
+[**ipnx-v12**](https://github.com/ChristineTham/ipnx-v12).
 
-Every edition above runs on an emulated VAX. The wish is that one day it needn't: Research
-Unix retargeted to **ARM64** and to **WASM** — running natively on the machine in your hand,
-and in a browser tab, with no 11/780 underneath at all. (Distinct from the long-standing
-idea of compiling the *emulator* to WebAssembly, which is a much smaller thing and already
-sits in the post-1.0 list.)
+The break is clean rather than gradual, and it is worth setting out why, because the
+reasoning arrived in an order nobody would have predicted.
 
-It is not an absurd wish, only a very hard one, because this system has been ported before
-and its kernel still knows how. V10 keeps the boundary explicit: `sys/md/` holds
-machine-dependent code *per machine* — `star` (the 780), with `comet`, `naut`, `mfair`,
-`mflow` and `uvax` for its siblings — and `sys/ml/` holds the assembler, `trap*.s`,
-`swtch.s`, `copy.s`, `setjmp.s`. A new architecture means a new `md`, a new `ml`, and in
-principle nothing else. Ritchie and Johnson crossed that boundary to the Interdata and
-proved Unix portable at all; London and Reiser crossed it to the VAX; Norman Wilson took V8
-to a Cray.
+A twelfth edition was first imagined as the most traditional act in this repository:
+Research Unix **retargeted**. The kernel still knows how — `sys/md/` holds machine-dependent
+code per machine, `sys/ml/` holds the assembler, and a new architecture means a new `md`, a
+new `ml`, and in principle nothing else. Ritchie and Johnson crossed that boundary to the
+Interdata and proved Unix portable at all; London and Reiser crossed it to the VAX; Norman
+Wilson took V8 to a Cray.
 
-So a twelfth edition would be the most traditional act in this repository — and against a
-target with no MMU, or a memory model nothing in 1989 anticipated, comfortably the hardest.
-It stays a wish until everything above it is done.
+Then we counted what would actually survive the crossing, against a target with no MMU and a
+memory model nothing in 1989 anticipated:
+
+| Subsystem | Lines | Fate |
+|---|---|---|
+| `io/` — 60 driver files | 27,035 | Gone. No hardware to drive |
+| `vm/` — demand paging | 5,882 | Gone. The runtime is the MMU |
+| `md/` — per-machine | 8,116 | Gone. There is no machine |
+| `ml/` — `swtch.s`, `trap.s`, `setjmp.s` | 3,141 asm | Gone. No registers to save |
+| `os/` process semantics | ~3,300 | The only part with anything left to say |
+
+Three thousand surviving lines out of sixty-four thousand is not a port. It is a rewrite —
+and a rewrite is not a restoration, which is the one thing this repository is.
+
+Worse, the kernel worth writing already exists, and it is not this one. Plan 9 has
+per-process namespaces, 9P and `rfork` **by design**, where V10's mount lives on
+`struct inode` as a pair of pointers in a *global* table. Adding Unix semantics to Plan 9 is
+addition; adding Plan 9 semantics to Unix is eviction. So the honest twelfth edition is a
+modified Plan 9 kernel hosted as an ordinary userspace process, carrying a V10 personality,
+with WebAssembly as the executable format — no VAX, no disk image, no emulator.
+
+At which point it is not this project. Every sentence at the top of this README stops being
+true: not full-system emulation, not a real kernel on real emulated hardware, not the
+machine as it actually was. Continuing under the same name would quietly repeal the promise
+rather than keep it, so it goes somewhere else and says so plainly.
+
+**What stays here is finished work, not abandoned work.** V8 ships. V10 is a restoration
+with a golden disk built from this repository's own source. V11 is scoped, small, and
+entirely in the old tradition: V10's kernel unchanged, the anachronisms out, the language
+settled on ANSI C, a ports format, and what the tree lost brought back —
+[docs/v11-plan.md](docs/v11-plan.md).
 
 ## ipnx-ports
 

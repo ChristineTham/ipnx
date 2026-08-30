@@ -26,7 +26,7 @@ abandon()
 	{
 		printf("Entire crew of %d left to die in outer space\n",
 			Status.crew);
-		Game.deaths =+ Status.crew;
+		Game.deaths += Status.crew;
 	}
 	else
 	{
@@ -66,8 +66,8 @@ abandon()
 	for (j = 0; j < NDEV && i > 0; j++) {
 		if (Param.damprob[j] != 0)
 		{
-			Param.damprob[j] =+ 1;
-			i =- 1;
+			Param.damprob[j] += 1;
+			i -= 1;
 		}
 	}
 

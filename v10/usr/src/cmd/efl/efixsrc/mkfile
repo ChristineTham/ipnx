@@ -16,4 +16,4 @@ both:V: ../Efix ../cpt
 	$CC $g $prereq -o $target
 
 clean:
-	rm -f *.o
+	rm -f *.[oO]

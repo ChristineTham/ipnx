@@ -1,0 +1,2 @@
+daemon	6,21,36,51 * * * *	/etc/dmesg - >> /usr/adm/messages
+root	0,10,20,30,40,50 * * * *	/usr/lib/atrun

@@ -42,7 +42,7 @@ install:	libF77.a
 	mv libF77.a /usr/lib
 
 clean:
-	rm -f libF77.a *.o
+	rm -f libF77.a *.[oO]
 
 libF77.xsum: libF77/*
 	rm -f libF77/libF77.xsum libF77/mkfile

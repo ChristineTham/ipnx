@@ -12,6 +12,11 @@ UALL=`echo $USR | sed -e 's:[^ ][^ ]*:$UBIN/&:g'` `echo $SUSR | sed -e 's:[^ ][^
 AALL=`echo $ADM | sed -e 's:[^ ][^ ]*:$ABIN/&:g'` `echo $SADM | sed -e 's:[^ ][^ ]*:$ABIN/&:g'`
 CYN=`echo $ADM $USR | sed -e 's:[^ ][^ ]*:O/&:g'`
 F=../worm
+
+# The driver runs this directory before worm's, so the library it links
+# against is built from here when absent -- worm/mkfile owns the real rule.
+$F/worm.a:
+	cd $F; mk worm.a
 LIB=bdir lock sum logprint fail rx fakeargv relay
 OLIB=`echo $LIB | sed -e 's:[^ ][^ ]*:lib.a(&.o):g'`
 CLIB=`echo $LIB | sed -e 's:[^ ][^ ]*:O/&.O:g'`
@@ -52,7 +57,7 @@ O/logprint.O:	logprint.c
 	cyntax -c $CFLAGS -Vlogprint:1 logprint.c && mv logprint.O O
 
 clean:V:
-	rm -f $ALL *.o
+	rm -f $ALL *.[oO]
 
 ship:V:	ship.usr ship.adm
 ship.usr:	$UALL /usr/bin/backup

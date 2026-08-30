@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <sys/param.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
+#include <sys/nttyio.h>
 #include <signal.h>
 #include <dk.h>
 #include <errno.h>

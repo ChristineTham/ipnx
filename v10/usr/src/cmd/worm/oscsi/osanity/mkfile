@@ -8,4 +8,4 @@ tst%:	tst%.o tstfill.o
 	$CC $CFLAGS -o $target $prereq
 
 clean:V:
-	rm -f *.o $ALL core
+	rm -f *.[oO] $ALL core

@@ -12,7 +12,7 @@ install:V:	egrep
 	chown bin,bin /usr/bin/egrep
 
 clean:V:
-	rm -f *.o egrep egrep.bundle
+	rm -f *.[oO] egrep egrep.bundle
 
 y.tab.h:N:	gram.o
 egrep.o anal.o:	y.tab.h

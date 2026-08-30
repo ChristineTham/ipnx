@@ -1,0 +1,29 @@
+all:V:	cstrans timestamp docgen
+	:
+docgen:V: docgen.c
+	:
+cstrans:	header.h trans.l getstamp.o
+	lex trans.l
+	cc lex.yy.c getstamp.o -ll -o cstrans
+timestamp: timestamp.o getstamp.o
+	cc timestamp.o getstamp.o -o timestamp
+install: cstrans timestamp docgen
+	cp docgen /usr/bin
+	cp mcsdata /usr/lib/docgen
+	cp cstrans /usr/lib/tmac
+	cp timestamp /usr/lib/tmac
+	cp name.sed /usr/lib/tmac
+	cp sendcover.sh /usr/lib/tmac/sendcover
+clean:
+	rm cstrans lex.yy.c
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && cc -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+otrans.o: otrans.l
+	lex otrans.l && cc -c lex.yy.c && mv lex.yy.o otrans.o; rm -f lex.yy.c
+
+trans.o: trans.l
+	lex trans.l && cc -c lex.yy.c && mv lex.yy.o trans.o; rm -f lex.yy.c

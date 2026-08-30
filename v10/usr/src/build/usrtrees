@@ -1,0 +1,19 @@
+# THE SHAPE OF /usr, in one place.  taripnx tars exactly these trees; mkipnx
+# lays the tapes down into exactly these and verifies; mkimage extracts and
+# verifies the same.  A component list that appears twice will disagree, so
+# this file is the only statement of what ipnx.tar carries.
+#
+# bin and lib are absent deliberately: they are product, not shape -- archive
+# objects and binaries a running machine builds and installs onto a disk
+# (ipnxbuild, ipnxinstall), never carried in the archive.  ipnx, tmp, adm and
+# spool are run-state and stay out for the same reason.
+src
+man
+include
+sys
+blit
+jerq
+630
+maps
+vol2
+local

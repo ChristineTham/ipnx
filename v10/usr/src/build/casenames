@@ -1,0 +1,330 @@
+# One name per path.  mkv10 reads this when it lays the tapes down.
+#
+# The six tapes are case-sensitive and this tree has to survive a case-INSENSITIVE
+# checkout, so wherever two tape paths differ only in case exactly one of them can
+# keep its name.  RULE 0 DECIDES WHICH: the survivor is whatever the directory's own
+# build file names -- NOT whatever is lowercase.
+#
+# Lowercase-wins was the earlier rule and it is wrong twice over.  ostdio's
+# olibcmkfile:123 is `doprnt.o: stdio/doprnt.S', so the build reads the capitalised
+# file and lowercase-wins renamed the one thing that had to keep its name;
+# cfront/libstring's makefile names String.h seven times and string.h never.  A
+# rename this project's own tooling performed then had to be undone by a block in
+# `patch', on the machine, at build time.
+#
+# TWO RECORD TYPES, and both are relative to the tape's own spelling:
+#
+#   NAME <tape path> <our path>    extract it under our name instead
+#   DROP <tape path>               do not extract it at all
+#
+# Nothing else is a decision.  A tape path absent from this file is extracted
+# under its own name, which is almost all of them.
+#
+# DROP is used for three things and nothing else: a *.o or *.O, which is build
+# output the tape happened to ship (ipnxclean's rule, and 91 of them collided);
+# a file the build REGENERATES from the sibling it collides with -- compress's
+# makefile:10-11 is `USERMEM:' / `sh usermem > USERMEM', and both Version.c come
+# from `./version > Version.c'; and a redundant duplicate -- six zero-byte
+# ipc/bin merge artefacts, sail's hard link, and libstring/string.h which no
+# source includes and no build file names.
+#
+# THE 34 TROFF FONT DESCRIPTIONS CANNOT BE RENAMED and are the reason this file
+# has to be read at install time too, not only here.  devpost/Hb opens
+# `name Hb / fontname Helvetica-Narrow-Bold' and devpost/HB opens `name HB /
+# fontname Helvetica-Bold': the FILENAME IS THE FONT'S IDENTITY and troff
+# resolves a .ft request to a file of that name at run time.  Renaming one does
+# not break a build -- it breaks documents, silently, by falling back to a
+# different weight.  So they carry a distinct name here and the build must
+# install them under the tape's.
+
+#### NAME  (162)
+
+NAME	v10/usr/630/lib/libfw.a/cursallow.o	v10/usr/630/lib/libfw.a/u_cursallow.o
+NAME	v10/usr/630/lib/libfw.a/cursinhibi.o	v10/usr/630/lib/libfw.a/u_cursinhibi.o
+NAME	v10/usr/630/lib/libfw.a/cursswitch.o	v10/usr/630/lib/libfw.a/u_cursswitch.o
+NAME	v10/usr/630/man/src/man/man1/SOURCE	v10/usr/630/man/src/u_man/man1/SOURCE
+NAME	v10/usr/630/man/src/man/man1/dmdcat.1	v10/usr/630/man/src/u_man/man1/dmdcat.1
+NAME	v10/usr/630/man/src/man/man1/dmdcc.1	v10/usr/630/man/src/u_man/man1/dmdcc.1
+NAME	v10/usr/630/man/src/man/man1/dmddemo.1	v10/usr/630/man/src/u_man/man1/dmddemo.1
+NAME	v10/usr/630/man/src/man/man1/dmdld.1	v10/usr/630/man/src/u_man/man1/dmdld.1
+NAME	v10/usr/630/man/src/man/man1/dmdman.1	v10/usr/630/man/src/u_man/man1/dmdman.1
+NAME	v10/usr/630/man/src/man/man1/dmdmemory.1	v10/usr/630/man/src/u_man/man1/dmdmemory.1
+NAME	v10/usr/630/man/src/man/man1/dmdpi.1	v10/usr/630/man/src/u_man/man1/dmdpi.1
+NAME	v10/usr/630/man/src/man/man1/dmdversion.1	v10/usr/630/man/src/u_man/man1/dmdversion.1
+NAME	v10/usr/630/man/src/man/man1/icon.1	v10/usr/630/man/src/u_man/man1/icon.1
+NAME	v10/usr/630/man/src/man/man1/jim.1	v10/usr/630/man/src/u_man/man1/jim.1
+NAME	v10/usr/630/man/src/man/man1/jx.1	v10/usr/630/man/src/u_man/man1/jx.1
+NAME	v10/usr/630/man/src/man/man1/loadfont.1	v10/usr/630/man/src/u_man/man1/loadfont.1
+NAME	v10/usr/630/man/src/man/man1/mc68ar.1	v10/usr/630/man/src/u_man/man1/mc68ar.1
+NAME	v10/usr/630/man/src/man/man1/mc68as.1	v10/usr/630/man/src/u_man/man1/mc68as.1
+NAME	v10/usr/630/man/src/man/man1/mc68conv.1	v10/usr/630/man/src/u_man/man1/mc68conv.1
+NAME	v10/usr/630/man/src/man/man1/mc68cpp.1	v10/usr/630/man/src/u_man/man1/mc68cpp.1
+NAME	v10/usr/630/man/src/man/man1/mc68cprs.1	v10/usr/630/man/src/u_man/man1/mc68cprs.1
+NAME	v10/usr/630/man/src/man/man1/mc68dis.1	v10/usr/630/man/src/u_man/man1/mc68dis.1
+NAME	v10/usr/630/man/src/man/man1/mc68dump.1	v10/usr/630/man/src/u_man/man1/mc68dump.1
+NAME	v10/usr/630/man/src/man/man1/mc68ld.1	v10/usr/630/man/src/u_man/man1/mc68ld.1
+NAME	v10/usr/630/man/src/man/man1/mc68lorder.1	v10/usr/630/man/src/u_man/man1/mc68lorder.1
+NAME	v10/usr/630/man/src/man/man1/mc68nm.1	v10/usr/630/man/src/u_man/man1/mc68nm.1
+NAME	v10/usr/630/man/src/man/man1/mc68size.1	v10/usr/630/man/src/u_man/man1/mc68size.1
+NAME	v10/usr/630/man/src/man/man1/mc68strip.1	v10/usr/630/man/src/u_man/man1/mc68strip.1
+NAME	v10/usr/630/man/src/man/man1/ucache.1	v10/usr/630/man/src/u_man/man1/ucache.1
+NAME	v10/usr/630/man/src/man/man1/wtinit.1	v10/usr/630/man/src/u_man/man1/wtinit.1
+NAME	v10/usr/blit/src/font/gen/Readme	v10/usr/blit/src/font/gen/u_Readme
+NAME	v10/usr/blit/src/maze/Mazewar.c	v10/usr/blit/src/maze/rmtmazewar.c
+NAME	v10/usr/jerq/sgs/as/Expand1.c	v10/usr/jerq/sgs/as/u_Expand1.c
+NAME	v10/usr/jerq/sgs/as/Gencode.c	v10/usr/jerq/sgs/as/u_Gencode.c
+NAME	v10/usr/src/cmd/awk/awktest.a/T.getline	v10/usr/src/cmd/awk/awktest.a/u_T.getline
+NAME	v10/usr/src/cmd/awk/awktest.a/T.redir	v10/usr/src/cmd/awk/awktest.a/u_T.redir
+NAME	v10/usr/src/cmd/awk/awktest.a/T.sub	v10/usr/src/cmd/awk/awktest.a/u_T.sub
+NAME	v10/usr/src/cmd/awk/test.a/T.getline	v10/usr/src/cmd/awk/test.a/u_T.getline
+NAME	v10/usr/src/cmd/awk/test.a/T.redir	v10/usr/src/cmd/awk/test.a/u_T.redir
+NAME	v10/usr/src/cmd/ccom/vax/tests/A.i	v10/usr/src/cmd/ccom/vax/tests/u_A.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/B.i	v10/usr/src/cmd/ccom/vax/tests/u_B.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/C.i	v10/usr/src/cmd/ccom/vax/tests/u_C.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/D.i	v10/usr/src/cmd/ccom/vax/tests/u_D.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/F.i	v10/usr/src/cmd/ccom/vax/tests/u_F.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/G.i	v10/usr/src/cmd/ccom/vax/tests/u_G.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/H.i	v10/usr/src/cmd/ccom/vax/tests/u_H.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/I.i	v10/usr/src/cmd/ccom/vax/tests/u_I.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/J.i	v10/usr/src/cmd/ccom/vax/tests/u_J.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/K.i	v10/usr/src/cmd/ccom/vax/tests/u_K.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/L.i	v10/usr/src/cmd/ccom/vax/tests/u_L.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/M.i	v10/usr/src/cmd/ccom/vax/tests/u_M.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/N.i	v10/usr/src/cmd/ccom/vax/tests/u_N.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/O.i	v10/usr/src/cmd/ccom/vax/tests/u_O.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/P.i	v10/usr/src/cmd/ccom/vax/tests/u_P.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/Q.i	v10/usr/src/cmd/ccom/vax/tests/u_Q.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/R.i	v10/usr/src/cmd/ccom/vax/tests/u_R.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/S.i	v10/usr/src/cmd/ccom/vax/tests/u_S.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/T.i	v10/usr/src/cmd/ccom/vax/tests/u_T.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/U.i	v10/usr/src/cmd/ccom/vax/tests/u_U.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/V.i	v10/usr/src/cmd/ccom/vax/tests/u_V.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/W.i	v10/usr/src/cmd/ccom/vax/tests/u_W.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/X.i	v10/usr/src/cmd/ccom/vax/tests/u_X.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/Y.i	v10/usr/src/cmd/ccom/vax/tests/u_Y.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/Z.i	v10/usr/src/cmd/ccom/vax/tests/u_Z.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/a.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_a.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/b.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_b.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/c.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_c.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/d.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_d.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/f.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_f.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/g.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_g.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/h.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_h.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/i.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_i.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/j.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_j.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/k.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_k.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/l.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_l.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/m.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_m.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/n.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_n.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/o.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_o.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/p.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_p.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/q.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_q.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/r.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_r.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/s.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_s.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/t.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_t.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/u.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_u.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/v.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_v.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/w.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_w.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/x.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_x.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/y.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_y.i
+NAME	v10/usr/src/cmd/ccom/vax/tests/all.a/z.i	v10/usr/src/cmd/ccom/vax/tests/all.a/u_z.i
+NAME	v10/usr/src/cmd/cfront/libstring/Makefile	v10/usr/src/cmd/cfront/libstring/u_Makefile
+NAME	v10/usr/src/cmd/cfront/ooptcfront/hash.h	v10/usr/src/cmd/cfront/ooptcfront/odihash.h
+NAME	v10/usr/src/cmd/f2c/README	v10/usr/src/cmd/f2c/README.f2c
+NAME	v10/usr/src/cmd/ideal/lib/ARC	v10/usr/src/cmd/ideal/lib/u_ARC
+NAME	v10/usr/src/cmd/ideal/lib/CIRCLE	v10/usr/src/cmd/ideal/lib/u_CIRCLE
+NAME	v10/usr/src/cmd/post.src/devLatin1/Hb	v10/usr/src/cmd/post.src/devLatin1/u_Hb
+NAME	v10/usr/src/cmd/post.src/devLatin1/Hi	v10/usr/src/cmd/post.src/devLatin1/u_Hi
+NAME	v10/usr/src/cmd/post.src/devLatin1/Hx	v10/usr/src/cmd/post.src/devLatin1/u_Hx
+NAME	v10/usr/src/cmd/post.src/devLatin1/charlib/LH	v10/usr/src/cmd/post.src/devLatin1/charlib/u_LH
+NAME	v10/usr/src/cmd/post.src/devLatin1/charlib/RC	v10/usr/src/cmd/post.src/devLatin1/charlib/u_RC
+NAME	v10/usr/src/cmd/post.src/devLatin1/charlib/rH	v10/usr/src/cmd/post.src/devLatin1/charlib/u_rH
+NAME	v10/usr/src/cmd/post.src/devopost/Hb	v10/usr/src/cmd/post.src/devopost/u_Hb
+NAME	v10/usr/src/cmd/post.src/devopost/Hi	v10/usr/src/cmd/post.src/devopost/u_Hi
+NAME	v10/usr/src/cmd/post.src/devopost/Hx	v10/usr/src/cmd/post.src/devopost/u_Hx
+NAME	v10/usr/src/cmd/post.src/devopost/charlib/LH	v10/usr/src/cmd/post.src/devopost/charlib/u_LH
+NAME	v10/usr/src/cmd/post.src/devpost.add/C1	v10/usr/src/cmd/post.src/devpost.add/u_C1
+NAME	v10/usr/src/cmd/post.src/devpost.add/C2	v10/usr/src/cmd/post.src/devpost.add/u_C2
+NAME	v10/usr/src/cmd/post.src/devpost.add/C3	v10/usr/src/cmd/post.src/devpost.add/u_C3
+NAME	v10/usr/src/cmd/post.src/devpost/Hb	v10/usr/src/cmd/post.src/devpost/u_Hb
+NAME	v10/usr/src/cmd/post.src/devpost/Hi	v10/usr/src/cmd/post.src/devpost/u_Hi
+NAME	v10/usr/src/cmd/post.src/devpost/Hx	v10/usr/src/cmd/post.src/devpost/u_Hx
+NAME	v10/usr/src/cmd/post.src/devpost/charlib/LH	v10/usr/src/cmd/post.src/devpost/charlib/u_LH
+NAME	v10/usr/src/cmd/post.src/devpost/charlib/RC	v10/usr/src/cmd/post.src/devpost/charlib/u_RC
+NAME	v10/usr/src/cmd/post.src/devpost/charlib/rH	v10/usr/src/cmd/post.src/devpost/charlib/u_rH
+NAME	v10/usr/src/cmd/postscript/devLatin1/Hb	v10/usr/src/cmd/postscript/devLatin1/u_Hb
+NAME	v10/usr/src/cmd/postscript/devLatin1/Hi	v10/usr/src/cmd/postscript/devLatin1/u_Hi
+NAME	v10/usr/src/cmd/postscript/devLatin1/Hx	v10/usr/src/cmd/postscript/devLatin1/u_Hx
+NAME	v10/usr/src/cmd/postscript/devLatin1/charlib/LH	v10/usr/src/cmd/postscript/devLatin1/charlib/u_LH
+NAME	v10/usr/src/cmd/postscript/devLatin1/charlib/RC	v10/usr/src/cmd/postscript/devLatin1/charlib/u_RC
+NAME	v10/usr/src/cmd/postscript/devLatin1/charlib/rH	v10/usr/src/cmd/postscript/devLatin1/charlib/u_rH
+NAME	v10/usr/src/cmd/postscript/devopost/Hb	v10/usr/src/cmd/postscript/devopost/u_Hb
+NAME	v10/usr/src/cmd/postscript/devopost/Hi	v10/usr/src/cmd/postscript/devopost/u_Hi
+NAME	v10/usr/src/cmd/postscript/devopost/Hx	v10/usr/src/cmd/postscript/devopost/u_Hx
+NAME	v10/usr/src/cmd/postscript/devopost/charlib/LH	v10/usr/src/cmd/postscript/devopost/charlib/u_LH
+NAME	v10/usr/src/cmd/postscript/devpost.add/C1	v10/usr/src/cmd/postscript/devpost.add/u_C1
+NAME	v10/usr/src/cmd/postscript/devpost.add/C2	v10/usr/src/cmd/postscript/devpost.add/u_C2
+NAME	v10/usr/src/cmd/postscript/devpost.add/C3	v10/usr/src/cmd/postscript/devpost.add/u_C3
+NAME	v10/usr/src/cmd/postscript/devpost/Hb	v10/usr/src/cmd/postscript/devpost/u_Hb
+NAME	v10/usr/src/cmd/postscript/devpost/Hi	v10/usr/src/cmd/postscript/devpost/u_Hi
+NAME	v10/usr/src/cmd/postscript/devpost/Hx	v10/usr/src/cmd/postscript/devpost/u_Hx
+NAME	v10/usr/src/cmd/postscript/devpost/charlib/LH	v10/usr/src/cmd/postscript/devpost/charlib/u_LH
+NAME	v10/usr/src/cmd/postscript/devpost/charlib/RC	v10/usr/src/cmd/postscript/devpost/charlib/u_RC
+NAME	v10/usr/src/cmd/postscript/devpost/charlib/rH	v10/usr/src/cmd/postscript/devpost/charlib/u_rH
+NAME	v10/usr/src/cmd/qsnap/qsnap.c	v10/usr/src/cmd/qsnap/u_qsnap.c
+NAME	v10/usr/src/cmd/troff/devaps/Cw	v10/usr/src/cmd/troff/devaps/u_Cw
+NAME	v10/usr/src/cmd/uucp/unused/Uutry	v10/usr/src/cmd/uucp/unused/u_Uutry
+NAME	v10/usr/src/include/CC/Regexp.h	v10/usr/src/include/CC/u_Regexp.h
+NAME	v10/usr/src/include/CC/String.h	v10/usr/src/include/CC/u_String.h
+NAME	v10/usr/src/include/DB.h	v10/usr/src/include/u_DB.h
+NAME	v10/usr/src/include/oCC/Regexp.h	v10/usr/src/include/oCC/u_Regexp.h
+NAME	v10/usr/src/include/oCC/String.h	v10/usr/src/include/oCC/u_String.h
+NAME	v10/usr/src/lbin/Mail/manual/cmds/Reply	v10/usr/src/lbin/Mail/manual/cmds/u_Reply
+NAME	v10/usr/src/libc/stdio/ostdio/doprnt.s	v10/usr/src/libc/stdio/ostdio/u_doprnt.s
+NAME	v10/usr/src/sys/io/Nttyld.c	v10/usr/src/sys/io/u_Nttyld.c
+NAME	v10/usr/vol2/Faces/bwk/Bwk	v10/usr/vol2/Faces/bwk/u_Bwk
+NAME	v10/usr/vol2/Faces/bwk/bwk.Z	v10/usr/vol2/Faces/bwk/u_bwk.Z
+NAME	v10/usr/vol2/Faces/gerard/Gerard	v10/usr/vol2/Faces/gerard/u_Gerard
+NAME	v10/usr/vol2/Faces/rob/Rob	v10/usr/vol2/Faces/rob/u_Rob
+NAME	v10/usr/vol2/Faces/rob/rob.Z	v10/usr/vol2/Faces/rob/u_rob.Z
+NAME	v10/usr/vol2/Faces/td/Td	v10/usr/vol2/Faces/td/u_Td
+NAME	v10/usr/vol2/Faces/td/td.Z	v10/usr/vol2/Faces/td/u_td.Z
+NAME	v10/usr/vol2/Preface/mkfile	v10/usr/vol2/u_Preface/mkfile
+NAME	v10/usr/vol2/Preface/preface.ind	v10/usr/vol2/u_Preface/preface.ind
+NAME	v10/usr/vol2/Preface/preface.ms	v10/usr/vol2/u_Preface/preface.ms
+NAME	v10/usr/vol2/index/Junk/x	v10/usr/vol2/index/u_Junk/x
+NAME	v10/usr/vol2/index/Junk/x.awk	v10/usr/vol2/index/u_Junk/x.awk
+NAME	v10/usr/vol2/index/Junk/xchap2.idx	v10/usr/vol2/index/u_Junk/xchap2.idx
+NAME	v10/usr/vol2/index/Junk/xchap2.index	v10/usr/vol2/index/u_Junk/xchap2.index
+NAME	v10/usr/vol2/index/Junk/xchap2.log	v10/usr/vol2/index/u_Junk/xchap2.log
+NAME	v10/usr/vol2/index/Junk/xchap2.ps	v10/usr/vol2/index/u_Junk/xchap2.ps
+NAME	v10/usr/vol2/index/Junk/xindex.ms	v10/usr/vol2/index/u_Junk/xindex.ms
+NAME	v10/usr/vol2/index/Junk/xnotes	v10/usr/vol2/index/u_Junk/xnotes
+NAME	v10/usr/vol2/index/Todo	v10/usr/vol2/index/u_Todo
+
+#### DROP  (105)
+
+DROP	v10/usr/src/cmd/cfront/libstring/string.h
+DROP	v10/usr/src/cmd/compress/USERMEM
+DROP	v10/usr/src/cmd/cyntax/cem/diag.O
+DROP	v10/usr/src/cmd/cyntax/cem/equiv.O
+DROP	v10/usr/src/cmd/cyntax/cem/fix.O
+DROP	v10/usr/src/cmd/cyntax/cem/main.O
+DROP	v10/usr/src/cmd/cyntax/cem/misc.O
+DROP	v10/usr/src/cmd/cyntax/cem/read.O
+DROP	v10/usr/src/cmd/cyntax/cem/string.O
+DROP	v10/usr/src/cmd/cyntax/cem/symbol.O
+DROP	v10/usr/src/cmd/cyntax/cem/table.O
+DROP	v10/usr/src/cmd/cyntax/cem/time.O
+DROP	v10/usr/src/cmd/cyntax/cem/type.O
+DROP	v10/usr/src/cmd/cyntax/cem/var.O
+DROP	v10/usr/src/cmd/cyntax/cyn/bits.O
+DROP	v10/usr/src/cmd/cyntax/cyn/code_gen.O
+DROP	v10/usr/src/cmd/cyntax/cyn/constant.O
+DROP	v10/usr/src/cmd/cyntax/cyn/decl.O
+DROP	v10/usr/src/cmd/cyntax/cyn/decl_item.O
+DROP	v10/usr/src/cmd/cyntax/cyn/decl_shared.O
+DROP	v10/usr/src/cmd/cyntax/cyn/expr.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_equiv.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_expr.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_id.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_life.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_main.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_sub.O
+DROP	v10/usr/src/cmd/cyntax/cyn/f_trace.O
+DROP	v10/usr/src/cmd/cyntax/cyn/factor.O
+DROP	v10/usr/src/cmd/cyntax/cyn/find_ident.O
+DROP	v10/usr/src/cmd/cyntax/cyn/find_str.O
+DROP	v10/usr/src/cmd/cyntax/cyn/find_type.O
+DROP	v10/usr/src/cmd/cyntax/cyn/function.O
+DROP	v10/usr/src/cmd/cyntax/cyn/init.O
+DROP	v10/usr/src/cmd/cyntax/cyn/initi.O
+DROP	v10/usr/src/cmd/cyntax/cyn/io.O
+DROP	v10/usr/src/cmd/cyntax/cyn/jump.O
+DROP	v10/usr/src/cmd/cyntax/cyn/lex.O
+DROP	v10/usr/src/cmd/cyntax/cyn/macdep.O
+DROP	v10/usr/src/cmd/cyntax/cyn/main.O
+DROP	v10/usr/src/cmd/cyntax/cyn/massage.O
+DROP	v10/usr/src/cmd/cyntax/cyn/memory.O
+DROP	v10/usr/src/cmd/cyntax/cyn/parse.O
+DROP	v10/usr/src/cmd/cyntax/cyn/readonly.O
+DROP	v10/usr/src/cmd/cyntax/cyn/sort.O
+DROP	v10/usr/src/cmd/cyntax/cyn/stats.O
+DROP	v10/usr/src/cmd/cyntax/cyn/suopt.O
+DROP	v10/usr/src/cmd/cyntax/cyn/sutab.O
+DROP	v10/usr/src/cmd/cyntax/cyn/xnodes.O
+DROP	v10/usr/src/cmd/pascal/pc0/Version.c
+DROP	v10/usr/src/cmd/pascal/px/Version.c
+DROP	v10/usr/src/cmd/uucp/uusched.O
+DROP	v10/usr/src/games/sail/Makefile
+DROP	v10/usr/src/ipc/bin/Con
+DROP	v10/usr/src/ipc/bin/Loopback
+DROP	v10/usr/src/ipc/bin/Nrx
+DROP	v10/usr/src/ipc/bin/Pull
+DROP	v10/usr/src/ipc/bin/Push
+DROP	v10/usr/src/ipc/bin/Rx
+DROP	v10/usr/src/ipc/bin/con.O
+DROP	v10/usr/src/ipc/bin/loopback.O
+DROP	v10/usr/src/ipc/bin/nrx.O
+DROP	v10/usr/src/ipc/bin/pull.O
+DROP	v10/usr/src/ipc/bin/push.O
+DROP	v10/usr/src/ipc/bin/qns.O
+DROP	v10/usr/src/ipc/bin/rcp.O
+DROP	v10/usr/src/ipc/bin/rsh.O
+DROP	v10/usr/src/ipc/bin/rx.O
+DROP	v10/usr/src/ipc/libin/in_address.O
+DROP	v10/usr/src/ipc/libin/in_host.O
+DROP	v10/usr/src/ipc/libin/in_ntoa.O
+DROP	v10/usr/src/ipc/libin/in_service.O
+DROP	v10/usr/src/ipc/libin/in_subrs.O
+DROP	v10/usr/src/ipc/libin/tcp.O
+DROP	v10/usr/src/ipc/libin/tcp_lib.O
+DROP	v10/usr/src/ipc/libin/udp_lib.O
+DROP	v10/usr/src/ipc/mgrs/dkmgr/dial.O
+DROP	v10/usr/src/ipc/mgrs/dkmgr/dkctlchan.O
+DROP	v10/usr/src/ipc/mgrs/dkmgr/dkerr.O
+DROP	v10/usr/src/ipc/mgrs/dkmgr/listen.O
+DROP	v10/usr/src/ipc/mgrs/dkmgr/main.O
+DROP	v10/usr/src/ipc/mgrs/ndkmgr/dial.O
+DROP	v10/usr/src/ipc/mgrs/ndkmgr/dkctlchan.O
+DROP	v10/usr/src/ipc/mgrs/ndkmgr/dkerr.O
+DROP	v10/usr/src/ipc/mgrs/ndkmgr/listen.O
+DROP	v10/usr/src/ipc/mgrs/ndkmgr/main.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/action.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/auth_act.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/exec_act.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/files.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/gate.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/ld_act.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/main.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/mapping.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/proc.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/re.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/request.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/service.O
+DROP	v10/usr/src/ipc/mgrs/svcmgr/subr.O
+DROP	v10/usr/src/ipc/mgrs/tcpmgr/dial.O
+DROP	v10/usr/src/ipc/mgrs/tcpmgr/main.O
+DROP	v10/usr/src/ipc/mgrs/tcpmgr/tcp_lib.O
+
+#### THE MACHINE'S OWN TREE (added when taripnx exposed it)
+
+# The 89 collision groups the guest still carried are resolved by
+# build/casefix, generated by mapping each guest path to the repository
+# checkout's stored name -- one scheme on both sides.  Decisions new here:
+# DELETE  cmd/pret/Pret cmd/trace/Trace -- tape binaries colliding with their
+#         own build products; the products keep the names, the tapes keep the bytes.
+# DELETE  cmd/efl/Efix cmd/efl/efix/ cmd/odist/notes/ -- on NO tape (both tapes
+#         hold only efixsrc; notes/ is empty): guest-local debris.
+# DELETE  cmd/pascal/pi/Version.c -- same generator evidence as pc0 and px.
+# u_u_    ideal/lib Arc and charlib lH (4 dirs): the extractor's u_ARC/u_Arc and
+#         u_LH/u_lH pairs collide with EACH OTHER on the Mac, and the checkout
+#         had silently lost the second file of each -- 830 + 4x2,308 bytes that
+#         survived only on the machine.  v10tapes/CASEMAP shows both names
+#         intended.  Recovered into the checkout as u_u_ names.
+# NOTE    cmd/troff/devaps/u_Cw is restored to Cw by the install rule (the
+#         installed font directory is case-sensitive).  postscript's and
+#         post.src's installs are currently disabled; whoever revives them must
+#         restore their u_ font and charlib names the same way, as must any
+#         revival of the cfront ecosystem for include/CC's u_String.h and
+#         u_Regexp.h.

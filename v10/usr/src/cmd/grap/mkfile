@@ -1,0 +1,61 @@
+# The tape's makefile offers two settings -- `CC = cc  # the usual situation'
+# then `CC = lcc  # you will probably want to remove this' -- an instruction
+# to pick one.  Picked: lcc, the state the tape itself was in.  One assignment,
+# no trailing comment: awk's is the proven shape.
+CC = lcc
+CFLAGS = -g -A -N -I/usr/include/lcc -I/usr/include
+
+YFLAGS = -d
+
+# ALLOC = malloc.o
+
+OFILES = main.o input.o print.o frame.o for.o coord.o ticks.o plot.o label.o misc.o ${ALLOC}
+CFILES = main.c input.c print.c frame.c for.c coord.c ticks.c plot.c label.c misc.c
+SRCFILES = grap.y grapl.l grap.h ${CFILES}
+
+a.out:	grap.o grapl.o ${OFILES} grap.h 
+	${CC} ${CFLAGS} grap.o grapl.o ${OFILES} -lm
+
+${OFILES} grapl.o:	grap.h prevy.tab.h
+
+grap.o:	grap.h
+
+y.tab.h:	grap.o
+
+prevy.tab.h:	y.tab.h
+	cmp -s y.tab.h prevy.tab.h || cp y.tab.h prevy.tab.h || :
+
+prcan:	README WISH ${SRCFILES} makefile
+	lprcan ${CAN} $newprereq ${OTHERS}
+	touch prcan
+
+bin:
+	cp /usr/bin/grap /usr/bin/ograp
+	cp a.out /usr/bin/grap
+
+clean:
+	rm -f *.[oO] a.out *y.tab.[ch] lex.yy.c foo* *.[gd]
+
+bowell:	${SRCFILES} makefile grap.1 grap.defines graptest WISH FIXES
+	push bowell $newprereq /usr/src/cmd/grap
+	touch bowell
+
+bundle:
+	bundle FIXES README ${SRCFILES} makefile grap.1 grap.defines
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+grap.c y.tab.h: grap.y
+	yacc -d grap.y && mv y.tab.c grap.c
+
+grap.o: grap.c
+	${CC} ${CFLAGS} -c grap.c
+
+grapl.o: grapl.l
+	lex grapl.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o grapl.o; rm -f lex.yy.c

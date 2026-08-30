@@ -17,7 +17,9 @@
  */
 
 #include <stdio.h>
-#include <sys/ioctl.h>
+#include <sys/filio.h>	/* ipnx: sys/ioctl.h is on no tape */
+#include <sys/enio.h>
+#include <sys/inio.h>
 #include <sys/types.h>
 #include <sys/order.h>
 #include <sys/ethernet.h>

@@ -58,7 +58,7 @@ f2c.1: f2c.1t
 	nroff -man f2c.1t | col -b | uniq >f2c.1
 
 clean:
-	rm -f gram.c *.o f2c tokdefs.h compiler f2c.t
+	rm -f gram.c *.[oO] f2c tokdefs.h compiler f2c.t
 
 B = cds.c data.c defines.h defs.h equiv.c error.c exec.c expr.c \
 	format.c format.h formatdata.c ftypes.h \
@@ -68,7 +68,7 @@ B = cds.c data.c defines.h defs.h equiv.c error.c exec.c expr.c \
 	niceprintf.h output.c output.h p1defs.h p1output.c \
 	parse.h parse_args.c pccdefs.h pread.c proc.c put.c \
 	putpcc.c sysdep.c sysdep.h tokens usignal.h vax.c
-bx = f2c.1 f2c.1t f2c.h makefile mkfile version.c xsum.c xsum0.out Notice README
+bx = f2c.1 f2c.1t f2c.h makefile mkfile version.c xsum.c xsum0.out Notice README.f2c
 
 version.c: $B
 	x=`Dt -d -t $B`
@@ -117,7 +117,7 @@ tape: /tmp/f2c.tar
 #	tar xf foo
 #(in an empty directory).
 
-b = Notice README cds.c data.c defines.h defs.h equiv.c error.c \
+b = Notice README.f2c cds.c data.c defines.h defs.h equiv.c error.c \
 	exec.c expr.c f2c.1 f2c.1t f2c.h format.c format.h formatdata.c \
 	ftypes.h gram.dcl gram.exec gram.expr gram.head gram.io \
 	init.c intr.c io.c iob.h lex.c machdefs.h main.c makefile \

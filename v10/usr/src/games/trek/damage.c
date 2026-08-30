@@ -15,7 +15,7 @@ float	dam;		/* time to repair */
 	if (dam <= 0.0)
 		return;
 	if (Status.cond == DOCKED)
-		dam =* Param.dockfac;
+		dam *= Param.dockfac;
 	f = Damage[dev];
 	Damage[dev] = 1;
 	if (!f)

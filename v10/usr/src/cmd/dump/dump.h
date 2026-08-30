@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <dumprestor.h>
 #include <fstab.h>
+#define fs_freq fs_passno	/* ipnx fs_freq: v10 fstab has no freq field */
 
 #define	MWORD(m,i)	(m[(unsigned)(i-1)/MLEN])
 #define	MBIT(i)		(1<<((unsigned)(i-1)%MLEN))

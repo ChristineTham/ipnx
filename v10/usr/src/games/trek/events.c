@@ -19,7 +19,7 @@ int	evname;
 	double d;
 
 	d = Param.eventdly[evname] * Initial.time * log(franf());
-	if(evname==E_LRTB)	d =/ Status.kling;
+	if(evname==E_LRTB)	d /= Status.kling;
 	return(-d);
 }
 
@@ -64,7 +64,7 @@ events()
 			}
 		}
 		rtime = xdate - Status.date;
-		Status.resource =- Status.kling * rtime;
+		Status.resource -= Status.kling * rtime;
 		Status.time = Status.resource / Status.kling;
 		Status.date = xdate;
 		if (Status.time <= 0.0)
@@ -87,7 +87,7 @@ events()
 				{
 					for (iy = 0; iy < NQUADS; iy++)
 						if (Quad[ix][iy].stars >= 0)
-							if ((i =- Quad[ix][iy].qkling) <= 0)
+							if ((i -= Quad[ix][iy].qkling) <= 0)
 								break;
 					if (i <= 0)
 						break;
@@ -166,7 +166,7 @@ events()
 			}
 			if (i >= 100)
 				break;
-			Status.distressed =+ 1;
+			Status.distressed += 1;
 			e = schedule(E_ENSLV, randly(E_ENSLV), ix, iy, q->systemname);
 			q->systemname = (e - Event) | Q_DISTRESS;
 			if (!Damage[SSRADIO])
@@ -176,7 +176,7 @@ events()
 				restcancel++;
 			}
 			else
-				e->evdata =| E_NREPORT;
+				e->evdata |= E_NREPORT;
 			break;
 
 		  case E_ENSLV:		/* starsystem is enslaved */
@@ -185,7 +185,7 @@ events()
 			q = &Quad[e->x][e->y];
 			if (q->qkling <= 0)
 			{
-				e->evdata =& ~E_NREPORT;
+				e->evdata &= ~E_NREPORT;
 				if(q->systemname&Q_DISTRESS)
 					q->systemname = e->evdata;
 				break;
@@ -242,8 +242,8 @@ events()
 				ix = i;
 				iy = j;
 			}
-			q->qkling =+ 1;
-			Status.kling =+ 1;
+			q->qkling += 1;
+			Status.kling += 1;
 			if (ix == Quadx && iy == Quady)
 			{
 				/* we must position Klingon */
@@ -318,11 +318,11 @@ events()
 	if (e = Etc.eventptr[E_ATTACK])
 		unschedule(e);
 	if (Status.cloaked)
-		Status.energy =- Param.cloakenergy * Move.delta;
+		Status.energy -= Param.cloakenergy * Move.delta;
 	rtime = 1.0 - exp(-Param.regenfac * Move.delta);
-	Status.shield =+ (Initial.shield - Status.shield) * rtime;
-	Status.energy =+ (Initial.energy - Status.energy) * rtime;
+	Status.shield += (Initial.shield - Status.shield) * rtime;
+	Status.energy += (Initial.energy - Status.energy) * rtime;
 	if (Damage[LIFESUP] && Status.cond != DOCKED)
-		Status.reserves =- Move.delta;
+		Status.reserves -= Move.delta;
 	return;
 }

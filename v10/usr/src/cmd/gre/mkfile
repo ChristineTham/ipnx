@@ -58,9 +58,9 @@ h1:V:	htest
 	echo abc | time htest '^^.+!([^!]+2!([^!]+)$$' tempa 0
 
 check:V:
-	rm -f *.o gre refile libc.a
+	rm -f *.[oO] gre refile libc.a
 	mk gre refile regress oregress
-	rm -f *.o gre refile libc.a
+	rm -f *.[oO] gre refile libc.a
 
 bm.o: re.h lre.h hdr.h
 buffer.o: re.h lre.h hdr.h

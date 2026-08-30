@@ -1,5 +1,5 @@
 # Make a bootable v10 disk on ra1.  The only file this needs is
-# /usr/src/build/ipnx.tar, on this machine's own /usr: no network, no share.
+# /usr/ipnx/ipnx.tar, on this machine's own /usr: no network, no share.
 #
 # Everything else comes out of that archive: the source, and the build system
 # under /usr/src/build.  Root is 5 MB (ipnx-v10.m:51), so this script is the
@@ -11,7 +11,7 @@
 
 # THE ARCHIVE AND THE BUILD SYSTEM ARE BOTH LOCAL.  /usr is partition 5 of the
 # RA73, 1,533 MB, so the machine carries its own input and reads no share.
-TAPE=/usr/src/build/ipnx.tar
+TAPE=/usr/ipnx/ipnx.tar
 MKB=/usr/src/build/mkbuild
 
 BUILD=/v10/usr/src/build
@@ -30,16 +30,21 @@ test -d /v10 || mkdir /v10 || exit 1
 test -d /v10/usr || mkdir /v10/usr || exit 1
 /etc/mount /dev/ra15 /v10/usr || exit 1
 
-# Nothing to extract yet: leave /v10 blank and mounted, which is what mktape
-# needs.  That is the bootstrap -- mkimage, mktape, mkbuild, mkipnx, mkimage.
+# Nothing to extract yet: leave /v10 blank and mounted, which is what mkv10
+# needs.  That is the bootstrap -- mkimage, mkv10, mkipnx, mkimage.
 if test ! -f $TAPE
 then
 	echo "mkimage: no $TAPE"
-	echo "mkimage: /v10 is blank and mounted -- run mktape, then mkimage again"
+	echo "mkimage: /v10 is blank and mounted -- run mkv10 then mkipnx, then mkimage again"
 	exit 0
 fi
 
+# the archive is a tar of /usr -- build/usrtrees is the one list of its shape
 cd /v10/usr && tar xf $TAPE || exit 1
+for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+do
+	test -d /v10/usr/$d || { echo "mkimage: usrtrees names $d and the archive lacked it"; exit 1; }
+done
 
 # THE ARCHIVE CARRIES WHATEVER BUILD SYSTEM THE DISK IT CAME FROM HAD, which
 # is one generation behind as soon as this machine's own is edited -- the
@@ -56,8 +61,10 @@ sh $BUILD/mkdev /v10/dev || exit 1
 mk -f $BUILD/mkfile ROOT=/v10 world || exit 1
 
 # The new disk gets its own copy, in the same place, so it can build a disk in
-# turn.  mkipnx removes this again before it archives.
-cp $TAPE $BUILD/ipnx.tar || exit 1
+# turn.  /usr/ipnx, not /usr/src/build: the archive is not part of the build
+# system and it must not sit inside the tree taripnx walks.
+test -d /v10/usr/ipnx || mkdir /v10/usr/ipnx || exit 1
+cp $TAPE /v10/usr/ipnx/ipnx.tar || exit 1
 
 cd /
 sync

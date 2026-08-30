@@ -118,7 +118,7 @@ cp:
 	chmod 0775  $BIN/uulog $BIN/uupick $BIN/uuto
 
 clean:
-	rm -f *.o $COMMANDS $TOOLS
+	rm -f *.[oO] $COMMANDS $TOOLS
 
 init:N:	anlwrk.o permission.o cpmv.o expfile.o gename.o \
 	getargs.o getprm.o getpwinfo.o gnamef.o \

@@ -27,10 +27,10 @@ int	x, y;
 		Sect[x][y] = EMPTY;
 	} else {
 		Sect[x][y] = BLACKHOLE;
-		Quad[Quadx][Quady].holes =+ 1;
+		Quad[Quadx][Quady].holes += 1;
 	}
-	Quad[Quadx][Quady].stars =- 1;
-	Game.kills =+ 1;
+	Quad[Quadx][Quady].stars -= 1;
+	Game.kills += 1;
 	for (i = x - 1; i <= x + 1; i++)
 	{
 		if (i < 0 || i >= NSECTS)
@@ -63,15 +63,15 @@ int	x, y;
 				if (Status.shldup)
 					if (Status.shield >= se)
 					{
-						Status.shield =- se;
+						Status.shield -= se;
 						se = 0;
 					}
 					else
 					{
-						se =- Status.shield;
+						se -= Status.shield;
 						Status.shield = 0;
 					}
-				Status.energy =- se;
+				Status.energy -= se;
 				if (Status.energy <= 0)
 					lose(L_SUICID);
 				break;

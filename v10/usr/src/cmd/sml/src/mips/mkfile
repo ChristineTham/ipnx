@@ -1,0 +1,51 @@
+NOTANGLE=notangle
+NOWEAVE=noweave
+AWK=nawk
+CFLAGS=-g
+CC=cc
+
+.SUFFIXES: .nw .sml .sig .awk .tex .dvi .s .print 
+
+%.sml: %.nw
+	${NOTANGLE} $stem.nw > $stem.sml
+
+%.sig: %.nw
+	${NOTANGLE} -Rsignature $stem.nw > $stem.sig
+
+%.s: %.nw
+	${NOTANGLE} $stem.nw > $stem.s
+
+%.awk: %.nw
+	${NOTANGLE} $stem.nw > $stem.awk
+
+%.tex: %.nw
+	${NOWEAVE} $stem.nw > $stem.tex
+
+%.dvi: %.tex
+	tex $stem.tex
+
+%.dvi: %.nw
+	${NOWEAVE} $stem.nw > $stem.tex
+	tex $stem.tex
+
+%.print: %.dvi
+	lpr -d $stem.dvi
+
+%.o: %.s
+	as  -o $stem.o $stem.s
+
+all:V: mipscoder.sml mipscoder.sig opcodes.sml mipsdecode.sml mipsreal.sml \
+	:
+     mips.sml mipsglue.sml emitters.sml emitters.sig
+
+opcodes.sml: opcodes.awk opcodes.nw
+	${NOTANGLE} '-Ropcodes table' opcodes.nw | ${AWK} -f opcodes.awk > opcodes.sml
+
+mipsdecode.sml: opcodes.awk opcodes.nw
+	${NOTANGLE} '-Ropcodes table' opcodes.nw | ${AWK} -f opcodes.awk > opcodes.sml
+
+
+clean:
+	rm -f *~ *.[oO] *.log *.dvi *.tex *.makelog
+
+

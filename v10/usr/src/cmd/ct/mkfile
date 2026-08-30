@@ -11,4 +11,4 @@ install:	ct
 	chmod og-w,u+s $D
 
 clean:
-	rm -f ct *.o
+	rm -f ct *.[oO]

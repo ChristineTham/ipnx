@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <sys/types.h>	/* ipnx types first: dk.h reaches stream.h */
+#include <sys/filio.h>
 #include <dk.h>
 #include <sgtty.h>
 #include <sys/stream.h>

@@ -1,0 +1,29 @@
+PSRCS = \
+	dump.h dumpmain.c dumptraverse.c dumptape.c dumpoptr.c dumpitime.c
+
+SRCS =  \
+	dump.h dumpitime.c \
+	dumpmain.c dumpoptr.c dumptape.c \
+	dumptraverse.c unctime.c
+
+OBJS = \
+	dumpitime.o \
+	dumpmain.o dumpoptr.o \
+	dumptape.o dumptraverse.o unctime.o
+
+DFLAGS =
+CFLAGS = -O ${DFLAGS}
+
+dump:	${OBJS}
+	${CC} ${CFLAGS} ${OBJS} -o dump
+install:	dump
+	strip dump
+	mv dump ${DESTDIR}/etc
+clean:
+	rm -f *.o dump
+
+lint:
+	lint ${DFLAGS} ${SRCS}
+
+psrcs:
+	echo ${PSRCS}

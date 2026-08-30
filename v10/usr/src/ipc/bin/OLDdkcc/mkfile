@@ -13,7 +13,7 @@ install:	dkcc
 	chmod 775 $DEST
 
 clean:
-	rm -f *.o dkcc
+	rm -f *.[oO] dkcc
 
 dkcc.o:	sysexits.h
 dkxstdio.o:	remfio.h

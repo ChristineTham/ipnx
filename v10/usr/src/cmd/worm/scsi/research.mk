@@ -1,5 +1,5 @@
 # config stuff: research unix
-CC=pcc
+CC=lcc	# was pcc -- Bell's ANSI cc; on no tape.  lcc is this machine's.
 CFLAGS=-g
 RANLIB=ranlib
 LDFLAGS=

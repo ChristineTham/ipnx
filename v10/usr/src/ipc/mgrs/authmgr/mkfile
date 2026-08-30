@@ -23,4 +23,4 @@ install:V:	/usr/guard/bin/auth
 	mv $target $target.old && mv $target.new $target
 
 clean:V:
-	rm -f *.o auth core
+	rm -f *.[oO] auth core

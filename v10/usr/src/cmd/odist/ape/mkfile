@@ -39,7 +39,7 @@ cleanq: cleanq.$O lib.a ../$SYS/lib.a
 lib.a: ${LIBOBJ:%=lib.a(%)}
 	$RL lib.a
 
-lib.a(%): %
+lib.a(%):N: %
 	ar r lib.a $stem
 
 clean:V:

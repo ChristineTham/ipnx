@@ -1,0 +1,13 @@
+termcap.obj: termcap.src
+	ed - termcap.src < reorder
+install: termcap.obj
+	cp termcap.obj ${DESTDIR}/etc/termcap
+clean:
+	rm -f termcap.obj
+tabset:	/tmp
+	mkdir /usr/lib/tabset
+	cp tabset/* /usr/lib/tabset
+VGRIND=	csh /usr/ucb/vgrind
+vgrind:
+	${VGRIND} -n -h "Terminal Capibility Data Base" \
+	termcap.src reorder makefile

@@ -61,7 +61,7 @@ int	f;
 	{
 		sector(&rx, &ry);
 		Sect[rx][ry] = INHABIT;
-		nstars =- 1;
+		nstars -= 1;
 	}
 
 	/* initialize stars */

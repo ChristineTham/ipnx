@@ -20,4 +20,4 @@ install: ns
 	/etc/chown bin,bin $BINDIR/ns
 
 clean:
-	rm -f *.out *.o ns
+	rm -f *.[oO]ut *.[oO] ns

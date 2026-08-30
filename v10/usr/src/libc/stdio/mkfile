@@ -26,4 +26,4 @@ nstdio.a: $o
 _dtoa.o _fconv.o strtod.o: fconv.h
 
 clean:
-	rm -f *.o nstdio.a
+	rm -f *.[oO] nstdio.a

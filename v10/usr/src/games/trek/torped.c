@@ -52,7 +52,7 @@ torped()
 			}
 			else {
 				burst = 2;
-				course =- spread;
+				course -= spread;
 			}
 		}
 	}
@@ -64,19 +64,19 @@ torped()
 		dy =  sin(angle);
 		x = fabs(dx); y = fabs(dy);
 		x = (x>y ? x : y);
-		dx =/ x; dy =/ x;
+		dx /= x; dy /= x;
 		x = Sectx;
 		y = Secty;
 		if (Status.cond != DOCKED)
-			Status.torped =- 1;
+			Status.torped -= 1;
 		if(burst)
 			printf("Torpedo %d: ", n);
 		printf("[%d] ", course2);
 		printf("track");
 		while (1)
 		{
-			ix = (x =+ dx)+0.5;
-			iy = (y =+ dy)+0.5;
+			ix = (x += dx)+0.5;
+			iy = (y += dy)+0.5;
 			if (x <= -0.5 || ix >= NSECTS || y <= -0.5 || iy >= NSECTS) {
 				printf(" MISSED\n");
 				break;
@@ -119,7 +119,7 @@ torped()
 			printf("\n");
 			break;
 		}
-		course =+ spread;
+		course += spread;
 	}
 	Move.free = 0;
 }
@@ -138,7 +138,7 @@ randcourse()
 		{
 			damage(TORPED, 0.2 * abs(d));
 		}
-		d =* 1.0 + 2.0 * franf();
+		d *= 1.0 + 2.0 * franf();
 	}
 	if (Status.shldup || Status.cond == DOCKED)
 	{
@@ -146,7 +146,7 @@ randcourse()
 		r = 1.0 + r / Initial.shield;
 		if (Status.cond == DOCKED)
 			r = 2.0;
-		d =* r;
+		d *= r;
 	}
 	return (d);
 }
@@ -160,7 +160,7 @@ int		ix, iy, hit;
 	{
 		if (Kling[k].x != ix || Kling[k].y != iy)
 			continue;
-		Kling[k].power =- hit + ranf(hit+1);
+		Kling[k].power -= hit + ranf(hit+1);
 		if (Kling[k].power > 0)
 		{
 			printf("*** Klingon hit at %d,%d: extensive damages.\n",

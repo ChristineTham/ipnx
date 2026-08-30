@@ -7,4 +7,4 @@ pftp:	$OBJS $LIBC
 	$CC -o ftp $OBJS -lipc -lin
 
 clean:
-	rm -f *.o core ftp
+	rm -f *.[oO] core ftp

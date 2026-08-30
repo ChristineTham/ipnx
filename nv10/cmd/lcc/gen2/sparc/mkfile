@@ -1,0 +1,8 @@
+CFLAGS=
+LDFLAGS=-s -Bstatic
+OS=sun
+
+all:V:	rcc
+	:
+
+<../mkfile

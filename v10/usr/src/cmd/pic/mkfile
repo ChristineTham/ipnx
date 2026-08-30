@@ -1,0 +1,57 @@
+# The tape's makefile offers two settings -- `CC = cc  # the usual situation'
+# then `CC = lcc  # you will probably want to remove this' -- an instruction
+# to pick one.  Picked: lcc, the state the tape itself was in.  One assignment,
+# no trailing comment: awk's is the proven shape.
+CC = lcc
+CFLAGS = -g -A -N -I/usr/include/lcc -I/usr/include
+
+YFLAGS = -d
+
+OFILES = picl.o main.o print.o misc.o symtab.o blockgen.o boxgen.o \
+	 circgen.o arcgen.o linegen.o movegen.o textgen.o \
+	 input.o for.o pltroff.o ${ALLOC}
+CFILES = main.c print.c misc.c symtab.c blockgen.c boxgen.c circgen.c \
+	 arcgen.c linegen.c movegen.c textgen.c \
+	 input.c for.c pltroff.c
+SRCFILES = picy.y picl.l pic.h ${CFILES} makefile FIXES README PS-PEmacros
+
+pic:	picy.o ${OFILES} pic.h
+	${CC} ${CFLAGS} picy.o ${OFILES} -lm
+
+${OFILES}:	pic.h prevy.tab.h
+
+picy.o:	pic.h
+
+prevy.tab.h:	y.tab.h
+	cmp -s y.tab.h prevy.tab.h || cp y.tab.h prevy.tab.h || :
+
+bundle:
+	bundle ${SRCFILES} 
+
+bowell:	 ${SRCFILES} README  pictest 
+	push bowell $newprereq /usr/src/cmd/pic
+	touch bowell
+
+clean:
+	rm *.[oO] a.out *y.tab.h
+
+install:
+	cp a.out /usr/bin/pic
+	strip /usr/bin/pic
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.o: %.l
+	lex $stem.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o $stem.o; rm -f lex.yy.c
+
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+picy.c y.tab.h: picy.y
+	yacc -d picy.y && mv y.tab.c picy.c
+
+picy.o: picy.c
+	${CC} ${CFLAGS} -c picy.c
+
+picl.o: picl.l
+	lex picl.l && ${CC} ${CFLAGS} -c lex.yy.c && mv lex.yy.o picl.o; rm -f lex.yy.c

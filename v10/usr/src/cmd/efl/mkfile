@@ -4,6 +4,7 @@ CFLAGS =
 CC = lcc
 
 %.o: %.c Efix cpt
+	test -d efix || mkdir efix
 	Efix $stem.c >efix/$stem.c
 	cpt $stem.c efix/$stem.c
 	$CC $CFLAGS -c efix/$stem.c
@@ -62,7 +63,7 @@ tokdefs: tokens
 	grep -n . <tokens | sed "s/\([^:]*\):\(.*\)/#define \2 \1/" >tokdefs
 
 clean:
-	rm -rf a.out *.o  lex.c tokdefs gram.c Efix cpt efix efixsrc/*.o
+	rm -rf a.out *.[oO]  lex.c tokdefs gram.c Efix cpt efix efixsrc/*.[oO]
 
 printall:
 	pr $FILES1 | $P

@@ -1,0 +1,133 @@
+# One name per path, applied to THIS MACHINE's /usr -- updatebuild reads
+# this and performs each line, once, idempotently.  The names are the
+# repository checkout's, so the tree here, the checkout, and taripnx's archive
+# all agree, and the archive extracts onto a case-insensitive filesystem
+# without a collision.  build/casenames carries the evidence per decision;
+# the two schemes are one scheme.
+#
+# u_u_ MARKS A DOUBLE COLLISION: ideal/lib held ARC, Arc and arc, and the
+# extractor's u_ARC and u_Arc collide with each other on the Mac -- the
+# checkout silently LOST Arc's 830 bytes (and charlib's lH, four times) until
+# this machine's tree gave them back.  v10tapes/CASEMAP records the extractor
+# intending both names; only one survived.
+#
+# rm is confined to: files the build regenerates (USERMEM, three Version.c),
+# the sail hard-link's second name, an unreferenced header (libstring
+# string.h), guest-local debris on no tape (efl/Efix, efl/efix, odist/notes),
+# and two tape binaries whose names collide with their own build products
+# (Pret, Trace -- recoverable from the tapes).
+#
+# fields: op<TAB>path<TAB>newpath-or-flag, paths relative to /usr -- src/ spelled out, so the sys, man and include rows stayed true when those trees moved back beside it
+mv	src/cmd/ccom/vax/tests/A.i	src/cmd/ccom/vax/tests/u_A.i
+mv	src/cmd/ccom/vax/tests/B.i	src/cmd/ccom/vax/tests/u_B.i
+mv	src/cmd/ccom/vax/tests/C.i	src/cmd/ccom/vax/tests/u_C.i
+mv	src/cmd/ccom/vax/tests/D.i	src/cmd/ccom/vax/tests/u_D.i
+mv	src/cmd/ccom/vax/tests/F.i	src/cmd/ccom/vax/tests/u_F.i
+mv	src/cmd/ccom/vax/tests/G.i	src/cmd/ccom/vax/tests/u_G.i
+mv	src/cmd/ccom/vax/tests/H.i	src/cmd/ccom/vax/tests/u_H.i
+mv	src/cmd/ccom/vax/tests/I.i	src/cmd/ccom/vax/tests/u_I.i
+mv	src/cmd/ccom/vax/tests/J.i	src/cmd/ccom/vax/tests/u_J.i
+mv	src/cmd/ccom/vax/tests/K.i	src/cmd/ccom/vax/tests/u_K.i
+mv	src/cmd/ccom/vax/tests/L.i	src/cmd/ccom/vax/tests/u_L.i
+mv	src/cmd/ccom/vax/tests/M.i	src/cmd/ccom/vax/tests/u_M.i
+mv	src/cmd/ccom/vax/tests/N.i	src/cmd/ccom/vax/tests/u_N.i
+mv	src/cmd/ccom/vax/tests/O.i	src/cmd/ccom/vax/tests/u_O.i
+mv	src/cmd/ccom/vax/tests/P.i	src/cmd/ccom/vax/tests/u_P.i
+mv	src/cmd/ccom/vax/tests/Q.i	src/cmd/ccom/vax/tests/u_Q.i
+mv	src/cmd/ccom/vax/tests/R.i	src/cmd/ccom/vax/tests/u_R.i
+mv	src/cmd/ccom/vax/tests/S.i	src/cmd/ccom/vax/tests/u_S.i
+mv	src/cmd/ccom/vax/tests/T.i	src/cmd/ccom/vax/tests/u_T.i
+mv	src/cmd/ccom/vax/tests/U.i	src/cmd/ccom/vax/tests/u_U.i
+mv	src/cmd/ccom/vax/tests/V.i	src/cmd/ccom/vax/tests/u_V.i
+mv	src/cmd/ccom/vax/tests/W.i	src/cmd/ccom/vax/tests/u_W.i
+mv	src/cmd/ccom/vax/tests/X.i	src/cmd/ccom/vax/tests/u_X.i
+mv	src/cmd/ccom/vax/tests/Y.i	src/cmd/ccom/vax/tests/u_Y.i
+mv	src/cmd/ccom/vax/tests/Z.i	src/cmd/ccom/vax/tests/u_Z.i
+mv	src/cmd/cfront/libstring/Makefile	src/cmd/cfront/libstring/u_Makefile
+mv	src/cmd/cfront/ooptcfront/hash.h	src/cmd/cfront/ooptcfront/odihash.h
+mv	src/cmd/f2c/README	src/cmd/f2c/README.f2c
+mv	src/cmd/ideal/lib/ARC	src/cmd/ideal/lib/u_ARC
+mv	src/cmd/ideal/lib/Arc	src/cmd/ideal/lib/u_u_Arc
+mv	src/cmd/ideal/lib/CIRCLE	src/cmd/ideal/lib/u_CIRCLE
+mv	src/cmd/post.src/devLatin1/Hb	src/cmd/post.src/devLatin1/u_Hb
+mv	src/cmd/post.src/devLatin1/Hi	src/cmd/post.src/devLatin1/u_Hi
+mv	src/cmd/post.src/devLatin1/Hx	src/cmd/post.src/devLatin1/u_Hx
+mv	src/cmd/post.src/devLatin1/charlib/LH	src/cmd/post.src/devLatin1/charlib/u_LH
+mv	src/cmd/post.src/devLatin1/charlib/RC	src/cmd/post.src/devLatin1/charlib/u_RC
+mv	src/cmd/post.src/devLatin1/charlib/lH	src/cmd/post.src/devLatin1/charlib/u_u_lH
+mv	src/cmd/post.src/devLatin1/charlib/rH	src/cmd/post.src/devLatin1/charlib/u_rH
+mv	src/cmd/post.src/devopost/Hb	src/cmd/post.src/devopost/u_Hb
+mv	src/cmd/post.src/devopost/Hi	src/cmd/post.src/devopost/u_Hi
+mv	src/cmd/post.src/devopost/Hx	src/cmd/post.src/devopost/u_Hx
+mv	src/cmd/post.src/devopost/charlib/LH	src/cmd/post.src/devopost/charlib/u_LH
+mv	src/cmd/post.src/devpost.add/C1	src/cmd/post.src/devpost.add/u_C1
+mv	src/cmd/post.src/devpost.add/C2	src/cmd/post.src/devpost.add/u_C2
+mv	src/cmd/post.src/devpost.add/C3	src/cmd/post.src/devpost.add/u_C3
+mv	src/cmd/post.src/devpost/Hb	src/cmd/post.src/devpost/u_Hb
+mv	src/cmd/post.src/devpost/Hi	src/cmd/post.src/devpost/u_Hi
+mv	src/cmd/post.src/devpost/Hx	src/cmd/post.src/devpost/u_Hx
+mv	src/cmd/post.src/devpost/charlib/LH	src/cmd/post.src/devpost/charlib/u_LH
+mv	src/cmd/post.src/devpost/charlib/RC	src/cmd/post.src/devpost/charlib/u_RC
+mv	src/cmd/post.src/devpost/charlib/lH	src/cmd/post.src/devpost/charlib/u_u_lH
+mv	src/cmd/post.src/devpost/charlib/rH	src/cmd/post.src/devpost/charlib/u_rH
+mv	src/cmd/postscript/devLatin1/Hb	src/cmd/postscript/devLatin1/u_Hb
+mv	src/cmd/postscript/devLatin1/Hi	src/cmd/postscript/devLatin1/u_Hi
+mv	src/cmd/postscript/devLatin1/Hx	src/cmd/postscript/devLatin1/u_Hx
+mv	src/cmd/postscript/devLatin1/charlib/LH	src/cmd/postscript/devLatin1/charlib/u_LH
+mv	src/cmd/postscript/devLatin1/charlib/RC	src/cmd/postscript/devLatin1/charlib/u_RC
+mv	src/cmd/postscript/devLatin1/charlib/lH	src/cmd/postscript/devLatin1/charlib/u_u_lH
+mv	src/cmd/postscript/devLatin1/charlib/rH	src/cmd/postscript/devLatin1/charlib/u_rH
+mv	src/cmd/postscript/devopost/Hb	src/cmd/postscript/devopost/u_Hb
+mv	src/cmd/postscript/devopost/Hi	src/cmd/postscript/devopost/u_Hi
+mv	src/cmd/postscript/devopost/Hx	src/cmd/postscript/devopost/u_Hx
+mv	src/cmd/postscript/devopost/charlib/LH	src/cmd/postscript/devopost/charlib/u_LH
+mv	src/cmd/postscript/devpost.add/C1	src/cmd/postscript/devpost.add/u_C1
+mv	src/cmd/postscript/devpost.add/C2	src/cmd/postscript/devpost.add/u_C2
+mv	src/cmd/postscript/devpost.add/C3	src/cmd/postscript/devpost.add/u_C3
+mv	src/cmd/postscript/devpost/Hb	src/cmd/postscript/devpost/u_Hb
+mv	src/cmd/postscript/devpost/Hi	src/cmd/postscript/devpost/u_Hi
+mv	src/cmd/postscript/devpost/Hx	src/cmd/postscript/devpost/u_Hx
+mv	src/cmd/postscript/devpost/charlib/LH	src/cmd/postscript/devpost/charlib/u_LH
+mv	src/cmd/postscript/devpost/charlib/RC	src/cmd/postscript/devpost/charlib/u_RC
+mv	src/cmd/postscript/devpost/charlib/lH	src/cmd/postscript/devpost/charlib/u_u_lH
+mv	src/cmd/postscript/devpost/charlib/rH	src/cmd/postscript/devpost/charlib/u_rH
+mv	src/cmd/qsnap/qsnap.c	src/cmd/qsnap/u_qsnap.c
+mv	src/cmd/troff/devaps/Cw	src/cmd/troff/devaps/u_Cw
+mv	src/cmd/uucp/unused/Uutry	src/cmd/uucp/unused/u_Uutry
+rm	include/CC/Regexp.h	same bytes as u_Regexp.h, already merged in
+rm	include/CC/String.h	same bytes as u_String.h, already merged in
+rm	include/DB.h	same bytes as u_DB.h: one tape file, r70include's DB.h
+rm	include/oCC/Regexp.h	same bytes as u_Regexp.h, already merged in
+rm	include/oCC/String.h	same bytes as u_String.h, already merged in
+mv	src/lbin/Mail/manual/cmds/Reply	src/lbin/Mail/manual/cmds/u_Reply
+mv	src/libc/stdio/ostdio/doprnt.s	src/libc/stdio/ostdio/u_doprnt.s
+mv	sys/io/Nttyld.c	sys/io/u_Nttyld.c
+rm	src/cmd/cfront/libstring/string.h	
+rm	src/cmd/compress/USERMEM	
+rm	src/cmd/efl/Efix	
+rm	src/cmd/efl/efix	DIR
+rm	src/cmd/odist/notes	DIR
+rm	src/cmd/pascal/pc0/Version.c	
+rm	src/cmd/pascal/pi/Version.c	
+rm	src/cmd/pascal/px/Version.c	
+rm	src/cmd/pret/Pret	tape binary vs product
+rm	src/cmd/trace/Trace	tape binary vs product
+rm	src/games/sail/Makefile	
+mv	jerq/sgs/as/Expand1.c	jerq/sgs/as/u_Expand1.c	tape pair, contents differ; superset carries u_
+mv	jerq/sgs/as/Gencode.c	jerq/sgs/as/u_Gencode.c	tape pair, contents differ; superset carries u_
+mv	blit/src/font/gen/Readme	blit/src/font/gen/u_Readme	on no tape; rule applied to what the machine has
+mv	blit/src/maze/Mazewar.c	blit/src/maze/u_Mazewar.c	on no tape; rule applied to what the machine has
+mv	vol2/Preface	vol2/u_Preface	second tape's spelling of norman's preface/; repo keeps u_Preface
+mv	vol2/index/Todo	vol2/index/u_Todo	repo keeps u_Todo
+mv	vol2/Faces/bwk/bwk.Z	vol2/Faces/bwk/u_bwk.Z	no all-lowercase spelling in pair: sorted-first Bwk.Z keeps the name
+mv	vol2/Faces/rob/rob.Z	vol2/Faces/rob/u_rob.Z	no all-lowercase spelling in pair: Rob.Z keeps the name
+mv	vol2/Faces/td/td.Z	vol2/Faces/td/u_td.Z	no all-lowercase spelling in pair: Td.Z keeps the name
+rm	src/cmd/xref/xrefa	product binary, on no tape
+rm	src/cmd/xref/xrefb	product binary, on no tape
+mv	jerq/src/lib/C	jerq/src/lib/u_C	her call: the pair are both real, c the 68000 libc build, C the libC build; lowercase keeps the name
+mv	vol2/index/Junk	vol2/index/u_Junk	directory beside the junk file; the slash-blind dup check missed it; repo keeps u_Junk
+rm	sys/lib/bvax/.ax30	DIR	arcfix temp-dir nests from before the x-op guard
+rm	sys/lib/inet/.ax30	DIR
+rm	sys/lib/io/.ax30	DIR
+rm	sys/lib/star/.ax30	DIR
+rm	src/netfs/libnetb/libnetb/.ax30	DIR

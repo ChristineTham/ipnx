@@ -1,0 +1,145 @@
+# Install the configuration the build carries, asking before it overwrites
+# anything the operator may have edited.
+#
+#	ipnxinstall              this machine's /etc
+#	ipnxinstall /v10         the disk on ra1
+#	ipnxinstall -y           take every default without asking
+#
+# THE THIRD VERB.  ipnxclean removes what was derived, ipnxbuild builds and
+# installs nothing the operator owns, and this installs the rest.  Running all
+# three in order is a reinstall of the live system, and this is the dangerous
+# one -- not because copying a file is hard, but because /etc/passwd and
+# /etc/rc are the operator's, not the build's.
+#
+# PROMPTING IS SPARSE, AND SPARSE MEANS SILENT ON A MACHINE NOBODY HAS EDITED.
+# A file is only ever asked about when it EXISTS AND DIFFERS: absent means
+# there is nothing to lose, identical means there is nothing to do, and both
+# install without a word.  So a fresh image installs everything in silence and
+# a machine whose passwd has been edited asks about exactly that file.  The
+# default is N -- keep what is there -- because the wrong answer to `replace
+# /etc/passwd?' locks the operator out of their own machine.
+#
+# The exceptions are the three programs, which are installed the way strip is:
+# down, mklost+found and shutdown are the system's own scripts, and nobody
+# edits them to mean something different.
+#
+# NO SECOND FILE LIST.  mkfile's `config' target names thirteen files and
+# ipnxclean's rule about lists applies here too, so this enumerates $GEN/etc
+# instead -- the directory is the list, the way mkbuild takes $B.  A file added
+# to the build kit is installed by this on the next run with nothing typed.
+#
+# mtab and utmp are skipped for the reason mkfile:1150 already gives: they are
+# runtime state that rc and init rewrite, not configuration.  Installing the
+# build's copy of mtab over a running system tells it nothing is mounted.
+GEN=/usr/src/build
+YES=false
+case $1 in
+-y)	YES=true; shift ;;
+esac
+
+TARGET=${1-/}
+case $TARGET in
+/)	ROOT= ;;
+/v10)	ROOT=/v10 ;;
+*)	echo "ipnxinstall: target is / or /v10, not $TARGET"; exit 1 ;;
+esac
+ETC=$ROOT/etc
+
+test -d $GEN/etc || { echo "ipnxinstall: no $GEN/etc"; exit 1; }
+test -d $ETC || { echo "ipnxinstall: no $ETC -- is $TARGET mounted?"; exit 1; }
+
+# THE BINARIES FIRST, AND mk DECIDES.  Every rule is now two: the artefact, built
+# in the source tree by `mk build', and the installed file that depends on it.  So
+# `world' here installs and does not build -- ipnxbuild already made everything it
+# depends on, and anything it does build is something ipnxbuild could not.
+#
+# No prompting for these.  Replacing /usr/bin/strip is not a decision; replacing
+# /etc/passwd is, and that is what the loop below is for.
+case $TARGET in
+/)	mk -f $GEN/mkfile world || { echo "ipnxinstall: mk world failed"; exit 1; } ;;
+*)	mk -f $GEN/mkfile ROOT=$ROOT world || { echo "ipnxinstall: mk world failed"; exit 1; } ;;
+esac
+
+did=no
+
+for f in `ls $GEN/etc`
+do
+	case $f in
+	mtab|utmp)	continue ;;		# runtime state, not configuration
+	esac
+
+	# profile is the one that does not land in /etc.  init opens .profile in
+	# the root with no prefix, which is why mkfile:495 writes $ROOT/.profile.
+	case $f in
+	profile)	dst=$ROOT/.profile ;;
+	*)		dst=$ETC/$f ;;
+	esac
+
+	if test -f $dst
+	then
+		if cmp -s $GEN/etc/$f $dst
+		then	continue			# identical: nothing to do
+		fi
+	else
+		cp $GEN/etc/$f $dst || exit 1
+		echo "ipnxinstall: $dst installed"
+		did=yes
+		continue				# absent: nothing to lose
+	fi
+
+	# It exists and it differs.  The three programs go in regardless; the
+	# rest are the operator's and get asked about.
+	case $f in
+	down|mklost+found|shutdown)
+		cp $GEN/etc/$f $dst || exit 1
+		echo "ipnxinstall: $dst replaced"
+		did=yes
+		continue ;;
+	esac
+
+	if $YES
+	then	ans=n
+	else
+		echo -n "replace $dst with the default? (y/N) "
+		read ans
+	fi
+	case $ans in
+	y|Y|yes|YES)
+		cp $GEN/etc/$f $dst || exit 1
+		echo "ipnxinstall: $dst replaced"
+		did=yes ;;
+	*)	echo "ipnxinstall: $dst kept" ;;
+	esac
+done
+
+chmod +x $ETC/down $ETC/mklost+found $ETC/rc $ETC/shutdown
+test -f $ROOT/.profile && chmod 644 $ROOT/.profile
+
+# THE FLUSH IS THE WHOLE FLUSH.  v10's kernel does not sync on halt --
+# md/machdep.c's boot() calls death() without one -- so a file written here and
+# then left by ^E keeps its old contents and the run reads as though the copy
+# never happened.
+cd /
+sync
+sync
+
+case $did in
+no)	echo "ipnxinstall: nothing to install"; exit 0 ;;
+esac
+
+# Only worth asking about the running machine, and only after something moved.
+case $TARGET in
+/v10)	echo "ipnxinstall: $TARGET updated"; exit 0 ;;
+esac
+
+if $YES
+then	ans=y
+else
+	echo -n "reboot now? (Y/n) "
+	read ans
+fi
+case $ans in
+n|N|no|NO)	echo "ipnxinstall: not rebooting -- /etc/rc changes take effect at the next boot" ;;
+*)		echo "ipnxinstall: halting; boot again from the simulator"
+		/etc/halt ;;
+esac

@@ -1,0 +1,23 @@
+TARGET=vax
+OS=bsd
+CFLAGS=-g
+LDFLAGS=-g
+INCLUDES=-I. -I../c
+
+D=${TARGET}-${OS}
+
+all:V:	${D}/rcc
+	:
+
+OBJS=${D}/gen.o
+
+${D}/gen.o:	gen.c
+		${CC} -c ${CFLAGS} ${INCLUDES} gen.c && mv gen.o $target
+
+<../c/mkfile
+
+${COBJS} ${OBJS}:	config.h
+
+RUN=run
+V=${TARGET}-${OS}
+<../tst/mkfile

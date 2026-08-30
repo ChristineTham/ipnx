@@ -64,15 +64,26 @@ SRCTOTAPE = "srctotape"
 
 # tree -> (destination, the evidence for it)
 PLACED = {
-    "man":     ("usr/man",
+    # THESE THREE ARE SOURCE, AND SOURCE LIVES UNDER /usr/src.  They used to be
+    # placed at their INSTALLED paths, which is where a running machine keeps
+    # them and not where the tape ships them: mktape had to `mv /v10/usr/src/sys
+    # /v10/usr/sys' to get the kernel out of the source tree, and the include
+    # tape was untarred straight into /v10/usr/src/include because the mkfile
+    # reads it from there.  So the installed path was never the tape's shape.
+    #
+    # The build now installs all three out -- $INC and $MAN copy them with tar,
+    # $SYS reads $SRC/sys -- which is what lets a build disk carry /usr/src and
+    # nothing else.  docs/v10-build.md phase 4.
+    "man":     ("usr/src/man",
                 "roff manual pages -- man/man1/ls.1 opens `.TH LS 1'; cmd/man "
-                "reads /usr/man/man0/secindex"),
-    "sys":     ("usr/sys",
-                "the kernel tree; 124 references to /usr/sys, and v8 keeps its "
-                "kernel at the same place"),
-    "include": ("usr/include",
-                "r70's reconstruction of /usr/include, its own tape; 731 "
-                "references"),
+                "reads /usr/man/man0/secindex, which the build installs it to"),
+    "sys":     ("usr/src/sys",
+                "the kernel tree, and the tape ships it as src/sys; mkfile's "
+                "$SYS is $SRC/sys and /unix is built from it"),
+    "include": ("usr/src/include",
+                "r70's reconstruction of /usr/include, its own tape; mktape "
+                "already untarred it into /usr/src/include and the mkfile's "
+                "$INC rule installs it out from there"),
     "jerq":    ("usr/jerq",
                 "the 5620 distribution, its own tape; its sources name "
                 "/usr/jerq/include 196 times and /usr/jerq/bin 95"),

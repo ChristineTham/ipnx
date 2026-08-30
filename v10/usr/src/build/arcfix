@@ -1,0 +1,398 @@
+# NO SOURCE ARCHIVES IN THE TAR OF /usr -- updatebuild reads this and dissolves every one,
+# idempotently.  Source members are extracted in place, in a directory named
+# as the archive was, under the repository's member names (u_ where members
+# collide by case, matching build/casenames' rule); the archive file is then
+# deleted.  Object members and all-object archives are deleted outright:
+# "there should be no source archives, and archive objects cannot be included
+# in the tar" -- the link libraries the kernel reads (sys/lib/*.a) rebuild
+# from source on the next ipnxbuild, and the object-only tape libraries are
+# recoverable from v10.tar.  ORDER, written from ar t at extraction, keeps
+# the one thing a directory cannot: the member order.
+#
+# FOLDERS CANNOT HAVE EXTENSIONS (her rule): the extraction directory is the
+# archive's bare stem -- tek.c.a becomes tek/, test.a becomes test/.
+#
+# ops: x archive dirname (extract members into dirname/, delete archive)
+#      m dirname/member new (rename member to its collision-safe name)
+#      d dirname/member (delete an object member after extraction)
+#      r archive (delete an all-object archive)
+#
+# THE TAR OF /usr WIDENED THE SCOPE.  When ipnx.tar became a tar of /usr the
+# beside-src trees came into it, and blit, jerq and 630 carry 29 archives of
+# their own.  The classification is the repository's: every one of the 29 is
+# already dissolved there, so counting .o among a directory's members settles
+# it -- 21 directories are all-object (blit/lib's eight cross libraries,
+# 630/lib's six, and seven in-tree products; every one rebuildable from source
+# that sits in the same tree, and every byte recoverable from the tapes) and
+# get r rows; 8 hold no objects at all (the jplot source containers and the
+# newspec font data) and get x rows.  No member of the 8 collides by case, so
+# no m rows.
+r	src/libl/libln.a	
+r	src/cmd/xref/lib.a	
+x	src/cmd/ratfor/old.a	old
+x	src/cmd/grap/graptest.a	graptest
+x	src/cmd/grap/non-ansi/graptest.a	graptest
+r	src/cmd/qsnap/libq.a	
+x	src/cmd/ccom/vax/tests/all.a	all
+m	src/cmd/ccom/vax/tests/all/a.i	u_a.i
+m	src/cmd/ccom/vax/tests/all/b.i	u_b.i
+m	src/cmd/ccom/vax/tests/all/c.i	u_c.i
+m	src/cmd/ccom/vax/tests/all/d.i	u_d.i
+m	src/cmd/ccom/vax/tests/all/f.i	u_f.i
+m	src/cmd/ccom/vax/tests/all/g.i	u_g.i
+m	src/cmd/ccom/vax/tests/all/h.i	u_h.i
+m	src/cmd/ccom/vax/tests/all/i.i	u_i.i
+m	src/cmd/ccom/vax/tests/all/j.i	u_j.i
+m	src/cmd/ccom/vax/tests/all/k.i	u_k.i
+m	src/cmd/ccom/vax/tests/all/l.i	u_l.i
+m	src/cmd/ccom/vax/tests/all/m.i	u_m.i
+m	src/cmd/ccom/vax/tests/all/n.i	u_n.i
+m	src/cmd/ccom/vax/tests/all/o.i	u_o.i
+m	src/cmd/ccom/vax/tests/all/p.i	u_p.i
+m	src/cmd/ccom/vax/tests/all/q.i	u_q.i
+m	src/cmd/ccom/vax/tests/all/r.i	u_r.i
+m	src/cmd/ccom/vax/tests/all/s.i	u_s.i
+m	src/cmd/ccom/vax/tests/all/t.i	u_t.i
+m	src/cmd/ccom/vax/tests/all/u.i	u_u.i
+m	src/cmd/ccom/vax/tests/all/v.i	u_v.i
+m	src/cmd/ccom/vax/tests/all/w.i	u_w.i
+m	src/cmd/ccom/vax/tests/all/x.i	u_x.i
+m	src/cmd/ccom/vax/tests/all/y.i	u_y.i
+m	src/cmd/ccom/vax/tests/all/z.i	u_z.i
+r	src/cmd/sky/sky.a	
+x	src/cmd/hoc/tests.a	tests
+x	src/cmd/awk/awktest.a	awktest
+m	src/cmd/awk/awktest/T.getline	u_T.getline
+m	src/cmd/awk/awktest/T.redir	u_T.redir
+m	src/cmd/awk/awktest/T.sub	u_T.sub
+d	src/cmd/awk/awktest/t.1.x	
+d	src/cmd/awk/awktest/t.2.x	
+d	src/cmd/awk/awktest/t.3.x	
+d	src/cmd/awk/awktest/t.4.x	
+d	src/cmd/awk/awktest/t.5.x	
+d	src/cmd/awk/awktest/t.6.x	
+d	src/cmd/awk/awktest/t.8.x	
+d	src/cmd/awk/awktest/t.b.x	
+d	src/cmd/awk/awktest/t.d.x	
+d	src/cmd/awk/awktest/t.f.x	
+d	src/cmd/awk/awktest/t.i.x	
+d	src/cmd/awk/awktest/t.j.x	
+d	src/cmd/awk/awktest/t.x	
+x	src/cmd/awk/test.a	test
+m	src/cmd/awk/test/T.getline	u_T.getline
+m	src/cmd/awk/test/T.redir	u_T.redir
+d	src/cmd/awk/test/t.1.x	
+d	src/cmd/awk/test/t.2.x	
+d	src/cmd/awk/test/t.3.x	
+d	src/cmd/awk/test/t.4.x	
+d	src/cmd/awk/test/t.5.x	
+d	src/cmd/awk/test/t.6.x	
+d	src/cmd/awk/test/t.8.x	
+d	src/cmd/awk/test/t.b.x	
+d	src/cmd/awk/test/t.d.x	
+d	src/cmd/awk/test/t.f.x	
+d	src/cmd/awk/test/t.i.x	
+d	src/cmd/awk/test/t.j.x	
+d	src/cmd/awk/test/t.x	
+r	src/cmd/upas/libc/v9libc.a	
+r	src/cmd/upas/libc/libc.a	
+r	src/cmd/upas/common/common.a	
+r	src/cmd/gre/libc.a	
+x	src/cmd/eqn/eqntest.a	eqntest
+r	src/cmd/odist/pax/lib/libx.a	
+r	src/cmd/odist/pax/lib/libodelta.a	
+r	src/cmd/odist/pax/src/lib/libx/libx.a	
+r	src/cmd/odist/pax/src/lib/libodelta/libodelta.a	
+r	src/cmd/odist/v10/lib.a	
+x	src/cmd/tbl/samples.a	samples
+r	src/cmd/backup.old/lib.a	
+x	src/cmd/pic/pictest.a	pictest
+r	src/cmd/map/libmap.a	
+r	src/cmd/map/export/libmap.a	
+r	src/cmd/asd++/lib.a	
+r	src/cmd/matlab/matlab.a	
+r	src/cmd/view2d/num.a	
+r	src/cmd/worm/worm.a	
+r	src/cmd/worm/oscsi/juke.a	
+r	src/cmd/worm/oscsi/scsish.a	
+r	src/cmd/worm/oscsi/scsi.a	
+r	src/cmd/worm/scsi/tcl.a	
+r	src/cmd/worm/scsi/juke.a	
+r	src/cmd/worm/scsi/scsish.a	
+r	src/cmd/worm/scsi/scsi.a	
+x	src/cmd/worm/scsi/tcl/tcl.a	tcl
+d	src/cmd/worm/scsi/tcl/tcl/tclAssem.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclBasic.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclCmdAH.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclCmdIZ.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclExpr.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclGlob.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclHistory.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclProc.o	
+d	src/cmd/worm/scsi/tcl/tcl/tclUtil.o	
+d	src/cmd/worm/scsi/tcl/tcl/panic.o	
+d	src/cmd/worm/scsi/tcl/tcl/strerror.o	
+d	src/cmd/worm/scsi/tcl/tcl/strtol.o	
+d	src/cmd/worm/scsi/tcl/tcl/strtoul.o	
+d	src/cmd/worm/scsi/tcl/tcl/strspn.o	
+d	src/cmd/worm/scsi/tcl/tcl/strpbrk.o	
+d	src/cmd/worm/scsi/tcl/tcl/strchr.o	
+d	src/cmd/worm/scsi/tcl/tcl/strstr.o	
+r	src/cmd/cfront/libC/libC.a	
+r	src/cmd/cfront/libC/ooiostream/iostream.a	
+r	src/cmd/cfront/libC/iostream/iostream.a	
+r	src/cmd/cfront/libC/oiostream/iostream.a	
+r	src/cmd/cfront/demangle/mangle.a	
+r	src/cmd/cfront/libstring/libstring.a	
+r	src/cmd/oworm/worm.a	
+r	src/cmd/oworm/scsi/lib.a	
+r	src/cmd/sign/notary.a	
+r	src/libc/liboc.a	
+r	src/libc/libdmalloc.a	
+r	src/libc/libc.a	
+r	src/libc/stdio/ostdio/ostdio.a	
+r	src/libc/stdio/ostdio/oldobjects.a	
+r	src/libmp/libmp.a	
+r	src/libj/libj.a	
+r	src/libcurses/crlib	
+r	sys/lib/mfair.a
+x	sys/lib/lccio.a	lccio
+d	sys/lib/lccio/fd.x	
+d	sys/lib/lccio/mem.x	
+d	sys/lib/lccio/sw.x	
+d	sys/lib/lccio/fineclock.x	
+d	sys/lib/lccio/bio.x	
+d	sys/lib/lccio/stream.x	
+d	sys/lib/lccio/partab.x	
+d	sys/lib/lccio/unixpld.x	
+d	sys/lib/lccio/cmcld.x	
+d	sys/lib/lccio/dkp.x	
+d	sys/lib/lccio/dkmod.x	
+d	sys/lib/lccio/ttyld.x	
+d	sys/lib/lccio/mesg.x	
+d	sys/lib/lccio/connld.x	
+d	sys/lib/lccio/bufld.x	
+d	sys/lib/lccio/dsort.x	
+d	sys/lib/lccio/bad144.x	
+d	sys/lib/lccio/errlog.x	
+d	sys/lib/lccio/ra.x	
+d	sys/lib/lccio/ta.x	
+d	sys/lib/lccio/nttyld.x	
+x	sys/lib/lccbvax.a	lccbvax
+d	sys/lib/lccbvax/machdep.x	
+x	sys/lib/lccnaut.a	lccnaut
+d	sys/lib/lccnaut/machnaut.x	
+d	sys/lib/lccnaut/mchknaut.x	
+d	sys/lib/lccnaut/rstnaut.x	
+d	sys/lib/lccnaut/nexnaut.x	
+d	sys/lib/lccnaut/consnaut.x	
+d	sys/lib/lccnaut/cdisknaut.x	
+x	sys/lib/lcccomet.a	lcccomet
+d	sys/lib/lcccomet/machcomet.x	
+d	sys/lib/lcccomet/mchkcomet.x	
+d	sys/lib/lcccomet/rstcomet.x	
+d	sys/lib/lcccomet/nexcomet.x	
+d	sys/lib/lcccomet/conscomet.x	
+d	sys/lib/lcccomet/ctapecomet.x	
+x	sys/lib/lccinet.a	lccinet
+d	sys/lib/lccinet/ip_arp.x	
+d	sys/lib/lccinet/ip_device.x	
+d	sys/lib/lccinet/ip_input.x	
+d	sys/lib/lccinet/ip_ld.x	
+d	sys/lib/lccinet/ip_output.x	
+d	sys/lib/lccinet/ip_subr.x	
+d	sys/lib/lccinet/udp_device.x	
+d	sys/lib/lccinet/udp_input.x	
+d	sys/lib/lccinet/udp_ld.x	
+d	sys/lib/lccinet/udp_output.x	
+d	sys/lib/lccinet/tcp_device.x	
+d	sys/lib/lccinet/tcp_input.x	
+d	sys/lib/lccinet/tcp_ld.x	
+d	sys/lib/lccinet/tcp_output.x	
+d	sys/lib/lccinet/tcp_subr.x	
+d	sys/lib/lccinet/tcp_timer.x	
+r	sys/lib/lccfs.a	
+x	sys/lib/bvax.a	bvax
+d	sys/lib/bvax/machdep.x	
+x	sys/lib/naut.a	naut
+d	sys/lib/naut/machnaut.x	
+d	sys/lib/naut/mchknaut.x	
+d	sys/lib/naut/rstnaut.x	
+d	sys/lib/naut/nexnaut.x	
+d	sys/lib/naut/consnaut.x	
+d	sys/lib/naut/cdisknaut.x	
+r	sys/lib/os.a	
+x	sys/lib/inet.a	inet
+d	sys/lib/inet/ip_arp.x	
+d	sys/lib/inet/ip_device.x	
+d	sys/lib/inet/ip_input.x	
+d	sys/lib/inet/ip_ld.x	
+d	sys/lib/inet/ip_output.x	
+d	sys/lib/inet/ip_subr.x	
+d	sys/lib/inet/udp_device.x	
+d	sys/lib/inet/udp_input.x	
+d	sys/lib/inet/udp_ld.x	
+d	sys/lib/inet/udp_output.x	
+d	sys/lib/inet/tcp_device.x	
+d	sys/lib/inet/tcp_input.x	
+d	sys/lib/inet/tcp_ld.x	
+d	sys/lib/inet/tcp_output.x	
+d	sys/lib/inet/tcp_subr.x	
+d	sys/lib/inet/tcp_timer.x	
+r	sys/lib/lccvm.a	
+r	sys/lib/lccmflow.a
+x	sys/lib/ioicarus.a	ioicarus
+d	sys/lib/ioicarus/fd.x	
+d	sys/lib/ioicarus/mem.x	
+d	sys/lib/ioicarus/sw.x	
+d	sys/lib/ioicarus/fineclock.x	
+d	sys/lib/ioicarus/bio.x	
+d	sys/lib/ioicarus/stream.x	
+d	sys/lib/ioicarus/partab.x	
+d	sys/lib/ioicarus/unixpld.x	
+d	sys/lib/ioicarus/cmcld.x	
+d	sys/lib/ioicarus/dkp.x	
+d	sys/lib/ioicarus/dkmod.x	
+d	sys/lib/ioicarus/ttyld.x	
+d	sys/lib/ioicarus/mesg.x	
+d	sys/lib/ioicarus/connld.x	
+d	sys/lib/ioicarus/bufld.x	
+d	sys/lib/ioicarus/dsort.x	
+d	sys/lib/ioicarus/bad144.x	
+d	sys/lib/ioicarus/errlog.x	
+d	sys/lib/ioicarus/raicarus.x	
+d	sys/lib/ioicarus/ta.x	
+d	sys/lib/ioicarus/nttyld.x	
+d	sys/lib/ioicarus/archosld.x	
+x	sys/lib/uvax.a	uvax
+d	sys/lib/uvax/consuvax.x	
+r	sys/lib/lccmfair.a
+x	sys/lib/io.a	io
+d	sys/lib/io/fd.x	
+d	sys/lib/io/mem.x	
+d	sys/lib/io/sw.x	
+d	sys/lib/io/fineclock.x	
+d	sys/lib/io/bio.x	
+d	sys/lib/io/stream.x	
+d	sys/lib/io/partab.x	
+d	sys/lib/io/unixpld.x	
+d	sys/lib/io/cmcld.x	
+d	sys/lib/io/dkp.x	
+d	sys/lib/io/dkmod.x	
+d	sys/lib/io/ttyld.x	
+d	sys/lib/io/xttyld.x	
+d	sys/lib/io/mesg.x	
+d	sys/lib/io/connld.x	
+d	sys/lib/io/bufld.x	
+d	sys/lib/io/dsort.x	
+d	sys/lib/io/bad144.x	
+d	sys/lib/io/errlog.x	
+d	sys/lib/io/ra.x	
+d	sys/lib/io/ta.x	
+d	sys/lib/io/nttyld.x	
+d	sys/lib/io/archosld.x	
+x	sys/lib/lccstar.a	lccstar
+d	sys/lib/lccstar/machstar.x	
+d	sys/lib/lccstar/mchkstar.x	
+d	sys/lib/lccstar/nexstar.x	
+d	sys/lib/lccstar/consstar.x	
+d	sys/lib/lccstar/cdiskstar.x	
+x	sys/lib/comet.a	comet
+d	sys/lib/comet/machcomet.x	
+d	sys/lib/comet/mchkcomet.x	
+d	sys/lib/comet/rstcomet.x	
+d	sys/lib/comet/nexcomet.x	
+d	sys/lib/comet/conscomet.x	
+d	sys/lib/comet/ctapecomet.x	
+x	sys/lib/star.a	star
+d	sys/lib/star/machstar.x	
+d	sys/lib/star/mchkstar.x	
+d	sys/lib/star/nexstar.x	
+d	sys/lib/star/consstar.x	
+d	sys/lib/star/cdiskstar.x	
+r	sys/lib/vm.a	
+r	sys/lib/lccos.a	
+x	sys/lib/lccuvax.a	lccuvax
+d	sys/lib/lccuvax/consuvax.x	
+r	sys/lib/mflow.a
+r	sys/lib/fs.a	
+r	src/lbin/libjobs/libjobs.a	
+x	src/doc/bibliog.a	bibliog
+x	src/doc/uucp.a	uucp
+r	src/dk/libc/libdk.a	
+r	src/ipc/mgrs/common/libcommon.a	
+r	src/ipc/libipc/libipc.a	
+r	src/ipc/libin/libin.a	
+x	src/netfs/libnetb/libnetb.a	libnetb
+d	src/netfs/libnetb/libnetb/disp.o	
+d	src/netfs/libnetb/libnetb/funcs.o	
+d	src/netfs/libnetb/libnetb/tag.o	
+d	src/netfs/libnetb/libnetb/setupmain.o	
+d	src/netfs/libnetb/libnetb/log.o	
+d	src/netfs/libnetb/libnetb/panic.o	
+d	src/netfs/libnetb/libnetb/gread.o	
+d	src/netfs/libnetb/libnetb/fsmkidmap.o	
+d	src/netfs/libnetb/libnetb/setupmap.o	
+d	src/netfs/libnetb/libnetb/perm.o	
+d	src/netfs/libnetb/libnetb/stubcreate.o	
+d	src/netfs/libnetb/libnetb/stubdelete.o	
+d	src/netfs/libnetb/libnetb/stubdirread.o	
+d	src/netfs/libnetb/libnetb/stubdone.o	
+d	src/netfs/libnetb/libnetb/stublink.o	
+d	src/netfs/libnetb/libnetb/stubmkdir.o	
+d	src/netfs/libnetb/libnetb/stubread.o	
+d	src/netfs/libnetb/libnetb/stubrmdir.o	
+d	src/netfs/libnetb/libnetb/stubstat.o	
+d	src/netfs/libnetb/libnetb/stubupdate.o	
+d	src/netfs/libnetb/libnetb/stubwalk.o	
+d	src/netfs/libnetb/libnetb/stubwrite.o	
+d	src/netfs/libnetb/libnetb/reswhocalled.o	
+d	src/netfs/libnetb/libnetb/callsource.o	
+x	src/libplot/lib5620/blit.c.a	blit
+x	src/libplot/libblit/blit.c.a	blit
+x	src/libplot/oldplot/300s.c.a	300s
+x	src/libplot/oldplot/jerq.c.a	jerq
+x	src/libplot/oldplot/plot.c.a	plot
+x	src/libplot/oldplot/450.c.a	450
+x	src/libplot/oldplot/300.c.a	300
+x	src/libplot/oldplot/vt0.c.a	vt0
+x	src/libplot/oldplot/4014.c.a	4014
+x	src/libplot/lib4014/tek.c.a	tek
+r	src/libplot/libtr/olibtr.a	
+r	src/libplot/libtr/libtr.a	
+x	src/libplot/libtr/tr.c.a	tr
+x	src/libplot/libram/ramtek.c.a	ramtek
+r	src/libplot/libpen/libpen.a	
+x	src/libplot/libpen/pen.c.a	pen
+x	src/libplot/libplot/plot.c.a	plot
+x	src/libplot/lib2621/hp.c.a	hp
+r	src/libpicfile/libpicfile.a	
+x	blit/src/jplot/blit.c.a	blit
+x	blit/src/jplot/inblit.a	inblit
+x	blit/src/jplot/ojplot.c.a	ojplot
+x	blit/src/font/gen/newspec.a	newspec
+x	jerq/src/Xjplot/blit.c.a	blit
+x	jerq/src/Xjplot/inblit.a	inblit
+x	jerq/src/jplot/blit.c.a	blit
+x	jerq/src/jplot/inblit.a	inblit
+r	blit/lib/libc.a
+r	blit/lib/libsys.a
+r	blit/lib/libmj.a
+r	blit/lib/libj.a
+r	blit/lib/liblayer.a
+r	blit/lib/libf.a
+r	blit/lib/libjplot.a
+r	blit/lib/libpads.a
+r	blit/m/libf/libf.a
+r	blit/src/layer/layer.a
+r	blit/src/libmj/libmj.a
+r	blit/src/sys/libsys.a
+r	blit/src/libj/libj.a
+r	jerq/src/mux/term/frame/frame.a
+r	630/lib/libj.a
+r	630/lib/libjx.a
+r	630/lib/libfw.a
+r	630/lib/libjj.a
+r	630/lib/libc.a
+r	630/lib/libm.a
+r	630/src/frame.a

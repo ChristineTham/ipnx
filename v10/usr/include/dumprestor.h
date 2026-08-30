@@ -22,7 +22,7 @@ struct	spcl {
 	int	c_checksum;
 	struct	dinode	c_dinode;
 	int	c_count;
-	char	c_addr[512];		/* was BSIZE, 512 under v8 param.h:96 */
+	char	c_addr[512];
 } spcl;
 
 struct	idates {

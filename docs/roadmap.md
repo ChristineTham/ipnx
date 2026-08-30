@@ -937,16 +937,22 @@ this one.
 ## Post-1.0 (unscheduled)
 
 - [ ] Original 68000 Blit mode (Musashi core; requires ROM permission resolution)
-- [ ] Emscripten web demo — the first browser VAX. *The emulator compiled to WASM; not
-      the same thing as the v12 wish below, which is the opposite — no VAX at all*
+- [ ] Emscripten web demo — the first browser VAX. *The emulator compiled to WASM — the
+      opposite of ipnx-v12, which has no VAX at all*
 - [ ] V10-era networking exploration (DEQNA/IP)
 
-## ipnx-v12 — a wish, and deliberately not a track
+## This roadmap ends at V11
 
-Research Unix retargeted to **ARM64** and **WASM**: ipnx on real hardware and in a browser
-tab, with no emulated 11/780 underneath. There are no phases here and there should not be —
-this is weaker than Inferno's "maybe", and everything above it comes first.
+**There is no v12 track and there will not be one.** What would have been a twelfth edition
+— Research Unix retargeted with no emulated 11/780 underneath — turned out not to be a
+retarget at all once the surviving code was counted: `io/`, `vm/`, `md/` and `ml/` do not
+cross, leaving roughly 3,300 lines of process semantics out of 61,072. That is a rewrite,
+and a rewrite is not a restoration.
 
-Written down only so the direction survives: the kernel's portability boundary is already
-explicit (`sys/md/` per machine, `sys/ml/` for the assembler), and the system has crossed
-it before — Interdata, VAX, Cray. See the README for the longer note.
+It continues as a separate project with a separate premise — a modified Plan 9 kernel hosted
+as a userspace process, a V10 personality, WebAssembly executables — at
+[**ipnx-v12**](https://github.com/ChristineTham/ipnx-v12). The reasoning is set out in
+[the README](../README.md#where-this-project-ends) and the design in that repository's
+`docs/v12-plan.md`.
+
+Everything above this line stays here and stays in the old tradition.

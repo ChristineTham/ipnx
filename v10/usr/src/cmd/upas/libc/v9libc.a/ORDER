@@ -1,8 +1,0 @@
-getlog.o
-v9sysname.o
-v9nsysfile.o
-mboxowner.o
-gendate.o
-genopen.o
-fread.o
-fwrite.o

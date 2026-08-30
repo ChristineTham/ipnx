@@ -80,10 +80,10 @@ char *fmat, **a1;
 			s=x; break;
 		    case 'f':
 		    case 'F':
-			vptr =+ 3;
+			vptr += 3;
 			rnd=1.0;
 			for(n=prec;n>=0;n--)
-				rnd =* 10;
+				rnd *= 10;
 			real = *rptr + (5 / rnd);
 			s=ecvt(real, 8, &decpt, &n);
 			IF n THEN *digitptr++='-'; FI
@@ -104,7 +104,7 @@ char *fmat, **a1;
 			ELSE vptr--;
 			FI
 			IF width
-			THEN width =- charpos()%width;
+			THEN width -= charpos()%width;
 			FI
 			break;
 		    default:
@@ -116,7 +116,7 @@ char *fmat, **a1;
 		FI
 		n=length(s);
 		n=(prec<n ANDF prec>=0 ? prec : n);
-		width =- n;
+		width -= n;
 		IF adj=='r'
 		THEN WHILE width-- > 0
 		     DO printc(SP); OD
@@ -183,7 +183,7 @@ printoct(o,s) long o; int s;
 	FI
 	FOR i=0;i<=11;i++
 	DO digs[i] = po&7; po =>> 3; OD
-	digs[10] =& 03; digs[11]=0;
+	digs[10] &= 03; digs[11]=0;
 	FOR i=11;i>=0;i--
 	DO IF digs[i] THEN EXITFOR; FI OD
 	FOR i++;i>=0;i--
@@ -196,7 +196,7 @@ unsigned lx, ly; char fmat; int base;
 	double f ,g; long q;
 	dptr=digs;
 	IF fmat!='D'
-	THEN	f=(lx); f =* itol(1,0); f =+ (ly);
+	THEN	f=(lx); f *= itol(1,0); f += (ly);
 		IF fmat=='x' THEN *digitptr++='#'; FI
 	ELSE	f=itol(lx,ly);
 		IF f<0 THEN *digitptr++='-'; f = -f; FI

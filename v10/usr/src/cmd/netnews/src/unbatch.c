@@ -24,10 +24,10 @@ char **av;
 	long atol();
 
 	filename = mktemp("/tmp/unbnewsXXXXXX");
-	while(gets(buf) != NULL) {
+	while(fgets(buf, sizeof buf, stdin) != NULL) { buf[strcspn(buf, "\n")] = 0;
 		while (strncmp(buf, "#! rnews ", 9)) {
 			fprintf(stderr, "out of sync, skipping %s\n", buf);
-			if (gets(buf) == NULL)
+			if (fgets(buf, sizeof buf, stdin) == NULL)
 				exit(0);
 		}
 		size = atol(buf+9);

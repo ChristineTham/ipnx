@@ -13,7 +13,7 @@ cyntax: $COBJS
 	cyntax $COBJS && touch cyntax
 
 $L: $OBJS
-	ar rv $L *.o && rm *.o && ranlib $L
+	ar rv $L *.[oO] && rm *.[oO] && ranlib $L
 
 %.o: %.c ../h/defs.h ../h/ipc.h
 $L(%.o):N: %.o
@@ -26,5 +26,5 @@ install: $L
 	ranlib /usr/lib/$L
 
 clean:
-	rm *.[oOa] cyntax
+	rm -f *.[oOa] cyntax
 

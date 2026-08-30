@@ -1,0 +1,29 @@
+CFLAGS = -d2
+
+a.out:	m4.o m4ext.o m4macs.o m4y.o
+	cc m4.o m4ext.o m4macs.o m4y.o
+
+m4.o m4ext.o m4macs.o :	m4.h
+
+list:
+	pr m4.h m4.c m4ext.c m4macs.c m4y.y makefile
+
+gcos:
+	yacc m4y.y
+	mv y.tab.c m4.tab.c
+	fsend m4*.c m4.test*
+
+install:	a.out
+	strip a.out
+	mv a.out /usr/bin/m4
+
+clean:
+	rm -f a.out *.[oO]
+
+
+# ---- added by the converter: mk has no equivalent builtin ----
+%.c: %.y
+	yacc $stem.y && mv y.tab.c $stem.c; rm -f y.tab.h
+
+m4y.o: m4y.y
+	yacc m4y.y && cc ${CFLAGS} -c y.tab.c && mv y.tab.o m4y.o; rm -f y.tab.c

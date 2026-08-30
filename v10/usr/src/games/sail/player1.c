@@ -282,7 +282,7 @@ child()
 
 	signal(SIGCHLD, SIG_IGN);
 	do {
-		pid = vwait(&status, WNOHANG|WUNTRACED, 0);
+		pid = wait3(&status, WNOHANG|WUNTRACED, 0);
 		if (pid < 0 || pid > 0 && !WIFSTOPPED(status))
 			leave(4);
 	} while (pid != 0);
@@ -498,7 +498,7 @@ reprint:
 	else {
 		fputs("Your name, Captain? ", stdout);
 		fflush(stdout);
-		gets(comm);
+		*comm = 0; fgets(comm, sizeof comm, stdin); comm[strcspn(comm, "\n")] = 0;
 		if (!*comm) strcpy(comm, "no name");
 	}
 	comm[19] = '\0';

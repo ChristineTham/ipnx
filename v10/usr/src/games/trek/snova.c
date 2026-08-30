@@ -35,7 +35,7 @@ int	x, y;
 			{
 				for (iy = 0; iy < NSECTS; iy++)
 					if (Sect[ix][iy] == STAR || Sect[ix][iy] == INHABIT)
-						if ((n =- 1) <= 0)
+						if ((n -= 1) <= 0)
 							break;
 				if (n <= 0)
 					break;
@@ -83,15 +83,15 @@ int	x, y;
 	/* clear out the supernova'ed quadrant */
 	dx = q->qkling;
 	dy = q->stars;
-	Status.kling =- dx;
+	Status.kling -= dx;
 	if (x >= 0)
 	{
 		/* Enterprise caused supernova */
-		Game.kills =+ dy;
+		Game.kills += dy;
 		if (q->bases) {
 			killb(qx, qy); Game.killb++;
 		}
-		Game.gkillk =+ dx;
+		Game.gkillk += dx;
 	}
 	else
 		if (q->bases) {

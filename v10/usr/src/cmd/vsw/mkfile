@@ -17,7 +17,7 @@ vswconf:	vswconf.c
 	cc $CFLAGS -o $target $prereq -lipc
 
 clobber:V:
-	rm -f *.o core $ALL vswconlog
+	rm -f *.[oO] core $ALL vswconlog
 
 init.vsw:VQ:	vswconf
 	echo "chatty script takes about 2min, status at end"

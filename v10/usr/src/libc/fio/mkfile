@@ -10,4 +10,4 @@ tst%:	tst%.o $OBJ
 	$CC $CFLAGS -o tst$stem $prereq
 
 clean:V:
-	rm -f a.out *.o $ALL
+	rm -f a.out *.[oO] $ALL

@@ -1,0 +1,31 @@
+CC = cc
+CCFLAGS = -O
+TARGETS = dem c++filt errfilt
+
+all:V: ${TARGETS}
+	:
+
+OFILES= nplist.o String.o demangle.o args.o
+
+mangle.a: ${OFILES}
+	rm -f mangle.a
+	ar cr mangle.a `lorder ${OFILES} | tsort`
+	if [ -x /usr/bin/ranlib ]; then ranlib mangle.a; fi
+
+dem: dem.o mangle.a
+	${CC} ${CCFLAGS} -o dem dem.o mangle.a
+
+c++filt: c++filt.o mangle.a
+	${CC} ${CCFLAGS} -o c++filt c++filt.o mangle.a
+
+errfilt: errfilt.c
+	${CC} ${CCFLAGS} -o errfilt errfilt.c
+
+clean:
+	rm -f *.[oO] mangle.a
+
+clobber: clean
+	rm -f ${TARGETS}
+
+cpio: dem.cpio
+	cat files | cpio -ocvu > dem.cpio

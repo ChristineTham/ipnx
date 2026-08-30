@@ -65,7 +65,7 @@ getguess()
 	int ok=0,i;
 loop:
 	printf("guess: ");
-	if(gets(gbuf)==NULL)
+	if(fgets(gbuf, sizeof gbuf, stdin) == NULL)
 	{	printf("The word was %s\n", realword);
 		exit(0);
 	}

@@ -8,7 +8,7 @@
 
 extern long	score();
 extern float atof();
-CVNTAB	Lentab[]
+CVNTAB	Lentab[] =
 {
 	"s",		"hort",
 	"m",		"edium",
@@ -17,7 +17,7 @@ CVNTAB	Lentab[]
 	0
 };
 
-CVNTAB	Skitab[]
+CVNTAB	Skitab[] =
 {
 	"n",		"ovice",
 	"f",		"air",
@@ -112,28 +112,28 @@ long score()
 	if (r < 1.0)
 		r = 1.0;
 	r = u / r;
-	s =+ (t = 400 * r);
+	s += (t = 400 * r);
 	r = Status.kling;
-	r =/ u + 1;
-	s =+ (t = -1000 * r);
+	r /= u + 1;
+	s += (t = -1000 * r);
 	if (Move.endgame > 0)
 	{
-		s =+ (t = 100 * (u = Game.skill));
+		s += (t = 100 * (u = Game.skill));
 	}
 	if (Game.killed)
 	{
-		s =- 200;
+		s -= 200;
 	}
-	s =+ (t = -100 * (u = Game.killb));
-	s =+ (t = -100 * (u = Game.helps));
-	s =+ (t = -20 * (u = Game.kills));
-	s =+ (t = -150 * (u = Game.killinhab));
+	s += (t = -100 * (u = Game.killb));
+	s += (t = -100 * (u = Game.helps));
+	s += (t = -20 * (u = Game.kills));
+	s += (t = -150 * (u = Game.killinhab));
 	if (Status.ship != ENTERPRISE)
 	{
-		s =- 200;
+		s -= 200;
 	}
-	s =+ (t = 3 * (u = Game.captives));
-	s =+ (t = -(u = Game.deaths));
+	s += (t = 3 * (u = Game.captives));
+	s += (t = -(u = Game.deaths));
 	return (s);
 }
 

@@ -1,0 +1,8 @@
+CFLAGS=
+LDFLAGS=-s
+OS=mips
+
+all:V:	rcc
+	:
+
+<../mkfile

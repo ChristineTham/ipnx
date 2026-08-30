@@ -1,0 +1,149 @@
+# Extract the six archives into a blank /v10/usr, resolve the case collisions,
+# and write the result out as v10.tar.  Once, ever.
+#
+#	mkv10     the six tapes -> v10.tar, pristine        <-- this
+#	mkipnx    v10.tar + our repairs -> ipnxorig.tar
+#	taripnx   this machine's live /usr/src -> ipnx.tar
+#	mkimage   makes the disk and extracts an archive into it
+#
+# THIS WAS mktape, AND WHY IT IS NOW AN ARCHIVE.  mktape filled a disk, so every
+# question about the tapes meant fetching 430 MB, blanking ra1 and extracting
+# again.  v10.tar is the answer written down: one file, made once, and the input
+# to mkipnx from then on.  Nothing downstream reads a tape.
+#
+# THE FIVE ARE PLAIN TAR, LOCAL, AND IN /usr/tmp BECAUSE THEY DO NOT STAY.
+# 430 MB against a 1,533 MB /usr, wanted by nothing once this has run, so they
+# go in the scratch directory and this removes them on the way out.  The work is
+# split: the host fetches and decompresses (tools/v10-tapes.sh), the guest
+# extracts and archives.
+#
+# PLAIN TAR BECAUSE NOTHING HERE CAN READ .gz OR .bz2, and that is not an
+# oversight to fix: gzip is 1992 and bzip2 1996, so a 1989 system has neither,
+# and cmd/ carries compress(.Z) and pack(.z) instead.  tools/v10-tapes.sh
+# decompresses on the host -- decompressing is not extracting, so THE CASE
+# COLLISIONS THE TAPES CARRY ARE RESOLVED HERE, on a case-sensitive filesystem,
+# and never on the Mac.  That is what ./casenames is for and why this is the
+# only command that reads it.
+#
+# WHERE THE FIVE ARE.  /usr/tmp by default -- the machine's own scratch, which
+# is where the host-side half leaves them -- but an image whose /etc/rc still
+# mounts the repository's tapes share runs `mkv10 /n/tapes' instead.
+TAPES=${1-/usr/tmp}
+GEN=/usr/src/build
+OUT=/v10/usr/ipnx
+
+test -d /v10/usr || { echo "mkv10: no /v10/usr -- run mkimage first"; exit 1; }
+if test -d /v10/usr/src
+then
+	echo "mkv10: /v10/usr already holds a source tree"
+	echo "mkv10: run mkimage first -- it blanks ra1 and mounts it"
+	exit 1
+fi
+test -f $GEN/casenames || { echo "mkv10: no $GEN/casenames"; exit 1; }
+
+mkdir /v10/usr/src || exit 1
+mkdir /v10/usr/blit || exit 1
+
+cd /v10/usr/src && tar xf $TAPES/secombe.tar || exit 1
+# secombe cuts sys inside src; the machine keeps it beside src (usrtrees).
+mv /v10/usr/src/sys /v10/usr/sys || exit 1
+
+# SELLERS IS THE MANUAL TAPE -- v10-tapes.sh:23, `/usr/man and vol2, the
+# documentation' -- and it is the agreed source: against norman's copy it is
+# newer in all six pages that differ and carries two pages norman lacks, with
+# nothing the other way.  man and vol2 land beside src, where they live:
+# ipnx.tar is a tar of /usr and build/usrtrees is the one list of its shape.
+cd /v10/usr && tar xf $TAPES/sellers.tar || exit 1
+
+cd /v10/usr && tar xf $TAPES/milligan.tar || exit 1
+
+cd /v10/usr/blit && tar xf $TAPES/v10blit.tar || exit 1
+
+# THE INCLUDE TREE LIVES AT /usr/include -- the tar-of-/usr shape.  349 members
+# rooted at ./  The mkfile installs it to /usr/include from there -- libc's own
+# mkfile:150,155,205 name /usr/include/libc.h as an absolute prerequisite, so a
+# disk without it cannot build a libc at all.
+mkdir /v10/usr/include || exit 1
+cd /v10/usr/include && tar xf $TAPES/r70include.tar || exit 1
+
+# v10src is norman's, and secombe wins wherever both have a path.  Only what
+# secombe lacks is taken: 630, maps and doc, and thirteen source directories.
+# Everything else v10src adds at this level is a compiled binary left in the
+# source tree.  NOT man: norman's man is the older copy of what sellers
+# carries, and an earlier revision of this script took it from here anyway,
+# with a comment asserting the manuals existed nowhere else -- written without
+# checking the sellers line above.  The manuals come from sellers.
+#
+# cmd/adb/vax is one level down and easy to miss: secombe has cmd/adb, with
+# 11v, 68v, comm, conf, cray, g, null, seq, v7 and v8, but no vax -- adb is
+# built per machine, and ours is the one directory only norman carries.
+cd /v10/usr && tar xf $TAPES/v10src.tar 630 maps || exit 1
+cd /v10/usr/src && tar xf $TAPES/v10src.tar doc || exit 1
+cd /v10/usr/src && tar xf $TAPES/v10src.tar \
+	cmd/bison cmd/cp cmd/cyntax cmd/flex cmd/gcc cmd/icon \
+	cmd/library cmd/m4 cmd/matlab cmd/pascal cmd/post cmd/wwb \
+	cmd/adb/vax lbin/kermit || exit 1
+
+# THE KERNEL STAYS WHERE THE TAPE PUT IT.  mktape moved src/sys out to
+# /v10/usr/sys because a running machine has /usr/sys -- true, and not the shape
+# the tape ships.  mkfile's $SYS is $SRC/sys now and the build installs what has
+# to be installed, so a build disk carries /usr/src and nothing else.
+
+# ---- one name per path -----------------------------------------------------
+# ./casenames holds the whole decision: NAME renames a tape path, DROP does not
+# extract it.  Its paths are the repository's (v10/usr/...), which is this
+# disk's with one leading slash, so sed supplies it rather than a second column.
+#
+# TALLIED IN FILES, NOT VARIABLES.  This shell forks for a compound command
+# carrying an input redirection, so `n=`expr $n + 1`' inside `while read ... done
+# < file' is incremented in a child and lost.  mv and rm survive the fork
+# because their effect is on the disk; a count does not.
+NT=/usr/tmp/mkv10.named
+DT=/usr/tmp/mkv10.dropped
+rm -f $NT $DT
+
+# Two expressions, not three.  s|| replaces the FIRST match on a line, so the
+# NAME expression consumes column two's `<tab>v10/' and the general one then
+# lands on column three; on a DROP line the NAME expression does not match at
+# all and the general one takes its single path.
+sed -e 's|^NAME	v10/|NAME	/v10/|' -e 's|	v10/|	/v10/|' $GEN/casenames > /usr/tmp/mkv10.tab
+
+while read kind a b
+do
+	case $kind in
+	NAME)	if test -f $a
+		then	mv $a $b && echo $b >> $NT
+		fi ;;
+	DROP)	if test -f $a
+		then	rm -f $a && echo $a >> $DT
+		fi ;;
+	esac
+done < /usr/tmp/mkv10.tab
+
+echo "mkv10: renamed `wc -l < $NT`, dropped `wc -l < $DT`"
+rm -f $NT $DT /usr/tmp/mkv10.tab
+
+# ---- the archive ----------------------------------------------------------
+# WRITTEN OUTSIDE THE TREE IT IS ARCHIVING.  tar has no --exclude here, and an
+# archive created under the directory being walked is reached by that walk and
+# copied into itself while it grows.  /v10/usr/ipnx is beside src, not inside it.
+test -d $OUT || mkdir $OUT || exit 1
+rm -f $OUT/v10.tar
+cd /v10/usr && tar cf $OUT/v10.tar `ls | grep -v '^ipnx$' | grep -v '^tmp$'` || exit 1
+
+# THE SHAPE CHECK: every tree usrtrees names must exist, or this run lied.
+for d in `grep '^[a-z0-9]' $GEN/usrtrees`
+do
+	test -d /v10/usr/$d || { echo "mkv10: usrtrees names $d and it is missing"; exit 1; }
+done
+
+rm -f $TAPES/secombe.tar $TAPES/sellers.tar $TAPES/milligan.tar
+rm -f $TAPES/v10blit.tar $TAPES/v10src.tar $TAPES/r70include.tar
+
+# v10's kernel does not sync on halt -- md/machdep.c's boot() calls death()
+# without one -- so an archive written here and then left by ^E is not on the
+# disk at all.
+cd /
+sync
+sync
+echo "mkv10: $OUT/v10.tar written"

@@ -8,4 +8,4 @@ install:	all
 	strip /etc/rarct /etc/rarepl
 
 clean:
-	rm -f *.o rarct rarepl
+	rm -f *.[oO] rarct rarepl

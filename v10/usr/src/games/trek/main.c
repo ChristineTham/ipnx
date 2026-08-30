@@ -53,7 +53,7 @@ fault()
 	mkfault=1;
 }
 
-CVNTAB	Ngtab[]
+CVNTAB	Ngtab[] =
 {
 	"n",	"o",
 	"y",	"es",

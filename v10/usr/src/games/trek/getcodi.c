@@ -12,7 +12,7 @@ float	*di;
 	if(getfltpar("Distance", di)==0) return(0);
 	if(*di<0.0) {
 		*di = -*di;
-		*co =- 180;
+		*co -= 180;
 		fixco(co);
 	}
 	return(1);
@@ -24,6 +24,6 @@ int	*co;
 	register int	neg;
 
 	neg = *co<0;
-	*co =% 360;
-	if(neg)	*co =+ 360;
+	*co %= 360;
+	if(neg)	*co += 360;
 }

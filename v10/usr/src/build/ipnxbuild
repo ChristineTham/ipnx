@@ -1,0 +1,228 @@
+# Build a complete system from /usr/src.
+#
+#	ipnxbuild              this machine
+#	ipnxbuild /v10         the disk on ra1
+#
+# One process with a target parameter, not two procedures.  The toolchain is
+# always THIS machine's -- the same compiler, assembler and libc build both
+# disks -- so $ROOT means only where output goes.  That is why the mkfile is
+# read from /usr/src/build whichever target is named: $GEN no longer follows
+# $ROOT, so there is no copy on the target that can go stale, and mkimage's
+# note about an archive carrying a build system one generation behind stops
+# describing anything.
+#
+# THIS SCRIPT READS NO SHARE.  updatebuild is the half that needs the Mac.
+# A TREE THE MIGRATION HAS NOT REACHED CANNOT BUILD: the mkfile's $SYS is
+# $SRC/sys and patch's first kernel copy lands there.  On a machine whose
+# updatebuild predates the migration, the FIRST updatebuild run is the old
+# script -- it pulls the new kit and exits, and the migration is in the kit it
+# pulled.  Say so, rather than dying inside patch with a cp error.
+# The layouts swapped once more: /usr/sys IS the shape now (tar-of-/usr,
+# build/usrtrees), and a kernel tree still under /usr/src is what needs the
+# migration updatebuild carries.
+if test -d /usr/src/sys
+then
+	echo "ipnxbuild: this machine still has /usr/src/sys -- the old layout."
+	echo "ipnxbuild: run updatebuild again; the copy it just installed migrates it."
+	exit 1
+fi
+
+TARGET=${1-/}
+
+case $TARGET in
+/)
+	# FOUR PROCESSES, NOT ONE, AND NOT A NESTED AGGREGATE.  A virtual
+	# target whose prerequisites are themselves virtual aggregates --
+	# `build:V: build1 build2 build3 build4' -- dies at its first fork
+	# with `Not enough memory', and so does a flat 300-prerequisite
+	# aggregate; each quarter in a fresh mk runs to completion.  Measured
+	# on the machine, every combination.  One process, one walk.
+	mk -f /usr/src/build/mkfile build1 || exit 1
+	mk -f /usr/src/build/mkfile build2 || exit 1
+	mk -f /usr/src/build/mkfile build3 || exit 1
+	mk -f /usr/src/build/mkfile build4 || exit 1
+	# AND INSTALL, INTO THIS BOOT IMAGE.  The committed original had no
+	# split at all -- `Every target is an installed file carrying mk(1)'s
+	# P attribute' -- so building WAS installing, into the running
+	# system.  The quarters above are the build half of the split; these
+	# are world's members, the install half, each in its own mk for the
+	# same fork-memory reason as the quarters.
+	mk -f /usr/src/build/mkfile tools lib libs || exit 1
+	mk -f /usr/src/build/mkfile usrbin bin etc || exit 1
+	mk -f /usr/src/build/mkfile /unix /.profile || exit 1
+	mk -f /usr/src/build/mkfile ulib || exit 1
+	mk -f /usr/src/build/mkfile cmds || exit 1
+	mk -f /usr/src/build/mkfile pkgs || exit 1
+	mk -f /usr/src/build/mkfile games || exit 1
+	sync
+	exit 0
+	;;
+/v10)
+	;;
+*)
+	echo "ipnxbuild: target is / or /v10, not $TARGET"
+	exit 1
+	;;
+esac
+
+# ---- /v10 -------------------------------------------------------------------
+# /v10 and /v10/usr are deliberately absent from /etc/fstab, so nothing mounts
+# them at boot and `mount -a' on a one-drive machine would only report errors.
+# Devices from mkimage:29,31.
+test -d /v10 || mkdir /v10 || exit 1
+/etc/mount /dev/ra10 /v10 || exit 1
+
+# WHATEVER MOUNTS, UNMOUNTS -- INCLUDING ON THE WAY OUT SIDEWAYS.  v10 records
+# in the superblock that a filesystem is mounted, so a missed unmount makes the
+# next boot answer `In use' and carry on with an empty /usr showing through,
+# reporting nothing at all.  An interrupted build is the likely case, not the
+# unlikely one: this is an eight-hour target and ^C is how it ends.
+trap 'cd /; sync; /etc/umount /v10/usr; /etc/umount /v10; sync; exit 1' 1 2 3 15
+
+test -d /v10/usr || mkdir /v10/usr || exit 1
+/etc/mount /dev/ra15 /v10/usr || { cd /; /etc/umount /v10; exit 1; }
+
+# Create-only and guarded per node, so this is safe on a disk that already has
+# a /dev.  The builder's copy, not the target's -- same reason as the mkfile.
+sh /usr/src/build/mkdev /v10/dev || {
+	cd /; sync; /etc/umount /v10/usr; /etc/umount /v10; sync; exit 1
+}
+
+# THE TARGET TREE CATCHES UP FIRST, from this machine's own disks -- the same
+# steps updatebuild performs for the boot disk, re-rooted at /v10 and sourced
+# locally.  A disk already in shape passes through in a few tests.
+#
+# 1. sys, man and include live at /usr (the tar-of-/usr shape; build/usrtrees).
+if test -d /v10/usr/src/sys -a ! -d /v10/usr/sys
+then
+	mv /v10/usr/src/sys /v10/usr/sys || exit 1
+fi
+if test -d /v10/usr/src/man
+then
+	test -d /v10/usr/man && rm -r /v10/usr/man
+	mv /v10/usr/src/man /v10/usr/man || exit 1
+fi
+# include MERGES, never replaces -- see updatebuild's include block: the
+# installed tree holds lcc's headers, stdlib.h and every in-place repair.
+if test -d /v10/usr/src/include
+then
+	test -d /v10/usr/include || mkdir /v10/usr/include || exit 1
+	for a in `ls /v10/usr/src/include`
+	do
+		if test -d /v10/usr/src/include/$a
+		then
+			test -d /v10/usr/include/$a || mkdir /v10/usr/include/$a || exit 1
+			for b in `ls /v10/usr/src/include/$a`
+			do
+				if test -d /v10/usr/src/include/$a/$b
+				then
+					test -d /v10/usr/include/$a/$b || mkdir /v10/usr/include/$a/$b || exit 1
+					for c in `ls /v10/usr/src/include/$a/$b`
+					do
+						test -f /v10/usr/include/$a/$b/$c || cp /v10/usr/src/include/$a/$b/$c /v10/usr/include/$a/$b/$c || exit 1
+					done
+				else
+					test -f /v10/usr/include/$a/$b || cp /v10/usr/src/include/$a/$b /v10/usr/include/$a/$b || exit 1
+				fi
+			done
+		else
+			test -f /v10/usr/include/$a || cp /v10/usr/src/include/$a /v10/usr/include/$a || exit 1
+		fi
+	done
+	rm -r /v10/usr/src/include
+fi
+# 2. one name per path, and no archives -- the same lists, /usr-relative.
+if test -f /usr/src/build/casefix
+then
+	while read op a b
+	do
+		case $op in
+		mv)	if test -f /v10/usr/$a -a ! -f /v10/usr/$b
+			then mv /v10/usr/$a /v10/usr/$b
+			fi ;;
+		rm)	if test "$b" = DIR
+			then rm -r /v10/usr/$a 2>/dev/null || :
+			else rm -f /v10/usr/$a
+			fi ;;
+		esac
+	done < /usr/src/build/casefix
+fi
+if test -f /usr/src/build/arcfix
+then
+	while read op a b
+	do
+		case $op in
+		x)	if test -f /v10/usr/$a
+			then
+				D=`dirname /v10/usr/$a`
+				(cd $D && mkdir .ax$$ && cd .ax$$ && ar x ../`basename $a`) || exit 1
+				ar t /v10/usr/$a > $D/.ax$$/ORDER || exit 1
+				rm /v10/usr/$a
+				mv $D/.ax$$ $D/$b || exit 1
+			fi ;;
+		m)	if test -f /v10/usr/$a
+			then mv /v10/usr/$a `dirname /v10/usr/$a`/$b
+			fi ;;
+		d)	rm -f /v10/usr/$a ;;
+		r)	rm -f /v10/usr/$a ;;
+		esac
+	done < /usr/src/build/arcfix
+fi
+# 3. the tree's build files, disk to disk.
+if test -f /usr/src/build/mkfiles
+then
+	while read f
+	do
+		case $f in
+		[a-z]*)	if test -f /usr/$f -a -d /v10/usr/`dirname $f`
+			then cp /usr/$f /v10/usr/$f
+			fi ;;
+		esac
+	done < /usr/src/build/mkfiles
+	echo "ipnxbuild: /v10 tree build files refreshed"
+fi
+# 4. the manuals, disk to disk, three levels.
+if test ! -d /v10/usr/man/man1 -a -d /usr/man/man1
+then
+	echo "ipnxbuild: filling /v10/usr/man from this machine"
+	test -d /v10/usr/man || mkdir /v10/usr/man || exit 1
+	for a in `ls /usr/man`
+	do
+		if test -d /usr/man/$a
+		then
+			test -d /v10/usr/man/$a || mkdir /v10/usr/man/$a || exit 1
+			for b in `ls /usr/man/$a`
+			do
+				if test -d /usr/man/$a/$b
+				then
+					test -d /v10/usr/man/$a/$b || mkdir /v10/usr/man/$a/$b || exit 1
+					for c in `ls /usr/man/$a/$b`
+					do
+						cp /usr/man/$a/$b/$c /v10/usr/man/$a/$b/$c || exit 1
+					done
+				else
+					cp /usr/man/$a/$b /v10/usr/man/$a/$b || exit 1
+				fi
+			done
+		else
+			cp /usr/man/$a /v10/usr/man/$a || exit 1
+		fi
+	done
+fi
+
+mk -f /usr/src/build/mkfile ROOT=/v10 build1 &&
+	mk -f /usr/src/build/mkfile ROOT=/v10 build2 &&
+	mk -f /usr/src/build/mkfile ROOT=/v10 build3 &&
+	mk -f /usr/src/build/mkfile ROOT=/v10 build4
+s=$?
+
+# NOT `&&' BETWEEN THE TWO UNMOUNTS.  /v10/usr can fail to unmount for its own
+# reasons and /v10 would then stay mounted too, which is the state this whole
+# comment exists to prevent.  Both are attempted; the status reported is the
+# build's.
+cd /
+sync
+/etc/umount /v10/usr
+/etc/umount /v10
+sync
+exit $s

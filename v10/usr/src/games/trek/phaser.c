@@ -4,7 +4,7 @@
  **	phaser control
  **/
 
-CVNTAB	Matab[]
+CVNTAB	Matab[] =
 {
 	"a",		"utomatic",
 	"m",		"anual",
@@ -71,7 +71,7 @@ phaser()
 					Kling[i].x, Kling[i].y);
 				if(getintpar(" units to fire", &units)==0 || units < 0) return;
 				hits[i] = units;
-				extra =+ units;
+				extra += units;
 				if (extra > Status.energy)
 				{
 					printf("Available energy exceeded. ");
@@ -83,7 +83,7 @@ phaser()
 			if (extra <= 0)
 				return;
 		}
-		Status.energy =- extra;
+		Status.energy -= extra;
 		extra = 0;
 	}
 	else
@@ -101,7 +101,7 @@ phaser()
 				continue;
 			}
 			flag = 0;
-			Status.energy =- units;
+			Status.energy -= units;
 			extra = units;
 			if (Nkling != 0)
 			{
@@ -109,13 +109,13 @@ phaser()
 				for (i = 0; i < Nkling; i++)
 				{
 					hits[i] = ((Nkling - i) / tot) * extra;
-					extra =- hits[i];
+					extra -= hits[i];
 					dustfac = 0.90;
 					tothe = Kling[i].dist;
 					hitreqd[i] = Kling[i].power / pow(dustfac, tothe) + 0.5;
 					if (hits[i] > hitreqd[i])
 					{
-						extra =+ hits[i] - hitreqd[i];
+						extra += hits[i] - hitreqd[i];
 						hits[i] = hitreqd[i];
 					}
 				}
@@ -128,12 +128,12 @@ phaser()
 							continue;
 						if (reqd >= extra)
 						{
-							hits[i] =+ extra;
+							hits[i] += extra;
 							extra = 0;
 							break;
 						}
 						hits[i] = hitreqd[i];
-						extra =- reqd;
+						extra -= reqd;
 					}
 				}
 			}
@@ -147,20 +147,20 @@ phaser()
 	{
 		if (hits[i] == 0)
 		{
-			k =+ 1;
+			k += 1;
 			continue;
 		}
 		dustfac = 0.90 + 0.01 * franf();
 		tothe = Kling[k].dist;
 		hit = hits[i] * pow(dustfac, tothe) + 0.5;
-		Kling[k].power =- hit;
+		Kling[k].power -= hit;
 		printf("%d unit hit\t", hit);
 		if (Kling[k].power <= 0) {
-			extra =- Kling[k].power;
+			extra -= Kling[k].power;
 			killk(Kling[k].x, Kling[k].y);
 		} else {
 			printf("on Klingon at %d,%d\n",	Kling[k].x, Kling[k].y);
-			k =+ 1;
+			k += 1;
 		}
 	}
 	if (extra > 0)

@@ -54,4 +54,4 @@ $LIBMAP(%.o): ../map.h %.o
 	$CC -c $CFLAGS -I.. $stem.c
 
 clean:
-	rm -f *.o map.h
+	rm -f *.[oO] map.h

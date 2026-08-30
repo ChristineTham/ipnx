@@ -3,7 +3,7 @@ FILE *fin;
 int redir;
 main(){
 	char cline[200], fline[200], dline[30], ndline[30], tuid[12], tm[12];
-	char fid[100], rid[100], rline[113], *gets(), fname[100], buf[200],
+	char fid[100], rid[100], rline[113], fname[100], buf[200],
 		*fgets();
 	FILE *f, *fopen(), *popen();
 
@@ -13,13 +13,13 @@ main(){
 	pclose(f);
 
 	printf("Target uid: ");
-	gets(tuid);
+	*tuid = 0; fgets(tuid, sizeof tuid, stdin); tuid[strcspn(tuid, "\n")] = 0;
 	printf("Target machine: ");
-	gets(tm);
+	*tm = 0; fgets(tm, sizeof tm, stdin); tm[strcspn(tm, "\n")] = 0;
 	printf("Sender: ");
-	gets(fid);
+	*fid = 0; fgets(fid, sizeof fid, stdin); fid[strcspn(fid, "\n")] = 0;
 	printf("Sending machine: ");
-	gets(rid);
+	*rid = 0; fgets(rid, sizeof rid, stdin); rid[strcspn(rid, "\n")] = 0;
 
 	strcpy(cline, "uux - ");
 	strcat(cline, tm);
@@ -43,7 +43,7 @@ main(){
 	printf("%s%s%s\n", fline, dline, rline);
 	printf("CR or new date stamp: ");
 	*ndline = '\0';
-	gets(ndline);
+	*ndline = 0; fgets(ndline, sizeof ndline, stdin); ndline[strcspn(ndline, "\n")] = 0;
 	if(*ndline) strcpy(dline, ndline);
 	strcat(fline, dline);
 	strcat(fline, rline);
@@ -52,7 +52,7 @@ main(){
 	puts("Last chance to abort.  Type message or <filename");
 	redir = getchar();
 	if(redir == '<'){
-	   gets(fname);
+	   *fname = 0; fgets(fname, sizeof fname, stdin); fname[strcspn(fname, "\n")] = 0;
 	   if((fin = fopen(fname, "r")) == NULL){
 	      printf("Can't open %s\n", fname);
 	      exit(1);
@@ -78,7 +78,7 @@ char *buf;
 	   if(fgets(buf, 200, fin) == NULL) goto quit;
 	   buf[strlen(buf)-1] = '\0';
 	}
-	else if(gets(buf) == NULL) goto quit;
+	else if(fgets(buf, sizeof buf, stdin) == NULL) goto quit; else buf[strcspn(buf, "\n")] = 0;
 	if(*buf == '.' && *(buf+1) == '\0') goto quit;
 	return 0;
 quit:	return EOF;

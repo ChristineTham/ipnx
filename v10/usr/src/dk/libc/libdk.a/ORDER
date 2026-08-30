@@ -1,7 +1,0 @@
-tdkdial.o
-tdkexec.o
-tdklogin.o
-tdkmgr.o
-dkproto.o
-dkctlchan.o
-pwsearch.o
