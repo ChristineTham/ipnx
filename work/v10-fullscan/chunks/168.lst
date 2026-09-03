@@ -1,0 +1,9 @@
+v10/usr/src/cmd/lcc/gen2/mc/bemit.h
+v10/usr/src/cmd/lcc/gen2/mc/config.h
+v10/usr/src/cmd/lcc/gen2/mc/decode.c
+v10/usr/src/cmd/lcc/gen2/mc/makefile
+v10/usr/src/cmd/lcc/gen2/mc/mkfile
+v10/usr/src/cmd/lcc/gen2/mc/pseudos.c
+v10/usr/src/cmd/lcc/gen2/mc/sel.c
+v10/usr/src/cmd/lcc/gen2/mc/stab.c
+v10/usr/src/cmd/lcc/gen2/mc-sun/bind.c

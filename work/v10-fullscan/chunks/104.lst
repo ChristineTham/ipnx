@@ -1,0 +1,7 @@
+v10/usr/src/cmd/cfront/ocfront/token.h
+v10/usr/src/cmd/cfront/ocfront/tqueue.h
+v10/usr/src/cmd/cfront/ocfront/typ.c
+v10/usr/src/cmd/cfront/ocfront/typ2.c
+v10/usr/src/cmd/cfront/ocfront/typedef.h
+v10/usr/src/cmd/cfront/ocfront/y.tab.c
+v10/usr/src/cmd/cfront/ocfront/yystype.h

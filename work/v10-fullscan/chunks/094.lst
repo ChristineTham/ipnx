@@ -1,0 +1,13 @@
+v10/usr/src/cmd/cfront/cfront/alloc.c
+v10/usr/src/cmd/cfront/cfront/cfront.h
+v10/usr/src/cmd/cfront/cfront/dcl.c
+v10/usr/src/cmd/cfront/cfront/dcl2.c
+v10/usr/src/cmd/cfront/cfront/dcl2.oc
+v10/usr/src/cmd/cfront/cfront/dcl3.c
+v10/usr/src/cmd/cfront/cfront/dcl4.c
+v10/usr/src/cmd/cfront/cfront/del.c
+v10/usr/src/cmd/cfront/cfront/error.c
+v10/usr/src/cmd/cfront/cfront/expand.c
+v10/usr/src/cmd/cfront/cfront/expr.c
+v10/usr/src/cmd/cfront/cfront/expr.c.orig
+v10/usr/src/cmd/cfront/cfront/expr.patch

@@ -1,0 +1,15 @@
+v10/usr/src/cmd/gcc/genextract.c
+v10/usr/src/cmd/gcc/genflags.c
+v10/usr/src/cmd/gcc/genoutput.c
+v10/usr/src/cmd/gcc/genpeep.c
+v10/usr/src/cmd/gcc/genrecog.c
+v10/usr/src/cmd/gcc/global-alloc.c
+v10/usr/src/cmd/gcc/gnulib.c
+v10/usr/src/cmd/gcc/hard-reg-set.h
+v10/usr/src/cmd/gcc/integrate.c
+v10/usr/src/cmd/gcc/internals
+v10/usr/src/cmd/gcc/internals-1
+v10/usr/src/cmd/gcc/internals-2
+v10/usr/src/cmd/gcc/internals-3
+v10/usr/src/cmd/gcc/internals-4
+v10/usr/src/cmd/gcc/internals-5

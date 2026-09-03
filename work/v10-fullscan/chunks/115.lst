@@ -1,0 +1,13 @@
+v10/usr/src/cmd/cfront/xptcfront/alloc.c
+v10/usr/src/cmd/cfront/xptcfront/cfront.h
+v10/usr/src/cmd/cfront/xptcfront/dcl.c
+v10/usr/src/cmd/cfront/xptcfront/dcl2.c
+v10/usr/src/cmd/cfront/xptcfront/dcl3.c
+v10/usr/src/cmd/cfront/xptcfront/dcl4.c
+v10/usr/src/cmd/cfront/xptcfront/del.c
+v10/usr/src/cmd/cfront/xptcfront/discrim.c
+v10/usr/src/cmd/cfront/xptcfront/doprint.c
+v10/usr/src/cmd/cfront/xptcfront/error.c
+v10/usr/src/cmd/cfront/xptcfront/expand.c
+v10/usr/src/cmd/cfront/xptcfront/expr.c
+v10/usr/src/cmd/cfront/xptcfront/expr2.c

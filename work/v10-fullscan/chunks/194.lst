@@ -1,0 +1,15 @@
+v10/usr/src/cmd/lcc/include/vax_v9/assert.h
+v10/usr/src/cmd/lcc/include/vax_v9/ctype.h
+v10/usr/src/cmd/lcc/include/vax_v9/errno.h
+v10/usr/src/cmd/lcc/include/vax_v9/float.h
+v10/usr/src/cmd/lcc/include/vax_v9/limits.h
+v10/usr/src/cmd/lcc/include/vax_v9/locale.h
+v10/usr/src/cmd/lcc/include/vax_v9/math.h
+v10/usr/src/cmd/lcc/include/vax_v9/setjmp.h
+v10/usr/src/cmd/lcc/include/vax_v9/signal.h
+v10/usr/src/cmd/lcc/include/vax_v9/stdarg.h
+v10/usr/src/cmd/lcc/include/vax_v9/stddef.h
+v10/usr/src/cmd/lcc/include/vax_v9/stdio.h
+v10/usr/src/cmd/lcc/include/vax_v9/stdlib.h
+v10/usr/src/cmd/lcc/include/vax_v9/string.h
+v10/usr/src/cmd/lcc/include/vax_v9/time.h

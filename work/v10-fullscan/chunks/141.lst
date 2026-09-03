@@ -1,0 +1,15 @@
+v10/usr/src/cmd/gcc/local-alloc.c
+v10/usr/src/cmd/gcc/loop.c
+v10/usr/src/cmd/gcc/m68k.md
+v10/usr/src/cmd/gcc/machmode.def
+v10/usr/src/cmd/gcc/make-cc1.com
+v10/usr/src/cmd/gcc/make-cccp.com
+v10/usr/src/cmd/gcc/make.com
+v10/usr/src/cmd/gcc/md
+v10/usr/src/cmd/gcc/mkfile
+v10/usr/src/cmd/gcc/move-if-change
+v10/usr/src/cmd/gcc/ns32k.md
+v10/usr/src/cmd/gcc/obstack.c
+v10/usr/src/cmd/gcc/obstack.h
+v10/usr/src/cmd/gcc/optabs.c
+v10/usr/src/cmd/gcc/output-m68k.c

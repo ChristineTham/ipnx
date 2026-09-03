@@ -1,0 +1,11 @@
+v10/usr/src/cmd/gcc/tm.h
+v10/usr/src/cmd/gcc/toplev.c
+v10/usr/src/cmd/gcc/tree.c
+v10/usr/src/cmd/gcc/tree.def
+v10/usr/src/cmd/gcc/tree.h
+v10/usr/src/cmd/gcc/typecheck.c
+v10/usr/src/cmd/gcc/varargs-spur.h
+v10/usr/src/cmd/gcc/varargs.h
+v10/usr/src/cmd/gcc/varasm.c
+v10/usr/src/cmd/gcc/vax.md
+v10/usr/src/cmd/gcc/version.c

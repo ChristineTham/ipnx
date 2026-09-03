@@ -1,0 +1,17 @@
+v10/usr/src/cmd/cfront/ptcfront/Bits.c
+v10/usr/src/cmd/cfront/ptcfront/Bits.h
+v10/usr/src/cmd/cfront/ptcfront/Block.h
+v10/usr/src/cmd/cfront/ptcfront/alloc.c
+v10/usr/src/cmd/cfront/ptcfront/block.c
+v10/usr/src/cmd/cfront/ptcfront/cfront.h
+v10/usr/src/cmd/cfront/ptcfront/dcl.c
+v10/usr/src/cmd/cfront/ptcfront/dcl2.c
+v10/usr/src/cmd/cfront/ptcfront/dcl3.c
+v10/usr/src/cmd/cfront/ptcfront/dcl4.c
+v10/usr/src/cmd/cfront/ptcfront/del.c
+v10/usr/src/cmd/cfront/ptcfront/discrim.c
+v10/usr/src/cmd/cfront/ptcfront/doprint.c
+v10/usr/src/cmd/cfront/ptcfront/error.c
+v10/usr/src/cmd/cfront/ptcfront/expand.c
+v10/usr/src/cmd/cfront/ptcfront/expr.c
+v10/usr/src/cmd/cfront/ptcfront/expr2.c
