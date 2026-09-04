@@ -1,9 +1,0 @@
-v10/usr/src/cmd/gcc/output-ns32k.c
-v10/usr/src/cmd/gcc/output-spur.c
-v10/usr/src/cmd/gcc/output-vax.c
-v10/usr/src/cmd/gcc/output.h
-v10/usr/src/cmd/gcc/parse.h
-v10/usr/src/cmd/gcc/parse.output
-v10/usr/src/cmd/gcc/parse.tab.c
-v10/usr/src/cmd/gcc/parse.y
-v10/usr/src/cmd/gcc/print-tree.c
