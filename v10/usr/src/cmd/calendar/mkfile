@@ -1,4 +1,6 @@
-CFLAGS=-O
+# -Dindex=strchr: calendar1.c calls index(), and v10's libc has strchr and
+# no index -- the same shim server, netnews and the dk commands take.
+CFLAGS=-O -Dindex=strchr
 
 all:V:	calendar1 calendar2 calendar4
 	:

@@ -1,12 +1,15 @@
+# EVERY DEVICE LIBRARY HERE REACHES CURSES: lib2621/hp/openpl.c:4 calls
+# initscr(), so a link that names only -l2621 answers `Undefined: _initscr
+# _waddstr'.  The tape's makefile has the same four lines and the same gap.
 hplot:	driver.o
-	cc driver.o -l2621 -o hplot
+	cc driver.o -l2621 -lcurses -ltermlib -o hplot
 tek:	driver.o
-	cc driver.o -l4014 -o tek
+	cc driver.o -l4014 -lcurses -ltermlib -o tek
 trplot:	driver.o
-	cc driver.o -ltr -o trplot
+	cc driver.o -ltr -lcurses -ltermlib -o trplot
 penplot:	driver.o
-	cc driver.o -lpen -o penplot
+	cc driver.o -lpen -lcurses -ltermlib -o penplot
 ramtek:	driver.o
-	cc driver.o -lram -o ramtek
+	cc driver.o -lram -lcurses -ltermlib -o ramtek
 install:
 	cp hpplot trplot penplot tek /usr/lib/plot

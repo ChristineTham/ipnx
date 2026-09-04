@@ -16,6 +16,16 @@ SRC=${SRC-/v10/usr/src}
 # behind the one the mkfile just used.
 GEN=${GEN-/usr/src/build}
 SYS=${SYS-/v10/usr/sys}
+# THE INCLUDE TREE IS PART OF THE TREE BEING REPAIRED, not the builder's.
+# Twelve stanzas wrote /usr/include absolutely, so a run against /v10 --
+# which is what mkipnx does -- installed its headers into the BUILDER's
+# /usr/include and left /v10 without them: eight headers, and two archives
+# that could not agree.  It follows SRC, the same way SYS does.
+# IDIR, NOT INC: build/mkfile:142 sets INC to a sentinel FILE --
+# $ROOT/usr/include/libc.h -- and mk exports every unattributed variable
+# into each recipe, so a run under mk found INC already set and wrote
+# headers into /usr/include/libc.h/, which is not a directory.
+IDIR=${IDIR-`echo $SRC | sed 's|/src$|/include|'`}
 
 # arff.c:694 compares struct rt_ent * (line 69) against char * (line 72).  The
 # file is byte-identical to v8's; v8's cc accepted the mismatch, v10's does not.
@@ -194,7 +204,7 @@ done
 # 512restor.c, dumpdir.c and restor.c include this header, so the three stay
 # consistent with each other.
 sed 's|^	char	c_addr\[BSIZE\];|	char	c_addr[512];|' \
-    /usr/include/dumprestor.h > d$$ && mv d$$ /usr/include/dumprestor.h
+    $IDIR/dumprestor.h > d$$ && mv d$$ $IDIR/dumprestor.h
 
 # bad144.c:81 calls tell(), which v10 has not got -- no libc member, no man
 # page.  tell(f) is lseek(f, 0L, 1).
@@ -527,8 +537,17 @@ sed -e 's|if(read(fi,tab\[i\].cl,256) < 256) {|if(read(fi,tab[i].cl,sizeof(tab[i
 # never mentions it again.  v10's getchar is getc(stdin) and its EOF is -1, so
 # `while(c = getchar())' over a char would never end.  The v6 one is supplied
 # here instead, with its own fin, and no call site changes.
+# AND A REPAIR FOR THE DAMAGE THIS SED ITSELF DID.  It was written with \t\t,
+# v10's sed put a literal `tt' there, and the second line came out
+# `exit(0);tt/* ipnx exit ... */' -- `mtab.c:179:tt undefined', which is a hard
+# error.  The sed above is guarded by PATTERN, on the tape's `,256);' line, and
+# the corruption removed that line, so a tree carrying it can never be healed
+# by re-running the stanza: it matches nothing and reports nothing.  Two trees
+# already hold the corrupt form -- this machine's and ipnx.tar's -- so the heal
+# is a line rather than a note.  Real tabs below; see line 2504.
 sed -e 's|^		write(fo,tab\[i\].cl,256);$|		write(fo,tab[i].cl,sizeof(tab[i].cl));\
-	exit(0);\t\t/* ipnx exit -- see PATCHES.md */|' mtab.c > m$$ && mv m$$ mtab.c
+	exit(0);		/* ipnx exit -- see PATCHES.md */|' \
+    -e 's|^	exit(0);tt/\* ipnx|	exit(0);		/* ipnx|' mtab.c > m$$ && mv m$$ mtab.c
 if grep 'ipnx getchar' mtab.c > /dev/null
 then	:
 else
@@ -550,7 +569,11 @@ else
 	cat make.c >> m$$
 	mv m$$ make.c
 fi
-sed -e 's|^	return;$|	exit(0);\t\t/* ipnx exit -- see PATCHES.md */|' \
+# The `tt' heal again -- make.c:128 took the identical corruption from the
+# identical \t\t, and its guard is `^	return;$', a line the corruption
+# consumed.  See the note above mtab.c's stanza.
+sed -e 's|^	return;$|	exit(0);		/* ipnx exit -- see PATCHES.md */|' \
+    -e 's|^	exit(0);tt/\* ipnx|	exit(0);		/* ipnx|' \
     -e 's|^struct	htab	($|struct	htab	{|' \
     -e 's|^		);$|		};|' \
     -e 's|^char	\*ibuf	= &ib1;$|FILE	*ibuf;|' \
@@ -558,7 +581,20 @@ sed -e 's|^	return;$|	exit(0);\t\t/* ipnx exit -- see PATCHES.md */|' \
     -e 's|^	if(ifile < 0)err("open",argv\[1\]);$|	if(ibuf == 0)err("open",argv[1]);|' \
     -e 's|write(ofile,&i,2)|write(ofile,\&i,sizeof(i))|g' \
     -e 's|write(ofile,&xtab.ssiz,2)|write(ofile,\&xtab.ssiz,sizeof(xtab.ssiz))|g' \
+    -e 's|^	xtab.hptr = &ipsp;$|	xtab.hptr = ipsp;		/* ipnx \&array */|' \
+    -e 's|^	xtab.symt = &issp;$|	xtab.symt = issp;		/* ipnx \&array */|' \
     -e 's|^	i = 2\*xtab.hsiz;$|	i = sizeof(*xtab.hptr)*xtab.hsiz;|' make.c > m$$ && mv m$$ make.c
+# `&array' WHERE A POINTER TO ITS FIRST ELEMENT IS MEANT.  make.c:18-19 are
+# `int ipsp[PTRI]' and `char issp[CHARI]', hptr and symt are `int *' and
+# `char *', and :91-92 assign the ADDRESS OF THE WHOLE ARRAY -- type
+# `int (*)[509]' -- which this compiler refuses outright:
+#	make.c:91: operands of = have illegal types `pointer to int'
+#	           and `pointer to array 509 of int'
+# The two expressions have the same value, so dropping the & changes nothing
+# but the type, and the array's own name is what every other line in the file
+# uses.  The same sloppiness reads as a warning elsewhere in cref -- 24 of
+# `& before array or function: ignored' across acts.c, crpost.c and mtab.c --
+# and is a hard error only in an assignment.
 
 # ex HAS NO libpath, AND THAT IS THE WHOLE OF `ex3 undefined'.  ex_tune.h:13
 # takes "local/uparm.h" and :14-15 are
@@ -715,13 +751,46 @@ sed 's|^	./install.sh |	sh install.sh |' pascal/makefile > p$$ && mv p$$ pascal/
 #	cd ${TMPDIR} ; ${CC} ${CFLAGS} -I.. -c $*.c
 # -- but the directory is on no tape, and its own `clean' only removes
 # ${TMPDIR}/*.c, so nothing ever creates it.  mkstr then answers
-# `tmp/case.c: No such file or directory'.  pi is the only one of the seven
-# with a TMPDIR.
+# `tmp/case.c: No such file or directory'.  NOT the only one of the seven:
+# pc0/mkfile:20 is `TMPDIR = tmp' as well, and it answered
+# `tmp/ato.c: No such file or directory' on the first round that got that far.
+# pc0's own mkfile creates it in the rule, which is where it belongs -- the
+# directory is needed however the package is invoked, not only through patch.
 test -d pi/tmp || mkdir pi/tmp
 
-for f in Makefile */makefile */mkfile pascal/install.sh
+# AND /etc/chown IS PROTECTED THROUGH IT.  The rewrite to `:' is right for
+# the files MAKE runs -- Makefile, */makefile, install.sh -- because make execs
+# the command itself and cannot find chown by that name.  It is wrong for the
+# mkfiles: mk hands its recipes to sh, so `/etc/chown bin,bin' execs perfectly
+# there and actually sets the owner and group, where `:' silently sets neither.
+# Six of pascal's mkfiles now spell it that way, and an unanchored `s|chown |'
+# turned each into `/etc/: bin,bin' -- `sh: /etc/:: not found', which stopped
+# the install loop after pxp had built.  Protect, rewrite, restore.
+# `mkfile' IS IN THAT LIST NOW, and its absence was the whole of the last
+# round's `pascal: FAILED'.  The glob covered Makefile, */makefile and
+# */mkfile -- everything except the TOP-LEVEL mkfile, which is the file that
+# holds the install loop, and :24-25 of it are `chown bin $B/pascal' and
+# `chgrp bin $B/pascal'.  So every subdirectory installed, the loop reached its
+# own last three lines, and `sh: chown: not found' stopped it with
+# `mk: for i in ...  : exit status=1' -- after the seven packages had all built.
+# The subdirectories' makefiles were already rewritten by an earlier run, which
+# is why the log echoes `: bin' twice from pxp and still ends in a bare chown:
+# the two came from different files.
+# `test -f' PER ENTRY, because the literal names in this list are not all
+# there.  cmd/pascal holds `Makefile' and `mkfile' and NO lowercase `makefile'
+# -- git ls-files says so; `ls' on a case-insensitive host reports both names
+# for the one file, which is how `makefile' got added here and why the round
+# answered `sed: Can't open makefile'.  `pascal/install.sh' is the same shape:
+# the file is at pascal/pascal/install.sh, so that entry has been a no-op with
+# an error message since it was written.  The `*/' entries are globs and vanish
+# when they match nothing; a literal name cannot, so it is tested.
+for f in Makefile makefile mkfile */makefile */mkfile pascal/install.sh
 do
-	sed -e 's|chgrp |: |g' -e 's|chown |: |g' $f > c$$ && mv c$$ $f
+	test -f $f || continue
+	sed -e 's|/etc/chown |@ETCCHOWN@ |g' \
+	    -e 's|chgrp |: |g' \
+	    -e 's|chown |: |g' \
+	    -e 's|@ETCCHOWN@ |/etc/chown |g' $f > c$$ && mv c$$ $f
 done
 
 # sys/types.h HAS NO INCLUDE GUARD, and four commands have now tripped over it:
@@ -742,10 +811,10 @@ done
 # and a guarded header makes them harmless rather than wrong.
 #
 # ONE COPY NOW.  /usr/include IS the living tree under the tar-of-/usr shape
-# -- the $INC install rule dissolved with the move back -- so the header the
+# -- the $IDIR install rule dissolved with the move back -- so the header the
 # compiler reads is the one edited here.  (This loop once guarded both the
 # source-tree copy and the installed copy; there is only one.)
-for t in $ROOT/usr/include/sys/types.h
+for t in $IDIR/sys/types.h
 do
 	if grep '_TYPES_' $t > /dev/null
 	then	:
@@ -1957,18 +2026,18 @@ done
 # compilers.  <shares.h> is on no surviving machine; it was reconstructed from
 # the tape's own lnode(5) and checked against Bell Labs' object code, and
 # sys/lnode.h with it.
-cp $GEN/src/include/shares.h /usr/include/shares.h || exit 1
-cp $GEN/src/include/sys/lnode.h /usr/include/sys/lnode.h || exit 1
+cp $GEN/src/include/shares.h $IDIR/shares.h || exit 1
+cp $GEN/src/include/sys/lnode.h $IDIR/sys/lnode.h || exit 1
 
 # /usr/include/stdlib.h has to exist for atof.c: r70 ships it as
 # include/CC/stdlib.h, six lines whose body is `#include <libc.h>'.  K&R defaults
 # an undeclared function to int, so without it strtod's double would truncate to
 # a word and atof would be silently wrong -- worse than a compile error.
-test -f /usr/include/stdlib.h || cp /usr/include/CC/stdlib.h /usr/include/stdlib.h || exit 1
+test -f $IDIR/stdlib.h || cp $IDIR/CC/stdlib.h $IDIR/stdlib.h || exit 1
 
 # float.h the same way, and for the same reason: stdio/fconv.h:33 includes it,
 # and r70 has it only as include/CC/float.h -- there is no top-level copy.
-test -f /usr/include/float.h || cp /usr/include/CC/float.h /usr/include/float.h || exit 1
+test -f $IDIR/float.h || cp $IDIR/CC/float.h $IDIR/float.h || exit 1
 
 # stdarg.h the same again: stdio/vfprintf.c:5 includes it plainly, and r70
 # has only CC/, lcc/, oCC/ and olcc/ copies.  lcc/ is the one this project
@@ -1989,7 +2058,7 @@ test -f /usr/include/float.h || cp /usr/include/CC/float.h /usr/include/float.h 
 # va_start and hand the list on, which is why this surfaced last.  ~3 aligns
 # to four exactly as ~3U does, so dropping the suffix is the whole repair --
 # the same kind of de-ANSI-fying as iolib.h:55-56 below.
-sed 's|, 3U)|, 3)|' /usr/include/lcc/stdarg.h > /usr/include/stdarg.h || exit 1
+sed 's|, 3U)|, 3)|' $IDIR/lcc/stdarg.h > $IDIR/stdarg.h || exit 1
 
 # libc/mkfile, repaired, copied rather than sed'd -- the changes are structural.
 #
@@ -2024,7 +2093,7 @@ cp $GEN/src/libc/mkfile $SRC/libc/mkfile || exit 1
 # include/lcc.  Named by subdirectory rather than put on the include path, for
 # the reason PATCHES.md gives for <lcc/stdarg.h>: include/lcc also holds stdio.h,
 # string.h and math.h, which would shadow the system headers for every member.
-cp $SRC/cmd/dist/v10/lcc-incl/unistd.h /usr/include/lcc/unistd.h || exit 1
+cp $SRC/cmd/dist/v10/lcc-incl/unistd.h $IDIR/lcc/unistd.h || exit 1
 cd $SRC/libc/stdio || exit 1
 sed 's|^#include <unistd.h>$|#include <lcc/unistd.h>|' iolib.h > i$$ && mv i$$ iolib.h
 
@@ -2051,7 +2120,7 @@ sed -e 's|^char \*strerror(int errno);$|char *strerror();|' \
 # The pANS members want _IOFBF, and /usr/include/stdio.h has _IONBF 04 and
 # _IOLBF 0200 but not it.  lcc/stdio.h:4 is `#define _IOFBF 0', which is
 # consistent with those two: zero means neither unbuffered nor line-buffered.
-if grep _IOFBF /usr/include/stdio.h > /dev/null
+if grep _IOFBF $IDIR/stdio.h > /dev/null
 then	:
 else
 	sed 's|^#define	_IONBF	04$|#define	_IOFBF	0\
@@ -2106,7 +2175,7 @@ fi
 # not, and the deletion is also the wrong SHAPE of repair: patch's edits are
 # re-applied to a tree mkimage re-extracts, so every one of them has to be
 # idempotent, and a line once removed cannot be removed again.
-cp $SRC/cmd/worm/scsi/inc/scsi.h /usr/include/scsi.h || exit 1
+cp $SRC/cmd/worm/scsi/inc/scsi.h $IDIR/scsi.h || exit 1
 
 # THE FOUR STREAM-HEAD REPAIRS netfs CANNOT RUN WITHOUT.  PATCHES.md:774-841 has
 # each one; they are together because they are one file and one failure.
@@ -2137,7 +2206,7 @@ cp $SRC/cmd/worm/scsi/inc/scsi.h /usr/include/scsi.h || exit 1
 # a patched lsys; this tree is vanilla, so nothing carries them but this line.
 cp $GEN/src/streamio.c $SYS/os/streamio.c || exit 1
 
-# THE KERNEL CONFIGURATION, put where mk.star can find it.  astro/ipnx-v10.m is
+# THE KERNEL CONFIGURATION, put where mk.star can find it.  ipnx/ipnx-v10.m is
 # ours and the tapes have no such file, so it travels here like every other
 # repair.  The reason has changed and the conclusion has not: mkv10 fills
 # src/sys from secombe, and mkv10 moves it out to /usr/sys, where it lives
@@ -2150,8 +2219,36 @@ cp $GEN/src/streamio.c $SYS/os/streamio.c || exit 1
 # gives it to mkconf, which writes the C and the assembler the kernel is built
 # from -- so this file and lib/tab below are together what makes ipnx-v10 a
 # machine rather than a name.
-test -d $SYS/astro || exit 1
-cp $GEN/src/ipnx-v10.m $SYS/astro/ipnx-v10.m || exit 1
+# OUR OWN SITE DIRECTORY, AND astro IS LEFT ALONE.  mk.star binds only
+# `LD=../lib' (lib/mk.star:1), so the one requirement is a directory one level
+# under /usr/sys -- the name is free, and nothing in mk.star, conf.star or
+# low.star mentions astro at all.  astro/mkfile opens `# 1127 systems': it is
+# the machine roster of Bell Labs' Computing Science Research Center, and ipnx
+# is not one of their machines.  toronto/ is the tape's own precedent that a
+# separate site gets a separate directory.  Keeping our config out of astro
+# leaves that directory byte-identical to the tape and makes v10-tree.py report
+# our kernel as a directory wholly ours rather than an extra entry in theirs.
+#
+# AND THE OLD COPY GOES, on machines that already have one.  `ipnx-v10.*'
+# catches the config and everything its build leaves beside it -- the .u, the
+# .c.c and .s.s mkconf writes, the objects -- and no tape file in astro begins
+# with that stem, so the glob cannot reach one.
+test -d $SYS/ipnx || mkdir $SYS/ipnx || exit 1
+cp $GEN/src/ipnx-v10.m $SYS/ipnx/ipnx-v10.m || exit 1
+
+# AND THE SITE mkfile, ON TORONTO'S MODEL.  sys/toronto/mkfile is astro's with
+# the classes that site had no machine for commented out -- including
+# `# $STARS:V: / # cc=$cc mk -f ../lib/mk.star $target', the 780 recipe, sitting
+# there unused because Toronto had none.  Ours keeps the shape and none of the
+# dead weight: one kernel config means one class, so STARS is the only variable
+# and mk.star the only recipe.  It is carried in build/src rather than read from
+# v10/usr/sys,
+# because nothing copies the repository's own /usr/sys to a guest (src/README
+# says so) -- the same reason ipnx-v10.m travels here.  Named ipnx.mkfile in
+# build/src and installed as `mkfile', so nothing in build/src is a file mk
+# would pick up by accident.
+cp $GEN/src/ipnx.mkfile $SYS/ipnx/mkfile || exit 1
+rm -f $SYS/astro/ipnx-v10.*
 
 # STREAM PIPES GET THEIR MAJOR.  lib/tab:34 is
 #
@@ -2159,7 +2256,7 @@ cp $GEN/src/ipnx-v10.m $SYS/astro/ipnx-v10.m || exit 1
 #
 # so pt has no major and nothing can open /dev/pt/*, and mkconf rejects the
 # config outright: readconf.c:73 makes a name it cannot find in the tab a hard
-# error, and astro/ipnx-v10.m declares `pt 64'.  V10 ships the driver --
+# error, and ipnx/ipnx-v10.m declares `pt 64'.  V10 ships the driver --
 # io/spipe.c exports spcdev and lib/devs:64 is `pt sp count' -- and V8 runs the
 # same driver at the same major (v8/usr/sys/dev/spipe.c, cdevsw 18), which is
 # where the count of 64 comes from.  PATCHES.md:289 has the argument.
@@ -2459,3 +2556,259 @@ grep -s 'ipnx types first' ndcon.c > /dev/null || {
 #include <sys/filio.h>\
 #include <dk.h>|' ndcon.c > g$$ && mv g$$ ndcon.c
 }
+
+# tar's endtape() calls backtape(), and backtape() does an MTIOCTOP ioctl on
+# whatever it is reading -- tar.c:983-996.  It tolerates exactly one failure,
+# ENOTTY, and dies on any other with `tape backspace error'.  That is fine for
+# a 1989 machine where an archive is either a raw magtape or a local file, and
+# wrong here: over the netfs share the ioctl answers ENXIO (`No such device or
+# address'), and so does a pipe, so mkv10 cannot read a tape from the Mac at
+# all -- measured twice, once opening the file and once through `cat | tar xf -'.
+# The hack's own comment says `if it's a raw magtape, do the ioctl'; any
+# failure at all means it is not one.
+cd $SRC/cmd || exit 1
+grep -s 'ipnx not a tape' tar.c > /dev/null || {
+	sed 's|if (errno != ENOTTY) {|if (0) {	/* ipnx not a tape: any ioctl failure means not one */|' tar.c > t$$ && mv t$$ tar.c
+}
+
+# struct's 0.alloc.c THREE TIMES ASSIGNS AN INT TO A POINTER, and this
+# compiler's complaint names all three and nothing else:
+#	"0.alloc.c":50:illegal pointer/integer combination, op =
+#	"0.alloc.c":93:illegal pointer/integer combination, op =
+#	"0.alloc.c":105:illegal pointer combination, op =
+# :50 is `q = morespace(n,p,size)' and morespace is DEFINED at :86 with no
+# return type at all -- `morespace(n,p,size)' -- so it returns int and hands a
+# `struct coreblk *' back through it.  A forward declaration saying otherwise
+# is not the repair and was tried: it gives
+# `"0.alloc.c":88:redeclaration of morespace', :88 being the definition's own
+# parameter list.  The cast goes at the CALL, leaving the function's type as
+# the tape wrote it.  :93 is malloc's char* and :105 is `q->blk = q + 1',
+# `struct coreblk *' into `int *'.
+#
+# NOT :17.  `i = malloc(n)' assigns a pointer TO an int and this compiler
+# allows that direction silently -- it is not in the list above, and adding a
+# cast there would be a change nothing asked for.
+cd $SRC/cmd/struct || exit 1
+grep -s 'ipnx alloc' 0.alloc.c > /dev/null || {
+	sed -e 's|^			q = morespace(n,p,size);$|			q = (struct coreblk *)morespace(n,p,size);	/* ipnx alloc */|' \
+	    -e 's|^	q = malloc(i=t\*sizeof(\*(q->blk))+sizeof(\*q));$|	q = (struct coreblk *)malloc(i=t*sizeof(*(q->blk))+sizeof(*q));|' \
+	    -e 's|^	q->blk = q + 1;$|	q->blk = (int *)(q + 1);|' \
+	    0.alloc.c > a$$ && mv a$$ 0.alloc.c
+}
+
+# AND EVERY OTHER CALLER OF challoc, WHICH IS THE SAME FAULT TWENTY TIMES.
+# challoc is defined at 0.alloc.c:14 with no return type, so it returns int,
+# and ten files assign that int straight to a pointer -- `temp =
+# challoc(sizeof(*temp))'.  cc stops at the first one per file, so this
+# surfaces one file per round unless all twenty go at once: 0.alloc.c fixed,
+# and the next round answered `"0.list.c":9:illegal pointer/integer
+# combination, op ='.
+#
+# A CAST IS THE ONLY INSTRUMENT.  Declaring challoc `char *' would trade
+# int-to-pointer for pointer-to-pointer, which this compiler refuses just as
+# firmly (`"0.alloc.c":105:illegal pointer combination'), and the tape agrees:
+# troff/d202.c:445 declares `char *malloc()' and :461 is
+# `pstab = (short *) filebase' -- an explicit cast, in code that builds.
+#
+# The table is file, variable, then the variable's DECLARED type -- read's
+# last field takes the rest of the line, so a type with a space in it needs no
+# quoting.  def.h:11 is `#define VERT int' and :10 `#define LOGICAL int'.
+# Every row was read off the declaration, not guessed; the sed is guarded by
+# its own pattern, so a second run matches nothing.
+while read f var cast
+do
+	case $f in
+	[0-9]*)	sed "s|$var = challoc *(|$var = ($cast)challoc(|g" $f > c$$ && mv c$$ $f ;;
+	esac
+done <<'STRUCTEOF'
+0.list.c	temp	struct list *
+1.fort.c	p	struct lablist *
+1.hash.c	hashtab	long *
+1.hash.c	chain	int *
+1.hash.c	value	int *
+1.init.c	graph	int **
+1.recog.c	arctype	int *
+1.recog.c	arclab	long *
+1.recog.c	str	char *
+2.dfs.c	status	int *
+2.dfs.c	after	int *
+2.dfs.c	ntoaft	int *
+2.dfs.c	ntobef	int *
+2.main.c	head	int *
+2.main.c	inarc	struct list **
+2.main.c	dom	int *
+3.main.c	head	int *
+3.reach.c	vpair	struct pair *
+4.main.c	brace	int *
+STRUCTEOF
+
+# AND THE SAME FAULT AROUND THE PACKAGE'S OTHER THREE ALLOCATORS.  challoc is
+# not the only one: galloc (0.alloc.c:64-67, `return(balloc(...))', also
+# untyped), realloc and malloc are assigned to pointers in five more files, and
+# cc reports only the first file each round -- 0.list.c, then
+# `"0.parts.c":107, :109, :112'.  Every cast below is the target's own
+# declaration: 0.string.c:98 and 1.fort.c:246 are `char *', beauty.c:112 is
+# `static char *', tree.c:11 is `struct node *' and b.h:7 is `char *lit'.
+#
+# 0.parts.c IS SPELLED OUT rather than tabulated, because one of its three is
+# not a call at all -- :109 is `graph=temp', `int **' from `int *', which this
+# compiler calls `illegal pointer combination' -- and another has a subscript
+# in the target, which a sed pattern would read as a bracket expression.
+cd $SRC/cmd/struct || exit 1
+sed -e 's|^		temp=realloc(graph,maxnode\*sizeof(\*graph));$|		temp=(int *)realloc(graph,maxnode*sizeof(*graph));|' \
+    -e 's|^		graph=temp;$|		graph=(int **)temp;|' \
+    -e 's|^	graph\[nodenum\] = galloc(|	graph[nodenum] = (int *)galloc(|' \
+    0.parts.c > p$$ && mv p$$ 0.parts.c
+
+while read f fn var cast
+do
+	case $f in
+	[0-9a-z]*)	sed "s|$var = $fn *(|$var = ($cast)$fn(|g" $f > c$$ && mv c$$ $f ;;
+	esac
+done <<'ALLOCEOF'
+0.string.c	galloc	temp	char *
+1.fort.c	galloc	cp	char *
+beauty.c	malloc	buffer	char *
+tree.c	malloc	p	struct node *
+tree.c	malloc	p->lit	char *
+tree.c	malloc	tree->lit	char *
+ALLOCEOF
+
+# ` *(' IN BOTH PATTERNS ABOVE, because 1.fort.c:207 is `p = challoc (sizeof(*p))'
+# -- a space before the paren -- and `challoc(' matched every other site in the
+# package and not that one.  One character, one more round.
+#
+# AND remtilda's NINE, WHICH ARE ONE SED.  1.fort.c:253-259 is `remtilda(s)' /
+# `char *s;' / `return(s)': it takes a char * and hands the same char * back
+# through an implicit int, because it is DEFINED BELOW ITS CALL SITES.  All nine
+# results go to `pred', `inc', `prerw', `postrw', `exp' and `stcode', and
+# 1.incl.h:30 declares those in one line -- `extern char *pred, *inc, *prerw,
+# *postrw, *exp, *stcode;' -- so the cast is the same for every one.
+#
+# NOT a forward declaration of remtilda: the definition carries no return type,
+# and giving it one while declaring it above is precisely the shape that made
+# 0.alloc.c answer `:88:redeclaration of morespace'.  The cast leaves both the
+# definition and the call alone.
+sed 's|= remtilda(|= (char *)remtilda(|g' 1.fort.c > f$$ && mv f$$ 1.fort.c
+
+# 1.hash.c KEEPS A LINKED LIST INSIDE AN int ARRAY, and its three complaints
+# have no function call in them at all:
+#	"1.hash.c":162, :187, :212: illegal pointer/integer combination, op =
+# chain is `int *' (:9), so chain[index] is an int, and each element holds the
+# ADDRESS of the next -- :146 declares addref's `int *ptr' and :162 stores it
+# into that int, while fixvalue (:168, `int *temp1, *temp2') and connect (:198,
+# `int *temp') read an element back out into a pointer.  Three casts, each in
+# the direction the line already goes.  `*temp1' and `*temp' are dereferences,
+# so the cast wraps the whole right-hand side.
+sed -e 's|^	chain\[index\] = ptr;$|	chain[index] = (int)ptr;|' \
+    -e 's|^			temp2 = \*temp1;$|			temp2 = (int *)*temp1;|' \
+    -e 's|^			temp = \*temp;$|			temp = (int *)*temp;|' \
+    1.hash.c > h$$ && mv h$$ 1.hash.c
+
+# AND THE LAST EIGHTEEN, FOUND ALL AT ONCE INSTEAD OF ONE FILE PER ROUND.  cc
+# reports every error in a file and then stops before the next, so struct
+# surfaced 0.alloc.c, 0.list.c, 0.parts.c, 1.fort.c, 1.hash.c and 1.recog.c on
+# six consecutive rounds.  Compiling all forty sources in one pass -- `for f in
+# *.c; do cc -O -c $f || echo ...; done' -- named the whole remainder in one
+# round: five files, eighteen sites, and nothing else in the package.
+#
+# 1.recog.c's nine are the reverse direction from all the others.  def.h:58-84
+# define BEGCODE, PRERW, POSTRW, INC, PRED and EXP as `*stlfmt(v,0)',
+# `*vxpart(v,IOVX,1)', `*predic(v)' and so on, and def.h:45 declares every one
+# of those `extern int *', so the macro is an int LVALUE.  What goes into it is
+# `pred', `stcode', `inc', `prerw', `postrw' and `exp' from 1.incl.h:30 -- one
+# line, all char * -- and `test' from 1.recog.c:241.  So the cast is (int), on
+# the right-hand side.  EXP(num) = exp appears three times, hence the g.
+cd $SRC/cmd/struct || exit 1
+sed -e 's|PRED(num1) = pred;|PRED(num1) = (int)pred;|g' \
+    -e 's|BEGCODE(num) = stcode;|BEGCODE(num) = (int)stcode;|g' \
+    -e 's|INC(num1) = inc;|INC(num1) = (int)inc;|g' \
+    -e 's|PRERW(num) = prerw;|PRERW(num) = (int)prerw;|g' \
+    -e 's|POSTRW(num) = postrw;|POSTRW(num) = (int)postrw;|g' \
+    -e 's|EXP(num) = exp;|EXP(num) = (int)exp;|g' \
+    -e 's|PRED(num) = test;|PRED(num) = (int)test;|g' \
+    1.recog.c > r$$ && mv r$$ 1.recog.c
+
+# The other nine are functions handing a pointer back through an implicit int,
+# each declared nowhere its callers can see it.  consls IS typed -- 0.list.c:4
+# is `struct list *consls(v,ls)' -- but that is a different file, so in
+# 2.inarc.c it defaults to int all the same; inarc is `struct list **'
+# (2.main.c:26), so inarc[x] is one level down.  exits (3.reach.c:46) has no
+# type at all and its two results go to `struct pair *' (3.reach.c:34, :50).
+# checkneg (tree.c:43) and addroot (tree.c:6) likewise, into `struct node *' --
+# b.h's left and right, and beauty.y:23's own `struct node *t'.
+sed 's|= consls(|= (struct list *)consls(|g' 2.inarc.c > i$$ && mv i$$ 2.inarc.c
+sed 's|= exits(|= (struct pair *)exits(|g' 3.reach.c > e$$ && mv e$$ 3.reach.c
+sed -e 's|= checkneg(|= (struct node *)checkneg(|g' \
+    -e 's|= addroot(|= (struct node *)addroot(|g' tree.c > t$$ && mv t$$ tree.c
+
+# beauty.c IS YACC OUTPUT AND THE TAPE SHIPS IT, so BOTH copies are repaired.
+# mkfile:66-67 is `beauty.c y.tab.h: beauty.y' / `yacc -d beauty.y && mv y.tab.c
+# beauty.c', so the .c is regenerated only when the .y is newer -- and it was
+# not: the round's log goes straight from `cc -O -c 4.out.c' to `cc -O -c
+# beauty.c' with no yacc between, and the error still named `"beauty.y":128'
+# because the generated C carries #line directives back to the grammar.  So the
+# .y alone is inert, and the .c alone would be undone by any future yacc run.
+#
+# AND THE PATTERN IS `t = checkneg(', NOT `= checkneg('.  beauty.y has three
+# call sites: :119 passes it as an ARGUMENT (no cast needed, and the compiler
+# never named it), :120 is `$$ = checkneg($1,0)' and :128 is
+# `{ t = checkneg($2,0)'.  yacc turns $$ into yyval, and beauty.c:37-40 are
+# `#define YYSTYPE int' and `YYSTYPE yylval, yyval;' -- so casting :120 would
+# put a pointer into an int and MAKE an error where there was none, the moment
+# the grammar is ever rebuilt.  Only :128's `t' is a `struct node *'
+# (beauty.y:23).
+# The grammar needs buffer = malloc too.  beauty.y:304 is
+# `buffer = malloc(xxmaxchars)' in its C prologue and `buffer' is a char *, so
+# the table above fixes it in beauty.c while the REGENERATED beauty.c comes
+# back without it.  The build compiles beauty.c BEFORE yacc rewrites it
+# (`cc -O -c beauty.c' then `yacc -d beauty.y'), so this is latent rather than
+# fatal -- and it stays latent only because ipnxclean now restores the tape's
+# beauty.c, which is preserve row 28.  Fixed in the grammar so the regenerated
+# file compiles on its own terms.
+sed -e 's|t = checkneg(|t = (struct node *)checkneg(|g' \
+    -e 's|buffer = malloc(|buffer = (char *)malloc(|g' beauty.y > b$$ && mv b$$ beauty.y
+sed 's|t = checkneg(|t = (struct node *)checkneg(|g' beauty.c > b$$ && mv b$$ beauty.c
+
+# AND lextab.l, WHICH IS lex SOURCE AND SO WAS INVISIBLE TO A SWEEP OVER *.c.
+# beautify links beauty.o, tree.o, lextab.o and bdef.o (mkfile:37-38), and
+# lextab.o comes from `lex lextab.l && cc -O -c lex.yy.c' -- so the errors are
+# reported against the .l through the generated file's #line directives, and
+# the failed compile then showed up a second time as `ld:lextab.o: cannot
+# open'.  Four sites, and they go BOTH ways: lextab.l:28 and :30 are
+# `char *xxtbuff' and `char *xxp' while :8 is `extern int yylval', so :35 and
+# :97 take malloc's result into a char *, :95 takes the int yylval into one,
+# and :114 puts a char * back into the int.
+sed -e 's|xxtbuff = malloc(|xxtbuff = (char *)malloc(|g' \
+    -e 's|xxp = yylval;|xxp = (char *)yylval;|' \
+    -e 's|yylval = xxtbuff;|yylval = (int)xxtbuff;|' lextab.l > l$$ && mv l$$ lextab.l
+
+# cyntax IS v10's lint, and it declares brk() itself.  cyn/memory.c:58 is the
+# tape's `extern char *brk();' while libc's brk returns int, so cyntax reads
+# its own source and reports the declaration as conflicting.  REAL TABS below,
+# not \t: this sed writes a literal t for the escape, which is what put `tt'
+# into cref's mtab.c twice this session (see line 52).
+cd $SRC/cmd/cyntax/cyn || exit 1
+grep -s 'ipnx: libc' memory.c > /dev/null || {
+	sed 's|^extern char	\*brk();$|extern int	brk();		/* ipnx: libc'"'"'s brk returns int, and cyntax\
+				 * -- which is the lint -- refuses the tape'"'"'s\
+				 * `char *brk()'"'"' as multiply declared */|' \
+	    memory.c > m$$ && mv m$$ memory.c
+}
+
+# struct/0.alloc.c uses three constructs pre-ANSI C allowed and v10's ccom
+# refuses, all in the coreblk allocator:
+#	"0.alloc.c":50:illegal pointer/integer combination, op =
+#	"0.alloc.c":93:illegal pointer/integer combination, op =
+#	"0.alloc.c":105:illegal pointer combination, op =
+# :86 declares `morespace(n,p,size)' with no return type, so it is int, and :50
+# assigns it to `struct coreblk *q'.  :93 does the same with malloc.  :105 is
+# `q->blk = q + 1' where :9 declares `int *blk' -- the block is the words that
+# follow the header, so the arithmetic is right and only the type is not.
+# Cast at the three use sites rather than adding declarations: the file has no
+# header of its own and morespace is defined below its caller.
+cd $SRC/cmd/struct || exit 1
+sed -e 's|^\(			q = \)morespace(n,p,size);$|\1(struct coreblk *)morespace(n,p,size);|' \
+    -e 's|^\(	q = \)malloc(i=t\*sizeof(\*(q->blk))+sizeof(\*q));$|\1(struct coreblk *)malloc(i=t*sizeof(*(q->blk))+sizeof(*q));|' \
+    -e 's|^	q->blk = q + 1;$|	q->blk = (int *)(q + 1);|' \
+    0.alloc.c > a$$ && mv a$$ 0.alloc.c

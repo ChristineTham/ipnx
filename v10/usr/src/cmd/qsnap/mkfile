@@ -20,7 +20,12 @@ qreso:	qreso.c ${LIB}
 qtest:	qtest.c ${LIB}
 	${CC} ${CFLAGS} -o qtest qtest.c ${LIB}
 
+# A RECIPE, EVEN THOUGH THE MEMBERS AR THEMSELVES.  The member rule below
+# does its own `ar rv' and `ranlib', so this target has nothing to do --
+# but mk answers `no recipe to make libq.a' for a target it finds out of
+# date and cannot make.  ranlib is the honest no-op: the members are in.
 ${LIB}:	${LIBO}
+	ranlib ${LIB}
 
 ${LIB}(%.o):		%.c
 			${CC} ${CFLAGS} -c $stem.c

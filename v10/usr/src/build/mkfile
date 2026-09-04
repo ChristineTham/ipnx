@@ -231,6 +231,9 @@ dirs:V:
 	test -d $ROOT/usr/games/lib || mkdir $ROOT/usr/games/lib
 	test -d $ROOT/usr/games/lib/atc || mkdir $ROOT/usr/games/lib/atc
 	test -d $ROOT/usr/ether || mkdir $ROOT/usr/ether
+	test -d $ROOT/usr/spool || mkdir $ROOT/usr/spool
+	test -d $ROOT/usr/spool/at || mkdir $ROOT/usr/spool/at
+	test -d $ROOT/usr/spool/at/past || mkdir $ROOT/usr/spool/at/past
 	test -d $ROOT/usr/tmp || mkdir $ROOT/usr/tmp
 	test -d $ROOT/proc || mkdir $ROOT/proc
 	test -d $ROOT/n || mkdir $ROOT/n
@@ -262,10 +265,17 @@ $CMD/.patched: $GEN/patch
 $CMD/mk/src/nmk: $SRCOK $CMD/mk/src/alloc.c $CMD/mk/src/arc.c $CMD/mk/src/bquote.c $CMD/mk/src/builtins.c $CMD/mk/src/dir.c $CMD/mk/src/expand.c $CMD/mk/src/gen.c $CMD/mk/src/glob.c $CMD/mk/src/graph.c $CMD/mk/src/job.c $CMD/mk/src/lex.c $CMD/mk/src/main.c $CMD/mk/src/makefile.c $CMD/mk/src/match.c $CMD/mk/src/mk.c $CMD/mk/src/parse.c $CMD/mk/src/quote.c $CMD/mk/src/recipe.c $CMD/mk/src/regexp.c $CMD/mk/src/rule.c $CMD/mk/src/run.c $CMD/mk/src/shprint.c $CMD/mk/src/sig.c $CMD/mk/src/symtab.c $CMD/mk/src/t_ar.c $CMD/mk/src/t_driver.c $CMD/mk/src/t_file.c $CMD/mk/src/var.c $CMD/mk/src/word.c
 	cd $CMD/mk/src; cc -DV9 -o nmk alloc.c arc.c bquote.c builtins.c dir.c expand.c gen.c glob.c graph.c job.c lex.c main.c makefile.c match.c mk.c parse.c quote.c recipe.c regexp.c rule.c run.c shprint.c sig.c symtab.c t_ar.c t_driver.c t_file.c var.c word.c || echo 'mk: FAILED'
 
+# COPY-NEW-THEN-mv, because the mk running this recipe IS $ROOT/usr/bin/mk and
+# cp onto it answers `Text file busy'.  mv replaces the NAME; the running text
+# keeps the old inode until it exits.  The same shape as /bin/sh, /etc/init and
+# /etc/dipconfig further down, and for the same reason.  The strip is on the
+# temporary, before the rename, so the file that appears under the live name is
+# already final.
 $ROOT/usr/bin/mk: $CMD/mk/src/nmk
-	cd $CMD/mk/src; cp nmk $ROOT/usr/bin/mk || echo 'mk: install FAILED'
+	cd $CMD/mk/src; cp nmk $ROOT/usr/bin/mk.new || echo 'mk: install FAILED'
+	cd $CMD/mk/src; strip $ROOT/usr/bin/mk.new || :
+	cd $CMD/mk/src; mv $ROOT/usr/bin/mk.new $ROOT/usr/bin/mk || echo 'mk: install FAILED'
 	cp $CMD/mk/export/membername $ROOT/usr/bin/membername && chmod +x $ROOT/usr/bin/membername || :; cp $CMD/mk/export/mkconv $ROOT/usr/bin/mkconv && chmod +x $ROOT/usr/bin/mkconv || :
-	cd $CMD/mk/src; strip $ROOT/usr/bin/mk || :
 
 # cmd/gcc is GNU CC 1.x entire, but only its preprocessor is wanted: lcc's
 # driver execs /usr/lib/gcc-cpp and /usr/lib/rcc and nothing else from gcc, and
@@ -641,7 +651,7 @@ $ETC/tcpconfig: $IPC/internet/tcpconfig
 
 # Root's home is / -- passwd's root line is `root::0:4::/:' -- and sh/main.c:109
 # opens .profile there with no prefix.
-$ROOT/.profile: $PREP
+$ROOT/.profile: dirs $GEN/etc/profile
 	cp $GEN/etc/profile $ROOT/.profile && chmod 644 $ROOT/.profile
 
 # ---- commands --------------------------------------------------------------
@@ -980,7 +990,7 @@ $CMD/cron: $PREP $CMD/cron.c
 	cd $CMD; cc -Od2 -o cron cron.c || echo 'cron: FAILED'
 
 $ETC/cron: $CMD/cron
-	cd $CMD; cp cron $ETC/cron || echo 'cron: FAILED'
+	cd $CMD; cp cron cron.new && mv cron.new $ETC/cron || echo 'cron: FAILED'
 	cd $CMD; strip $ETC/cron || echo 'cron: install FAILED'
 
 
@@ -1225,7 +1235,7 @@ $ETC/install: $PREP
 # Shipped, not compiled: three scripts and a group file from v8, a machine name
 # of our own, and two empty files.  mount and login write mtab and utmp, and
 # they are empty in v8 too.
-$ETC/mklost+found: $PREP
+$ETC/mklost+found: $PREP $GEN/etc/mklost+found
 	cp $GEN/etc/mklost+found $ETC/mklost+found && chmod +x $ETC/mklost+found
 
 # shutdown does NOT halt, and that is the tape's design, not a fault.  It ends
@@ -1252,23 +1262,30 @@ $ETC/mklost+found: $PREP
 $ETC/login: $PREP $DEST/login
 	ln $DEST/login $ETC/login || echo '/etc/login: FAILED'
 
-$ETC/down: $PREP
+$ETC/down: dirs $GEN/etc/down
 	cp $GEN/etc/down $ETC/down && chmod +x $ETC/down
 
-$ETC/shutdown: $PREP $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep
+$ETC/shutdown: $PREP $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep $GEN/etc/shutdown
 	cp $GEN/etc/shutdown $ETC/shutdown && chmod +x $ETC/shutdown
 
-$ETC/group: $PREP
+$ETC/group: $PREP $GEN/etc/group
 	cp $GEN/etc/group $ETC/group
 
-$ETC/whoami: $PREP
+$ETC/whoami: $PREP $GEN/etc/whoami
 	cp $GEN/etc/whoami $ETC/whoami
 
-$ETC/mtab: $PREP
-	cp $GEN/etc/mtab $ETC/mtab
+# mtab AND utmp ARE RUNTIME STATE, SO THESE TWO ARE CREATE-ONLY.  A fresh disk
+# needs them present and empty; a running system must keep its own.  mkimage
+# builds with ROOT=/v10, where the copy is right, but ipnxbuild builds with
+# ROOT= -- the machine you are standing on -- and an unconditional copy there
+# truncates the live mount table.  `df' then answers `/usr: can't find
+# filesystem' on a machine whose /usr is mounted, because df reads mtab and
+# mount.c only writes it on a successful mount.  Same for utmp and who(1).
+$ETC/mtab: $PREP $GEN/etc/mtab
+	test -f $ETC/mtab || cp $GEN/etc/mtab $ETC/mtab
 
-$ETC/utmp: $PREP
-	cp $GEN/etc/utmp $ETC/utmp
+$ETC/utmp: $PREP $GEN/etc/utmp
+	test -f $ETC/utmp || cp $GEN/etc/utmp $ETC/utmp
 
 # ttys is COPIED FROM THE MACHINE THAT WORKS, not generated from the kernel
 # config.  images/v10's own /etc/ttys is these nine lines, and the two things
@@ -1281,7 +1298,7 @@ $ETC/utmp: $PREP
 #   It stops at tty07.  mkdev makes eight DZ lines, and init.c:251 drops any
 #   ttys entry whose /dev node fails access(), so listing tty08..tty31 and
 #   sixty-four stream pipes adds nothing.
-$ETC/ttys: $PREP
+$ETC/ttys: $PREP $GEN/etc/ttys
 	cp $GEN/etc/ttys $ETC/ttys
 
 # The disk mkimage builds is an RA73 (rq1, v10-launch.sh:26) and its /usr is
@@ -1299,10 +1316,10 @@ $ETC/ttys: $PREP
 # before calling it, so the field needs a readable path and means nothing.
 # The file cannot say any of this itself: getfsent has no comment syntax and
 # would read a # line as a fifth entry.
-$ETC/fstab: $PREP
+$ETC/fstab: dirs $GEN/etc/fstab
 	cp $GEN/etc/fstab $ETC/fstab
 
-$ETC/motd: $PREP
+$ETC/motd: $PREP $GEN/etc/motd
 	cp $GEN/etc/motd $ETC/motd
 
 # CRON WAS INSTALLED WITH NO TABLE, AND SAID NOTHING ABOUT IT.  cron.c:28 is
@@ -1324,22 +1341,22 @@ $ETC/motd: $PREP
 # :810, /usr/adm is made by the dirs run, and atrun is installed to
 # /usr/lib/atrun by the at rule at :2607 -- without this line `at' accepts a
 # job and never runs it, which is the same silent nothing as cron itself had.
-$ETC/crontab: $PREP
+$ETC/crontab: $PREP $GEN/etc/crontab
 	cp $GEN/etc/crontab $ETC/crontab
 
-$ETC/passwd: $PREP
+$ETC/passwd: $PREP $GEN/etc/passwd
 	cp $GEN/etc/passwd $ETC/passwd
 
-$ETC/services: $PREP
+$ETC/services: $PREP $GEN/etc/services
 	cp $GEN/etc/services $ETC/services
 
-$ETC/hosts: $PREP
+$ETC/hosts: $PREP $GEN/etc/hosts
 	cp $GEN/etc/hosts $ETC/hosts
 
-$ETC/networks: $PREP
+$ETC/networks: $PREP $GEN/etc/networks
 	cp $GEN/etc/networks $ETC/networks
 
-$ETC/rc: $PREP $ETC/dipconfig $ETC/tcpconfig
+$ETC/rc: dirs $GEN/etc/rc
 	cp $GEN/etc/rc $ETC/rc
 
 # nafsmnt is not on any tape and not in any Admin list; /etc/rc calls it as
@@ -1532,7 +1549,9 @@ $ROOT/usr/bin/bprint: $LCC/etc/bprint
 # STAR IS THE 780.  DEC's codename, and the tree agrees with itself: lib/star.a
 # holds ubastar, nexstar, mcrstar and cdiskstar, and boot/star/uda.s is the ROM
 # this project already loads at FA00.  astro/o.mkfile puts alice -- the one 780
-# in astro -- under $STARS with `mk -f ../lib/mk.star'.
+# in astro -- under $STARS with `mk -f ../lib/mk.star', which is where the
+# recipe name comes from; our config is built the same way from its own site
+# directory, /usr/sys/ipnx.
 #
 # EACH ARCHIVE ARRIVES HERE AS A DIRECTORY, not a file.  v10-tree.py unpacks
 # every ar member as a file, which keeps every byte and destroys the order, so
@@ -1612,16 +1631,30 @@ $KLIB/star.a: $PREP
 # not link, and ./installed being `test -f' then calls /v10/unix done and
 # never reaches $KERN again.  That is exactly what a missing _spcdev did
 # here.  mk's exit status is ld's verdict, so && carries it; and the .u is
-# removed either way, because a broken one left in astro/ is newer than its
+# removed either way, because a broken one left in ipnx/ is newer than its
 # prerequisites and the next run would call THAT up to date too.
-P_SYS_astro_ipnx_v10_u:V:	$PREP $KERN
-	cd $SYS/astro; mk -f ../lib/mk.star ipnx-v10.u || echo 'unix: FAILED'
+# /usr/sys/ipnx, NOT astro.  mk.star binds only `LD=../lib' (lib/mk.star:1), so
+# any directory one level under /usr/sys serves; astro/mkfile opens
+# `# 1127 systems' and is the Computing Science Research Center's own machine
+# roster, which ipnx is no part of.  toronto/ is the tape's precedent for a
+# second site.  ./patch creates the directory and puts the config and the site
+# mkfile in it.
+#
+# AND THE SITE mkfile IS WHAT IS INVOKED, not mk.star directly.  That is how
+# both tape sites do it: astro/mkfile and toronto/mkfile each hold the machine
+# list and dispatch it to a class recipe in ../lib, and reaching past them to
+# `mk -f ../lib/mk.star' was this driver naming a detail that belongs to the
+# site.  ipnx/mkfile is `STARS=ipnx-v10.u' and one recipe, so `mk ipnx-v10.u'
+# there resolves the class itself -- and a second machine would be a line in
+# that file rather than another rule in this one.
+P_SYS_ipnx_ipnx_v10_u:V:	$PREP $KERN
+	cd $SYS/ipnx; mk ipnx-v10.u || echo 'unix: FAILED'
 
-$SYS/astro/ipnx-v10.u: P_SYS_astro_ipnx_v10_u
-	test -f $SYS/astro/ipnx-v10.u || echo '$SYS/astro/ipnx-v10.u: the package did not produce it'
+$SYS/ipnx/ipnx-v10.u: P_SYS_ipnx_ipnx_v10_u
+	test -f $SYS/ipnx/ipnx-v10.u || echo '$SYS/ipnx/ipnx-v10.u: the package did not produce it'
 
-$ROOT/unix: $SYS/astro/ipnx-v10.u
-	cd $SYS/astro; cp ipnx-v10.u $ROOT/unix || echo 'unix: FAILED'
+$ROOT/unix: $SYS/ipnx/ipnx-v10.u
+	cd $SYS/ipnx; cp ipnx-v10.u $ROOT/unix || echo 'unix: FAILED'
 
 # ============================================================================
 # THE REST OF THE DISTRIBUTION
@@ -3814,10 +3847,16 @@ $ROOT/usr/bin/diction: $CMD/diction/.built
 P_CMD_style_style:V:	$PREP $ROOT/usr/bin/diction
 	cd $CMD/style; mk style CFLAGS=-O || echo 'style: FAILED'
 
-$CMD/style/style: P_CMD_style_style
-	test -f $CMD/style/style || echo '$CMD/style/style: the package did not produce it'
+# THE SENTINEL IS style3, NOT style.  There is no program called style in this
+# package and never was: mkfile:6 is `style:V: style1 style2 style3' -- an
+# aggregate -- and /usr/bin/style is style.sh, which its install copies.  So the
+# file to test for is the last of the three that a build produces.  Asking for
+# `style' reported `the package did not produce it' on a package that had just
+# built, stripped and installed everything it has.
+$CMD/style/style3: P_CMD_style_style
+	test -f $CMD/style/style3 || echo '$CMD/style/style3: the package did not produce it'
 
-$ROOT/usr/bin/style: $CMD/style/style
+$ROOT/usr/bin/style: $CMD/style/style3
 	cd $CMD/style; mk install CFLAGS=-O BIN=$ROOT/usr/bin LIB=$ROOT/usr/lib/style || echo 'style: FAILED'
 
 # struct hardcodes both paths and makes its own /usr/lib/struct, so its install
@@ -4181,8 +4220,24 @@ $ROOT/usr/bin/matlab: $CMD/matlab/matlab
 	cd $CMD/matlab; strip $ROOT/usr/bin/matlab || echo 'matlab: install FAILED'
 
 # monk is three subdirectories and takes MHOME and MBIN.
+#
+# AND db NEEDS ITS DIRECTORY, like sample below.  db/makefile:284-285 is
+# `install: all' and `cp $(DBS) $(CDBS) $(INSDIR)' with INSDIR = $(MHOME)/db --
+# 34 files into one destination -- so with the directory absent cp answers
+# `Usage: cp: [-z] f1 f2; or cp [-z] f1 ... fn d2', make stops, and the whole
+# package reports failure after everything else in it succeeded.
+#
+# THIS NOTE IS OUTSIDE THE RECIPE, and the word above is `failure' rather than
+# the one mk prints, because a tab-indented comment IS a recipe line: mk echoes
+# it, and a census of the build's verdicts then has to explain a line that is
+# only a remark.  It cost a round doing exactly that.
 $ROOT/usr/bin/monk: $PREP
 	test -d $ROOT/usr/lib/monk || mkdir $ROOT/usr/lib/monk
+	# monk's own install runs `cp sample/* /usr/lib/monk/sample', and v10's
+	# cp answers with its usage line when the last argument is not an
+	# existing directory -- there is no -p and no implicit mkdir.
+	test -d $ROOT/usr/lib/monk/sample || mkdir $ROOT/usr/lib/monk/sample
+	test -d $ROOT/usr/lib/monk/db || mkdir $ROOT/usr/lib/monk/db
 	cd $CMD/monk; mk all MHOME=$ROOT/usr/lib/monk MBIN=$ROOT/usr/bin && make install MHOME=$ROOT/usr/lib/monk MBIN=$ROOT/usr/bin || echo 'monk: FAILED'
 
 # pascal is `for i in $(DIRS); do (cd $$i; make -o; make -o install); done'
@@ -4216,6 +4271,9 @@ $CMD/prefer/.built: P_CMD_prefer__built
 
 $ROOT/usr/bin/prefer: $CMD/prefer/.built
 	test -d $ROOT/usr/lib/prefer || mkdir $ROOT/usr/lib/prefer
+	# `cp acm apa att ieee lsa pami spectrum spe .../styles' needs the
+	# directory to exist first, for the same reason as monk's sample.
+	test -d $ROOT/usr/lib/prefer/styles || mkdir $ROOT/usr/lib/prefer/styles
 	cd $CMD/prefer; mk install PBIN=$ROOT/usr/bin PLIB=$ROOT/usr/lib/prefer PHOME=$ROOT/usr/lib/prefer || echo 'prefer: FAILED'
 
 # qsnap drives a GPIB instrument through libq.a, which it builds itself.
@@ -4304,7 +4362,12 @@ $ROOT/usr/bin/uucp: $CMD/uucp/uucp
 # worm is the write-once optical filesystem; BIN is /usr/lib/worm.  cmd/oworm
 # is the previous copy of the same fifteen programs and is not built.
 P_CMD_worm_wmkfs:V:	$PREP
-	cd $CMD/worm; mk worm.a || echo 'worm.a: FAILED'; mk all || echo 'worm: FAILED'
+	# NOT `all': worm's ALL ends `jukebox scsish', and those two link the
+	# tcl 3.3 in worm/scsi, which wants sys/wait.h, O_CREAT, R_OK and X_OK
+	# -- none of which v10 has, counted in /usr/include.  The fifteen this
+	# driver installs are named instead, so the package builds what can be
+	# built and reports nothing it cannot.
+	cd $CMD/worm; mk worm.a || echo 'worm.a: FAILED'; mk wmkfs wstat wwrite wread wls woffline wcat wbtree wrm wdir wreset wmv wtmpdir wmount wcopy || echo 'worm: FAILED'
 
 $CMD/worm/wmkfs: P_CMD_worm_wmkfs
 	test -f $CMD/worm/wmkfs || echo '$CMD/worm/wmkfs: the package did not produce it'
@@ -4591,7 +4654,7 @@ ARTEFACTS3=U=$CMD/news $CMD/number $CMD/numdate/numdate $CMD/oops/oops \
 	$CMD/sno/sno $CMD/snocone/sc2 $CMD/sortbin $CMD/sp \
 	$CMD/spell/sprog $CMD/spitbol/newspit $CMD/spline $CMD/split \
 	$CMD/spool/lp0 $CMD/stat $CMD/strings $CMD/strip/stab \
-	$CMD/struct/structure $CMD/style/style $CMD/su $CMD/sum/sum \
+	$CMD/struct/structure $CMD/style/style3 $CMD/su $CMD/sum/sum \
 	$CMD/swapon $CMD/tabs $CMD/tail $CMD/tape
 
 ARTEFACTS4=U=$CMD/tbl/tbl $CMD/tee $CMD/telno $CMD/tk \
@@ -4612,7 +4675,7 @@ ARTEFACTS4=U=$CMD/tbl/tbl $CMD/tee $CMD/telno $CMD/tk \
 	$SRC/libm/libm.a $SRC/libmp/libmp.a $SRC/libpicfile/libpicfile.a $SRC/libplot/lib2621/lib2621.a \
 	$SRC/libplot/lib4014/lib4014.a $SRC/libplot/lib5620/lib5620.a $SRC/libplot/libblit/libblit.a $SRC/libplot/libpen/libpen.a \
 	$SRC/libplot/libplot/libplot.a $SRC/libplot/libram/libram.a $SRC/libplot/libtr/libtr.a $SRC/libsdb/libsdb.a \
-	$SRC/libtermlib/termcap.a $SRC/liby/liby.a $SRC/netfs/libnetb/libnetb.a $SYS/astro/ipnx-v10.u
+	$SRC/libtermlib/termcap.a $SRC/liby/liby.a $SRC/netfs/libnetb/libnetb.a $SYS/ipnx/ipnx-v10.u
 
 
 # GAMES.  The tape ships /usr/src/games in srctotape's own list of the source

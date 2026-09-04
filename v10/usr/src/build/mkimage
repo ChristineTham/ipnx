@@ -22,7 +22,16 @@ test -d /v10 && /etc/umount /v10
 # The boot block is this machine's own: uda.s reads absolute block 0.
 dd if=/dev/ra00 of=/dev/ra10 bs=512 count=1 || exit 1
 
+# /tmp GETS ITS OWN FILESYSTEM, ON PARTITION e.  ra_sizes:53 gives e 249848
+# sectors -- 122 MB, claimed by nothing: a is root, b/c/d are swap, f is /usr.
+# It has to be off root because root is 1280 4k blocks, and mkbitfs:80's
+# isize = (size-2)/(1+ICOUNT) makes that 1088 inodes of which proto-dev's 917
+# are device nodes.  cc.c:178 hardcodes /tmp/ctm<pid>1..5 with no getenv and no
+# flag, so the compiler cannot be pointed elsewhere -- the mount point is the
+# only lever.  31231 is 249848/8: mkbitfs counts 4k blocks, ra_sizes counts
+# 512-byte sectors (types.h:12, NBPG 512).
 /etc/mkbitfs /dev/ra10 1280 || exit 1
+/etc/mkbitfs /dev/ra14 31231 || exit 1
 /etc/mkbitfs /dev/ra15 392528 || exit 1
 
 test -d /v10 || mkdir /v10 || exit 1
@@ -40,6 +49,13 @@ then
 fi
 
 # the archive is a tar of /usr -- build/usrtrees is the one list of its shape
+# TWICE.  tar walks a directory in inode order and emits a hard link the
+# moment it meets it, so `src/cmd/map/map.c  link to src/cmd/map/export/map.c'
+# is written BEFORE its target -- and V10's tar, extracting in stream order,
+# cannot make a link to a file that is not there yet, so it drops it in
+# silence.  38 files went missing that way, every one a hard link.  The second
+# pass finds every target in place and completes them.
+cd /v10/usr && tar xf $TAPE || exit 1
 cd /v10/usr && tar xf $TAPE || exit 1
 for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
 do
@@ -60,11 +76,24 @@ sh $BUILD/mkdev /v10/dev || exit 1
 
 mk -f $BUILD/mkfile ROOT=/v10 world || exit 1
 
-# The new disk gets its own copy, in the same place, so it can build a disk in
-# turn.  /usr/ipnx, not /usr/src/build: the archive is not part of the build
-# system and it must not sit inside the tree taripnx walks.
-test -d /v10/usr/ipnx || mkdir /v10/usr/ipnx || exit 1
-cp $TAPE /v10/usr/ipnx/ipnx.tar || exit 1
+# SWEEP WHAT `world' JUST MADE.  Without this the disk ships every object,
+# every intermediate and every stamp the build wrote -- ipnxclean:240-243 is the
+# statement of why that matters: 39 files the build makes are absent from the
+# archive, so a tree that keeps them can never equal the archive it came from.
+# ipnxclean:103 already knows this target (`RT=/v10/usr SRC=/v10/usr/src'); it
+# was simply never called from here.  BEFORE the archive is copied on, because
+# ipnxclean:244 reads /usr/ipnx/ipnx.tar -- the BUILDER's, which is the right
+# one to compare against -- and a copy sitting on /v10 first is 450 MB the
+# sweep would have to walk.
+sh $BUILD/ipnxclean /v10 || exit 1
+
+# NO COPY OF THE ARCHIVE ONTO THE NEW DISK.  It used to get one, in /usr/ipnx,
+# so it could build a disk in turn without a share.  That self-sufficiency costs
+# 450 MB on a /usr measured at 507,476 KB -- it roughly doubles the filesystem
+# and most of the packed image with it, and the packed image has to fit inside
+# GitHub's 100 MB.  A disk that needs to run mkimage stages the archive from the
+# share first, which is what this machine does.  mkimage:35-40 already handles a
+# target without one: it says so and leaves /v10 blank and mounted.
 
 cd /
 sync

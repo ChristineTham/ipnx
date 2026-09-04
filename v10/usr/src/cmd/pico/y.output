@@ -5866,7 +5866,7 @@ state 341
 
 
 98/255 terminals, 36/300 nonterminals
-180/600 grammar rules, 342/1000 states
+180/600 grammar rules, 342/750 states
 1 shift/reduce, 0 reduce/reduce conflicts reported
 83/350 working sets used
 memory: states,etc. 3324/20000, parser 841/20000

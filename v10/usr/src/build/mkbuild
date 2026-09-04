@@ -42,12 +42,15 @@ B=${2-/usr/src/build}
 test -d $D/usr/src || { echo "mkbuild: no $D/usr/src"; exit 1; }
 test -d $B || { echo "mkbuild: no $B"; exit 1; }
 
-# NOT `rm -f $D/usr/src/build/*'.  ipnx.tar lives in this directory, and with
-# D empty that glob deletes the archive mkimage reads -- which it did, and
-# mkimage then blanked ra1 and stopped with nothing to extract.  Every file
-# below is overwritten by its own cp, so this only has to clear what is no
-# longer shipped; ls and grep do that without touching the archive.
-for f in `ls $D/usr/src/build | grep -v '^ipnx.tar$'`
+# EVERY FILE GOES, ipnx.tar INCLUDED.  This used to spare that one name,
+# protecting `the archive mkimage reads' -- but mkimage:14 is
+# TAPE=/usr/ipnx/ipnx.tar and nothing reads /usr/src/build/ipnx.tar at all.
+# What the exclusion actually did was keep a 236 MB stale archive alive in
+# the build directory round after round, and .gitignore:81 (`*.tar') hid it,
+# so a host-side tar of the tree swept it into ipnxorig.tar and mkimage
+# planted it in the golden image.  Every file below is overwritten by its own
+# cp, so this only has to clear what is no longer shipped.
+for f in `ls $D/usr/src/build`
 do
 	rm -f $D/usr/src/build/$f
 done
@@ -72,28 +75,53 @@ do
 	fi
 done
 
+# THE LIST IS THE DIRECTORY HERE TOO.  These four were named one by one, and
+# the top-level loop's comment already says what that costs: a new file takes
+# two runs to arrive, because the mkbuild doing the copying is the machine's
+# copy from the LAST round and still holds the old list.  src/ipnx.mkfile hit
+# exactly that -- `cp: /usr/src/build/src/ipnx.mkfile: No such file or
+# directory' from patch, which then exited 1 and skipped every stanza after it,
+# so sixteen struct sources went unrepaired and the sweep blamed the package.
+#
+# `test -d' IS WHAT KEEPS THE SUBDIRECTORIES OUT, the same guard and for the
+# same reason as the top-level loop: v10's cp takes only -z (cp(1)) and cannot
+# recurse, and src/ holds cmd, libc and include while src/include holds sys --
+# so an unguarded `ls' would hand cp a directory and `|| exit 1' would stop the
+# build before patch ran at all.  Their contents are copied by the loops below.
 test -d $D/usr/src/build/etc || mkdir $D/usr/src/build/etc || exit 1
-for f in crontab down fstab profile group hosts mklost+found motd mtab networks passwd rc services shutdown ttys utmp whoami
+for f in `ls $B/etc`
 do
-	cp $B/etc/$f $D/usr/src/build/etc/$f || exit 1
+	if test -d $B/etc/$f
+	then	:
+	else	cp $B/etc/$f $D/usr/src/build/etc/$f || exit 1
+	fi
 done
 
 test -d $D/usr/src/build/src || mkdir $D/usr/src/build/src || exit 1
-for f in README ipnx-v10.m jump.c local-alloc.c nafsmnt.c sh.local.h streamio.c
+for f in `ls $B/src`
 do
-	cp $B/src/$f $D/usr/src/build/src/$f || exit 1
+	if test -d $B/src/$f
+	then	:
+	else	cp $B/src/$f $D/usr/src/build/src/$f || exit 1
+	fi
 done
 
 test -d $D/usr/src/build/src/cmd || mkdir $D/usr/src/build/src/cmd || exit 1
-for f in cc.c fsck.c login.c mkbitfs.c mv.c
+for f in `ls $B/src/cmd`
 do
-	cp $B/src/cmd/$f $D/usr/src/build/src/cmd/$f || exit 1
+	if test -d $B/src/cmd/$f
+	then	:
+	else	cp $B/src/cmd/$f $D/usr/src/build/src/cmd/$f || exit 1
+	fi
 done
 
 test -d $D/usr/src/build/src/include || mkdir $D/usr/src/build/src/include || exit 1
-for f in shares.h
+for f in `ls $B/src/include`
 do
-	cp $B/src/include/$f $D/usr/src/build/src/include/$f || exit 1
+	if test -d $B/src/include/$f
+	then	:
+	else	cp $B/src/include/$f $D/usr/src/build/src/include/$f || exit 1
+	fi
 done
 
 test -d $D/usr/src/build/src/include/sys || mkdir $D/usr/src/build/src/include/sys || exit 1

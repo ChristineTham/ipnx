@@ -1,5 +1,12 @@
-units:V:		cdate.h
-	:
+CFLAGS=-O
+# NOT :V:.  The converter made the tape's `units: cdate.h' a virtual target,
+# so `mk units' satisfied cdate.h and built no program at all -- the install
+# then answered `cp: units: No such file or directory'.  The tape leaned on
+# make's implicit chain from units.y; mk needs it said: units.y makes units.c
+# (the metarule below), units.c includes cdate.h at :42, and the link is one
+# line.
+units:	units.c cdate.h
+	${CC} ${CFLAGS} -o units units.c
 cdate.h:	units.y mkcdate
 		./mkcdate >cdate.h
 clean:

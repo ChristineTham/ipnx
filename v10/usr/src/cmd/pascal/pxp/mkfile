@@ -38,8 +38,7 @@ install: a.out
 	strip a.out
 	rm -f ${DESTDIR}/usr/bin/pxp
 	cp a.out ${DESTDIR}/usr/bin/pxp
-	chown bin ${DESTDIR}/usr/bin/pxp
-	chgrp bin ${DESTDIR}/usr/bin/pxp
+	/etc/chown bin,bin ${DESTDIR}/usr/bin/pxp
 	chmod o-w,g+w ${DESTDIR}/usr/bin/pxp
 	#	cp a.outNOID /usr/bin/pxp34
 

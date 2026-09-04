@@ -1,6 +1,4 @@
 #include <sys/param.h>
-#include <sys/param.h>
-#include <sys/param.h>
 #include <sys/filio.h>
 #include <stdio.h>
 #include <sys/stream.h>

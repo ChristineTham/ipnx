@@ -1,5 +1,5 @@
 L11:	.stabs	"camac.c",0x64,0,0,L11
-	.stabs	"vaxpcc2",0xf0,0,17665,1787553298
+	.stabs	"vaxpcc2",0xf0,0,17665,1788180922
 	.data
 	.comm	_zvms,40
 	.comm	_buf,4

@@ -1,7 +1,0 @@
-all:V:	imscan
-	:
-
-
-# ---- added by the converter: mk has no equivalent builtin ----
-'^([^./]+)$':R:	'\1'.c
-	cc -o $stem1 $stem1.c

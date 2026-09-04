@@ -1,3 +1,13 @@
+# PATH, WHICH THIS FILE DID NOT SET.  v8/etc/profile.root:1-2 exports one and
+# ours did not, so root fell back to sh/msg.c:67's defpath ":/bin:/usr/bin" --
+# which does not contain /etc.  Every halt, mount, swapon and umount in this
+# project's own procedures is spelled /etc/... for exactly that reason, and
+# /etc/down could not be run by name at all.  /usr/games is here because
+# build/mkfile:230 makes it and Admin/dest sends games there; the jerq and inet
+# entries in v8's line are that machine's trees and are not on this one.
+PATH=:/bin:/usr/bin:/etc:/usr/games
+export PATH
+
 TERM=vt100
 export TERM
 stty new crt erase '^?' intr '^C'

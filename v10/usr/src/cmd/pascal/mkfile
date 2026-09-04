@@ -21,8 +21,7 @@ install:
 	for i in ${DIRS}; do (cd $i; echo ==$i; make -o; make -o install); done
 	rm -f $B/pascal
 	cp pascal.sh $B/pascal
-	chown bin $B/pascal
-	chgrp bin $B/pascal
+	/etc/chown bin,bin $B/pascal
 	chmod 775 $B/pascal
 
 clean:

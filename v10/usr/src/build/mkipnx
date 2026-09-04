@@ -18,10 +18,17 @@
 # half-done.  A disk holding v10.tar's tree without /usr/src/build has no mkfile
 # and no patch, so it looks like a source tree and cannot build.
 #
-# IT DOES NOT RUN patch.  The repairs are mk's job -- mkfile makes $CMD/.patched
-# a target whose prerequisite is $GEN/patch -- so an archive that had them
-# applied would carry a source tree the stamp cannot describe.  Everything here
-# is either the tape's or the build system's, and the difference stays visible.
+# IT RUNS patch, AND IT SHIPS THE TREE'S OWN BUILD FILES.  It did neither, on
+# the reasoning that the repairs are mk's job and the difference should stay
+# visible.  That reasoning made two archives that can never agree: a machine
+# applies patch and takes the converted mkfiles from the share while it
+# builds, so its taripnx archive carries both, and this one carried neither --
+# 1,282 members apart, measured.  ipnx.tar and ipnxorig.tar are the same
+# archive cut at two moments, so they hold the same tree or one of them is
+# lying.  The stamp is not lost: mkfile makes $CMD/.patched a target whose
+# prerequisite is $GEN/patch, and ipnxclean removes the stamp with every
+# other product, so the first build on the new disk re-runs patch over a tree
+# that already has it -- every stanza here is guarded and idempotent.
 GEN=/usr/src/build
 OUT=/v10/usr/ipnx
 ARCH=$OUT/v10.tar
@@ -37,6 +44,9 @@ then
 fi
 
 # the archive is a tar of /usr -- build/usrtrees is the one list of its shape
+# Twice, for the hard links -- see mkimage: a link entry can precede its
+# target in the stream, and V10's tar drops it rather than waiting.
+cd /v10/usr && tar xf $ARCH || exit 1
 cd /v10/usr && tar xf $ARCH || exit 1
 for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
 do
@@ -49,11 +59,57 @@ done
 # everything except updatebuild.
 sh $GEN/mkbuild /v10 $REPO || exit 1
 
+# THE TREE'S OWN BUILD FILES, THROUGH THE CHANNEL THAT ALREADY EXISTS.
+# build/mkfiles is the list updatebuild copies from the share onto a machine
+# -- the phase 6 conversions and the handful of repairs that are whole files
+# -- and it is the same list here, read from the same place, so the two
+# archives carry the same 427 files.  A missing target directory is the skip,
+# exactly as updatebuild has it: the five o* packages are norman-only.
+if test -f $REPO/mkfiles
+then
+	while read f
+	do
+		case $f in
+		[a-z]*)	if test -d /v10/usr/`dirname $f`
+			then
+				cp $REPO/../../$f /v10/usr/$f || echo "mkipnx: $f: copy failed"
+			fi ;;
+		esac
+	done < $REPO/mkfiles
+	echo "mkipnx: tree build files shipped"
+fi
+
+# THE REPAIRS.  SRC and SYS point patch at this disk; its own defaults are
+# /v10 already, and naming them here says so rather than relying on that.
+SRC=/v10/usr/src SYS=/v10/usr/sys sh $GEN/patch || exit 1
+# AND THE STAMP, because the repairs really are applied.  mkfile makes
+# $CMD/.patched a target whose prerequisite is $GEN/patch; without the stamp
+# the first build on the new disk repeats work it has already had, and the
+# archive differs from a machine's by exactly this file.
+echo done > /v10/usr/src/cmd/.patched
+echo "mkipnx: repairs applied"
+
 # WRITTEN OUTSIDE THE TREE IT IS ARCHIVING.  tar has no --exclude here, and an
 # archive created under the directory being walked is reached by that walk and
 # copied into itself while it grows.
 rm -f $OUT/ipnxorig.tar
-cd /v10/usr && tar cf $OUT/ipnxorig.tar `ls | grep -v '^ipnx$' | grep -v '^tmp$'` || exit 1
+# WHAT A BUILD CONSUMES, THIS ARCHIVE MUST NOT CARRY.  Six rules regenerate a
+# file the tape ships and then remove it, so a machine's archive lacks six
+# files this one would keep -- and two archives that must be identical would
+# differ by exactly those.  ipnxbuild writes the list; this reads it.  A disk
+# that has never built has no list, and then there is nothing to remove.
+if test -f /usr/ipnx/consumed
+then
+	sed 's|^|/v10/usr/|' /usr/ipnx/consumed > /usr/tmp/mki.$$
+	xargs rm -f < /usr/tmp/mki.$$
+	echo "mkipnx: `wc -l < /usr/tmp/mki.$$` files a build consumes removed"
+	rm -f /usr/tmp/mki.$$
+fi
+
+# THE SAME LIST taripnx TARS.  `ls' minus two names is a second statement of
+# the archive's shape and would drift from usrtrees the moment a tree was
+# added or a mkbitfs left something behind.
+cd /v10/usr && tar cf $OUT/ipnxorig.tar `grep '^[a-z0-9]' $GEN/usrtrees` || exit 1
 
 # v10's kernel does not sync on halt -- md/machdep.c's boot() calls death()
 # without one -- so an archive written here and then left by ^E is not on the

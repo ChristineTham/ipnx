@@ -20,6 +20,6 @@ rm -f $file
 $cmd $1 $file
 chmod o-w,g+w $file
 if [ "`getuid`" = root ]
-then	chgrp bin $file
-	chown bin $file
-fi
+then	/etc/chown bin,bin $file		# v10 HAS NO chgrp -- no source in
+fi					# cmd, in no Admin list, installed by
+					# no rule; /etc/chown takes owner,group

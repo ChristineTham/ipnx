@@ -126,8 +126,7 @@ rm	src/cmd/xref/xrefa	product binary, on no tape
 rm	src/cmd/xref/xrefb	product binary, on no tape
 mv	jerq/src/lib/C	jerq/src/lib/u_C	her call: the pair are both real, c the 68000 libc build, C the libC build; lowercase keeps the name
 mv	vol2/index/Junk	vol2/index/u_Junk	directory beside the junk file; the slash-blind dup check missed it; repo keeps u_Junk
-rm	sys/lib/bvax/.ax30	DIR	arcfix temp-dir nests from before the x-op guard
-rm	sys/lib/inet/.ax30	DIR
-rm	sys/lib/io/.ax30	DIR
-rm	sys/lib/star/.ax30	DIR
-rm	src/netfs/libnetb/libnetb/.ax30	DIR
+rm	src/cmd/PDP11/mkfile	converter inventions; the tape builds PDP11 with make
+rm	src/cmd/PDP11/11as/mkfile	
+rm	src/cmd/PDP11/11c/mkfile	
+rm	src/cmd/PDP11/fpp/mkfile	

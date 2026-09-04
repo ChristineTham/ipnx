@@ -62,8 +62,15 @@ test -b $DEV/rp1h || { echo rp1h; $MKNOD $DEV/rp1h b 0 15; chmod 0640 $DEV/rp1h;
 test -c $DEV/rrp1h || { echo rrp1h; $MKNOD $DEV/rrp1h c 4 15; chmod 0640 $DEV/rrp1h; }
 test -b $DEV/ra00 || { echo ra00; $MKNOD $DEV/ra00 b 7 64; chmod 0640 $DEV/ra00; }
 test -b $DEV/ra01 || { echo ra01; $MKNOD $DEV/ra01 b 7 1; chmod 0640 $DEV/ra01; }
-test -b $DEV/ra02 || { echo ra02; $MKNOD $DEV/ra02 b 7 66; chmod 0640 $DEV/ra02; }
-test -b $DEV/ra03 || { echo ra03; $MKNOD $DEV/ra03 b 7 67; chmod 0640 $DEV/ra03; }
+# ra02 AND ra03 ARE SWAP NOW, SO THEIR 0100 IS CLEAR -- minor 2 and 3, not
+# 66 and 67.  The bit marks a bitmapped FILESYSTEM and is set per partition:
+# ra01, every machine's partition b, is minor 1 for exactly this reason.
+# ipnx-v10.m declares `swap ra 02' and `swap ra 03' (alice.m:5-6's two 122 MB
+# areas), and sw.c:107-113 compares the node's i_rdev against swdevt[].sw_dev
+# built from those minors, so a node at 66 answers ENODEV to /etc/swapon and
+# the area is never freed into the map.
+test -b $DEV/ra02 || { echo ra02; $MKNOD $DEV/ra02 b 7 2; chmod 0640 $DEV/ra02; }
+test -b $DEV/ra03 || { echo ra03; $MKNOD $DEV/ra03 b 7 3; chmod 0640 $DEV/ra03; }
 test -b $DEV/ra04 || { echo ra04; $MKNOD $DEV/ra04 b 7 68; chmod 0640 $DEV/ra04; }
 test -b $DEV/ra05 || { echo ra05; $MKNOD $DEV/ra05 b 7 69; chmod 0640 $DEV/ra05; }
 test -b $DEV/ra06 || { echo ra06; $MKNOD $DEV/ra06 b 7 70; chmod 0640 $DEV/ra06; }

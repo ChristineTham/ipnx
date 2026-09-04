@@ -1,8 +1,39 @@
+# Run from /, whatever the caller's cwd was.  down is invoked from a login shell
+# that may be sitting anywhere -- /usr/src/build most often -- and that cwd is a
+# held inode on a filesystem this script is about to unmount, which iget.c's
+# ifsbusy counts exactly as it counts an open file.  The `cd /proc' below moves
+# away from it, but only if it succeeds: with /proc unmounted the cd fails, the
+# shell stays where it started, and umount -a then fails on a filesystem down is
+# itself holding.
 cd /
+
+# Nothing may hold a filesystem when umount runs.  iget.c:55-77's ifsbusy walks
+# the WHOLE in-core inode table, and any held inode on the mount makes fs.c:162's
+# `i_count > 1 || ifsbusy(rip)' give EBUSY -- a cwd or an open directory counts,
+# not just an open file.  /etc/update exists to hold /usr open: update.c:8-13
+# opens /bin, /usr and /usr/bin "for cache benefit" and then pause()s forever, so
+# while it lives /usr can never be unmounted and this script correctly refuses to
+# halt.  That is why the kill comes first.  Written without it, down looked right
+# for exactly as long as the machine ran no daemons.
+#
+# The idiom is the tape's own, shutdown:16-17, and its `0*' is load-bearing:
+# proca.c:102-104 writes every /proc name as FIVE zero-padded digits, so init is
+# `00001' and a filter written for `1' matches nothing and kills nothing.  0, 1
+# and 2 are the kernel's own; $$ is this shell.  egrep is /usr/bin/egrep, reached
+# through sh/msg.c:67's defpath ":/bin:/usr/bin", so the kill must run while /usr
+# is still mounted.  nafsmnt needs no thought here: nafsmnt.c:261 exits as soon
+# as the mount is made, so it is never in the list.
+cd /proc
+kill -9 `ls | egrep -v '^0*([012]|'$$')$'` > /dev/null 2>&1
+
+# Back to / before unmounting -- the cd /proc above left this shell holding an
+# inode on procfs, which is in fstab.  The tape's shutdown can stay there
+# because it ends in `exec kill 1' and never looks at the umount's status.
+cd /
+sync
 sync
 if /etc/umount -a
 then
-    sync
     sync
     /etc/halt
 else

@@ -28,7 +28,14 @@
 # WHERE THE FIVE ARE.  /usr/tmp by default -- the machine's own scratch, which
 # is where the host-side half leaves them -- but an image whose /etc/rc still
 # mounts the repository's tapes share runs `mkv10 /n/tapes' instead.
-TAPES=${1-/usr/tmp}
+# THE TAPES ARE READ THROUGH A PIPE, NOT OPENED.  tar's endtape() calls
+# backtape(), which does an MTIOCTOP ioctl and only tolerates ENOTTY --
+# tar.c:990 -- so reading an archive off the netfs share dies with `tape
+# backspace error: No such device' at the end-of-archive block.  A pipe is a
+# pipe: the ioctl answers ENOTTY, isatape goes to 0, and the read completes.
+# It also means the 413 MB of tapes need no room on this disk, which is the
+# other way this failed -- /usr filled at 163 MB copied.
+TAPES=${1-/n/home/Repositories/Unix/ipnx/tapes}
 GEN=/usr/src/build
 OUT=/v10/usr/ipnx
 
@@ -44,27 +51,32 @@ test -f $GEN/casenames || { echo "mkv10: no $GEN/casenames"; exit 1; }
 mkdir /v10/usr/src || exit 1
 mkdir /v10/usr/blit || exit 1
 
-cd /v10/usr/src && tar xf $TAPES/secombe.tar || exit 1
+cd /v10/usr/src && cat $TAPES/secombe.tar | tar xf - || exit 1
 # secombe cuts sys inside src; the machine keeps it beside src (usrtrees).
 mv /v10/usr/src/sys /v10/usr/sys || exit 1
+
+# local is the same case: secombe and norman both cut it at their root, so it
+# arrives under src, and usrtrees names it beside src.  Four files -- the
+# restor family -- plus uparm.h, which r70include lands in /usr/include/local.
+mv /v10/usr/src/local /v10/usr/local || exit 1
 
 # SELLERS IS THE MANUAL TAPE -- v10-tapes.sh:23, `/usr/man and vol2, the
 # documentation' -- and it is the agreed source: against norman's copy it is
 # newer in all six pages that differ and carries two pages norman lacks, with
 # nothing the other way.  man and vol2 land beside src, where they live:
 # ipnx.tar is a tar of /usr and build/usrtrees is the one list of its shape.
-cd /v10/usr && tar xf $TAPES/sellers.tar || exit 1
+cd /v10/usr && cat $TAPES/sellers.tar | tar xf - || exit 1
 
-cd /v10/usr && tar xf $TAPES/milligan.tar || exit 1
+cd /v10/usr && cat $TAPES/milligan.tar | tar xf - || exit 1
 
-cd /v10/usr/blit && tar xf $TAPES/v10blit.tar || exit 1
+cd /v10/usr/blit && cat $TAPES/v10blit.tar | tar xf - || exit 1
 
 # THE INCLUDE TREE LIVES AT /usr/include -- the tar-of-/usr shape.  349 members
 # rooted at ./  The mkfile installs it to /usr/include from there -- libc's own
 # mkfile:150,155,205 name /usr/include/libc.h as an absolute prerequisite, so a
 # disk without it cannot build a libc at all.
 mkdir /v10/usr/include || exit 1
-cd /v10/usr/include && tar xf $TAPES/r70include.tar || exit 1
+cd /v10/usr/include && cat $TAPES/r70include.tar | tar xf - || exit 1
 
 # v10src is norman's, and secombe wins wherever both have a path.  Only what
 # secombe lacks is taken: 630, maps and doc, and thirteen source directories.
@@ -77,9 +89,9 @@ cd /v10/usr/include && tar xf $TAPES/r70include.tar || exit 1
 # cmd/adb/vax is one level down and easy to miss: secombe has cmd/adb, with
 # 11v, 68v, comm, conf, cray, g, null, seq, v7 and v8, but no vax -- adb is
 # built per machine, and ours is the one directory only norman carries.
-cd /v10/usr && tar xf $TAPES/v10src.tar 630 maps || exit 1
-cd /v10/usr/src && tar xf $TAPES/v10src.tar doc || exit 1
-cd /v10/usr/src && tar xf $TAPES/v10src.tar \
+cd /v10/usr && cat $TAPES/v10src.tar | tar xf - 630 maps || exit 1
+cd /v10/usr/src && cat $TAPES/v10src.tar | tar xf - doc || exit 1
+cd /v10/usr/src && cat $TAPES/v10src.tar | tar xf - \
 	cmd/bison cmd/cp cmd/cyntax cmd/flex cmd/gcc cmd/icon \
 	cmd/library cmd/m4 cmd/matlab cmd/pascal cmd/post cmd/wwb \
 	cmd/adb/vax lbin/kermit || exit 1
@@ -108,20 +120,110 @@ rm -f $NT $DT
 # all and the general one takes its single path.
 sed -e 's|^NAME	v10/|NAME	/v10/|' -e 's|	v10/|	/v10/|' $GEN/casenames > /usr/tmp/mkv10.tab
 
+# DIRECTORIES RENAME TOO, and one row does what eight could not.  vol2/index
+# holds a `junk' file beside a `Junk' directory, and renaming the directory's
+# members one at a time leaves the directory itself -- so the pair still
+# collides when the archive is extracted on a case-insensitive filesystem,
+# which is the whole point of this table.  `test -f' could never see it: the
+# guard is `exists at all', spelled with -f and -d because this test has no -e.
 while read kind a b
 do
 	case $kind in
-	NAME)	if test -f $a
+	NAME)	if test -f $a -o -d $a
 		then	mv $a $b && echo $b >> $NT
 		fi ;;
-	DROP)	if test -f $a
-		then	rm -f $a && echo $a >> $DT
+	DROP)	if test -f $a -o -d $a
+		then	rm -rf $a && echo $a >> $DT
 		fi ;;
 	esac
 done < /usr/tmp/mkv10.tab
 
 echo "mkv10: renamed `wc -l < $NT`, dropped `wc -l < $DT`"
 rm -f $NT $DT /usr/tmp/mkv10.tab
+
+# ---- the same case and archive discipline the machine applies --------------
+# casenames settles TAPE names -- which spelling of a tape path survives the
+# merge -- and that is all it can settle, because it runs during extraction.
+# casefix and arcfix settle the TREE: the /usr-relative renames and the
+# dissolution of every source archive into a directory of its members.  The
+# machine applies those two in updatebuild, and until now this script did not,
+# so a tree built from the tapes and a tree built by a machine disagreed in
+# 699 files -- 91 of them archives that were still archives here.  Two paths
+# to one tree must apply one discipline.  The lists are the same two files;
+# only the root differs.
+if test -f $GEN/casefix
+then
+	while read op a b junk
+	do
+		case $op in
+		mv)	if test -f /v10/usr/$a -o -d /v10/usr/$a
+			then
+				if test ! -f /v10/usr/$b -a ! -d /v10/usr/$b
+				then mv /v10/usr/$a /v10/usr/$b
+				fi
+			fi ;;
+		rm)	if test "$b" = DIR
+			then rm -r /v10/usr/$a 2>/dev/null || :
+			else rm -f /v10/usr/$a
+			fi ;;
+		esac
+	done < $GEN/casefix
+fi
+
+if test -f $GEN/arcfix
+then
+	while read op a b
+	do
+		case $op in
+		x)	if test -f /v10/usr/$a
+			then
+				D=`dirname /v10/usr/$a`
+				if test -d $D/$b
+				then
+					rm /v10/usr/$a
+				else
+					(cd $D && mkdir .ax$$ && cd .ax$$ && ar x ../`basename $a`) || exit 1
+					ar t /v10/usr/$a > $D/.ax$$/ORDER || exit 1
+					rm /v10/usr/$a
+					mv $D/.ax$$ $D/$b || exit 1
+				fi
+			fi ;;
+		m)	if test -f /v10/usr/$a
+			then mv /v10/usr/$a `dirname /v10/usr/$a`/$b
+			fi ;;
+		d)	rm -f /v10/usr/$a ;;
+		r)	rm -f /v10/usr/$a ;;
+		esac
+	done < $GEN/arcfix
+fi
+
+# ---- a source tree holds no compiled output --------------------------------
+# The tapes carry 2,093 files that are compiled output -- .o objects and
+# linked programs Bell left in their own source directories -- and every one
+# of them is a build's product, not source.  They go here, at the only moment
+# that can keep them out of every archive downstream: v10.tar is what mkipnx
+# and mkimage build from, so a binary admitted here is a binary in the
+# distribution for ever.
+#
+# NOT A LIST.  A list of 2,093 paths would be a second statement of what the
+# tapes hold and would drift from them the moment either changed.  The
+# definition is the test: file(1) reads the a.out magic -- 0407, 0410, 0411,
+# 0413 and 0406 all reach its `exec' label and print `executable' -- so a
+# file is compiled output because its own first two bytes say so, and objects
+# and programs go by the same rule because they carry the same magic.
+#
+# The bootstrap does not lose anything: a machine compiles with /bin/cc,
+# /bin/as, /bin/ld and /lib, which mkimage puts on the disk from the builder,
+# and no rule in build/mkfile reads a program out of /usr/src to run it.
+BT=/usr/tmp/mkv10.bins
+rm -f $BT
+for d in `ls /v10/usr | grep -v '^ipnx$' | grep -v '^tmp$'`
+do
+	find /v10/usr/$d -type f -print
+done | xargs file | grep ':.*executable' | sed 's|:.*||' > $BT
+xargs rm -f < $BT
+echo "mkv10: `wc -l < $BT` compiled files dropped -- a source tree holds none"
+rm -f $BT
 
 # ---- the archive ----------------------------------------------------------
 # WRITTEN OUTSIDE THE TREE IT IS ARCHIVING.  tar has no --exclude here, and an
@@ -137,8 +239,19 @@ do
 	test -d /v10/usr/$d || { echo "mkv10: usrtrees names $d and it is missing"; exit 1; }
 done
 
-rm -f $TAPES/secombe.tar $TAPES/sellers.tar $TAPES/milligan.tar
-rm -f $TAPES/v10blit.tar $TAPES/v10src.tar $TAPES/r70include.tar
+# AND THE TREE GOES, NOW THAT IT IS IN THE ARCHIVE.  mkipnx is the next step
+# of the bootstrap and it refuses to extract onto a disk that already holds a
+# source tree -- rightly, since it would be merging two extractions.  The
+# archive is the output of this script; the tree was scaffolding for it.
+for d in `grep '^[a-z0-9]' $GEN/usrtrees`
+do
+	rm -rf /v10/usr/$d
+done
+
+# THE TAPES ARE NOT DELETED.  They were, when $TAPES meant a scratch copy in
+# /usr/tmp that this script had no further use for.  $TAPES is the share now,
+# so those two lines were pointed straight at the Mac's own tape archive --
+# 430 MB that no build can recreate.  Nothing here writes to $TAPES at all.
 
 # v10's kernel does not sync on halt -- md/machdep.c's boot() calls death()
 # without one -- so an archive written here and then left by ^E is not on the

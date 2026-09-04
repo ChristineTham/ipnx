@@ -1,0 +1,392 @@
+# Files the build WRITES OVER, and that ipnxclean puts back.
+#
+# ipnxbuild's derived list is a set difference of NAMES, so it sees a file that
+# appeared and is blind to one that CHANGED.  Every row below was on the tapes
+# and is rewritten in place by a rule that is the tape's own, so deleting them
+# would be wrong, and leaving them rewritten is what makes a tree that has
+# built and cleaned stop matching the archive it came from.  ipnxbuild copies
+# each aside before it builds anything; ipnxclean copies it back.
+#
+# NOT ONE ROW WAS GUESSED.  The first seven came from diffing a machine that
+# had run ipnxbuild and ipnxclean against an archive extracted straight from
+# the tapes.  The other eighteen the BUILD ITSELF named: ipnxbuild drops a
+# stamp before building and afterwards asks find(1) for every file under the
+# ten roots newer than it, subtracts the derived set, and prints whatever is
+# left that is not listed here.  It printed exactly eighteen paths, all
+# eighteen present in the archive, and this is that output.
+#
+# TWO FIELDS: A NUMBER AND A /usr-RELATIVE PATH.  The number is the name the
+# copy is stored under, because sys/dir.h:2 is `#define DIRSIZ 14' and these
+# are paths.  It is written down rather than counted, because six of these
+# files are called y.tab.h and a basename would collide, and because a counter
+# assigned inside `while read ... done < file' is lost in the subshell this
+# shell forks for a redirected compound command.  A new row takes the next
+# free number; ipnxbuild says so rather than overwriting if two rows share one.
+
+# --- REGENERATED, AND THE TAPE SHIPS THE RESULT ANYWAY -------------------
+# sys/io/mkfile's `%.x: %.c' is `cc $CFLAGS -S' then c2 and as, with the
+# `rm $stem.s' COMMENTED OUT on the tape, so every .x member leaves its
+# assembly in the source directory.  camac is the only one whose .s the tape
+# also ships, and line 2 of that file is
+# `.stabs "vaxpcc2",0xf0,0,17665,780003333' -- a date, 19 September 1994 --
+# so a rebuild cannot reproduce the bytes even in principle.
+01 sys/io/camac.s
+
+# spell/mkfile:18-19 is `brspell: pcode list british local stop' and
+# `./pcode list british local stop >brspell'; amspell is the same rule with
+# the American list.  The tape ships both, 164,882 and 164,807 bytes, AND the
+# rules that regenerate them -- and :16 and :37 then `rm -f ... brspell', so
+# the tape's own build does not keep them either.  The redirection truncates
+# before pcode runs, so a pcode that fails leaves nothing at all, which is how
+# a 0-byte brspell once reached an archive.
+02 src/cmd/spell/brspell
+03 src/cmd/spell/amspell
+
+# lint/mkfile:55-62 pipes each llib source through cpp and lint1 into the .ln
+# beside it: `/lib/cpp -C -Dlint llib-lc | ./lint1 -v > llib-lc.ln'.  Three of
+# the four llib files have a .ln on the tape; llib-ltermcap has none.
+04 src/cmd/lint/llib-lc.ln
+05 src/cmd/lint/llib-lipc.ln
+06 src/cmd/lint/llib-lport.ln
+
+# cyntax is v10's own lint and keeps its libraries the same way --
+# cyntax/lib/mkfile:5-8, `all: libc libj' and
+# `/lib/cpp -M -I/usr/jerq/include llib-lj | ${CCOM} -llibj - out && ${CEM} -p
+# out && mv out libj'.
+07 src/cmd/cyntax/lib/libc
+08 src/cmd/cyntax/lib/libj
+
+# pascal/libpc/mkfile:45-48 is `${RM} libpc', `${AR} cr libpc ...',
+# `${RANLIB} libpc' -- an ar archive built in the source directory under the
+# same name as a file the tape ships there.
+09 src/cmd/pascal/libpc/libpc
+
+# prefer/prefawk/mkfile:23-24 is `proctab.c: maketab' and `./maketab
+# >proctab.c' -- a table a program in the same directory prints.  awk keeps
+# its proctab.c the same way.
+10 src/cmd/prefer/prefawk/proctab.c
+
+# --- yacc's OTHER TWO OUTPUTS, WHICH THE TAPE ALSO SHIPS -----------------
+# y2.c:944 writes y.tab.h under lowercase -d and y.debug under capital -D, so
+# any package built with either flag rewrites the copy sitting beside its .y.
+11 src/cmd/ccom/vax/y.tab.h
+12 src/cmd/ccom/vax/y.debug
+13 src/cmd/egrep/y.tab.h
+14 src/cmd/ideal/y.tab.h
+15 src/cmd/picasso/y.tab.h
+16 src/cmd/prefer/prefawk/y.tab.h
+17 src/cmd/visi/y.tab.h
+
+# --- INSTALLED OVER, FROM ELSEWHERE IN THE TREE --------------------------
+# mkfile:1784 is `cd $SRC/netfs/libnetb; cp rf.h $ROOT/usr/include/rf.h', so
+# netfs's header replaces the tape's /usr/include copy.
+18 include/rf.h
+
+# ether installs itself (mkfile:5051-5057): its own rules put ethernet.h and
+# order.h into /usr/include/sys, and the header it installs declares
+# `struct ether_in' where the tape's /usr/include copy declares
+# `struct etherpup'.
+19 include/sys/ethernet.h
+
+# --- TOUCHED, NOT REWRITTEN ----------------------------------------------
+# sail/mkfile:63-66 is `externs.h: ${I}/stdio.h ...' with the recipe `touch
+# externs.h', and player.h depends on externs.h.  A touch changes the mtime
+# and not one byte, and `find -newer' cannot tell that from a rewrite -- so
+# these are listed to keep the check quiet, and restoring them copies
+# identical bytes.  f77/mkfile:16 is `compiler: f77 f77pass1', an aggregate
+# whose name is also a 0-byte file the tape ships beside it.
+20 src/games/sail/externs.h
+21 src/games/sail/player.h
+22 src/cmd/f77/compiler
+
+# --- MEASURED, RULE NOT YET IDENTIFIED -----------------------------------
+# These three the check named and the greps did not explain: nupas/common's
+# mail.h appears in its mkfile only as a PREREQUISITE (:10-11), mpictures'
+# mkfile does not mention tmac.pictures, and prefer/misc's does not mention
+# penter.  They are listed because the measurement is the evidence -- each was
+# in the tree before the build and had a newer mtime after it, and neither is
+# in the derived set -- and named here so that whoever finds the rule can put
+# it in this comment rather than rediscovering the fact.
+23 src/cmd/nupas/common/mail.h
+24 src/cmd/postscript/mpictures/tmac.pictures
+25 src/cmd/prefer/misc/penter
+
+# pascal/pi's two generated headers, which the tape also ships.  pi/mkfile:74-77
+# is `opcode.h: OPnames.h opc.c', `${RM} opcode.h', `opc >opcode.h' -- a table
+# a program in the same directory prints, exactly like prefer's proctab.c --
+# and :124 is `yy.h: y.tab.h'.  Both appeared only once pc0's tmp directory
+# existed and pascal built past it, which is why the first run of the check did
+# not name them.
+26 src/cmd/pascal/pi/opcode.h
+27 src/cmd/pascal/pi/yy.h
+
+# struct's yacc pair, which appeared only once the package built far enough to
+# run yacc.  mkfile:66-67 is `beauty.c y.tab.h: beauty.y' and `yacc -d beauty.y
+# && mv y.tab.c beauty.c' -- ONE rule with TWO targets, so patch touching the
+# grammar puts both out of date and the rule rewrites the tape's copy of each.
+# That is also the proof the grammar's own repair is right: the file that
+# compiled this round was regenerated from the patched beauty.y.
+28 src/cmd/struct/beauty.c
+29 src/cmd/struct/y.tab.h
+
+# ---- 30..251: THE REST OF THE OVERWRITE SET, DERIVED NOT OBSERVED ------------
+# The 29 rows above were found by diffing a built machine against the tapes and
+# by the build naming them at runtime.  That method only ever finds what the
+# round it ran on happened to touch, which is why ipnxbuild reported `403 files
+# overwritten in place, 29 of them saved' -- 374 tape files rewritten with
+# nothing kept, and no rm can undo an overwrite.  That difference is the whole
+# reason two archives exist: mkipnx:26-28 says ipnx.tar and ipnxorig.tar `hold
+# the same tree or one of them is lying', and with unprotected overwrites the
+# tree after a clean cannot equal the tree before, so the second name is the
+# artefact of the equation failing.
+#
+# These 222 are derived from the build files instead of observed: every path a
+# makefile, Makefile, mkfile or u_Makefile names as its own target or in an
+# OBJECTS/OFILES/OBJS/OBJ/LOBJS list, AND which exists in the tree straight off
+# the tapes.  A rule that writes over its own source is exactly an overwrite.
+# The comment on each row is the build file and line that names it, so every one
+# can be checked against its own recipe.  250 paths qualify; 29 were already
+# above; these are the remaining 222.
+30 src/cmd/2500/helptab.c
+31 src/cmd/2500/x.tab.h
+32 src/cmd/PDP11/11cc.c
+33 src/cmd/PDP11/11cc.h
+34 src/cmd/adb/comm/defs.h
+35 src/cmd/backup.old/cyntax
+36 src/cmd/backup.old/poot
+37 src/cmd/backup.old/ship.adm
+38 src/cmd/backup.old/ship.usr
+39 src/cmd/backup.old/shipwild
+40 src/cmd/basic/bas/tokens.h
+41 src/cmd/basic/bite/src/tags
+42 src/cmd/bcp/stdocr.h
+43 src/cmd/bison/shipped
+44 src/cmd/cfront/cfront/y.tab.c
+45 src/cmd/cfront/cfront2.00/cfront.h
+46 src/cmd/cfront/cfront2.00/y.tab.c
+47 src/cmd/cfront/ocfront/y.tab.c
+48 src/cmd/cfront/ooptcfront/cfront.h
+49 src/cmd/cfront/ooptcfront/y.tab.c
+50 src/cmd/cfront/optcfront/y.tab.c
+51 src/cmd/cfront/ptcfront/y.tab.c
+52 src/cmd/cfront/xptcfront/y.tab.c
+53 src/cmd/chuck/install
+54 src/cmd/chuck/ship
+55 src/cmd/cyntax/cyn/bits.c
+56 src/cmd/cyntax/lib/libg
+57 src/cmd/cyntax/sets/sets.lex.c
+58 src/cmd/dag/parsedag.c
+59 src/cmd/dag/parsedag.h
+60 src/cmd/ex/tags
+61 src/cmd/f2c/doc/appB.x
+62 src/cmd/f2c/f2c.1
+63 src/cmd/f2c/gram.c
+64 src/cmd/f2c/lt
+65 src/cmd/f2c/output.h
+66 src/cmd/f2c/tokdefs.h
+67 src/cmd/f2c/version.c
+68 src/cmd/f2c/xsum.out
+69 src/cmd/f2c/zap
+70 src/cmd/f77/defs
+71 src/cmd/f77/gram.c
+72 src/cmd/f77/machdefs
+73 src/cmd/f77/tokdefs
+74 src/cmd/gcc/cexp.c
+75 src/cmd/gcc/expr.h
+76 src/cmd/gcc/gnulib
+77 src/cmd/gcc/install
+78 src/cmd/gcc/parse.tab.c
+79 src/cmd/gre/DEPEND
+80 src/cmd/ideal/ideal.h
+81 src/cmd/lint/cgram.c
+82 src/cmd/monk/cmd/monk/cdb_manage.c
+83 src/cmd/monk/db/acm
+84 src/cmd/monk/db/acm.comp
+85 src/cmd/monk/db/attrib
+86 src/cmd/monk/db/centerpb
+87 src/cmd/monk/db/centerpb.comp
+88 src/cmd/monk/db/cspress
+89 src/cmd/monk/db/cspress.comp
+90 src/cmd/monk/db/form1
+91 src/cmd/monk/db/form1.comp
+92 src/cmd/monk/db/global
+93 src/cmd/monk/db/global.comp
+94 src/cmd/monk/db/im
+95 src/cmd/monk/db/im.comp
+96 src/cmd/monk/db/kluwer
+97 src/cmd/monk/db/kluwer.comp
+98 src/cmd/monk/db/letter
+99 src/cmd/monk/db/letter.comp
+100 src/cmd/monk/db/macro
+101 src/cmd/monk/db/memo
+102 src/cmd/monk/db/memo.comp
+103 src/cmd/monk/db/model
+104 src/cmd/monk/db/model.comp
+105 src/cmd/monk/db/research
+106 src/cmd/monk/db/research.comp
+107 src/cmd/monk/db/rp
+108 src/cmd/monk/db/rp.comp
+109 src/cmd/monk/db/song
+110 src/cmd/monk/db/song.comp
+111 src/cmd/monk/db/summary
+112 src/cmd/monk/db/tc
+113 src/cmd/monk/db/tc.comp
+114 src/cmd/monk/db/tm
+115 src/cmd/monk/db/tm.comp
+116 src/cmd/monk/o.db/acm
+117 src/cmd/monk/o.db/acm.comp
+118 src/cmd/monk/o.db/attrib
+119 src/cmd/monk/o.db/centerpb
+120 src/cmd/monk/o.db/centerpb.comp
+121 src/cmd/monk/o.db/cspress
+122 src/cmd/monk/o.db/cspress.comp
+123 src/cmd/monk/o.db/form1
+124 src/cmd/monk/o.db/form1.comp
+125 src/cmd/monk/o.db/global
+126 src/cmd/monk/o.db/global.comp
+127 src/cmd/monk/o.db/im
+128 src/cmd/monk/o.db/im.comp
+129 src/cmd/monk/o.db/kluwer
+130 src/cmd/monk/o.db/kluwer.comp
+131 src/cmd/monk/o.db/letter
+132 src/cmd/monk/o.db/letter.comp
+133 src/cmd/monk/o.db/macro
+134 src/cmd/monk/o.db/memo
+135 src/cmd/monk/o.db/memo.comp
+136 src/cmd/monk/o.db/model
+137 src/cmd/monk/o.db/model.comp
+138 src/cmd/monk/o.db/research
+139 src/cmd/monk/o.db/research.comp
+140 src/cmd/monk/o.db/rp
+141 src/cmd/monk/o.db/rp.comp
+142 src/cmd/monk/o.db/song
+143 src/cmd/monk/o.db/song.comp
+144 src/cmd/monk/o.db/summary
+145 src/cmd/monk/o.db/tc
+146 src/cmd/monk/o.db/tc.comp
+147 src/cmd/monk/o.db/tm
+148 src/cmd/monk/o.db/tm.comp
+149 src/cmd/movie/bowell
+150 src/cmd/neqn/e.def
+151 src/cmd/netnews/src/getdate.c
+152 src/cmd/netnews/src/tags
+153 src/cmd/nupas/4bsd/config.c
+154 src/cmd/nupas/attin/config.c
+155 src/cmd/nupas/mips/config.c
+156 src/cmd/nupas/s5.3k/config.c
+157 src/cmd/nupas/s5/config.c
+158 src/cmd/nupas/sgi/config.c
+159 src/cmd/nupas/sun4bsd/config.c
+160 src/cmd/nupas/v10/config.c
+161 src/cmd/odist/paths.h
+162 src/cmd/odist/pax/src/cmd/pax/cpio
+163 src/cmd/odist/pax/src/cmd/pax/tar
+164 src/cmd/odist/pax/src/lib/libx/mkhdr
+165 src/cmd/paper/paper
+166 src/cmd/pascal/pc0/0.h
+167 src/cmd/pascal/pc0/opcode.h
+168 src/cmd/pascal/pc0/y.tab.h
+169 src/cmd/pascal/pc0/yy.h
+170 src/cmd/pascal/pi/0.h
+171 src/cmd/pascal/px/Version.c
+172 src/cmd/picasso/prevy.tab.h
+173 src/cmd/pico/x.tab.h
+174 src/cmd/prefer/misc/pbib
+175 src/cmd/prefer/misc/pconvert
+176 src/cmd/prefer/misc/pdoc
+177 src/cmd/prefer/prefawk/prevy.tab.h
+178 src/cmd/prefer/styles/acm
+179 src/cmd/prefer/styles/apa
+180 src/cmd/prefer/styles/att
+181 src/cmd/prefer/styles/ieee
+182 src/cmd/prefer/styles/lsa
+183 src/cmd/prefer/styles/pami
+184 src/cmd/prefer/styles/spectrum
+185 src/cmd/pret/x.tab.h
+186 src/cmd/refer/update/runup1.c
+187 src/cmd/refer/update/runup2.c
+188 src/cmd/refer/update/runup3.c
+189 src/cmd/refer/update/runup4.c
+190 src/cmd/refer/update/runup6.c
+191 src/cmd/refer/update/runup7.c
+192 src/cmd/refer/update/runup8.c
+193 src/cmd/sml/src/mips/all
+194 src/cmd/sml/src/mips/mipsdecode.sml
+195 src/cmd/sml/src/mips/opcodes.sml
+196 src/cmd/spitbol/spitv35.ppmin
+197 src/cmd/spitbol/spitv35.s
+198 src/cmd/spitbol/spitv35.serr
+199 src/cmd/spitbol/spitv35.src
+200 src/cmd/spitbol/spitv35.tok
+201 src/cmd/sum/sum.bundle
+202 src/cmd/troff/Old/devcat/update
+203 src/cmd/troff/ancient.nroff/nrtab.dt
+204 src/cmd/troff/ancient.nroff/rqtab.dt
+205 src/cmd/troff/ancient.nroff/suftab
+206 src/cmd/twig/machine.h
+207 src/cmd/twig/sym.h
+208 src/cmd/twig/walker.c1
+209 src/cmd/twig/y.tab.c
+210 src/cmd/twig/y.tab.h
+211 src/cmd/upas/4bsd/config.c
+212 src/cmd/upas/attin/../common/sys.h
+213 src/cmd/upas/attin/config.c
+214 src/cmd/upas/common/mail.h
+215 src/cmd/upas/cray/../common/sys.h
+216 src/cmd/upas/cray/config.c
+217 src/cmd/upas/s5.3k/config.c
+218 src/cmd/upas/s5/config.c
+219 src/cmd/upas/sgi/../common/sys.h
+220 src/cmd/upas/sgi/config.c
+221 src/cmd/upas/sun4bsd/../common/sys.h
+222 src/cmd/upas/sun4bsd/config.c
+223 src/cmd/upas/v10/../common/sys.h
+224 src/cmd/upas/v10/config.c
+225 src/cmd/view2d/metheus
+226 src/cmd/worm/oscsi/inc/scsi.h
+227 src/cmd/worm/oscsi/scsi.cpio
+228 src/cmd/worm/scsi/inc/scsi.h
+229 src/cmd/worm/scsi/scsi.cpio
+230 src/cmd/worm/shipped
+231 src/cmd/worm/wild
+232 src/dk/cmd/pupu/pupu.h
+233 src/games/rogue/tags
+234 src/ipc/libin/cyntax
+235 src/ipc/libipc/cyntax
+236 src/ipc/mgrs/common/cyntax
+237 src/ipc/mgrs/dkmgr/cyntax
+238 src/ipc/mgrs/ndkmgr/cyntax
+239 src/ipc/mgrs/svcmgr/cyntax
+240 src/ipc/mgrs/tcpmgr/cyntax
+241 src/libcc/balloc.t
+242 src/libcc/getbitmap.t
+243 src/libcc/inbitmap.t
+244 src/libcc/install
+245 src/libcc/outbitmap.t
+246 src/libcc/ship
+247 sys/boot/bb/k
+248 sys/boot/uvax/1kmscp
+249 sys/boot/uvax/4kmscp
+250 sys/ml/clockparm.s
+251 sys/ml/traplist.s
+
+
+# ---- 252..262: yacc AND lex OUTPUTS THE TAPE SHIPS -------------------------
+# derived's rule 4 names y.tab.c, y.tab.h, y.debug, y.output and lex.yy.c for
+# every package whose build files run yacc or lex, because no object list can
+# see them.  For these eleven the TAPE ships the file as well, so a build
+# rewrites it in place and sweeping it by name would destroy tape content.
+# They are overwrites, not products: derived drops them, this restores them.
+# Checked with test -e against the committed tree, which is how they were
+# separated from the 5276 that are absent from it.
+252 src/cmd/2500/y.debug
+253 src/cmd/2500/y.tab.c
+254 src/cmd/2500/y.tab.h
+255 src/cmd/pascal/pxp/y.tab.c
+256 src/cmd/pascal/pxp/y.tab.h
+257 src/cmd/pico/y.debug
+258 src/cmd/pico/y.output
+259 src/cmd/pico/y.tab.c
+260 src/cmd/pico/y.tab.h
+261 src/ipc/internet/htable/y.tab.h
+262 src/ipc/servers/y.tab.c

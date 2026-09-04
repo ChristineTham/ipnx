@@ -58,8 +58,7 @@ install:V: px
 	# strip px
 	rm -f ${DESTDIR}/usr/lib/pascal/px
 	cp px ${DESTDIR}/usr/lib/pascal/px
-	chown bin ${DESTDIR}/usr/lib/pascal/px
-	chgrp bin ${DESTDIR}/usr/lib/pascal/px
+	/etc/chown bin,bin ${DESTDIR}/usr/lib/pascal/px
 	chmod o-w,g+w ${DESTDIR}/usr/lib/pascal/px
 
 clean:

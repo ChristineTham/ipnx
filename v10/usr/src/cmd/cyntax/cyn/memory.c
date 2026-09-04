@@ -55,7 +55,9 @@ struct phead
 	phead	*ph_next;
 };
 
-extern char	*brk();
+extern int	brk();		/* ipnx: libc's brk returns int, and cyntax
+				 * -- which is the lint -- refuses the tape's
+				 * `char *brk()' as multiply declared */
 extern char	*sbrk();
 
 char	*alloc_ptr;

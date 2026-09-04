@@ -1,11 +1,16 @@
 all:V:	bb lprint nexit.o
 	:
 
-bb:V:	bb.o
-	:
+# makefile:3 and :5 are `bb: bb.o' and `lprint: lprint.o' with no recipe, which
+# make completes from its built-in .o rule -- `$(CC) $(LDFLAGS) $@.o -o $@'.
+# mk has no built-in rules, so the converter made both VIRTUAL and `mk all'
+# reported success having linked nothing; install's `cp bb nexit.o /usr/lib'
+# and `cp lprint /usr/bin' then had nothing to copy.  make's rule, spelled.
+bb:	bb.o
+	cc ${CFLAGS} bb.o -o bb
 
-lprint:V:	lprint.o
-	:
+lprint:	lprint.o
+	cc ${CFLAGS} lprint.o -o lprint
 
 install:	all
 	cp bb nexit.o /usr/lib

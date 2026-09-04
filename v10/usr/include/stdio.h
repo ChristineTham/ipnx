@@ -12,7 +12,6 @@ extern	struct	_iobuf {
 
 #define	_IOREAD	01
 #define	_IOWRT	02
-#define	_IOFBF	0
 #define	_IONBF	04
 #define	_IOMYBUF	010
 #define	_IOEOF	020

@@ -94,12 +94,10 @@ clean:
 
 install: a.out
 	cp ${ERRORSTRINGS} ${LIBDIR}/${ERRORSTRINGS}
-	chown bin ${LIBDIR}/${ERRORSTRINGS}
-	chgrp bin ${LIBDIR}/${ERRORSTRINGS}
+	/etc/chown bin,bin ${LIBDIR}/${ERRORSTRINGS}
 	chmod o-w,g+w ${LIBDIR}/${ERRORSTRINGS}
 	cp a.out ${INSTALLNAME}
-	chown bin ${INSTALLNAME}
-	chgrp bin ${INSTALLNAME}
+	/etc/chown bin,bin ${INSTALLNAME}
 	chmod o-w,g+w ${INSTALLNAME}
 
 depend:	sources

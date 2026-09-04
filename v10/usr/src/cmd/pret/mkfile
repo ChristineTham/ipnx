@@ -15,8 +15,12 @@ pret:	${OBJS} pret.h pret.d
 
 # yacc -d, and both products are real targets: y.tab.c is consumed on the
 # spot, y.tab.h stays for x.tab.h to compare against.
-pret.o y.tab.h:	pret.y pret.expr.c
-	yacc -d pret.y
+# -Dd, not -d: pret.y:6 is `#define YYDEBUG 1', so yaccpar's `# include
+# "y.debug"' is live, and y2.c:944 opens y.debug under Dflag (capital D)
+# while dflag (lowercase) writes only y.tab.h -- y2.c:86-97.  With -d alone
+# the compile of y.tab.c fails with `Can't find include file y.debug'.
+pret.o y.tab.h y.debug:	pret.y pret.expr.c
+	yacc -Dd pret.y
 	${CC} ${CFLAGS} -c y.tab.c
 	rm -f y.tab.c
 	mv y.tab.o pret.o
@@ -38,4 +42,4 @@ x.tab.h:	y.tab.h
 pret0.o pret1.o pret2.o pret3.o pret4.o pret6.o pret7.o pret8.o pret9.o:	pret.h pret.d
 
 clean:V:
-	rm -f *.[oO] pret y.tab.c y.tab.h lex.yy.c
+	rm -f *.[oO] pret y.tab.c y.tab.h y.debug lex.yy.c

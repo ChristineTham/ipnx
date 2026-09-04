@@ -5,7 +5,10 @@ VERSION = 2.0
 O=o
 BUILTINS=
 
-MKSTR = /n/bowell/usr/bin/mkstr
+# mkstr FROM PATH, not from bowell.  The tape names an absolute path on
+# Bell's own machine -- /n/bowell/usr/bin/mkstr -- which answers `not
+# found' here; build/mkfile builds cmd/mkstr and installs it in /usr/bin.
+MKSTR = mkstr
 EYACC = /usr/bin/eyacc
 RM = rm -f
 GET = touch
@@ -52,7 +55,13 @@ OBJS =	ato.$O \
 	yypanic.$O yyparse.$O yyprint.$O yyput.$O yyrecover.$O yyseman.$O yytree.$O \
 	p2put.$O stab.$O pcproc.$O pcfunc.$O pccaseop.$O pclval.$O
 
+# ${TMPDIR} HAS TO EXIST FIRST, and the tape does not ship it: an empty
+# directory has no tar members, so `tmp' was on Bell's machine and is on no
+# tape.  Without it mkstr answers `tmp/ato.c: No such file or directory', the
+# cc that follows has nothing to compile, and the whole pascal loop stops --
+# `*** Error code 1 / Stop.' -- after everything before pc0 had built.
 %.$O:	%.c
+	test -d ${TMPDIR} || mkdir ${TMPDIR}
 	${RM} ${TMPDIR}/$stem.c
 	${MKSTR} - ${ERRORSTRINGS} ${TMPDIR}/ $stem.c
 	(cd ${TMPDIR}; ${CC} ${CFLAGS} -c -I.. $stem.c; ${RM} ../$stem.$O; mv $stem.$O ..)
@@ -96,11 +105,11 @@ clean:
 
 install: a.out
 	cp ${ERRORSTRINGS} ${LIBDIR}/${ERRORSTRINGS}
-	chown bin,bin ${LIBDIR}/${ERRORSTRINGS}
+	/etc/chown bin,bin ${LIBDIR}/${ERRORSTRINGS}
 	chmod o-w,g+w ${LIBDIR}/${ERRORSTRINGS}
 	strip a.out
 	cp a.out ${INSTALLNAME}
-	chown bin,bin ${INSTALLNAME}
+	/etc/chown bin,bin ${INSTALLNAME}
 	chmod o-w,g+w ${INSTALLNAME}
 
 depend:	sources

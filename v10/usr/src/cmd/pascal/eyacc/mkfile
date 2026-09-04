@@ -11,8 +11,7 @@ install: eyacc
 	rm -f $D
 	strip eyacc
 	cp eyacc $D
-	chown bin $D
-	chgrp bin $D
+	/etc/chown bin,bin $D
 	chmod o-w,g+w $D
 
 ey1.o:	ey.h

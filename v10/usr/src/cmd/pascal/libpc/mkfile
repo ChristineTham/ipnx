@@ -61,7 +61,7 @@ sources:V: ${CMDS} ${SYS} ${EXTN} ${HDRS}
 
 install: libpc
 	cp libpc ${LIB}/libpc.a
-	chown bin,bin ${LIB}/libpc.a
+	/etc/chown bin,bin ${LIB}/libpc.a
 	chmod o-w,g+w ${LIB}/libpc.a
 	${RANLIB} ${LIB}/libpc.a
 

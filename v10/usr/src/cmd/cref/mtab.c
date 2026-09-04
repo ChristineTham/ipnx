@@ -174,6 +174,7 @@ main(argc,argv)	char	**argv;
 	i = -1;
 	while(++i < NUMS)
 		write(fo,tab[i].cl,sizeof(tab[i].cl));
+	exit(0);tt/* ipnx exit -- see PATCHES.md */
 
 }
 

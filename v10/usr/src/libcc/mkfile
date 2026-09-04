@@ -5,10 +5,17 @@ ARCHIVE=libcc.a
 %.t: %.c
 	${CC} ${CFLAGS} -c $stem.c && touch $stem.t
 
-${ARCHIVE}:	${OBJ}
-	ar r ${ARCHIVE} *.o
+# THE TAPE SHIPS THE STAMPS AND NOT THE OBJECTS.  balloc.t, getbitmap.t,
+# inbitmap.t and outbitmap.t are all on the tape (v10tapes/MANIFEST) with no
+# .o beside them, so the %.t rule below sees its stamp up to date, compiles
+# nothing, and `ar r libcc.a *.o' then creates an empty archive and `rm *.[oO]'
+# fails -- which is exactly how this package failed.  The archive names its own
+# members instead: no glob, no stamp, correct from any starting state.
+${ARCHIVE}:	balloc.c getbitmap.c inbitmap.c outbitmap.c
+	${CC} ${CFLAGS} -c balloc.c getbitmap.c inbitmap.c outbitmap.c
+	ar r ${ARCHIVE} balloc.o getbitmap.o inbitmap.o outbitmap.o
 	ranlib ${ARCHIVE}
-	rm *.[oO]
+	rm -f balloc.o getbitmap.o inbitmap.o outbitmap.o
 
 install: ${ARCHIVE}
 	cp ${ARCHIVE} /usr/lib

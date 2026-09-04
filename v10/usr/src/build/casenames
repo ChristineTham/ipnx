@@ -192,14 +192,7 @@ NAME	v10/usr/vol2/Faces/td/td.Z	v10/usr/vol2/Faces/td/u_td.Z
 NAME	v10/usr/vol2/Preface/mkfile	v10/usr/vol2/u_Preface/mkfile
 NAME	v10/usr/vol2/Preface/preface.ind	v10/usr/vol2/u_Preface/preface.ind
 NAME	v10/usr/vol2/Preface/preface.ms	v10/usr/vol2/u_Preface/preface.ms
-NAME	v10/usr/vol2/index/Junk/x	v10/usr/vol2/index/u_Junk/x
-NAME	v10/usr/vol2/index/Junk/x.awk	v10/usr/vol2/index/u_Junk/x.awk
-NAME	v10/usr/vol2/index/Junk/xchap2.idx	v10/usr/vol2/index/u_Junk/xchap2.idx
-NAME	v10/usr/vol2/index/Junk/xchap2.index	v10/usr/vol2/index/u_Junk/xchap2.index
-NAME	v10/usr/vol2/index/Junk/xchap2.log	v10/usr/vol2/index/u_Junk/xchap2.log
-NAME	v10/usr/vol2/index/Junk/xchap2.ps	v10/usr/vol2/index/u_Junk/xchap2.ps
-NAME	v10/usr/vol2/index/Junk/xindex.ms	v10/usr/vol2/index/u_Junk/xindex.ms
-NAME	v10/usr/vol2/index/Junk/xnotes	v10/usr/vol2/index/u_Junk/xnotes
+NAME	v10/usr/vol2/index/Junk	v10/usr/vol2/index/u_Junk
 NAME	v10/usr/vol2/index/Todo	v10/usr/vol2/index/u_Todo
 
 #### DROP  (105)

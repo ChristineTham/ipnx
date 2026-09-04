@@ -76,3 +76,6 @@ images/
 # Committing them would put half a gigabyte of tape into every clone to say
 # what v10superset/ already says, checked, in a form git can diff.
 tapes/
+
+# ipnx.tar never enters git (github is correct): v10/ holds the extracted tree.
+*.tar

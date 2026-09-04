@@ -258,13 +258,54 @@ cp /usr/src/build/updatebuild $WAS2
 # ONE FILE LIST, AND IT IS mkbuild's.  Naming the eighteen files and nine
 # subdirectories again here would be a second list, and a component list that
 # appears twice will disagree.  mkbuild folds a `/' destination to empty itself.
-sh /usr/src/build/mkbuild / $REPO || exit 1
+# THE REPOSITORY'S mkbuild, NOT THE MACHINE'S.  Running the machine's copy
+# makes the kit's file list one round old, and on a round that wipes /usr and
+# re-extracts it that copy comes from the ARCHIVE -- so it is not one round
+# old, it is as old as the archive, and a file newly added to build/src can
+# never arrive at all.  src/ipnx.mkfile proved it twice: `cp:
+# /usr/src/build/src/ipnx.mkfile: No such file or directory' from patch, which
+# exited 1 and skipped every stanza below it.  The old mkbuild's top-level loop
+# is `ls'-driven, so the NEW mkbuild does land -- one round too late to have
+# copied the file it was changed to copy.  Reading it from $REPO is the same
+# rule this script already follows for casefix, arcfix and mkfiles: the
+# repository is the source of truth, and the machine's copy is only its result.
+sh $REPO/mkbuild / $REPO || exit 1
 
 if test -f $WAS && cmp -s $WAS /usr/src/build/patch
 then
-	# unchanged: put the stamp back in front of the fresh copy
-	test -f /usr/src/cmd/.patched && echo done > /usr/src/cmd/.patched
+	# unchanged: put the stamp back in front of the fresh copy -- BUT ONLY ON
+	# THE FIRST PASS.  On the handoff pass this comparison cannot say
+	# anything: $WAS was copied from the patch that pass 1 had already
+	# installed, so it always reads `unchanged', and refreshing the stamp
+	# here buries pass 1's decision that patch had changed.  Pass 1 is also
+	# always the copy the ARCHIVE restored, so it is no use putting the
+	# remedy in its else branch -- that script is whatever mkipnx last wrote
+	# and cannot be relied on to have one.  The pass that CAN be relied on is
+	# this one, because the handoff exec's the copy mkbuild has just
+	# installed; so this is where the refusal goes.
+	#
+	# Measured: the round after `updatebuild' moved to $REPO/mkbuild printed
+	# `patch changed', handed off, refreshed the stamp, and `mk:
+	# /usr/src/cmd/.patched is up to date' -- patch ran zero times and
+	# mtab.c:179 still reported the archive's `tt'.
+	if test -z "$U2"
+	then
+		test -f /usr/src/cmd/.patched && echo done > /usr/src/cmd/.patched
+	fi
 else
+	# AND THE DECISION HAS TO SURVIVE THE HANDOFF BELOW.  Printing it was
+	# not enough: when THIS script also changed, it re-execs itself, and the
+	# second pass copies $WAS from the patch the first pass has already
+	# installed -- so cmp says identical, the branch above runs, and
+	# `echo done > .patched' puts the stamp back in front of a patch that
+	# has not run.  That is not hypothetical: the round that moved
+	# updatebuild to $REPO/mkbuild printed `patch changed', then
+	# `updatebuild changed -- running the new one', and patch appeared in
+	# the log ZERO times -- mtab.c still carried the archive's `tt' and
+	# every other repair was missing.  Removing the stamp makes the first
+	# pass's answer durable: the second pass's refresh is guarded on
+	# `test -f', so it cannot resurrect it.
+	rm -f /usr/src/cmd/.patched
 	echo "updatebuild: patch changed -- mk will re-run it"
 fi
 rm -f $WAS

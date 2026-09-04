@@ -5,11 +5,23 @@ date
 case ${1-xx} in
 autoboot)
 	echo Autoboot:
+	# EVERY CODE, INCLUDING THE ONES THIS CASE USED TO FALL THROUGH.  It had
+	# 0, 4 and 8 only -- v8/etc/rc:7-26 has 0, 4, 8, 12 and a `*' that exits --
+	# so a boot that printed `ROOT MODIFIED' and returned anything else carried
+	# straight on and mounted a root whose ON-DISK metadata fsck had just
+	# rewritten under the running kernel.  The in-core copy is then stale, and
+	# what that looks like is a /usr that df and mount both report as mounted
+	# while writes to it land on root, because root's /usr inode is no longer
+	# marked as a mount point -- and funmount answers EINVAL for the same
+	# reason.  A machine in that state cannot be repaired by anything typed at
+	# its own console, so this must stop rather than continue.
 	/etc/fsck -p
 	case $? in
 	0)	;;
 	4)	/etc/reboot -n ;;
-	8)	echo "reboot interrupted"; exit 1 ;;
+	8)	echo "fsck: automatic reboot failed -- help!"; exit 1 ;;
+	12)	echo "fsck: reboot interrupted"; exit 1 ;;
+	*)	echo "fsck: unknown status -- NOT continuing on a modified root"; exit 1 ;;
 	esac
 	;;
 esac
@@ -21,6 +33,56 @@ esac
 /etc/mount -a
 /etc/swapon -a
 /etc/mount
+
+# EVERYTHING BELOW IS v8/etc/rc:33-41, AND ITS ABSENCE WAS NOT A DECISION.
+# This file was written to the minimum that reached a login prompt, so a
+# per-boot requirement that does not stop a boot was simply never noticed --
+# three of them, all found in one session:
+#
+#  trap    v8/etc/rc:33.  Guards the housekeeping below against a stray signal.
+#  update  v8/etc/rc:34.  machdep.c:439-446 is the whole of boot(): RB_HALT ->
+#          death(), no sync.  Between halts this daemon IS the only thing
+#          writing dirty buffers back.  update.c opens /bin, /usr and /usr/bin
+#          "for cache benefit" and pause()s, which is why /etc/down has to kill
+#          it before umount -- iget.c:55-77's ifsbusy counts those held inodes.
+#  cron    v8/etc/rc:35.  /etc/crontab ships two entries (dmesg, atrun) and
+#          cron.c:28 reads exactly that path, so without this the table we
+#          install can never run.
+#  /tmp    v8/etc/rc:36-38.  fstab mounts only / and /usr, so /tmp is ON ROOT --
+#          and root has 1088 inodes of which proto-dev's 917 are device nodes.
+#          cc.c:178 puts /tmp/ctm<pid>1..5 there per compile and unlinks them
+#          only on the normal path, so orphans from every interrupted round
+#          accumulate for ever.  That is the `07,0100 : out of inodes' this
+#          project hit: ialloc restarts from the head of the i-list once
+#          (fs/alloc.c:418-434) and only then calls fserr.  ex3.7preserve is
+#          the right name here -- cmd/ex/makefile:1 is VERSION=3.7 and
+#          ex_tune.h:14-15 hardcode it; Admin/ulibfiles' ex3.6 is stale.
+#  lastboot v8/etc/rc:41.  /usr/adm exists -- build/mkfile:227 makes it.
+#
+# savecore (v8/etc/rc:31) is deliberately NOT here: its argument is a directory
+# and it writes crash dumps into /tmp, i.e. onto the filesystem this block
+# exists to protect, and ipnx-v10.m:67 already dumps into swap.
+trap "" 1 2 3
+
+# /etc/update IS NOT STARTED, AND THAT IS DELIBERATE.  It was added here today
+# on the reasoning that machdep.c:439-446's boot() does not sync, so a daemon
+# calling sync() every 30 seconds is the only thing writing dirty buffers back
+# between halts.  That reasoning is sound and the cost is not acceptable:
+# update.c:8-13 opens /bin, /usr and /usr/bin "for cache benefit" and then
+# pause()s forever, and iget.c:55-77's ifsbusy counts any held inode on a
+# filesystem, so while update lives `umount /usr' can only ever answer `In use'.
+# On a machine whose whole workflow is mounting and unmounting filesystems that
+# makes routine maintenance impossible -- measured, on the round that could not
+# unmount /usr to reformat it.  v8/etc/rc:34 does start it, and v8 gets away
+# with it because /etc/shutdown:16-17 kills every process before it unmounts;
+# ad-hoc work at the console has no such step.  The sync obligation stays with
+# the halt procedure, which is `sync; sync' before /etc/halt.
+/etc/cron &
+cd /tmp
+/usr/lib/ex3.7preserve -a
+rm -f *
+cd /
+date >> /usr/adm/lastboot
 
 cat /etc/motd
 

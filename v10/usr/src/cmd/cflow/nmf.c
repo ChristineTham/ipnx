@@ -118,7 +118,6 @@ char	*argv[];
 	}
 	exit(0);
 }
-#endif	/* ipnx endif: nmf.c:2 is never closed */
 /* ipnx gets -- see PATCHES.md */
 char *gets(s) char *s; {
 	extern char *fgets();
@@ -126,3 +125,4 @@ char *gets(s) char *s; {
 	if (fgets(s, 1024, stdin) == 0) return 0;
 	for (p = s; *p; p++) if (*p == 10) { *p = 0; break; }
 	return s; }
+#endif	/* ipnx endif: nmf.c:2 is never closed */

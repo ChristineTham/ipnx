@@ -3,8 +3,16 @@ BUILTINS =
 CFLAGS =
 CC = lcc
 
-%.o: %.c Efix cpt
-	test -d efix || mkdir efix
+# `efix' IS A PREREQUISITE, NOT A mkdir.  :37-39 is the tape's own rule --
+# `efix: defs tokdefs / mkdir efix / ln $prereq efix' -- and the hard links are
+# the whole point: the Efix'd source is compiled inside efix/, and CLAUDE.md
+# records that v10's cpp cannot resolve a quoted include out of tree and -I does
+# not help, so `#include "defs"' only works because defs is linked in beside it.
+# This rule used to carry `test -d efix || mkdir efix', which made the directory
+# EMPTY; the tape's rule then failed on its unguarded mkdir, the ln never ran,
+# and every object died on `can't find include file `defs''.  Naming efix here
+# gets mk to build it first, which a.out's own prerequisite list (:29) assumes.
+%.o: %.c efix Efix cpt
 	Efix $stem.c >efix/$stem.c
 	cpt $stem.c efix/$stem.c
 	$CC $CFLAGS -c efix/$stem.c

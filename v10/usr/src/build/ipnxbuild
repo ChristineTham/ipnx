@@ -37,6 +37,84 @@ case $TARGET in
 	# with `Not enough memory', and so does a flat 300-prerequisite
 	# aggregate; each quarter in a fresh mk runs to completion.  Measured
 	# on the machine, every combination.  One process, one walk.
+	# EVERY DERIVED FILE, NAMED BY THE BUILD THAT MAKES IT.  A sweep that
+	# has to work out afterwards what was derived gets it wrong, and this
+	# session is the evidence: patterns that deleted tape files, a magic
+	# test that could not see a generated header, an archive comparison
+	# that read `x linked to y' as a filename and deleted every hard link
+	# in the tree.  None of that is necessary.  The build knows what it
+	# wrote, because it can look at the tree before and after itself, and
+	# the difference is the answer with nothing inferred.
+	#
+	# /usr/ipnx, not build/: the list is not part of the source tree, and
+	# taripnx walks build/ but not /usr/ipnx.  ipb.was, not ipnxbuild.was
+	# -- sys/dir.h:2 is `#define DIRSIZ 14'.
+	# THE REPAIRS COME FIRST, AND THE SNAPSHOT AFTER THEM.  patch is part
+	# of the build -- mkfile makes $CMD/.patched a target whose
+	# prerequisite is $GEN/patch -- so a snapshot taken before it counts
+	# every header patch installs as derived, and the sweep then deletes
+	# seven files that belong in the tree: float.h, stdlib.h, stdarg.h,
+	# scsi.h, shares.h, lcc/unistd.h and sys/lnode.h, which mkipnx's own
+	# patch run puts in the archive.  Running the stamp's target here
+	# settles it in the right order and costs nothing: the quarters below
+	# then find it up to date.
+	mk -f /usr/src/build/mkfile /usr/src/cmd/.patched || exit 1
+
+	D=/usr/ipnx/derived
+	C=/usr/ipnx/consumed
+	test -d /usr/ipnx || mkdir /usr/ipnx
+	cd /usr
+	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+	do
+		test -d /usr/$d && find $d -type f -print
+	done | sort > /usr/tmp/ipb.was
+	cd /usr
+	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+	do
+		test -d /usr/$d && find $d -type d -print
+	done | sort > /usr/tmp/ipb.dwas
+	cd /
+
+	# AND A COPY OF EVERY FILE THE BUILD IS ABOUT TO WRITE OVER.  The list
+	# above is a difference of NAMES: it sees a file that appeared and is
+	# blind to one that changed.  build/preserve names the seven tape files
+	# a tape rule rewrites in place -- camac.s, brspell, three lint .ln
+	# libraries, libpc and sys/ethernet.h, each with its evidence -- and
+	# they are copied aside HERE, before anything is built, because after
+	# the build the originals are gone and no clean can invent them.
+	#
+	# STORED UNDER THE NUMBER ITS ROW CARRIES, and the index written here
+	# maps the number back to the path.  Not under the path -- v10's cp
+	# takes only -z (cp(1)) and cannot make directories -- and not under the
+	# basename, because six of the rows are called y.tab.h; and the number
+	# is READ rather than counted, because a counter assigned inside `while
+	# read ... done < file' is lost in the subshell this shell forks for a
+	# redirected compound command.  Two rows sharing a number is said out
+	# loud rather than silently overwriting one with the other.
+	PD=/usr/ipnx/pres
+	rm -rf $PD
+	mkdir $PD
+	rm -f /usr/ipnx/preserved
+	while read n f
+	do
+		case $n in
+		[0-9]*)	if test -f $PD/$n
+			then
+				echo "ipnxbuild: preserve: two rows share the number $n -- $f not saved"
+			else
+				if test -f /usr/$f
+				then
+					cp /usr/$f $PD/$n && echo "$n $f" >> /usr/ipnx/preserved
+				fi
+			fi ;;
+		esac
+	done < /usr/src/build/preserve
+
+	# THE STAMP THE OVERWRITE CHECK READS.  Dropped last, so `newer' means
+	# `written by the build' and not `written by patch', whose repairs are
+	# part of the tree mkipnx archives.
+	echo stamp > /usr/tmp/ipb.st
+
 	mk -f /usr/src/build/mkfile build1 || exit 1
 	mk -f /usr/src/build/mkfile build2 || exit 1
 	mk -f /usr/src/build/mkfile build3 || exit 1
@@ -54,6 +132,142 @@ case $TARGET in
 	mk -f /usr/src/build/mkfile cmds || exit 1
 	mk -f /usr/src/build/mkfile pkgs || exit 1
 	mk -f /usr/src/build/mkfile games || exit 1
+
+	# AND THE LIST, WRITTEN LAST.  `sort a a b | uniq -u' leaves the lines
+	# that appear once: everything in the tree now that was not in it
+	# before.  comm would do it too and needs both files sorted the same
+	# way and a flag per column; this needs one column.
+	cd /usr
+	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+	do
+		test -d /usr/$d && find $d -type f -print
+	done | sort > /usr/tmp/ipb.now
+	sort /usr/tmp/ipb.was /usr/tmp/ipb.was /usr/tmp/ipb.now | uniq -u | sed 's|^|/usr/|' > $D
+
+	# AND THE DIRECTORIES IT MADE.  Three empty ones -- local/lib,
+	# cmd/efl/efix, libplot/libblit/xplot -- were the whole remaining
+	# difference between an archive written by a built-and-cleaned machine
+	# and one extracted from the tapes, once the seven overwritten files
+	# were accounted for.  A directory holds no bytes, so this needs no
+	# copy aside: it is enough to know which ones were not there before.
+	# `sort -r' so a child is listed before its parent -- lexically
+	# `a/b' follows `a' -- and ipnxclean's rmdir then has a chance of
+	# succeeding on both.  rmdir refuses a directory that still holds
+	# anything, which is the whole safety: a directory the build made that
+	# a tape file now sits in stays.
+	cd /usr
+	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+	do
+		test -d /usr/$d && find $d -type d -print
+	done | sort > /usr/tmp/ipb.dnow
+	sort /usr/tmp/ipb.dwas /usr/tmp/ipb.dwas /usr/tmp/ipb.dnow | uniq -u | sort -r | sed 's|^|/usr/|' >> $D
+	rm -f /usr/tmp/ipb.dwas /usr/tmp/ipb.dnow
+
+	# AND WHAT IT CONSUMED.  A build does not only add: six rules
+	# regenerate a file the tape ships and then remove it -- lex's and
+	# m4's y.tab.c, make's gram.c, pcc's cgram.c and rodata.c,
+	# termcap.obj -- so a tree that has built lacks six files a tree that
+	# has not.  The same before-and-after answers it from the other side,
+	# and mkipnx reads this list so the archive it writes agrees with the
+	# archive a machine writes.
+	# THE CONSUMED LIST ACCUMULATES; IT IS NOT A REPORT ON THIS RUN.  Which
+	# files a build removes is a property of its RULES, not of the tree it
+	# started from: a tree seeded from an archive that already lacks them
+	# consumes nothing, the list comes back empty, and mkipnx then keeps
+	# six files the tapes restore -- measured, and the reason the two
+	# archives went back to differing by exactly those six.  Union with
+	# whatever is already known, so the set converges once and stays.
+	sort /usr/tmp/ipb.now /usr/tmp/ipb.now /usr/tmp/ipb.was | uniq -u > /usr/tmp/ipb.gone
+	test -f $C && cat $C >> /usr/tmp/ipb.gone
+	sort -u /usr/tmp/ipb.gone > /usr/tmp/ipb.c2
+
+	# AND A PRESERVED FILE IS NEVER CONSUMED.  The two lists would otherwise
+	# contradict each other: ipnxclean puts brspell back on this machine
+	# while mkipnx, reading `consumed', deletes it from the tree it builds
+	# from the tapes -- and the two archives differ by the file both halves
+	# were trying to keep.  spell's own mkfile:16 and :37 do `rm -f ...
+	# brspell' after installing it, so this is not hypothetical; the driver
+	# happens to copy the three files itself rather than run those targets,
+	# which is luck rather than design.  build/preserve wins.
+	grep '^[0-9]' /usr/src/build/preserve | sed 's|^[0-9]* ||' | sort > /usr/tmp/ipb.pk
+	sort /usr/tmp/ipb.pk /usr/tmp/ipb.pk /usr/tmp/ipb.c2 | uniq -u > $C
+	rm -f /usr/tmp/ipb.pk /usr/tmp/ipb.c2
+	rm -f /usr/tmp/ipb.gone
+
+	# AND WHAT IT OVERWROTE, ASKED RATHER THAN ASSUMED.  Every file under
+	# the ten roots newer than the stamp was written by the build; take away
+	# the ones that are NEW (the derived set) and what remains was already
+	# there and has changed.  Anything in that remainder which build/preserve
+	# does not name is a rule that has started rewriting a tape file, and the
+	# only way that goes unnoticed is if nobody asks.
+	#
+	# `sort A A B | uniq -u' is B minus A: A's lines appear at least twice
+	# and cannot be unique, B's own appear once.  The same idiom as the two
+	# lists above, twice -- once against derived, once against the list.
+	cd /usr
+	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
+	do
+		test -d /usr/$d && find $d -newer /usr/tmp/ipb.st -type f -print
+	done | sort > /usr/tmp/ipb.mod
+	grep '^[0-9]' /usr/src/build/preserve | sed 's|^[0-9]* ||' | sort > /usr/tmp/ipb.pl
+	sort $D $D /usr/tmp/ipb.mod | uniq -u > /usr/tmp/ipb.m2
+	sort /usr/tmp/ipb.pl /usr/tmp/ipb.pl /usr/tmp/ipb.m2 | uniq -u > /usr/tmp/ipb.m3
+	if test -s /usr/tmp/ipb.m3
+	then
+		echo "ipnxbuild: OVERWRITTEN AND NOT PRESERVED -- add these to build/preserve:"
+		sed 's|^|ipnxbuild:     |' /usr/tmp/ipb.m3
+	fi
+	# `test -f' first: with nothing saved the file is never created and
+	# `wc -l <' would answer with an error where a count belongs.
+	np=0
+	test -f /usr/ipnx/preserved && np=`wc -l < /usr/ipnx/preserved`
+	echo "ipnxbuild: `wc -l < /usr/tmp/ipb.m2` files overwritten in place, $np of them saved"
+
+	# AND PUT THE TAPE FILES BACK, WHICH IS THE OTHER HALF OF SAVING THEM.
+	# Deleting the derived set cannot undo an OVERWRITE, and this is the only
+	# place that can: build/preserve names the files a tape rule rewrites in
+	# place, the loop above copied each aside before anything was built, and
+	# without a restore they stay rewritten in the tree taripnx archives.
+	# Measured on 4 Sep 2026: ipnx.tar and ipnxorig.tar differed by exactly
+	# four files out of 26,368 -- sys/io/camac.s, spell/brspell,
+	# cyntax/lib/libc and pascal/libpc/libpc, preserve rows 01, 02, 07 and
+	# 09 -- and by nothing else.  The restore used to live in ipnxclean and
+	# went when that became one line; it belongs here anyway, because this
+	# is the script that did the overwriting.
+	#
+	# AFTER the accounting above, not before: the OVERWRITTEN AND NOT
+	# PRESERVED report exists to catch a rule that has started rewriting a
+	# tape file, and restoring first would make every such file look
+	# untouched.  After the install quarters too -- the BUILT libpc and
+	# camac.o are already in /usr/lib and /unix, so the source tree can go
+	# back to what the tape shipped.
+	if test -f /usr/ipnx/preserved
+	then
+		# TALLY INTO A FILE.  `done < file' makes this compound command
+		# a forked child in 1970s sh, so a variable assigned in the loop
+		# is lost when it exits -- cp's effect survives, a counter does
+		# not.  The save loop above counts the same way, through
+		# /usr/ipnx/preserved.
+		rm -f /usr/tmp/ipb.re
+		while read n f
+		do
+			if test -f /usr/ipnx/pres/$n
+			then
+				cp /usr/ipnx/pres/$n /usr/$f && echo $f >> /usr/tmp/ipb.re
+			fi
+		done < /usr/ipnx/preserved
+		nr=0
+		test -f /usr/tmp/ipb.re && nr=`wc -l < /usr/tmp/ipb.re`
+		echo "ipnxbuild: $nr overwritten files restored"
+		rm -f /usr/tmp/ipb.re
+		rm -rf /usr/ipnx/pres
+		rm -f /usr/ipnx/preserved
+	fi
+
+	rm -f /usr/tmp/ipb.was /usr/tmp/ipb.now /usr/tmp/ipb.st
+	rm -f /usr/tmp/ipb.mod /usr/tmp/ipb.pl /usr/tmp/ipb.m2 /usr/tmp/ipb.m3
+	cd /
+	echo "ipnxbuild: `wc -l < $D` derived, `wc -l < $C` consumed"
 	sync
 	exit 0
 	;;
@@ -134,11 +348,20 @@ fi
 # 2. one name per path, and no archives -- the same lists, /usr-relative.
 if test -f /usr/src/build/casefix
 then
-	while read op a b
+	# read takes a fourth field so a row may carry a comment -- without it
+	# the comment lands in $b and mv gets five arguments and answers with
+	# its usage line, EIGHT TIMES, once per commented row, and none of
+	# those renames happens.  The mv guard admits directories, spelled
+	# with -f and -d because this test has no -e.  Same shape as
+	# updatebuild's applier; the two must not drift.
+	while read op a b junk
 	do
 		case $op in
-		mv)	if test -f /v10/usr/$a -a ! -f /v10/usr/$b
-			then mv /v10/usr/$a /v10/usr/$b
+		mv)	if test -f /v10/usr/$a -o -d /v10/usr/$a
+			then
+				if test ! -f /v10/usr/$b -a ! -d /v10/usr/$b
+				then mv /v10/usr/$a /v10/usr/$b
+				fi
 			fi ;;
 		rm)	if test "$b" = DIR
 			then rm -r /v10/usr/$a 2>/dev/null || :

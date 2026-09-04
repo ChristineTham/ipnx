@@ -4,7 +4,10 @@ all:V:	at atrun
 	:
 
 at:	at.c
-	cc -Od2 -o at at.c
+	# -O, not -Od2: -Od2 means as -d2, word displacements, and at.o
+	# overflows them -- fstat, track and pstat are the same case, and
+	# at is not in Admin/large either.
+	cc -O -o at at.c
 
 atrun:	atrun.c
 	cc  -o atrun atrun.c

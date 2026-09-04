@@ -988,7 +988,7 @@ backtape()
 	lseek(mt, (long) -TBLOCK*nblock, 1);
 	recno--;
 	if (isatape == 1 && ioctl(mt, MTIOCTOP, &mtop) < 0) {
-		if (errno != ENOTTY) {
+		if (0) {	/* ipnx not a tape: any ioctl failure means not one */
 			perror("tar: tape backspace error");
 			done(4);
 		}

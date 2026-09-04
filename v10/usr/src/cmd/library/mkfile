@@ -34,15 +34,19 @@ install: library
 	if test ! -d ${INSLIB} ; \
 	then \
 	    mkdir ${INSLIB}; \
-	    chown bin ${INSLIB}; \
-	    chgrp bin ${INSLIB}; \
+	    /etc/chown bin,bin ${INSLIB}; \
 	    chmod 775 ${INSLIB}; \
 	    fi
-	for i in ${LFILES}; do ${INS} -m 444 -f ${INSLIB} ${TESTDIR}/$i; done;
-	${INS} -m 555 -f ${INSDIR} ${TESTDIR}/library
+	# -c AND THE MODE AFTERWARDS.  The tape rule is System V install --
+	# `-m MODE -f DIR file' -- and v10's install (cmd/install.sh) takes
+	# `[-s|-c] file dest' and nothing else, so -m arrived as the file to
+	# install: `mv: cannot access -m'.  Worse, install.sh:1 defaults
+	# cmd=/bin/mv, so without -c it MOVES the source out of the tree.
+	for i in ${LFILES}; do ${INS} -c ${TESTDIR}/$i ${INSLIB}/$i && chmod 444 ${INSLIB}/$i; done;
+	${INS} -c ${TESTDIR}/library ${INSDIR}/library && chmod 555 ${INSDIR}/library
 	if test  -d ${MAN} ; \
 	then \
-	    ${INS} -f ${MAN} -m 444 library.1 ; \
+	    ${INS} -c library.1 ${MAN}/library.1 && chmod 444 ${MAN}/library.1 ; \
 	    fi
 
 clean: 

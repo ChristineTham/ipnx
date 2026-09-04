@@ -1,7 +1,14 @@
 all:V:	cstrans timestamp docgen
 	:
-docgen:V: docgen.c
-	:
+# THE TAPE'S RULE IS `docgen: docgen.c' WITH NO RECIPE (Makefile:6), which make
+# completes from its built-in single-suffix .c rule -- `$(CC) $(CFLAGS) -o $@
+# $@.c'.  mk has no built-in rules at all, so the converter turned a target
+# make would have compiled into a VIRTUAL one that does nothing, and `mk all'
+# then succeeded while producing no docgen: the driver's own sentinel caught it
+# (`$CMD/docgen/docgen: the package did not produce it') and its install line
+# `cp docgen $ROOT/usr/bin/docgen' had nothing to copy.  make's rule, spelled.
+docgen: docgen.c
+	cc ${CFLAGS} -o docgen docgen.c
 cstrans:	header.h trans.l getstamp.o
 	lex trans.l
 	cc lex.yy.c getstamp.o -ll -o cstrans
