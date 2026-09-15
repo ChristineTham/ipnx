@@ -17,7 +17,7 @@ The repository is four things at once, and confusing them is the main way to get
 4. a **website** (`website/`) and release tooling.
 
 `README.md` is the project's own account of itself; `docs/` is the living detail
-(`architecture.md`, `v10-bootstrap.md`, `v10-build.md`, `golden-disk.md`,
+(`architecture.md`, `v10-build.md`, `golden-disk.md`,
 `build-from-source.md`); `RESEARCH.md` is frozen evidence, not a living doc;
 `docs/v10-log/` is a dated lab notebook for the restoration.
 
@@ -33,7 +33,7 @@ The repository is four things at once, and confusing them is the main way to get
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
 | `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. |
-| `image/` | The only committed binaries. `*.tar.bz2` are **Git LFS**; `v10-golden.tar.bz2.a{a,b}` are split parts committed directly. |
+| `image/` | The only committed binaries: four bzip2 tars. `*.tar.bz2` go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`); the V10 golden is committed in halves `.aa`/`.ab`, which the LFS filter does not match. |
 | `work/`, `images/` | Gitignored working areas that the scripts nonetheless expect to exist — including `work/tapes/`, the six V10 archives as plain tar. |
 
 ## Commands
@@ -77,7 +77,7 @@ tools/boot-newdisk.sh              # disk behaviour: boots alone, has mux, games
 bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web server, DNS
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
-tools/check-md-links.sh README.md  # relative markdown links resolve
+tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
 ```
 
 `verify-golden.sh` and `boot-newdisk.sh` answer different questions and neither substitutes
@@ -103,8 +103,8 @@ the `rp06build` filesystem stage 1 left behind.
 Host side — put a machine under the build and boot what comes out:
 
 ```bash
-bash tools/v10-tapes.sh                 # the six TUHS archives -> work/tapes/, plain tar
-bash tools/v10-build.sh <stage> [only] [builder]
+bash tools/v10-tapes.sh                 # fetch the six TUHS archives -> work/tapes/, plain tar
+bash tools/v10-reset.sh                 # restore images/: both disks (joining the golden's halves) + the boot ROM
 bash tools/v10-launch.sh                # boot images/v10 with both netfs shares
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden
 ```
@@ -114,10 +114,6 @@ reconstruction that used to produce one — a pristine extract per tape, merged 
 corpus, shaped into `v10/` — is gone: the machine does that itself now, via `mkv10`. The
 tools that read those trees (`v10-tree.py`, `v10-dist.py`, `v10-check.py`, `v10-files.py`,
 `v10-plan.py`, `v10-read.py`) are legacy awaiting deletion; do not build on them.
-
-`v10-launch.sh` and `v10-golden.sh` hardcode `ROOT=/Users/christie/Repositories/Unix/ipnx`
-and read `images/` (gitignored). `tools/v10-reset.sh` unpacks `image/v10-golden.tar.bz2`,
-which is committed **split** as `.aa`/`.ab` — rejoin with `cat` before extracting.
 
 Guest side — the inner loop is two commands, both run on the machine:
 
@@ -207,8 +203,8 @@ run that check before spending an hour.
 `$ROOT` means **only where output goes**. The toolchain is always the running machine's, so
 one process with a target parameter builds either disk. `mkfile`'s `installed` predicate is
 `test -f`, so nothing is ever rebuilt on the strength of a timestamp — `.patched` and
-`.ranlib` are plain stamp files. `docs/v10-build.md` is the specification the current
-arrangement is measured against; `docs/v10-bootstrap.md` is the present tense.
+`.ranlib` are plain stamp files. `docs/v10-build.md` describes the whole of it, read off
+the scripts themselves — where that document and a script disagree, the script is right.
 
 V10 is a **reconstruction and labelled as one**: there was never a pure Tenth Edition to
 restore. The tape is one machine's working tree caught mid-upgrade from V9 — `libc.a`'s 261
@@ -222,8 +218,9 @@ These are not style preferences. Each is here because it failed once, quietly, w
 status 0.
 
 - **Binaries never enter git.** The exceptions are exactly `image/*.tar.bz2` and the split
-  V10 golden. `tools/hook-block-binaries.sh` (PreToolUse) and `tools/hook-git-add-guard.sh`
-  enforce it; build under `work/`, which is gitignored.
+  V10 golden; build everything else under `work/`, which is gitignored. Claude Code hooks
+  used to enforce this and were deleted with `.claude/`, so `.gitignore` is now the only
+  guard — `git add -f` of a disk image is a decision nothing will stop you making.
 - **Run every guest harness against a clone, never the golden.** Booting mounts, and
   mounting rewrites the superblock — a clean, fully passing run still changes the image's
   hash. `source tools/v8clone.sh; v8_clone rp07new <tag>`. The `.sh` drivers now do this
@@ -244,13 +241,14 @@ status 0.
   `SIM_ASYNCH_IO` so the state cannot be lost.
 - **The netfs share is live** — an edit to `v8/` lands in a run already in flight. Harmless
   for a read-only measurement, lethal during a two-hour world build.
-- **An artefact must carry a record of its origin, and its consumer must check it**
-  (`tools/srcid.sh`). Regenerating a file in the repo changes nothing a guest already
-  holding a copy will see, and there is no symptom: it compiles, asserts and reports against
-  the previous generation.
+- **An artefact must carry a record of its origin, and its consumer must check it.**
+  Regenerating a file in the repository changes nothing a guest already holding a copy will
+  see, and there is no symptom: it compiles, asserts and reports against the previous
+  generation. On V10 this is why `updatebuild` is the first half of every round.
 - **"It is in the golden, it will arrive on Reset" is not shipping it.** `tools/app-check.sh`
-  asserts repo golden → app bundle → what launches; `tools/hook-app-current.sh` is a Stop
-  hook that blocks calling work done while the built app is stale.
+  asserts the whole chain — repo golden → app bundle → what launches — because a fix can be
+  written, proven and committed while the thing the user double-clicks still runs last
+  week's system.
 - **Generated files stay in step with their source** — `mkdep.py --check`,
   `ipnx-release.py --check`, `mkcarry.py --check`. A stale makefile is the one failure that
   looks like a source bug.
