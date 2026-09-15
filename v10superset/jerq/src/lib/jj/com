@@ -1,2 +1,0 @@
-make CFLAGS=-g polyture.o jerq.o
-3cc -g polyture.o jerq.o

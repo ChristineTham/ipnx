@@ -1,7 +1,0 @@
-#!/bin/sh
-/usr/blit/lib/lsh ${1-/usr/blit/lib/muxterm} >.lsh$$
-if test ! -t 0
-then cat >>.lsh$$
-fi
-jx /usr/blit/mbin/lsh.m <.lsh$$
-rm .lsh$$

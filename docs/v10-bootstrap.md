@@ -15,7 +15,7 @@ There are two halves and they meet at `/usr/src`.
 | | | |
 |---|---|---|
 | `v10tapes/` | gitignored | the six TUHS archives, pristine, one root each. Re-extractable; `MANIFEST` has a hash per file. Never edited. |
-| `v10superset/` | committed | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut |
+| `v10superset/` | gitignored | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut. Committed until the tree was deleted; rebuild it with the two commands below |
 | `v10/` | committed | a **filesystem** — what a running machine sees. Our working copy, edited directly. |
 
 ```bash

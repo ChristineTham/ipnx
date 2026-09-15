@@ -289,6 +289,14 @@ def main(argv):
     ap.add_argument("--man", action="store_true")
     a = ap.parse_args(argv)
 
+    # THE CORPUS IS NO LONGER COMMITTED, so its absence is the ordinary case
+    # rather than a broken checkout.  Without this the walk returned nothing and
+    # the run died opening its own output inside the missing directory --
+    # a FileNotFoundError naming READ.jsonl, which points at the wrong thing.
+    if not os.path.isdir(TREE):
+        sys.exit("v10-read: no v10superset -- "
+                 "bash tools/v10-tapes.sh && python3 tools/v10-tree.py --bootstrap")
+
     entries = walk()
     print("v10-read: reading %d entries ..." % len(entries), file=sys.stderr)
 

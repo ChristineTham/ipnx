@@ -1,9 +1,0 @@
-awk '
-BEGIN {
-	for (i = 41; i < 127; i++) {
-		for (j = 41; j < 127; j++) {
-			printf("%c%c", i, j);
-		}
-		printf("\n")
-	}
-}'

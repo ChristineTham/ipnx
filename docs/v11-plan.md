@@ -449,7 +449,7 @@ repository does it.
   [the 1983 manual](https://softwarepreservation.computerhistory.org/LISP/franz/Foderaro_et_al-The_FRANZ_LISP_Manual-July_1983.pdf)
 - [McIlroy, *A Research Unix Reader*](https://www.cs.dartmouth.edu/~doug/reader.pdf) — the
   authority on who wrote what, and the source for the README's credits
-- Primary, in this repository: `v10superset/cmd/u9fs/{README,9p.h}`,
+- Primary, in this repository: `v10/usr/src/cmd/u9fs/{README,9p.h}`,
   `v10/usr/src/cmd/{mk,pascal,f77,lcc,gcc,ccom,upas}/`, `v10/usr/src/cmd/upas/README`,
   `v10/usr/src/sys/inet/`, `v10/usr/src/ipc/libin/tcp_lib.c`, `v10/usr/man/mana/lisp.1`,
   `work/myv8/{v8-inspect-name.log,v8-libc-probe.log}`, `PATCHES.md:374`

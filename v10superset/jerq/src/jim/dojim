@@ -1,2 +1,0 @@
-#!/bin/sh
-exec jim ./*.h ./*.c term/*.h term/*.c frame/*.h frame/*.c

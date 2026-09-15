@@ -1,9 +1,0 @@
-allocate.o
-cold.o
-getstatus.o
-ioshelves.o
-iodr_sh.o
-lib.o
-load.o
-nlun.o
-warm.o

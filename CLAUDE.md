@@ -138,9 +138,18 @@ so V10 arrives as just another image (`MachineSpec.swift`, `Machine.swift`).
 | | | |
 |---|---|---|
 | `v10tapes/` | **gitignored** | the six TUHS archives, pristine, one root each. Re-extractable; `MANIFEST` has a hash per file. Never edited. |
-| `v10superset/` | committed | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut. Validated, not shaped. No V10 machine ever looked like this. |
+| `v10superset/` | **gitignored** | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut. Validated, not shaped. No V10 machine ever looked like this. |
 | `v10/` | committed | a **filesystem** — byte-for-byte the machine's own `ipnx.tar` (a tar of `/usr`), so `v10/usr/src/cmd/ls.c` is what the guest has at `/usr/src/cmd/ls.c`. **Our working copy, edited directly.** |
 | `v8/` | committed | the Eighth Edition source the golden is built from, laid out the same way. |
+
+**Only `v10/` is in the repository.** The corpus was committed until it was deleted at
+Christine's instruction; both tape trees are now build products, rebuilt by the two
+commands above and recoverable from git history (`751594dd` and later). Six of the
+corpus' roots — `lsys`, `dist`, `nbstests`, `history`, `dregs`, `facedl`, 1,654 files —
+were never placed into `v10/` and so exist only there, `lsys/astro/mk.out` among them.
+The generated reports stay committed and answer most tape questions without a rebuild:
+`docs/v10-tree.md` (provenance, per file, with the contested paths dated) and
+`docs/v10-dist.md` (what was placed where, and what was not).
 
 There is **no patch directory and no OVERLAY file** — git keeps that record honestly. The
 old arrangement hid eleven files of pure *configuration* (a motd, a hostname, an `/etc`) among
@@ -148,9 +157,13 @@ genuine repairs for as long as nobody diffed it. `python3 tools/v10-tree.py` is 
 discipline is checked: it prints every file we have changed, added or removed since the tapes,
 and the tree currently answers **0**.
 
-The superset merge: `secombe` is the base, `norman` augments it; where bytes differ the newer
-mtime wins, every contested path dated in `docs/v10-tree.md`. Case collisions take a `u_`
-prefix on the non-lowercase spelling, applied per path component to the **merged tape paths**.
+The superset merge: `secombe` is the base — the newer cut, dating 1993–1995 against
+norman's 1988–1993 — and `norman` supplies reach, 10,612 paths secombe does not carry.
+Where bytes differ the newer mtime wins, every contested path dated in `docs/v10-tree.md`.
+Excluded: `history/ix`, 877 files of a different operating system. Case collisions take a
+`u_` prefix on the non-lowercase spelling, applied per path component to the **merged tape
+paths**. `ar` archives are unpacked as directories with an `ORDER` file beside the members,
+which is why the corpus held 33,419 paths for 28,697 tape entries.
 An archive is found by its magic number (`!<arch>\n`), never its name — the host `ar` is never
 used, because macOS's exits **zero** having extracted nothing from the SysV/COFF archives under
 `630/`. Placement into `v10/` allows only two kinds of evidence (a file naming its own path;
@@ -212,8 +225,9 @@ unmounts, and **refuses to halt if the unmount failed**.
 - **The tape states its own build.** `src/cmd/Admin/Mk` is the command build system;
   `Admin/dest` gives install paths from `binfiles`/`etcfiles`/`libfiles`/`ulibfiles`;
   `Admin/large` names the 27 programs compiled `-O` not `-Od2`. `usr/sys/lib/mk.star` is the
-  kernel recipe and `v10superset/lsys/astro/mk.out` is the tape's own *transcript* of it
-  running for thirteen machines. Read those before inferring.
+  kernel recipe, and `lsys/astro/mk.out` is the tape's own *transcript* of it running for
+  thirteen machines — that one is in the corpus only, so it needs a rebuild or
+  `git show 751594dd:v10superset/lsys/astro/mk.out`. Read them before inferring.
 - **No inheritance.** `cmd/cc.c:9-11` hardcodes `as`, `ld` and `crt0`, and `-B` reaches only
   ccom, c2 and cpp; `cmd/ld.c:1579-1595` hardcodes `-lX` to `/lib`, `/usr/lib`,
   `/usr/local/lib`, with no `-L`. A build that links through `cc` uses the *builder's*
@@ -286,14 +300,26 @@ unmounts, and **refuses to halt if the unmount failed**.
   it found — `.claude/` is gone and nothing installs hooks now, so it is a command and
   fails like one. The eight tracked `cmd/gcc/*.md` files are GCC **machine descriptions**,
   not markdown, and the sweep skips the tape trees for that reason.
-- `python3 tools/v10-read.py` reads `v10superset/` and writes `v10superset/READ.jsonl`,
-  which `tools/v10-files.py` turns into `docs/v10-files.md`. The JSONL is gitignored, so
-  the read has to be re-run before the report can be regenerated.
+- **Five tools need the corpus rebuilt before they run at all**, now that it is no longer
+  committed: `v10-check.py`, `v10-dist.py`, `v10-read.py`, `v10-files.py` and
+  `v10-plan.py`. Each says so and names the two commands rather than failing obscurely.
+  They are kept precisely because they are the recipe — deleting them would make the
+  corpus' deletion irreversible.
+- `python3 tools/v10-read.py` reads the corpus and writes `v10superset/READ.jsonl`, which
+  `tools/v10-files.py` turns into `docs/v10-files.md`. The committed report predates the
+  rebuild — its header still names `v10/source` and `v10/READ.jsonl` and counts 54,328
+  entries against the corpus' 33,419 — so the per-file descriptions hold but the shape it
+  describes does not.
 - **`docs/v10-plan.md` and `tools/v10-plan.py` are vestigial.** The plan was the list the
   ten-stage build read; the mkfile is now the only list the build reads
-  (`docs/v10-build.md`, invariant 4). The tool's paths have been repointed at
-  `v10superset/`, but it still reports `programs 0` because it assumes the old tree's
-  `src/` level above `cmd`, which the corpus' tape roots do not have. Treat its output as
-  unverified until that is either rebuilt or the pair is retired.
+  (`docs/v10-build.md`, invariant 4). The tool's paths have been repointed, but it still
+  reports `programs 0` because it assumes the old tree's `src/` level above `cmd`, which
+  the corpus' tape roots do not have. Treat its output as unverified until that is either
+  rebuilt or the pair is retired.
+- `tools/v10-tree.py` emits the per-tape prose in `docs/v10-tree.md` from hardcoded
+  strings at `:439-441` that still describe the **old** merge rule — they call `norman`
+  "the base of the tree" and say `secombe` has "only 30 paths of its own", while
+  `PRECEDENCE` at `:99` puts secombe first and the file-count column in the same table
+  credits secombe with 13,394 files. One row says both things at once.
 - `docs/roadmap.md` cites `tools/v10-syscalls.py` five times for the 112-of-128 syscall
   measurement. The tool was deleted; the measurement it recorded stands.

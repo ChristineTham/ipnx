@@ -43,7 +43,7 @@ the result "the tape".
 	            bytes differ, never a build input.
 	blit        PARKED.  The 68000 Blit, not the 5620 we emulate.
 
-ORDER IS NOT DERIVABLE FROM A DIRECTORY.  tools/v10-source.sh unpacks every ar
+ORDER IS NOT DERIVABLE FROM A DIRECTORY.  tools/v10-tree.py unpacks every ar
 archive member by member, which keeps every byte and destroys the one thing a
 directory cannot hold: the ORDER of the members.  V10's ld makes ONE sequential
 pass when __.SYMDEF is absent or stale, so libc.a must be rebuilt in the tape's
@@ -540,7 +540,7 @@ def parked(d):
         return "another system"
     if parts[-1] in MACHDIR_DROP:
         return "another machine"
-    # An unpacked package is a SECOND COPY of the tree: v10-source.sh unpacks
+    # An unpacked package is a SECOND COPY of the tree: v10-tree.py unpacks
     # .tar/.cpio/.a members in place, so cmd/odist/src.tar holds another whole
     # odist.  The unpacking is right; it is not a build input.
     if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
@@ -1234,7 +1234,8 @@ def main(argv):
     a = ap.parse_args(argv)
 
     if not os.path.isdir(TREE):
-        sys.exit("v10-scan: no v10superset -- run tools/v10-source.sh")
+        sys.exit("v10-scan: no v10superset -- "
+                 "bash tools/v10-tapes.sh && python3 tools/v10-tree.py --bootstrap")
 
     s = scan()
     print("v10-scan: %d entries" % len(s["files"]))

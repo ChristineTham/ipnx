@@ -1,8 +1,0 @@
-jinit.o
-cursor.o
-buttons.o
-kbd.o
-acia.o
-queue.o
-resume.o
-wait.o

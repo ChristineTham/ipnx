@@ -1,2 +1,0 @@
-/bad/ { print | "cat 1>&2" }
-	{print}
