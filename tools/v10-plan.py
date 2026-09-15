@@ -16,11 +16,17 @@ all three of the easy assumptions at once:
 So the rule is read first and the objects follow from it, wherever they live.
 A rewrite that started from main() and hunted for a rule got all three wrong.
 
-IT ALSO READS v10/READ.jsonl, the record of every file having been OPENED, and
-gives EVERY file a verdict: installed, compiled into something installed,
-consulted, or not shipped WITH A REASON.  Nothing may have no verdict, and this
-refuses to write if anything does -- so "did you skip something" stops being a
-matter of noticing.
+IT READS v10/usr -- the distribution, which is byte for byte the machine's own
+/usr -- because that is the tree the build actually reads and the only one still
+in the repository.  It walked v10superset until that corpus was deleted; the two
+agree on content, and this one can be checked against a running machine.
+
+WHAT IT DOES NOT DO.  An earlier header claimed a second pass over
+v10superset/READ.jsonl giving every file a verdict and refusing to write if any
+lacked one.  No such pass was ever in the code -- the constant was declared and
+never read -- so the claim is gone rather than the check being implied.  What IS
+real is the reconciliation in scan(): the walk is compared against the
+filesystem and refuses to report if it missed or invented a path.
 
 THE SCAN IS THE WHOLE TREE, AND IT REFUSES TO REPORT IF IT MISSED ANYTHING.
 Every negative this project has got wrong came from surveying part of a tree
@@ -43,7 +49,7 @@ the result "the tape".
 	            bytes differ, never a build input.
 	blit        PARKED.  The 68000 Blit, not the 5620 we emulate.
 
-ORDER IS NOT DERIVABLE FROM A DIRECTORY.  tools/v10-source.sh unpacks every ar
+ORDER IS NOT DERIVABLE FROM A DIRECTORY.  tools/v10-tree.py unpacks every ar
 archive member by member, which keeps every byte and destroys the one thing a
 directory cannot hold: the ORDER of the members.  V10's ld makes ONE sequential
 pass when __.SYMDEF is absent or stale, so libc.a must be rebuilt in the tape's
@@ -60,9 +66,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TREE = os.path.join(ROOT, "v10", "source")
+TREE = os.path.join(ROOT, "v10", "usr")
 PLAN = os.path.join(ROOT, "docs", "v10-plan.md")
-FACTS = os.path.join(ROOT, "v10", "READ.jsonl")
 
 BUILD_ROOTS = ("src", "milligan")
 
@@ -537,7 +542,7 @@ def parked(d):
         return "another system"
     if parts[-1] in MACHDIR_DROP:
         return "another machine"
-    # An unpacked package is a SECOND COPY of the tree: v10-source.sh unpacks
+    # An unpacked package is a SECOND COPY of the tree: v10-tree.py unpacks
     # .tar/.cpio/.a members in place, so cmd/odist/src.tar holds another whole
     # odist.  The unpacking is right; it is not a build input.
     if any(c.endswith((".tar", ".cpio", ".a")) for c in parts):
@@ -574,8 +579,8 @@ def scan():
     missing, extra = reconcile(files)
     if missing or extra:
         for p in sorted(missing)[:5]:
-            print("v10-scan: NOT SEEN %s" % p, file=sys.stderr)
-        sys.exit("v10-scan: the walk missed %d and invented %d -- refusing to "
+            print("v10-plan: NOT SEEN %s" % p, file=sys.stderr)
+        sys.exit("v10-plan: the walk missed %d and invented %d -- refusing to "
                  "report" % (len(missing), len(extra)))
 
     roles = collections.Counter()
@@ -839,8 +844,12 @@ def majors():
     panicked the kernel through a wild pointer.
     """
     out = {}
-    for src in (os.path.join(ROOT, "v10", "src", "lsys", "lib", "tab"),
-                os.path.join(TREE, "src", "lsys", "lib", "tab")):
+    # OURS FIRST, THEN THE TAPE'S.  Ours is v10/usr/sys/lib/tab, which is the
+    # tape's lib/tab plus one line -- `cdev 18 pt' uncommented -- and it is
+    # the file mk.star:19 hands mkconf as -t.  Both paths moved when the tree
+    # was rebuilt: the overlay v10/src is gone and the tapes are v10superset.
+    for src in (os.path.join(ROOT, "v10", "usr", "sys", "lib", "tab"),
+                os.path.join(TREE, "sys", "lib", "tab")):
         if not os.path.exists(src):
             continue
         for line in open(src, errors="replace"):
@@ -916,11 +925,11 @@ def devices():
 def etcfiles():
     """The tape's own /etc, at src/history/ix/root/etc.
 
-    THIS USED TO READ v10/src/etc -- ELEVEN FILES WE WROTE.  A motd describing
+    THIS USED TO READ v10/usr/src/build/etc -- ELEVEN FILES WE WROTE.  A motd describing
     the project, a whoami naming it, an rc and a ttys built for this machine:
     configuration invented here and installed by the plan, so a disk built
     "from source" came up announcing itself in words no Bell Labs tape
-    contains.  v10/source/OVERLAY marked every one of them `add', which is the
+    contains.  v10superset/OVERLAY marked every one of them `add', which is the
     record saying the tape does not have them -- the same column that marks a
     genuine patch `patch'.  They sat in the same directory as the real repairs
     and were invisible for that reason.
@@ -936,6 +945,11 @@ def etcfiles():
     hardware the disk will say so at boot, and any change is then a patch with
     a stated reason -- never a replacement written here.
     """
+    # AND v10superset DOES NOT CARRY IT.  history/ix is the one tree the merge
+    # excludes on purpose -- 877 files of IX, a different operating system
+    # (docs/v10-tree.md) -- so this reads empty here and the finding above
+    # stands on the tapes rather than on the corpus.  Say so rather than
+    # returning [] as though the tape had no /etc at all.
     d = os.path.join(TREE, "src", "history", "ix", "root", "etc")
     if not os.path.isdir(d):
         return []
@@ -1100,7 +1114,7 @@ def build_plan(s):
     # a DR-11C and Datakit.  A kernel built from it cannot find its own root.
     #
     # So ipnx780.m stays: alice reduced to the hardware that is actually
-    # there, derived from it and diffed against it in v10/src/PATCHES.md.
+    # there, derived from it and diffed against it in v10/usr/src/build/PATCHES.md.
     # What does NOT stay is anything the config was carrying beyond that --
     # the banner is now the tape's own date rule from lsys/lib/mk.star, not a
     # name, and /etc comes off the tape rather than from files written here.
@@ -1168,7 +1182,7 @@ def build_plan(s):
 
 def emit(s, rows):
     o = ["# The Tenth Edition golden image, file by file\n\n",
-         "Generated by `tools/v10-scan.py` from a full scan of `v10/source`. ",
+         "Generated by `tools/v10-plan.py` from a full scan of `v10/usr`. ",
          "Do not edit.\n\n## What the scan saw\n\n| | |\n|---|---:|\n",
          "| entries walked | %s |\n" % format(len(s["files"]), ","),
          "| units | %s |\n" % format(len(s["units"]), ","),
@@ -1179,12 +1193,14 @@ def emit(s, rows):
          "| **buildable but unbuilt** | **%s** |\n\n" % format(len(s["gaps"]), ","),
          "The walk is reconciled against the filesystem before any number here "
          "is printed; the scan refuses to report if it missed one.\n\n",
-         "## The rules\n\n",
-         "1. **The source contains everything.** `v10/source` and `v10/src` "
-         "are the only inputs.\n"
-         "2. **No staging tree.** `$DEST` is the new image, mounted, "
-         "throughout.\n"
-         "3. **The new toolchain runs on the new image.**\n\n"]
+         "## What this is for\n\n",
+         "This is a READING of the tree, not a list the build consults. "
+         "The build reads one `mkfile` and one `patch`, both in "
+         "`v10/usr/src/build`, and invariant 4 of "
+         "[v10-build.md](v10-build.md) is that every list it reads is in "
+         "the mkfile -- a component list that appears twice will "
+         "disagree.  So this answers what the tape's own rules say "
+         "*should* be built, and the mkfile answers what is.\n\n"]
     bystage = collections.defaultdict(list)
     for r in rows:
         bystage[r[0]].append(r)
@@ -1222,10 +1238,10 @@ def main(argv):
     a = ap.parse_args(argv)
 
     if not os.path.isdir(TREE):
-        sys.exit("v10-scan: no v10/source -- run tools/v10-source.sh")
+        sys.exit("v10-plan: no v10/usr -- this is not an ipnx checkout")
 
     s = scan()
-    print("v10-scan: %d entries" % len(s["files"]))
+    print("v10-plan: %d entries" % len(s["files"]))
     print("   by root: " + "  ".join("%s %d" % (k or ".", v)
                                      for k, v in sorted(s["byroot"].items())))
     print("   by role: " + "  ".join("%s %d" % kv
@@ -1246,9 +1262,9 @@ def main(argv):
     body = emit(s, rows)
     if a.check:
         if not os.path.exists(PLAN) or open(PLAN).read() != body:
-            print("v10-scan: docs/v10-plan.md is stale")
+            print("v10-plan: docs/v10-plan.md is stale")
             return 1
-        print("v10-scan: plan current (%d paths)" % len(rows))
+        print("v10-plan: plan current (%d paths)" % len(rows))
         return 0
     open(PLAN, "w").write(body)
     st = collections.Counter(r[0] for r in rows)

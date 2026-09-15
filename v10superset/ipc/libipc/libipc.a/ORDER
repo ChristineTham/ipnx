@@ -1,9 +1,0 @@
-ipcbuf.o
-ipccreat.o
-ipcexec.o
-ipclogin.o
-ipcopen.o
-ipcpath.o
-ipcproto.o
-pwsearch.o
-qns.o

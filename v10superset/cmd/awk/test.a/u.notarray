@@ -1,3 +1,0 @@
-BEGIN { f() }
-
-function f(A) { print i in A }

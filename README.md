@@ -168,15 +168,15 @@ cleanly, then its own `libc`, then **its own kernel**. On 2026-08-25 the whole `
 completes — toolchain, libraries, commands, packages, kernel — with the pascal compiler the
 last package to fall.
 
-The build is two files the machine reads, both edited in this repository at
-`v10/usr/src/build`: an **`mkfile`** with one rule per product, and a **`patch`** script of
-idempotent source repairs run before anything compiles. Every deviation from the tape is a
-block in `patch` with the evidence beside it, and
-`python3 tools/v10-tree.py` prints every file we have changed since the tapes.
-[docs/v10-bootstrap.md](docs/v10-bootstrap.md) is how it works today,
-[docs/v10-build.md](docs/v10-build.md) is where it is going, the restoration narrative is
-[docs/v10-restoration.md](docs/v10-restoration.md), and the lab notebook is
-[docs/v10-log/](docs/v10-log/).
+**The machine builds itself, and the host only fetches tapes.** Everything lives in one
+directory, `v10/usr/src/build`, edited in this repository and pulled onto the machine by
+`updatebuild`. Six verbs: `mkv10` turns the six TUHS archives into a pristine `v10.tar`,
+`mkipnx` adds the build system and the repairs, `mkimage` makes a bootable disk and builds
+it, `ipnxbuild` builds a complete system from `/usr/src`, `taripnx` archives a live one.
+The inner loop is two commands — `updatebuild; ipnxbuild`. Every deviation from the tape is
+an idempotent block in `patch` with the evidence beside it, and `PATCHES.md` is the long
+form. [docs/v10-build.md](docs/v10-build.md) is the whole of it, read off the scripts
+themselves; the lab notebook is [docs/v10-log/](docs/v10-log/).
 
 **And there was never a pure Tenth Edition to restore.** This is the track's most
 important finding (2026-08-17), and it came out of the tape's own `ar` headers rather than
@@ -323,7 +323,7 @@ out of reach for reasons that have nothing to do with engineering.
 | **B0.5** the N track | ✅ | N0–N7: RP07 disk, an Interlan NI1010 modelled for SIMH, **V8 on the Internet**, and **a macOS folder mounted read/write inside V8** over Weinberger's netfs — [n-track-notes.md](docs/n-track-notes.md) |
 | **B0.6** a machine to live in | ✅ | Identity, network up at boot, an account named after the host user, host shares at `/n/macos` and `/n/home` — [machine-config.md](docs/machine-config.md) |
 | **B1** V10 toolchain | ✅ | V10's own compiler, assembler and libc are **in the tarball as linked binaries** and **run on the V8 kernel**; `cpp`, `c2` and `ld` built from source. 9/9 and 10/10 — [v10-log/2026-08-16.md](docs/v10-log/2026-08-16.md) |
-| **B2** the userland | ✅ | V10 builds its own `libc` and its own `/bin` under `mk`, and as of 2026-08-25 the whole `world` target completes — toolchain, libraries, commands, packages — [v10-bootstrap.md](docs/v10-bootstrap.md) |
+| **B2** the userland | ✅ | V10 builds its own `libc` and its own `/bin` under `mk`, and as of 2026-08-25 the whole `world` target completes — toolchain, libraries, commands, packages — [v10-build.md](docs/v10-build.md) |
 | **B3** kernel + first boot | ✅ | **A V10 kernel has been compiled** — by V10, from `usr/sys`, the tape's own way — and a golden boots to a login prompt and halts cleanly with netfs surviving it |
 | **B3.5** the build, redesigned | ○ | One tool, three archives, one source tree: `installed` deleted for real dependencies, `/usr/src` as the unit, `mk` everywhere — **next**, [v10-build.md](docs/v10-build.md) |
 | **B4–B5** the experience | ○ | Multi-user, `mux`, **`sam`**, then "Edition 10" in the app |
@@ -343,7 +343,7 @@ out of reach for reasons that have nothing to do with engineering.
 | `ports/` | *(planned)* the ipnx-ports tree |
 | [RESEARCH.md](RESEARCH.md) | The original feasibility study — frozen evidence, not a living doc |
 | [docs/architecture.md](docs/architecture.md) | Living technical spec |
-| [docs/v10-bootstrap.md](docs/v10-bootstrap.md) | How a Tenth Edition disk is built today |
+| [docs/v10-build.md](docs/v10-build.md) | How a Tenth Edition is made, from the tapes to a bootable disk |
 | [docs/v10-build.md](docs/v10-build.md) | The build system redesign, and the plan to get there |
 | [docs/roadmap.md](docs/roadmap.md) | Phases and status for both tracks |
 | [docs/licensing.md](docs/licensing.md) | Binding licensing posture for every component |
@@ -393,7 +393,7 @@ bash work/verify-libcli.sh
 
 The build embeds the golden's sha256 beside the image, and the app replaces its working
 copy whenever the two differ — so a rebuilt disk reaches the running machine rather than
-waiting for a Reset. This asserts that whole chain, and a Stop hook runs it:
+waiting for a Reset. This asserts that whole chain:
 
 ```bash
 tools/app-check.sh --full

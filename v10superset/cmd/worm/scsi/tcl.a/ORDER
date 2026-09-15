@@ -1,9 +1,0 @@
-tclAssem.o
-tclBasic.o
-tclCmdAH.o
-tclCmdIZ.o
-tclExpr.o
-tclGlob.o
-tclHistory.o
-tclProc.o
-tclUtil.o

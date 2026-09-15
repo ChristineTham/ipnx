@@ -2,14 +2,14 @@
 #
 # Parse a guest harness without running one.
 #
-#	bash tools/v10-dryrun.sh tools/v10-build.exp
+#	bash tools/v10-dryrun.sh tools/v10-tryboot.exp
 #
 # WHY THIS EXISTS.  Tcl reports a syntax error only when it REACHES the
 # command, so a typo in a harness's last block surfaces three hours into a run
 # that has already done all its work.
 #
 # AND IT MUST STUB `spawn' BEFORE SOURCING, not after.  Checking this file by
-# running `expect -c "source tools/v10-build.exp"' STARTED A SIMULATOR -- it
+# running `expect -c "source <harness>"' STARTED A SIMULATOR -- it
 # reached the spawn and launched a VAX against whatever arguments were lying
 # around.  A syntax check that boots a machine is not a syntax check.
 set -uo pipefail

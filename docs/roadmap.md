@@ -5,30 +5,38 @@ research moonshot that lands into the same app shell. C and D are later and decl
 the README's scope has somewhere to point. Update checkboxes and the status line as work
 completes.*
 
-**Current phase: Track B, running the V8 bootstrap again for the Tenth
-Edition.** V8 is closed out — Track A through A5, Track S built the disk the
-app ships, and B0/B0.5/B0.6 are done.
+**Current phase: Track B, past the first boot — B4/B5, the experience.** V8 is
+closed out: Track A through A5, Track S built the disk the app ships, and
+B0/B0.5/B0.6 are done.
 
-**The goal is a V10 kernel with the V10 toolchain running on it.** Not a
-complete userland: a machine that can compile itself. Everything else follows
-from that, and nothing can be trusted before it — a V10 command built on a V8
-host is validated against the wrong kernel, and `tools/v10-syscalls.py`
-already shows two boot-path programs that provably cannot run there.
+**The goal was a V10 kernel with the V10 toolchain running on it** — not a
+complete userland, but a machine that can compile itself, because nothing else
+can be trusted before it: a V10 command built on a V8 host is validated against
+the wrong kernel, and the syscall scan found two boot-path programs that
+provably cannot run there.
 
-So Track B is V8's nine stages in V8's order, with **6 and 7 swapped**: the
-kernel before the bulk of the commands. Stage 1 is further from done than B1
-made it look — four of the seven passes were *taken* prebuilt off the tarball
-rather than built — and stages 2 and 3, libc and the toolchain fixpoint, have
-not been started at all. Still unexercised from Track A:
-`mux`/`jim` under the Mac's real pointer, which needs a human at a mouse; the
-App Store steps need the Apple account. A0
-proved the machinery on the desktop ([spike-a0-results.md](spike-a0-results.md));
-A1 shipped the text-mode app (open-simh as a library, V8 to `login:` in ~25–30 s,
-save/restore instant-on — [a1-notes.md](a1-notes.md)); A2 shipped the Blit experience
-(dmd_core on iOS, Metal phosphor screen, touch-as-mouse — `mux` and `jim` run end-to-end
-on the iPad simulator — [a2-notes.md](a2-notes.md)); A3 made it shippable and added a
-**native macOS app** sharing all its code ([a3-notes.md](a3-notes.md), submission
-checklist in [app-store.md](app-store.md)).
+**That goal is met, and then some.** V10's own compiler, assembler and libc came
+off the tape as linked binaries and ran on the V8 kernel (B1); V10 went on to
+build its own `libc`, its own `/bin` and the whole `world` target (B2); and it
+compiled **its own kernel**, which boots to a login prompt and halts cleanly
+(B3). The nine-stage plan this section used to describe is gone with the
+arrangement that ran it: the build is now `updatebuild` then `ipnxbuild` on the
+machine, reading one `mkfile` and one `patch` — [v10-build.md](v10-build.md) is
+the whole of it, read off the scripts themselves. `ipnx.tar`,
+`ipnxorig.tar` and `v10/` have been proven equal by SHA-256 over all 26,385
+files, so the repository and the machine hold the same tree.
+
+What is left is the experience — multi-user, `mux`, `sam`, and "Edition 10" in
+the app — plus, still unexercised from Track A, `mux`/`jim` under the Mac's real
+pointer, which needs a human at a mouse, and the App Store steps, which need the
+Apple account. A0 proved the machinery on the desktop
+([spike-a0-results.md](spike-a0-results.md)); A1 shipped the text-mode app
+(open-simh as a library, V8 to `login:` in ~25–30 s, save/restore instant-on —
+[a1-notes.md](a1-notes.md)); A2 shipped the Blit experience (dmd_core on iOS,
+Metal phosphor screen, touch-as-mouse — `mux` and `jim` run end-to-end on the
+iPad simulator — [a2-notes.md](a2-notes.md)); A3 made it shippable and added a
+**native macOS app** sharing all its code ([a3-notes.md](a3-notes.md),
+submission checklist in [app-store.md](app-store.md)).
 
 ## Phase A0 — desktop spike *(shared by both tracks; no iOS code)*
 
@@ -167,7 +175,7 @@ Runbook: [spike-a0.md](spike-a0.md)
       `stopFlag.set()` → the runloop's `while !stop.isSet` exits, and reopening
       power-cycles it cleanly (`5620 powered on` twice in the log)
 
-## Track B — the V10 restoration *(desktop SIMH until it boots; see [v10-restoration.md](v10-restoration.md))*
+## Track B — the V10 restoration *(desktop SIMH until it boots; the build is [v10-build.md](v10-build.md))*
 
 **Where this stands (2026-08-16).** The infrastructure is finished, **a Tenth
 Edition toolchain runs on the Eighth Edition machine**, and **fifteen of the
@@ -195,7 +203,7 @@ done in the nine years it has been public
 describe us: there is a world build now — `v10/usr/src/build/mkfile`, one rule per product —
 and there is boot media. V10 built its own `/bin`, its own `libc` and **its own kernel** in
 the week to 2026-08-24, and a golden boots to a login prompt and halts cleanly. The world
-build completes as of 2026-08-25. How it works is [v10-bootstrap.md](v10-bootstrap.md); where
+build completes as of 2026-08-25. How it works is [v10-build.md](v10-build.md); where
 it is going is [v10-build.md](v10-build.md).*
 
 Three consequences that reshape everything after B1:

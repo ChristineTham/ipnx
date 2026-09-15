@@ -1,3 +1,0 @@
-TERM=blit
-PATH=:/usr/blit/bin$PATH
-export TERM PATH

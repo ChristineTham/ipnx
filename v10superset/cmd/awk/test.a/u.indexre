@@ -1,1 +1,0 @@
-BEGIN { index("abc", /a/) }

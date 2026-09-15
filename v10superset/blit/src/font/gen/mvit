@@ -1,6 +1,0 @@
-name=$1
-shift
-for i in $*
-do
-	mv font.$i /usr/jerq/font/$name.$i
-done

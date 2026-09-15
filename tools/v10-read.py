@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Read every file in v10/source and record what it says.
+"""Read every file in v10superset and record what it says.
 
-	tools/v10-read.py            # read the tree, write v10/source/READ
+	tools/v10-read.py            # read the corpus, write v10superset/READ.jsonl
 	tools/v10-read.py --summary  # what the read found
 	tools/v10-read.py --man      # the commands the manuals document
 
@@ -40,14 +40,18 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TREE = os.path.join(ROOT, "v10", "source")
-# NOT INSIDE THE TAPE.  Writing the report into v10/source makes the
+TREE = os.path.join(ROOT, "v10superset")
+# THE CORPUS WAS `v10superset' WHEN THIS WAS WRITTEN.  v10/ is now the
+# machine's own filesystem and the merged tapes are v10superset/, which is
+# what this reads: the question it answers is what the TAPES say, not what
+# our working copy currently holds.
+# NOT INSIDE THE TAPE.  Writing the report into v10superset makes the
 # tree grow by one entry, so the next run reads 54,329 and the count
 # that is supposed to be a constant drifts with its own output.
 # JSON LINES, because the plan is generated FROM these facts and a
 # human-shaped summary cannot carry an object list.  One record per
 # file, every file, no sampling.
-OUT = os.path.join(ROOT, "v10", "READ.jsonl")
+OUT = os.path.join(ROOT, "v10superset", "READ.jsonl")
 
 INC = re.compile(r"^[ \t]*#[ \t]*include[ \t]*([<\"])([^>\"]+)[>\"]", re.M)
 MAIN = re.compile(r"^[ \t]*(?:int[ \t]+|void[ \t]+)?main[ \t]*\(", re.M)
@@ -284,6 +288,14 @@ def main(argv):
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--man", action="store_true")
     a = ap.parse_args(argv)
+
+    # THE CORPUS IS NO LONGER COMMITTED, so its absence is the ordinary case
+    # rather than a broken checkout.  Without this the walk returned nothing and
+    # the run died opening its own output inside the missing directory --
+    # a FileNotFoundError naming READ.jsonl, which points at the wrong thing.
+    if not os.path.isdir(TREE):
+        sys.exit("v10-read: no v10superset -- "
+                 "bash tools/v10-tapes.sh && python3 tools/v10-tree.py --bootstrap")
 
     entries = walk()
     print("v10-read: reading %d entries ..." % len(entries), file=sys.stderr)

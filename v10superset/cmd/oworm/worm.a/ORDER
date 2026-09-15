@@ -1,8 +1,0 @@
-io.o
-inode.o
-vlink.o
-flink.o
-sym.o
-getopt.o
-mapdev.o
-btree.o

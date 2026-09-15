@@ -1,2 +1,0 @@
-#!/bin/sh
-jx /usr/blit/mbin/icon.m $*
