@@ -23,7 +23,7 @@ Tooling reality on this machine (verified 2026-08-08): **there is no Homebrew in
 What matters:
 
 - `expect` ships with macOS (`/usr/bin/expect`) — myv8 needs nothing else.
-- No `telnet` client exists; use [work/dztalk.py](../work/dztalk.py), a minimal Python
+- No `telnet` client exists; use `work/dztalk.py`, a minimal Python
   telnet client (handles IAC negotiation and strips the mark-parity bit — see §4).
 - SDL2/GTK are unavailable without a package manager, so the GUI terminal emulators are
   deferred. **Rust/`cargo` is installed** — the terminal route is headless `dmd_core`

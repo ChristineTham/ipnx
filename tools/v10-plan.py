@@ -16,7 +16,7 @@ all three of the easy assumptions at once:
 So the rule is read first and the objects follow from it, wherever they live.
 A rewrite that started from main() and hunted for a rule got all three wrong.
 
-IT ALSO READS v10/READ.jsonl, the record of every file having been OPENED, and
+IT ALSO READS v10superset/READ.jsonl, the record of every file having been OPENED, and
 gives EVERY file a verdict: installed, compiled into something installed,
 consulted, or not shipped WITH A REASON.  Nothing may have no verdict, and this
 refuses to write if anything does -- so "did you skip something" stops being a
@@ -60,9 +60,9 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TREE = os.path.join(ROOT, "v10", "source")
+TREE = os.path.join(ROOT, "v10superset")
 PLAN = os.path.join(ROOT, "docs", "v10-plan.md")
-FACTS = os.path.join(ROOT, "v10", "READ.jsonl")
+FACTS = os.path.join(ROOT, "v10superset", "READ.jsonl")
 
 BUILD_ROOTS = ("src", "milligan")
 
@@ -509,7 +509,10 @@ def admin_large():
     a nicety.  A plan carrying no flag at all silently compiles all 208 the
     same way.
     """
-    p = os.path.join(TREE, "src", "cmd", "Admin", "large")
+    # `src/cmd/...' until the corpus was rebuilt.  v10superset's roots are TAPE
+    # roots -- cmd, man, jerq, 630 side by side -- so there is no src/ level to
+    # traverse, and looking for one found nothing and reported 0 programs.
+    p = os.path.join(TREE, "cmd", "Admin", "large")
     if not os.path.exists(p):
         return set()
     return {l.strip() for l in open(p, errors="replace") if l.strip()}
@@ -517,7 +520,7 @@ def admin_large():
 
 def admin_dest():
     """cmd/Admin is the tape's own answer to `where does this install'."""
-    d = os.path.join(TREE, "src", "cmd", "Admin")
+    d = os.path.join(TREE, "cmd", "Admin")
     table = {}
     for f, dest in (("binfiles", "/bin"), ("etcfiles", "/etc"),
                     ("libfiles", "/lib"), ("ulibfiles", "/usr/lib")):
@@ -839,8 +842,12 @@ def majors():
     panicked the kernel through a wild pointer.
     """
     out = {}
-    for src in (os.path.join(ROOT, "v10", "src", "lsys", "lib", "tab"),
-                os.path.join(TREE, "src", "lsys", "lib", "tab")):
+    # OURS FIRST, THEN THE TAPE'S.  Ours is v10/usr/sys/lib/tab, which is the
+    # tape's lib/tab plus one line -- `cdev 18 pt' uncommented -- and it is
+    # the file mk.star:19 hands mkconf as -t.  Both paths moved when the tree
+    # was rebuilt: the overlay v10/src is gone and the tapes are v10superset.
+    for src in (os.path.join(ROOT, "v10", "usr", "sys", "lib", "tab"),
+                os.path.join(TREE, "lsys", "lib", "tab")):
         if not os.path.exists(src):
             continue
         for line in open(src, errors="replace"):
@@ -916,11 +923,11 @@ def devices():
 def etcfiles():
     """The tape's own /etc, at src/history/ix/root/etc.
 
-    THIS USED TO READ v10/src/etc -- ELEVEN FILES WE WROTE.  A motd describing
+    THIS USED TO READ v10/usr/src/build/etc -- ELEVEN FILES WE WROTE.  A motd describing
     the project, a whoami naming it, an rc and a ttys built for this machine:
     configuration invented here and installed by the plan, so a disk built
     "from source" came up announcing itself in words no Bell Labs tape
-    contains.  v10/source/OVERLAY marked every one of them `add', which is the
+    contains.  v10superset/OVERLAY marked every one of them `add', which is the
     record saying the tape does not have them -- the same column that marks a
     genuine patch `patch'.  They sat in the same directory as the real repairs
     and were invisible for that reason.
@@ -936,7 +943,12 @@ def etcfiles():
     hardware the disk will say so at boot, and any change is then a patch with
     a stated reason -- never a replacement written here.
     """
-    d = os.path.join(TREE, "src", "history", "ix", "root", "etc")
+    # AND v10superset DOES NOT CARRY IT.  history/ix is the one tree the merge
+    # excludes on purpose -- 877 files of IX, a different operating system
+    # (docs/v10-tree.md) -- so this reads empty here and the finding above
+    # stands on the tapes rather than on the corpus.  Say so rather than
+    # returning [] as though the tape had no /etc at all.
+    d = os.path.join(TREE, "history", "ix", "root", "etc")
     if not os.path.isdir(d):
         return []
     out = []
@@ -1100,7 +1112,7 @@ def build_plan(s):
     # a DR-11C and Datakit.  A kernel built from it cannot find its own root.
     #
     # So ipnx780.m stays: alice reduced to the hardware that is actually
-    # there, derived from it and diffed against it in v10/src/PATCHES.md.
+    # there, derived from it and diffed against it in v10/usr/src/build/PATCHES.md.
     # What does NOT stay is anything the config was carrying beyond that --
     # the banner is now the tape's own date rule from lsys/lib/mk.star, not a
     # name, and /etc comes off the tape rather than from files written here.
@@ -1168,7 +1180,7 @@ def build_plan(s):
 
 def emit(s, rows):
     o = ["# The Tenth Edition golden image, file by file\n\n",
-         "Generated by `tools/v10-scan.py` from a full scan of `v10/source`. ",
+         "Generated by `tools/v10-scan.py` from a full scan of `v10superset`. ",
          "Do not edit.\n\n## What the scan saw\n\n| | |\n|---|---:|\n",
          "| entries walked | %s |\n" % format(len(s["files"]), ","),
          "| units | %s |\n" % format(len(s["units"]), ","),
@@ -1180,7 +1192,7 @@ def emit(s, rows):
          "The walk is reconciled against the filesystem before any number here "
          "is printed; the scan refuses to report if it missed one.\n\n",
          "## The rules\n\n",
-         "1. **The source contains everything.** `v10/source` and `v10/src` "
+         "1. **The source contains everything.** `v10superset` and `v10/src` "
          "are the only inputs.\n"
          "2. **No staging tree.** `$DEST` is the new image, mounted, "
          "throughout.\n"
@@ -1222,7 +1234,7 @@ def main(argv):
     a = ap.parse_args(argv)
 
     if not os.path.isdir(TREE):
-        sys.exit("v10-scan: no v10/source -- run tools/v10-source.sh")
+        sys.exit("v10-scan: no v10superset -- run tools/v10-source.sh")
 
     s = scan()
     print("v10-scan: %d entries" % len(s["files"]))

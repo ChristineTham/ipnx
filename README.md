@@ -393,7 +393,7 @@ bash work/verify-libcli.sh
 
 The build embeds the golden's sha256 beside the image, and the app replaces its working
 copy whenever the two differ — so a rebuilt disk reaches the running machine rather than
-waiting for a Reset. This asserts that whole chain, and a Stop hook runs it:
+waiting for a Reset. This asserts that whole chain:
 
 ```bash
 tools/app-check.sh --full

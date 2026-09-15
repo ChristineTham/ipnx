@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail
-ROOT="/Users/christie/Repositories/Unix/ipnx"
+# DERIVED, NEVER WRITTEN DOWN.  This was a hardcoded /Users path, so the
+# launcher worked on exactly one machine and silently pointed at nothing
+# anywhere else -- including in a checkout of this repository beside it.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 IMG="${1:-$ROOT/images/v10}"
 # 9200 and 9201 are the app's own share ports -- FileShare.swift:46 gives

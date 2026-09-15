@@ -249,11 +249,15 @@ unmounts, and **refuses to halt if the unmount failed**.
 
 ## Conventions
 
-- **Big binaries never enter git.** The exceptions are `image/*.tar.bz2` (Git LFS) — the disks
-  we build, because each is the *input* to the next build. `tools/hook-block-binaries.sh` and
-  `.gitignore` both un-block that one path; raw `*.img` stays blocked.
-  `image/v10-golden.tar.bz2` exceeds GitHub's limit and is committed as two halves:
-  `cat image/v10-golden.tar.bz2.a? > image/v10-golden.tar.bz2`.
+- **Big binaries never enter git.** The exception is `image/*.tar.bz2` (Git LFS — `git lfs
+  pull` on a fresh clone) — the disks we build, because each is the *input* to the next
+  build. `.gitignore` blocks every raw disk suffix and un-blocks that one path, and since
+  `tools/hook-block-binaries.sh` was deleted it is the only guard.
+  `image/v10-golden.tar.bz2` exceeds GitHub's 100 MB limit and is committed as two halves,
+  which are **not** LFS (the filter matches `*.tar.bz2`, not `.aa`/`.ab`). Stream them;
+  never join them on disk, because `.gitignore`'s `!image/*.tar.bz2` exception does not
+  ignore the result: `cat image/v10-golden.tar.bz2.a? | tar -xSjf - -C images`.
+  `tools/v10-reset.sh` does this, and copies the boot ROM the launchers need.
 - **Unpack a disk with `tar -xSjf`, never without the `S`.** It is the only standard format
   that restores a *hole*, so a 1.9 GB RA73 costs its non-zero bytes on disk. zip cannot do
   this and neither can xz; both were tried here first.
@@ -274,19 +278,22 @@ unmounts, and **refuses to halt if the unmount failed**.
   silently deleting the marker.
 - Track B keeps a dated lab notebook in `docs/v10-log/`.
 
-## Known-stale references
+## Repository upkeep
 
-Check before trusting these; none has been updated for the current tree.
-
-- `tools/v10-build.sh`, `tools/v10-build.exp`, `tools/v10-tryboot.exp`, `tools/srcid.sh`,
-  `tools/v10-files.py` and `tools/v10-read.py` read `v10/source`, `v10/src` or `v10/mk` —
-  all three were deleted when `v10/` became the machine's own tar. The live build is
-  `updatebuild` + `ipnxbuild` on the guest.
-- `tools/v10-reset.sh` extracts `image/v10-golden.tar.bz2`, which exists only as the two
-  halves above; `cat` them first.
-- `image/README.md` describes `ipnx-v8-rp07.img.xz` and `tools/image-pack.py`. The format is
-  `.tar.bz2` and that tool does not exist.
-- `tools/v10-launch.sh` and `tools/v10-golden.sh` hardcode
-  `ROOT="/Users/christie/Repositories/Unix/ipnx"`.
-- `tools/hook-*.sh` are Claude Code hooks, but `.claude/settings.json` was deleted — nothing
-  installs them, so `check-md-links.sh` and the binary guards run only by hand.
+- `bash tools/check-md-links.sh` sweeps every markdown file that is ours and **exits
+  non-zero** on a broken relative link; name files to check just those. It was a
+  PostToolUse hook and reported through a JSON object on stdout, so it exited 0 whatever
+  it found — `.claude/` is gone and nothing installs hooks now, so it is a command and
+  fails like one. The eight tracked `cmd/gcc/*.md` files are GCC **machine descriptions**,
+  not markdown, and the sweep skips the tape trees for that reason.
+- `python3 tools/v10-read.py` reads `v10superset/` and writes `v10superset/READ.jsonl`,
+  which `tools/v10-files.py` turns into `docs/v10-files.md`. The JSONL is gitignored, so
+  the read has to be re-run before the report can be regenerated.
+- **`docs/v10-plan.md` and `tools/v10-plan.py` are vestigial.** The plan was the list the
+  ten-stage build read; the mkfile is now the only list the build reads
+  (`docs/v10-build.md`, invariant 4). The tool's paths have been repointed at
+  `v10superset/`, but it still reports `programs 0` because it assumes the old tree's
+  `src/` level above `cmd`, which the corpus' tape roots do not have. Treat its output as
+  unverified until that is either rebuilt or the pair is retired.
+- `docs/roadmap.md` cites `tools/v10-syscalls.py` five times for the 112-of-128 syscall
+  measurement. The tool was deleted; the measurement it recorded stands.

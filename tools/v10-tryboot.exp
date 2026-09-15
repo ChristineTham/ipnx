@@ -13,7 +13,10 @@ log_user 1
 set ROOT [file normalize [file dirname [file dirname [info script]]]]
 set IMG  [lindex $argv 0]
 set SIM  "$ROOT/work/opensimh/BIN/vax780"
-set ROM  "$ROOT/v10/source/src/lsys/boot/star/uda"
+# v10/source/src/lsys/... until the tree was rebuilt: the ROM now lives in the
+# distribution where the machine keeps it, and tools/v10-reset.sh copies this
+# same file to images/uda for the two launchers.
+set ROM  "$ROOT/v10/usr/sys/boot/star/uda"
 
 set cfg "/tmp/v10boot.[pid].conf"
 set fh [open $cfg w]
