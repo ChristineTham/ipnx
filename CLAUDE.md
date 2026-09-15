@@ -30,12 +30,11 @@ The repository is four things at once, and confusing them is the main way to get
 | `libdmd/` | dmd_core (Rust) → `DmdCore.xcframework`. Patches live in `tools/dmdbridge/patches/`. |
 | `netfs/` | SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency. |
 | `v8/` | Our V8 tree, laid out as the guest filesystem (`v8/usr/src/cmd/ls.c` is `/usr/src/cmd/ls.c`). `v8/mk/` is ours — V8 never had a world build. |
-| `v10/` | The V10 working tree, also guest-shaped (`v10/usr/...`). The build system is `v10/usr/src/build/`. |
-| `v10superset/` | A **corpus**, not a filesystem: all six TUHS tapes merged by rule (newer mtime wins). `v10/` is derived from it. |
+| `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
 | `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. |
 | `image/` | The only committed binaries. `*.tar.bz2` are **Git LFS**; `v10-golden.tar.bz2.a{a,b}` are split parts committed directly. |
-| `work/`, `images/`, `tapes/`, `v10tapes/` | Gitignored working areas that the scripts nonetheless expect to exist. |
+| `work/`, `images/` | Gitignored working areas that the scripts nonetheless expect to exist — including `work/tapes/`, the six V10 archives as plain tar. |
 
 ## Commands
 
@@ -78,8 +77,6 @@ tools/boot-newdisk.sh              # disk behaviour: boots alone, has mux, games
 bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web server, DNS
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
-python3 tools/v10-check.py         # the superset is internally valid (needs v10tapes/)
-python3 tools/v10-tree.py          # what have we changed since the tapes
 tools/check-md-links.sh README.md  # relative markdown links resolve
 ```
 
@@ -103,16 +100,20 @@ the `rp06build` filesystem stage 1 left behind.
 
 ### V10
 
-Host side — three trees, each answering a different question:
+Host side — put a machine under the build and boot what comes out:
 
 ```bash
-bash tools/v10-tapes.sh                 # six TUHS archives -> v10tapes/ (gitignored, pristine)
-python3 tools/v10-tree.py --bootstrap   # v10tapes/ -> v10superset/   (DESTRUCTIVE, once)
-python3 tools/v10-dist.py               # v10superset/ -> v10/        (DESTRUCTIVE)
+bash tools/v10-tapes.sh                 # the six TUHS archives -> work/tapes/, plain tar
 bash tools/v10-build.sh <stage> [only] [builder]
 bash tools/v10-launch.sh                # boot images/v10 with both netfs shares
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden
 ```
+
+The tapes are not committed and **neither is any tree made from them**. The host-side
+reconstruction that used to produce one — a pristine extract per tape, merged into a
+corpus, shaped into `v10/` — is gone: the machine does that itself now, via `mkv10`. The
+tools that read those trees (`v10-tree.py`, `v10-dist.py`, `v10-check.py`, `v10-files.py`,
+`v10-plan.py`, `v10-read.py`) are legacy awaiting deletion; do not build on them.
 
 `v10-launch.sh` and `v10-golden.sh` hardcode `ROOT=/Users/christie/Repositories/Unix/ipnx`
 and read `images/` (gitignored). `tools/v10-reset.sh` unpacks `image/v10-golden.tar.bz2`,
