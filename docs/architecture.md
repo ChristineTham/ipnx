@@ -99,7 +99,7 @@ almost exactly.
 | Machine | SIMH simulator | Image | Status |
 |---|---|---|---|
 | Edition 8 | `vax780` (RP06, DZ11, `set noasync`) | `v8.disk` built by [myv8](https://github.com/timnewsham/myv8) | Proven on desktop; Track A |
-| Edition 10 | `vax780` (`star` kernel) first; fallbacks `microvax2`, `vax8200` | `v10.disk` from Track B | **Unprecedented**; see [v10-restoration.md](v10-restoration.md) |
+| Edition 10 | `vax780` (`star` kernel) first; fallbacks `microvax2`, `vax8200` | `v10.disk` from Track B | **Unprecedented**; see [v10-build.md](v10-build.md) |
 
 ## Non-goals (for now)
 

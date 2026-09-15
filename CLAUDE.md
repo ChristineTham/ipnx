@@ -19,8 +19,8 @@ Two tracks run in parallel:
 
 Doc map: `README.md` is the public overview; `RESEARCH.md` is the **frozen** feasibility
 study (evidence, not a living doc); `docs/architecture.md` is the living spec;
-`docs/roadmap.md` is phases and status; `docs/v10-round.md` is the V10 procedure start to
-finish; `docs/v10-log/` is a dated lab notebook.
+`docs/roadmap.md` is phases and status; **`docs/v10-build.md` is how a Tenth Edition is
+made**, read off `v10/usr/src/build`; `docs/v10-log/` is a dated lab notebook.
 
 ## Commands
 
@@ -74,24 +74,18 @@ python3 tools/v8fs.py sum work/myv8/rp07new             # read a V8 filesystem h
 
 ### Track B — the V10 round
 
-Host side, reading the tapes:
+**`docs/v10-build.md` is the whole of it**, read off `v10/usr/src/build`, which is the
+authority. The machine builds itself; the host only fetches tapes.
 
 ```bash
-bash tools/v10-tapes.sh                 # six archives -> v10tapes/, pristine
-python3 tools/v10-tree.py --bootstrap   # v10tapes/ -> v10superset/  (DESTRUCTIVE)
-python3 tools/v10-check.py              # validate the superset, independently
-python3 tools/v10-dist.py               # v10superset/ -> v10/       (DESTRUCTIVE)
-python3 tools/v10-tree.py               # what have WE changed since the tapes?
-```
-
-Running a machine (**never two at once**, and never from a session that is also giving
-instructions):
-
-```bash
+bash tools/v10-tapes.sh                 # fetch the six -> work/tapes/*.tar, for the guest
 bash tools/v10-launch.sh                # netfsd shares + images/v10 as rq0, golden as rq1
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, no netfsd
-bash tools/v10-reset.sh                 # restore images/ from image/*.tar.bz2
+bash tools/v10-reset.sh                 # restore images/ from the committed archives
 ```
+
+Never run two simulators, and never run one from a session that is also giving
+instructions.
 
 On the guest, the inner loop is **two commands** (`v10/usr/src/build/`):
 
@@ -100,10 +94,14 @@ updatebuild        # pull /usr/src/build from the share -- the ONLY command touc
 ipnxbuild          # build this machine;  ipnxbuild /v10  targets the disk on ra1
 ```
 
-The rest of the verb set is rare: `mkv10` (six tapes → `v10.tar`, pristine), `mkipnx`
-(`v10.tar` + patches + our files + `src/build` → `ipnxorig.tar`), `taripnx` (live `/usr` →
-`/usr/ipnx/ipnx.tar`), `mkimage` (blank disk, unpack, `ipnxbuild /v10`). Full procedure with
-the reason each wrong version was wrong: `docs/v10-round.md`.
+The rest of the verb set is rare: `mkv10` (six tapes → `v10.tar`, pristine, once ever),
+`mkipnx` (`v10.tar` + build system + repairs → `ipnxorig.tar`), `taripnx` (live `/usr` →
+`/usr/ipnx/ipnx.tar`), `mkimage` (blank disk, extract, `mk world`), `ipnxinstall` (the
+configuration, asking before it overwrites anything the operator owns), `ipnxclean`
+(remove what was derived).
+
+Bootstrapping from nothing is `mkimage` (leaves `/v10` blank and mounted), `mkv10`,
+`mkipnx`, `mkimage` again.
 
 ## Architecture
 
@@ -133,61 +131,52 @@ so V10 arrives as just another image (`MachineSpec.swift`, `Machine.swift`).
   app compiles the same sources; `netfsd` is a thin `main()`. Nothing here may grow a
   Mac-only dependency.
 
-### The four V10 trees, and what each answers
+### The trees
 
 | | | |
 |---|---|---|
-| `v10tapes/` | **gitignored** | the six TUHS archives, pristine, one root each. Re-extractable; `MANIFEST` has a hash per file. Never edited. |
-| `v10superset/` | **gitignored** | a **corpus** — everything the six tapes hold, merged by rule, in whatever shape the tapes were cut. Validated, not shaped. No V10 machine ever looked like this. |
-| `v10/` | committed | a **filesystem** — byte-for-byte the machine's own `ipnx.tar` (a tar of `/usr`), so `v10/usr/src/cmd/ls.c` is what the guest has at `/usr/src/cmd/ls.c`. **Our working copy, edited directly.** |
+| `v10/` | committed | a **filesystem** — byte-for-byte the machine's own `ipnx.tar`, a tar of `/usr`, so `v10/usr/src/cmd/ls.c` is what the guest has at `/usr/src/cmd/ls.c`. **Our working copy, edited directly.** |
 | `v8/` | committed | the Eighth Edition source the golden is built from, laid out the same way. |
+| `work/tapes/` | gitignored | the six TUHS archives as plain tar, written by `tools/v10-tapes.sh`. What `mkv10` reads. |
 
-**Only `v10/` is in the repository.** The corpus was committed until it was deleted at
-Christine's instruction; both tape trees are now build products, rebuilt by the two
-commands above and recoverable from git history (`751594dd` and later). Six of the
-corpus' roots — `lsys`, `dist`, `nbstests`, `history`, `dregs`, `facedl`, 1,654 files —
-were never placed into `v10/` and so exist only there, `lsys/astro/mk.out` among them.
-The generated reports stay committed and answer most tape questions without a rebuild:
-`docs/v10-tree.md` (provenance, per file, with the contested paths dated) and
-`docs/v10-dist.md` (what was placed where, and what was not).
+`v10tapes/` and `v10superset/` were a host-side reconstruction — a pristine extract per
+tape, merged into a corpus, shaped into `v10/`. The machine does all of that now
+(`mkv10`), so both trees are deleted; git history has them at `751594dd` and later. Six
+tools that read them are still in `tools/` and are no part of the build: `v10-tree.py`,
+`v10-dist.py`, `v10-check.py`, `v10-read.py`, `v10-files.py`, `v10-plan.py`.
 
-There is **no patch directory and no OVERLAY file** — git keeps that record honestly. The
-old arrangement hid eleven files of pure *configuration* (a motd, a hostname, an `/etc`) among
-genuine repairs for as long as nobody diffed it. `python3 tools/v10-tree.py` is where the
-discipline is checked: it prints every file we have changed, added or removed since the tapes,
-and the tree currently answers **0**.
-
-The superset merge: `secombe` is the base — the newer cut, dating 1993–1995 against
-norman's 1988–1993 — and `norman` supplies reach, 10,612 paths secombe does not carry.
-Where bytes differ the newer mtime wins, every contested path dated in `docs/v10-tree.md`.
-Excluded: `history/ix`, 877 files of a different operating system. Case collisions take a
-`u_` prefix on the non-lowercase spelling, applied per path component to the **merged tape
-paths**. `ar` archives are unpacked as directories with an `ORDER` file beside the members,
-which is why the corpus held 33,419 paths for 28,697 tape entries.
-An archive is found by its magic number (`!<arch>\n`), never its name — the host `ar` is never
-used, because macOS's exits **zero** having extracted nothing from the SysV/COFF archives under
-`630/`. Placement into `v10/` allows only two kinds of evidence (a file naming its own path;
-the tape's own `srctotape` manifest); counting references does *not* settle a source directory,
-and anything unsettled stays in `v10superset`.
+**There is no patch directory and no OVERLAY file** — git keeps that record honestly. The
+old arrangement hid eleven files of pure *configuration* (a motd, a hostname, an `/etc`)
+among genuine repairs for as long as nobody diffed it. `v10/usr/src/build/patch` is the
+repairs, each idempotent and each carrying its evidence; `PATCHES.md` is the long form.
 
 ### The guest-side build
 
-`v10/usr/src/build/` is edited here and reaches the machine via `updatebuild`. Two files carry
-everything: **`mkfile`** (one rule per product; `world` is the distribution in bootstrap order)
-and **`patch`** (idempotent source repairs run before anything compiles, each block carrying
-its evidence — `PATCHES.md` is the long form). Invariants the arrangement rests on:
+`v10/usr/src/build/` is edited here and reaches the machine via `updatebuild`. Full
+account: `docs/v10-build.md`. What recurs everywhere in it:
 
-1. `/usr/src` holds everything the tapes carry; `/usr/bin` and `/usr/lib` hold what the build
-   makes.
-2. **`$ROOT` means only where output goes** — not where the toolchain is, the build system is,
-   or sources are read from. `$GEN` no longer follows `$ROOT`, so no copy on the target can
-   go stale.
-3. The toolchain is always the boot system's. One process, one parameter.
-4. Every list the build reads is in the mkfile. *A component list that appears twice will
-   disagree.*
-5. The repository is the only source of truth for the build system; pulling from it is the
-   first half of every round, not a decision.
-6. Whatever mounts, unmounts — including on the failure path.
+1. **The shape of `/usr` is `build/usrtrees`** — `src man include sys blit jerq 630 maps
+   vol2 local`. `sys`, `man` and `include` sit **beside** `src`, not inside it; an earlier
+   migration put them under `/usr/src` and was reversed. `bin` and `lib` are absent
+   deliberately: product, not shape.
+2. **`$ROOT` means only where output goes** — not where the toolchain is, not where the
+   build system is. `$GEN` is pinned to the builder, so no copy on the target can go
+   stale, and the toolchain is always this machine's.
+3. **A component list that appears twice will disagree.** Each of `usrtrees`, `casenames`,
+   `casefix`, `arcfix`, `mkfiles`, `preserve`, `derived` and `consumed` is the only
+   statement of its thing, and where it can be, *the list is the directory* — `mkbuild`
+   enumerates its source, `ipnxinstall` enumerates `$GEN/etc`.
+4. **Build and install are two halves.** `build1`..`build4` make artefacts in the source
+   tree; `world`'s members install them. Each runs in its own `mk`, because a nested
+   virtual aggregate dies at its first fork with `Not enough memory`.
+5. **Whatever mounts, unmounts** — including on the failure path, which `ipnxbuild` traps
+   1 2 3 15 for.
+6. **Tally into files, never variables.** 1970s `sh` forks for a compound command carrying
+   an input redirection, so a counter assigned inside `while read ... done < file` is lost
+   in the child.
+7. **`ipnx.tar` = `ipnxorig.tar` = `v10/`.** Two archives cut at different moments hold
+   the same tree, or one of them is lying. `consumed`, `preserve` and the directory list
+   exist to close that equation.
 
 ## The rule that outranks everything else
 
@@ -300,26 +289,16 @@ unmounts, and **refuses to halt if the unmount failed**.
   it found — `.claude/` is gone and nothing installs hooks now, so it is a command and
   fails like one. The eight tracked `cmd/gcc/*.md` files are GCC **machine descriptions**,
   not markdown, and the sweep skips the tape trees for that reason.
-- **Five tools need the corpus rebuilt before they run at all**, now that it is no longer
-  committed: `v10-check.py`, `v10-dist.py`, `v10-read.py`, `v10-files.py` and
-  `v10-plan.py`. Each says so and names the two commands rather than failing obscurely.
-  They are kept precisely because they are the recipe — deleting them would make the
-  corpus' deletion irreversible.
-- `python3 tools/v10-read.py` reads the corpus and writes `v10superset/READ.jsonl`, which
-  `tools/v10-files.py` turns into `docs/v10-files.md`. The committed report predates the
-  rebuild — its header still names `v10/source` and `v10/READ.jsonl` and counts 54,328
-  entries against the corpus' 33,419 — so the per-file descriptions hold but the shape it
-  describes does not.
-- **`docs/v10-plan.md` and `tools/v10-plan.py` are vestigial.** The plan was the list the
-  ten-stage build read; the mkfile is now the only list the build reads
-  (`docs/v10-build.md`, invariant 4). The tool's paths have been repointed, but it still
-  reports `programs 0` because it assumes the old tree's `src/` level above `cmd`, which
-  the corpus' tape roots do not have. Treat its output as unverified until that is either
-  rebuilt or the pair is retired.
-- `tools/v10-tree.py` emits the per-tape prose in `docs/v10-tree.md` from hardcoded
-  strings at `:439-441` that still describe the **old** merge rule — they call `norman`
-  "the base of the tree" and say `secombe` has "only 30 paths of its own", while
-  `PRECEDENCE` at `:99` puts secombe first and the file-count column in the same table
-  credits secombe with 13,394 files. One row says both things at once.
-- `docs/roadmap.md` cites `tools/v10-syscalls.py` five times for the 112-of-128 syscall
-  measurement. The tool was deleted; the measurement it recorded stands.
+- **Six tools in `tools/` are no part of the build and await deletion**:
+  `v10-tree.py`, `v10-dist.py`, `v10-check.py`, `v10-read.py`, `v10-files.py` and
+  `v10-plan.py`. They implemented the host-side reconstruction that `mkv10` replaced, and
+  they read trees that no longer exist. `tools/v10-tapes.sh` is the only host-side piece
+  of the bootstrap that survives, and it now does nothing but fetch and decompress.
+- `v10/usr/src/build/PATCHES.md` opens *"Generated by `tools/v10-overlay.py` — do not
+  edit; edit the tool"*. That tool does not exist and has not for some time, so the file
+  is maintained by hand whatever its header says.
+- `docs/roadmap.md` and the `docs/v10-log/` notebook cite tools that were deleted —
+  `v10-syscalls.py`, `v10-probe.sh`, `v10-stage1.sh` and about forty more. Those are
+  **dated provenance** for results that were obtained ("✅ 2026-08-16, 9/9"), not commands
+  to run; `ls tools/` is the authority on what exists. `RESEARCH.md` is frozen evidence
+  and is not corrected either.

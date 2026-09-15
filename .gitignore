@@ -52,26 +52,25 @@ __pycache__/
 # own contents, and without this exception the tree silently loses those files.
 !v10/**
 
-# NEITHER TAPE TREE IS COMMITTED, and that is a deliberate trade made twice.
+# THE TAPES ARE NOT COMMITTED, AND NEITHER IS ANY TREE MADE FROM THEM.
 #
-# v10tapes/ is 514 MB of pristine extract, reproducible byte for byte by
-# tools/v10-tapes.sh from the six archives in work/, whose MANIFEST records a
-# hash per file.  v10superset/ is the 373 MB corpus built from it by
-# tools/v10-tree.py --bootstrap: everything the six tapes hold, merged by rule,
-# in whatever shape the tapes were cut.  It was committed until the tree was
-# deleted at Christine's instruction; git history still has it, and the two
-# commands above rebuild it from the tapes.
+# work/tapes/ holds the six archives as plain tar, written by
+# tools/v10-tapes.sh -- the host half of the bootstrap, and the only part of it
+# that is not on the machine.  v10/usr/src/build/mkv10 reads them and writes
+# v10.tar; docs/v10-build.md is the whole procedure.
 #
-# What IS committed is v10/ -- the tree the build reads, and byte for byte the
-# machine's own ipnx.tar -- so a question about what we build from is a git
-# grep, while a question about what a particular TAPE says is two commands away
-# and provable against the manifest.  The generated reports stay committed for
-# the same reason: docs/v10-tree.md is the corpus' provenance and docs/v10-dist.md
-# its placement into v10/, so most tape questions are answerable without
-# rebuilding anything.  docs/v10-files.md describes 54,328 entries one line
-# each, but it was generated BEFORE the rebuild, off the older v10/source tree
-# and a v10/READ.jsonl that no longer exists -- the descriptions hold, the
-# shape it names does not.
+# v10tapes/ and v10superset/ were a host-side reconstruction: a pristine extract
+# per tape, merged into a corpus, shaped into v10/.  The machine does all of
+# that now, so both trees were deleted; git history still has them (751594dd
+# and later).  Six tools that read them are still in tools/ awaiting deletion --
+# v10-tree.py, v10-dist.py, v10-check.py, v10-read.py, v10-files.py and
+# v10-plan.py -- and none of them is part of the build docs/v10-build.md
+# describes.
+#
+# What IS committed is v10/ -- byte for byte the machine's own ipnx.tar, which
+# is what `taripnx' writes and what mkimage extracts -- so a question about what
+# we build from is a git grep.  A question about what a particular TAPE says is
+# answered by fetching the six again and running mkv10.
 v10tapes/
 v10superset/
 

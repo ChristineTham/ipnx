@@ -22,7 +22,7 @@ compiled **its own kernel**, which boots to a login prompt and halts cleanly
 (B3). The nine-stage plan this section used to describe is gone with the
 arrangement that ran it: the build is now `updatebuild` then `ipnxbuild` on the
 machine, reading one `mkfile` and one `patch` — [v10-build.md](v10-build.md) is
-the design, [v10-round.md](v10-round.md) the procedure. `ipnx.tar`,
+the whole of it, read off the scripts themselves. `ipnx.tar`,
 `ipnxorig.tar` and `v10/` have been proven equal by SHA-256 over all 26,385
 files, so the repository and the machine hold the same tree.
 
@@ -175,7 +175,7 @@ Runbook: [spike-a0.md](spike-a0.md)
       `stopFlag.set()` → the runloop's `while !stop.isSet` exits, and reopening
       power-cycles it cleanly (`5620 powered on` twice in the log)
 
-## Track B — the V10 restoration *(desktop SIMH until it boots; see [v10-restoration.md](v10-restoration.md))*
+## Track B — the V10 restoration *(desktop SIMH until it boots; the build is [v10-build.md](v10-build.md))*
 
 **Where this stands (2026-08-16).** The infrastructure is finished, **a Tenth
 Edition toolchain runs on the Eighth Edition machine**, and **fifteen of the
@@ -203,7 +203,7 @@ done in the nine years it has been public
 describe us: there is a world build now — `v10/usr/src/build/mkfile`, one rule per product —
 and there is boot media. V10 built its own `/bin`, its own `libc` and **its own kernel** in
 the week to 2026-08-24, and a golden boots to a login prompt and halts cleanly. The world
-build completes as of 2026-08-25. How it works is [v10-bootstrap.md](v10-bootstrap.md); where
+build completes as of 2026-08-25. How it works is [v10-build.md](v10-build.md); where
 it is going is [v10-build.md](v10-build.md).*
 
 Three consequences that reshape everything after B1:
