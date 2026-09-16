@@ -111,9 +111,11 @@ bash tools/v10-golden.sh                # boot a throwaway copy of the golden
 
 The tapes are not committed and **neither is any tree made from them**. The host-side
 reconstruction that used to produce one — a pristine extract per tape, merged into a
-corpus, shaped into `v10/` — is gone: the machine does that itself now, via `mkv10`. The
-tools that read those trees (`v10-tree.py`, `v10-dist.py`, `v10-check.py`, `v10-files.py`,
-`v10-plan.py`, `v10-read.py`) are legacy awaiting deletion; do not build on them.
+corpus, shaped into `v10/` — is gone, and so are the six tools that read it: the machine
+does all of that itself now, via `mkv10`. `.gitignore` still names `v10tapes/` and
+`v10superset/` so that rebuilding either locally cannot put it back into git. Comments in
+`v10/usr/src/build/mkfile` and `patch` still explain parts of the tree's shape by naming
+`v10-tree.py` — the shape is real, the tool is history.
 
 Guest side — the inner loop is two commands, both run on the machine:
 

@@ -62,10 +62,10 @@ __pycache__/
 # v10tapes/ and v10superset/ were a host-side reconstruction: a pristine extract
 # per tape, merged into a corpus, shaped into v10/.  The machine does all of
 # that now, so both trees were deleted; git history still has them (751594dd
-# and later).  Six tools that read them are still in tools/ awaiting deletion --
-# v10-tree.py, v10-dist.py, v10-check.py, v10-read.py, v10-files.py and
-# v10-plan.py -- and none of them is part of the build docs/v10-build.md
-# describes.
+# and later), and the six tools that read them have followed -- v10-tree.py,
+# v10-dist.py, v10-check.py, v10-read.py, v10-files.py and v10-plan.py, none of
+# which was part of the build docs/v10-build.md describes.  The two rules below
+# stay: a local rebuild of either tree must not be committable by accident.
 #
 # What IS committed is v10/ -- byte for byte the machine's own ipnx.tar, which
 # is what `taripnx' writes and what mkimage extracts -- so a question about what
