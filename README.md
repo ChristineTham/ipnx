@@ -33,8 +33,10 @@ on hardware you already carry.
 > restoration — now builds itself**: a Tenth Edition compiler, assembler and libc first ran
 > on the Eighth Edition machine, and V10 has since built its own libc, its own `/bin`, and
 > **its own kernel** — the first V10 kernel anyone has compiled. A golden boots to a login
-> prompt and halts cleanly. Next is the build system itself, redesigned:
-> [docs/v10-build.md](docs/v10-build.md). Details: [docs/roadmap.md](docs/roadmap.md).
+> prompt and halts cleanly. It is **not a complete Tenth Edition**: measured against the
+> tape's own manifests, 27 of the 50 files `/usr/lib` should hold are not built, and
+> finishing that is the current work — [docs/v10-build.md](docs/v10-build.md),
+> [docs/roadmap.md](docs/roadmap.md).
 >
 > The two numbers belong to two different people: the **edition** is Bell Labs' and is
 > not ours to increment; the **release** counts what this project has made of it, and
@@ -152,9 +154,9 @@ inside the iOS sandbox, because SLiRP aliases the guest's view of the host to lo
 
 ### ipnx-v10 — Tenth Edition (1989) · *the restoration*
 
-Tenth Edition **has never been booted by anyone** — there is no boot media, and making
-some is the whole of Track B. The plan was to cross-build V10's toolchain on the running
-V8; it turned out not to need one. The surviving tarball is not source-only, as everyone
+Tenth Edition **had never been booted by anyone** — there was no boot media, and making
+some is the whole of Track B. It boots here now. The plan was to cross-build V10's
+toolchain on the running V8; it turned out not to need one. The surviving tarball is not source-only, as everyone
 including this project believed: it carries **483 linked VAX executables**, among them
 V10's C compiler, its assembler and a complete `libc.a` — and on 2026-08-16 those
 **ran unmodified on the V8 kernel**, 9 checks out of 9. Only `cpp`, `c2` and `ld` had to
@@ -170,12 +172,20 @@ last package to fall.
 
 **The machine builds itself, and the host only fetches tapes.** Everything lives in one
 directory, `v10/usr/src/build`, edited in this repository and pulled onto the machine by
-`updatebuild`. Six verbs: `mkv10` turns the six TUHS archives into a pristine `v10.tar`,
-`mkipnx` adds the build system and the repairs, `mkimage` makes a bootable disk and builds
-it, `ipnxbuild` builds a complete system from `/usr/src`, `taripnx` archives a live one.
-The inner loop is two commands — `updatebuild; ipnxbuild`. Every deviation from the tape is
-an idempotent block in `patch` with the evidence beside it, and `PATCHES.md` is the long
-form. [docs/v10-build.md](docs/v10-build.md) is the whole of it, read off the scripts
+`updatebuild`. `mkv10` turns the six TUHS archives into a pristine `v10.tar`, `mkipnx` adds
+the build system and the repairs as `ipnxorig.tar`, `mkimage` formats a second drive and
+builds a disk into it, `ipnxbuild` builds a complete system from `/usr/src`, `ipnxclean`
+removes exactly what that wrote, and `taripnx` archives a live machine as `ipnx.tar`. The
+inner loop is two commands — `updatebuild; ipnxbuild`. Every deviation from the tape is an
+idempotent block in `patch` with the evidence beside it, and `PATCHES.md` is the long form.
+
+**What is not done is the distribution's completeness.** The tapes carry their own manifests
+of what a V10 machine holds, and against them four of `/bin`'s 57 files are not built (each
+with a reason), four of `/etc`'s 56 have no source on any tape, and **27 of `/usr/lib`'s 50
+are missing** — the PDP-11 cross-toolchain, seven libraries, and troff and man data files,
+some of which V8 carries and V10's tapes do not. Nobody has yet read `/usr/src` through
+against those lists one directory at a time, and that is the next piece of work.
+[docs/v10-build.md](docs/v10-build.md) is the whole of the build, read off the scripts
 themselves; the lab notebook is [docs/v10-log/](docs/v10-log/).
 
 **And there was never a pure Tenth Edition to restore.** This is the track's most
@@ -325,7 +335,8 @@ out of reach for reasons that have nothing to do with engineering.
 | **B1** V10 toolchain | ✅ | V10's own compiler, assembler and libc are **in the tarball as linked binaries** and **run on the V8 kernel**; `cpp`, `c2` and `ld` built from source. 9/9 and 10/10 — [v10-log/2026-08-16.md](docs/v10-log/2026-08-16.md) |
 | **B2** the userland | ✅ | V10 builds its own `libc` and its own `/bin` under `mk`, and as of 2026-08-25 the whole `world` target completes — toolchain, libraries, commands, packages — [v10-build.md](docs/v10-build.md) |
 | **B3** kernel + first boot | ✅ | **A V10 kernel has been compiled** — by V10, from `usr/sys`, the tape's own way — and a golden boots to a login prompt and halts cleanly with netfs surviving it |
-| **B3.5** the build, redesigned | ○ | One tool, three archives, one source tree: `installed` deleted for real dependencies, `/usr/src` as the unit, `mk` everywhere — **next**, [v10-build.md](docs/v10-build.md) |
+| **B3.5** the build, redesigned | ✅ | One tool, three archives, one source tree: `installed` gone for real dependencies, `mk` everywhere, `ipnxbuild`/`ipnxclean` a matched pair — [v10-build.md](docs/v10-build.md) |
+| **B3.6** the distribution, completed | ○ | `/usr/src` read against the tape's own `Admin` manifests, directory by directory: 27 of `/usr/lib`'s 50 files are not built — **next**, [v10-build.md](docs/v10-build.md) |
 | **B4–B5** the experience | ○ | Multi-user, `mux`, **`sam`**, then "Edition 10" in the app |
 | **C** ipnx-ports | ○ | Ports tree; `libcompat` first, then V10's games, then BSD's |
 | **D** ipnx-v11 | ○ | Mostly restoration — V10 already ships a 9P server — [v11-plan.md](docs/v11-plan.md) |
@@ -344,7 +355,6 @@ out of reach for reasons that have nothing to do with engineering.
 | [RESEARCH.md](RESEARCH.md) | The original feasibility study — frozen evidence, not a living doc |
 | [docs/architecture.md](docs/architecture.md) | Living technical spec |
 | [docs/v10-build.md](docs/v10-build.md) | How a Tenth Edition is made, from the tapes to a bootable disk |
-| [docs/v10-build.md](docs/v10-build.md) | The build system redesign, and the plan to get there |
 | [docs/roadmap.md](docs/roadmap.md) | Phases and status for both tracks |
 | [docs/licensing.md](docs/licensing.md) | Binding licensing posture for every component |
 | [CLAUDE.md](CLAUDE.md) | Working context for AI-assisted sessions — including the hard-won gotchas |
@@ -359,7 +369,8 @@ is **built from this repository's own V8 source** and committed in compressed fo
 fresh clone needs no external media and no workbench:
 
 ```bash
-tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8   # -> work/myv8/ipnx-v8-rp07.img
+git lfs pull                                            # the archives are LFS pointers in a fresh clone
+tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8   # -> work/myv8/rp07new
 ```
 
 That is the app build's only media prerequisite. To rebuild the disk from source rather
@@ -381,12 +392,6 @@ cd app && xcodebuild -project ipnx.xcodeproj -scheme ipnx -destination 'platform
 
 ```bash
 cd app && xcodebuild -project ipnx.xcodeproj -scheme ipnxMac -destination 'platform=macOS,arch=arm64' build
-```
-
-To exercise the whole machine protocol — boot, suspend, save, restore — without the app:
-
-```bash
-bash work/verify-libcli.sh
 ```
 
 ### Checking it

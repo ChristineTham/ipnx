@@ -100,14 +100,19 @@ the `rp06build` filesystem stage 1 left behind.
 
 ### V10
 
-Host side — put a machine under the build and boot what comes out:
+**The machine builds itself; the host only fetches tapes and boots it.**
 
 ```bash
 bash tools/v10-tapes.sh                 # fetch the six TUHS archives -> work/tapes/, plain tar
 bash tools/v10-reset.sh                 # restore images/: both disks (joining the golden's halves) + the boot ROM
-bash tools/v10-launch.sh                # boot images/v10 with both netfs shares
-bash tools/v10-golden.sh                # boot a throwaway copy of the golden
+bash tools/v10-launch.sh                # boot images/v10, golden on the second drive, both shares up
+bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
 ```
+
+**There is no host tool that creates a blank disk image**, and `mkimage` cannot make one —
+V10 has no sparse files. The file must exist on the host and be attached as `rq1` first
+(`dd if=/dev/zero of=images/v10-new bs=512 count=3920490` is an RA73). `v10-launch.sh`
+attaches the golden as the second drive, so an ordinary round needs no new file.
 
 The tapes are not committed and **neither is any tree made from them**. The host-side
 reconstruction that used to produce one — a pristine extract per tape, merged into a
@@ -125,6 +130,7 @@ Guest side — the inner loop is two commands, both run on the machine:
 ```sh
 updatebuild            # pull /usr/src/build from the repo over /n/macos; the ONLY command that touches /n
 ipnxbuild [/v10]       # build a complete system from /usr/src into ROOT (default /)
+ipnxclean [/v10]       # remove exactly what ipnxbuild wrote, from the list it wrote
 ```
 
 Everything the build does is `v10/usr/src/build/mkfile` (one rule per product; `world` is
@@ -133,10 +139,17 @@ anything compiles). Both are edited **here**, in the repository, and reach the m
 via `updatebuild`. `patch` edits `/usr/src` in place on a guest whose tree persists between
 builds, so a bad edit must be *repaired*, not merely reverted.
 
-The rarely-typed verbs: `mkv10` (tapes → `v10.tar`, pristine), `mkipnx` (→ `ipnxorig.tar`,
-patched), `taripnx` (a live `/usr/src` → `ipnx.tar`), `mkimage` (fabricate a disk).
+The rarely-typed verbs: `mkv10` (the six tapes → `v10.tar`, pristine), `mkipnx`
+(`v10.tar` + build system + repairs → `ipnxorig.tar`), `taripnx` (a live `/usr` →
+`ipnx.tar`), `mkimage` (format the second drive and build a disk into it).
 `build/usrtrees` is the single statement of what `/usr` carries; `build/mkcheck` lists what
 must exist before the mkfile will run.
+
+**V10 is not a complete distribution, and the measure is the tape's own.**
+`v10/usr/src/cmd/Admin/{binfiles,etcfiles,libfiles,ulibfiles}` are the manifests of what a
+V10 machine holds. Against them: 4 of `/bin`'s 57 and 4 of `/etc`'s 56 are not built (each
+with a reason), and **27 of `/usr/lib`'s 50 are missing**. Check a claim about completeness
+against those lists, never against a pattern over the source tree.
 
 ### Website and release
 

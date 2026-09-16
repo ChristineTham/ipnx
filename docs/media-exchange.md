@@ -258,7 +258,7 @@ that does not test the tail tests nothing.
 concluded that ingest had to be selective. netfs (B0.5, N5-N7) deleted the
 problem rather than easing it: the tree is **served, not copied**, so nothing
 lands on guest disk, no subtree has to be chosen, and B1 mounted all 25,682
-files at `/n/v10` (`tools/v10-probe.sh`, `tools/v10-toolchain.sh`). The
+files at `/n/v10`. The
 courier survives for the one thing netfs cannot carry -- a whole disk image.
 
 The measurements were right and are kept because they are what made the

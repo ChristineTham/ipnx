@@ -63,7 +63,3 @@ Which is which, and why retiring the TUHS image loses nothing, is
 `.gitignore` blocks `*.img` and every other raw disk suffix, and un-blocks
 `image/*.tar.bz2` alone, so the packed form is the only way a disk can enter
 git at all. That exception is the whole allowance; nothing else belongs here.
-
-*(`tools/hook-block-binaries.sh` used to enforce this as a Claude Code
-PreToolUse hook. It was deleted along with `.claude/`, so `.gitignore` is now
-the only guard.)*
