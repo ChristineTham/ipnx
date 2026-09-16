@@ -1,7 +1,8 @@
 # B0.5 (the N track) — implementation notes
 
-*Results and gotchas as each phase of [networking-plan.md](networking-plan.md)
-lands. The plan is the design; this is what actually happened.*
+*What V8's networking is and how it got that way: a bigger disk, an Interlan NI1010 modelled
+for SIMH, TCP and UDP to the outside world, and Weinberger's netfs with a server to talk to.
+All of it ships.*
 
 ## N0 — the 516 MB RP07 disk *(done 2026-08-09)*
 
@@ -86,7 +87,7 @@ partition.
   along. Light I/O hides it — the probe ran without it and still fsck'd clean —
   so it only appears once two units have overlapping transfers.
 - **This casts doubt on B0's "raw transfers must be 512 bytes" rule.**
-  [media-exchange.md](media-exchange.md) attributes 4 KB+ raw write failures to
+  the courier's notes attributed 4 KB+ raw write failures to
   a transfer-size limit, on the evidence of `er1=5<RMR,ILF>` — the identical
   signature that turned out to be nothing but a missing `set noasynch`.
   `work/rawwrite.exp` never set it either. The rule may be an artefact; it is

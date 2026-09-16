@@ -1,30 +1,13 @@
 # Roadmap
 
-*Tracks A and B share one spike: Track A ships a real product on proven ground; Track B is the
-research moonshot that lands into the same app shell. C and D are later and declared here so
-the README's scope has somewhere to point. Update checkboxes and the status line as work
-completes.*
+*Track A ships a real product on proven ground; Track S built the disk it ships. C and D are
+later and declared here so the README's scope has somewhere to point. **V10 is not a track in
+this document** — it boots, it builds itself, and its status and remaining work live in
+[v10-build.md](v10-build.md), read off the scripts rather than narrated here.*
 
-**Current phase: Track B — the distribution, completed.** V8 is closed out: Track A through
-A5, Track S built the disk the app ships, and B0/B0.5/B0.6 are done.
-
-**The goal was a V10 kernel with the V10 toolchain running on it** — not a complete userland,
-but a machine that can compile itself, because nothing else can be trusted before it: a V10
-command built on a V8 host is validated against the wrong kernel.
-
-**That goal is met.** V10's own compiler, assembler and libc came off the tape as linked
-binaries and ran on the V8 kernel; V10 went on to build its own `libc`, its own `/bin` and the
-whole `world` target, and it compiled **its own kernel**, which boots to a login prompt and
-halts cleanly. The build is `updatebuild` then `ipnxbuild` on the machine, reading one
-`mkfile` and one `patch` — [v10-build.md](v10-build.md) is the whole of it, read off the
-scripts themselves.
-
-**What is left is completeness, and it is measurable.** Against the tape's own `Admin`
-manifests, 27 of the 50 files `/usr/lib` should hold are not built, and `/usr/src` has never
-been read against those lists directory by directory. After that: the experience — `mux`,
-`sam`, and "Edition 10" in the app — plus, still unexercised from Track A, `mux`/`jim` under
-the Mac's real pointer, which needs a human at a mouse, and the App Store steps, which need
-the Apple account.
+**Current phase: finishing V10's distribution** ([v10-build.md](v10-build.md)), and the two
+things in Track A that need a person rather than a machine — `mux`/`jim` under the Mac's real
+pointer, and the App Store steps, which need the Apple account.
 
 ## Phase A0 — desktop spike *(shared by both tracks; no iOS code)*
 
@@ -162,68 +145,6 @@ Runbook: [spike-a0.md](spike-a0.md)
       all, so a stopped one is the only cheap one. `close(line)` → `dmd.stop()` →
       `stopFlag.set()` → the runloop's `while !stop.isSet` exits, and reopening
       power-cycles it cleanly (`5620 powered on` twice in the log)
-
-## Track B — the V10 restoration *(the build is [v10-build.md](v10-build.md))*
-
-**V10 boots, builds itself, and has produced a golden. The distribution is not complete.**
-
-### How it was done
-
-| | |
-|---|---|
-| **B1** the toolchain | The surviving tapes are not source-only: they carry linked VAX executables, among them V10's C compiler, its assembler and a complete `libc.a`, and those **ran unmodified on the V8 kernel**. Only `cpp`, `c2` and `ld` had to be built from source. |
-| **B2** the tree | Six TUHS tapes analysed and merged into one reconstructed `/usr`, newer mtime winning where two disagree. Case collisions resolved, every `ar` source archive dissolved into a directory of its members with an `ORDER` file. That tree is `v10/`. |
-| **B3** the kernel and the first boot | With the V10 toolchain hosted on V8, a V10 kernel configuration was written and a kernel compiled, then a root filesystem — `/bin`, `/lib`, `/etc`. A disk carrying both booted. That is the moment V10 stopped being a cross-build. |
-| **B3.5** the build | From there the disk was built out on itself. `v10/usr/src/build` is the whole of it: `ipnxbuild` and `ipnxclean` a matched pair, `mkv10`/`mkipnx`/`mkimage` the archive chain, `updatebuild` the one command that touches a share. |
-
-The V8-hosted cross-build that reached step B3 no longer exists in this repository, and
-does not need to: the machine builds itself now.
-
-### B3.6 — the distribution, completed *(next)*
-
-The tapes carry their own manifests of what a V10 machine holds — `cmd/Admin/binfiles`,
-`etcfiles`, `libfiles`, `ulibfiles` — and they are the measure nobody has finished reading
-against. As at 2026-09-16:
-
-- `/bin` — 4 of 57 not built (`iostat`, `mail`, `rmail`, `rsh`), each with a reason in the mkfile
-- `/etc` — 4 of 56 not built (`analyze`, `backsh`, `catman`, `dklisten`), no source on any tape
-- **`/usr/lib` — 27 of 50 not built**: the PDP-11 cross-toolchain, seven libraries, and troff
-  and man data files, some of which V8 carries and V10's tapes do not
-
-- [ ] Read `/usr/src` against the `Admin` manifests **directory by directory**, not by pattern
-- [ ] Decide per missing file: buildable, absent from every tape, or fetchable from V8
-- [ ] A host-side tool to create the blank disk image file `mkimage` formats — V10 cannot make
-      a sparse file, and the script that used to do it on the host was deleted
-
-### B4 — the V10 experience
-
-- [x] Multi-user: `init`, gettys, `login`. The golden reaches `login:` and halts cleanly.
-- [ ] `mux` against dmd_core (firmware 8;7;3 — the protocol is unchanged from V8).
-      **There is no 5620 `muxterm` on the tape**: a scan of `blit/`, `src/history/ix/src/jerq`
-      and `src/630` for the WE32100 COFF magic finds zero files. `blit/` is the 68000 Blit
-      tree, so the host side is there as a VAX binary (`blit/bin/mux`) while the *terminal*
-      side exists only as source under `history/ix/src/jerq/`. Two routes, and choosing is an
-      authenticity decision: build a WE32100 `muxterm` from that source (needs a WE32100
-      compiler, which `blit/lib/ccom` is not), or download V8's `muxterm` under V10's `mux`.
-      Cheapest decisive experiment: build `32ld` from `history/ix/src/jerq/32ld/32ld.c` — a
-      VAX program — and see whether it pushes anything down a DZ line into dmd_core.
-      [v10-log/2026-08-18.md](v10-log/2026-08-18.md)
-- [ ] **`sam` and `samterm`** — the reason `v10blit` matters, and something V8 never had
-
-### B5 — merge into the app
-
-**Two machines, two goldens, and the user picks.** V10 ships *beside* V8, not instead of it,
-and V8's golden is not a staging area for V10's. The app has been shaped for this since
-2026-08-16: the support directory is *app first, edition inside* (`Machine.support`), and
-`MachineSpec` holds every difference between the editions as data.
-
-The constraint that falls out of it: **nothing in Track B may modify the V8 golden.** V8 is
-the build host and the shipped Eighth Edition, and those are the same disk.
-
-- [ ] "Edition 10" as a second machine beside V8, chosen at launch
-- [ ] A second golden, committed on its own terms
-- [ ] Reconcile the drive type: `MachineSpec.swift` attaches V10 as an **RA81**, while
-      `ipnx-v10.m` and both launchers use an **RA73**
 
 ## Track S — the world build *(started 2026-08-10, [build-from-source.md](build-from-source.md))*
 
@@ -558,7 +479,7 @@ to be asked per file again.
         this: something to compare output against rather than something to depend on.
 - [ ] **D-A2** Inventory what conversion actually costs: how many of V10's ~283 command
       units and 261 libc members are K&R, and how many already are not. `tools/`
-      already has the scanner shape for this (`v10-syscalls.py`, `v10-proto.py`).
+      already has the scanner shape for this (`tools/v10-proto.py`).
 - [ ] **D-A3** Convert libc first, for the same reason stage 2 comes before stage 3:
       everything links against it.
 

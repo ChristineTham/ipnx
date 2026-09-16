@@ -4,7 +4,7 @@
 at the end records what is verified and what is not.
 
 **The design decision below changed in the doing, and for the better.** This
-document proposed `work/config.exp` — a build-time script run against the
+document proposed a build-time script run against the
 golden image on the workbench. That is not where it ended up. The build now
 generates the disk from source, so everything universal lives in `v8/etc/`
 and is *copied* by `builddisk.sh`: the identity, the motd, the profiles, the
@@ -12,7 +12,7 @@ mount points. A script that mutates an image afterwards is strictly worse
 than a source file the build reads, because only one of them is reproducible.
 
 That change is also how this went wrong for a while, and the failure is worth
-recording. `config.exp` existed and had been run against the *old workbench*
+recording. That script existed and had been run against the *old workbench*
 image, so the configured values were real — on that image. `v8/etc/whoami`
 still held the tape's `v8generic`, `v8/etc/motd` still held the 1985 joke, and
 `v8/etc/ttys` still described alice's 24 lines with six of ours disabled. The
@@ -30,7 +30,7 @@ command.
 
 ## Why one script is not enough
 
-`fix-identity.exp` operates on `rp06v8.golden` on the desktop workbench, and
+It operated on `rp06v8.golden` on the desktop workbench, and
 what it writes is baked into the image every copy of the app ships. That is the
 right home for anything true of *every* installation. It is the wrong home for
 anything true of *this* installation, and the personalisation the goal asks for
@@ -39,7 +39,7 @@ image is built, and cannot be.
 
 So the work splits in two, and the split is the main design decision here.
 
-**Build time — `work/config.exp`** (the expanded `fix-identity.exp`). Runs once
+**Build time — the identity pass on the workbench.** Runs once
 on the workbench against the golden image. Universal, auditable, and cheap to
 re-run when the image is rebuilt. Everything that does not depend on who is
 running the app.
@@ -53,14 +53,14 @@ beside `v8.disk` records that it has run, so it never runs twice, and a `Reset
 disk` in Settings clears it along with everything else.
 
 There is a tempting third option — put the settings on the `rp1` courier disk
-and have `/etc/rc` read them (see [media-exchange.md](media-exchange.md)) — and
+and have `/etc/rc` read them — and
 it is worth keeping in reserve. It is more machinery than twenty lines of shell
 typed once justifies, but it becomes the better answer if first-boot
 configuration ever grows past that.
 
 ## Stage 1 — identity and an account (no new dependencies)
 
-**`work/config.exp`**, build time. Absorbs today's three fix-*.exp scripts, all
+**The identity pass**, build time. Absorbed the three fix-*.exp scripts, all
 of which are one-shot repairs that should have been one script:
 
 - `/etc/whoami` = `ipnx-v8`. This is the *only* place V8 keeps the system name:
@@ -140,10 +140,9 @@ than an experiment:
 ## Stage 3 — the host's files (depends on N4–N7)
 
 netfs over TCP is the route: its in-kernel client is already `standard` in every
-V8 kernel and its mount takes any file descriptor
-([networking-plan.md](networking-plan.md)). The remaining work is exactly N4–N7
-— derive the wire format, write the host server, write the ~50-line guest
-client, then read/write and fold the server into the app.
+V8 kernel and its mount takes any file descriptor. The wire format is in
+[netfs-protocol.md](netfs-protocol.md), the host server is `netfs/`, and the app
+compiles the same sources (`FileShare.swift`).
 
 Once that exists, first boot adds to `/etc/rc`:
 

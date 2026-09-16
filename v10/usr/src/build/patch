@@ -2001,7 +2001,7 @@ else
 	mv g$$ getuid.c
 fi
 
-# The libc repairs stage 2 made, parked in work/v10-preserved and reapplied here.
+# The libc repairs the early staged builds made, reapplied here.
 # PATCHES.md, beside this script, has a section per file.  Every one is "a 1993
 # ANSI member, converted to K&R" -- not handed to lcc, because lcc's prebuilt
 # driver passes -undef to a cpp that rejects it and the member becomes an empty

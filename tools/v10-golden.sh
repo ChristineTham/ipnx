@@ -8,10 +8,10 @@ set -uo pipefail
 # anywhere else -- including in a checkout of this repository beside it.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-IMG="${1:-$ROOT/images/v10-golden}"
-COPY="$ROOT/work/v10-golden-test.img"
-ROM="$ROOT/images/uda"
-CONF="$ROOT/images/v10-golden-test.conf"
+IMG="${1:-$ROOT/images/v10-golden}"    # the GOLDEN, never the working image
+COPY="$ROOT/image/v10-golden-test.img"
+ROM="$ROOT/image/uda"
+CONF="$ROOT/image/v10-golden-test.conf"
 trap 'rm -f "$COPY"' EXIT
 
 rm -f "$COPY"

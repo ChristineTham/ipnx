@@ -91,7 +91,7 @@ line 1` on the tab labelled `tty01`.
 
 ## Facts the build depends on (all established, do not re-derive)
 
-- **`/.profile` picks TERM from the tty** (`work/config.exp`, already applied to
+- **`/.profile` picks TERM from the tty** (applied to
   the golden image): `tty00`→`dmd`, `tty07`→`vt100w`, else `vt100`. There is no
   `/etc/ttytype` and no `/etc/gettytab` on this image.
 - **root has no password** — `login: root` goes straight to `#`
@@ -160,7 +160,7 @@ inside the restored shell, which needs synthetic typing.
 - The 80×24 grid leaves a lot of black above and below on a portrait iPad.
   That is honest — the grid cannot grow — but the empty field may deserve
   something better than black.
-- A container provisioned before `config.exp` was applied keeps its old
+- A container provisioned before that pass was applied keeps its old
   `v8.disk` forever, because provisioning only copies the bundled image when
   there is none. That is deliberate (the disk is the user's), but it means a
   stale simulator still says `v8generi` and shows AT&T's original motd.

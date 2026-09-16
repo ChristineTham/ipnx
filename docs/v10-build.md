@@ -34,44 +34,49 @@ archives**, so every `ar` archive is a directory of its members with an `ORDER` 
 
 ## The split: what the host does, and what it cannot
 
-The host half is deliberately tiny, and it exists for two reasons that are both about 1989.
-TUHS answers plain HTTP with a 301 to https and **V10 has no TLS**; and **gzip is 1992, bzip2
-1996**, so a 1989 machine can read neither — `cmd/` carries `compress(.Z)` and `pack(.z)` and
-nothing else. So:
+**The host holds no tapes.** They were fetched once, put where the machine can read them, and
+extracted there — `mkv10` reads them from `/usr/tmp` by default. Nothing on the Mac decides
+anything about the shape of the tree. What the host does is restore disks from the committed
+archives and boot them:
 
 | | |
 |---|---|
-| `tools/v10-tapes.sh` | fetch the six archives, decompress to plain `tar` in `work/tapes/`, stop |
-| *(no tool)* | **create the blank disk image file the machine formats** — see below |
-| `tools/v10-reset.sh` | restore `images/` from the committed archives: both disks and the boot ROM |
-| `tools/v10-launch.sh` | boot `images/v10` with `images/v10-golden` on the second drive, both netfs shares up |
-| `tools/v10-golden.sh` | boot a throwaway copy of the golden, one drive, no shares |
+| `tools/v10-reset.sh` | restore the two disks from the committed archives, and the boot ROM |
+| `tools/v10-launch.sh` | boot `image/v10` — the working disk — with the golden on the second drive and both netfs shares up |
+| `tools/v10-golden.sh` | boot a throwaway copy of `images/v10-golden`, one drive, no shares |
 | `tools/v10-proto.py` | the kernel config and `sys/lib/tab` → `build/proto-dev` |
 | `tools/v10-makedev.py` | `build/proto-dev` → `build/mkdev` |
+| *(no tool)* | **create the blank disk image file the machine formats** — see below |
 
-Decompressing is not extracting, so nothing about the shape of the tree is decided on the host.
+Two directories, and they are not the same one:
+
+| | |
+|---|---|
+| `image/` | the **current working image** — `image/v10`, the boot ROM, the simh configs the launchers write — beside the committed `.tar.bz2` archives they came from. Everything but the archives is gitignored. |
+| `images/` | the **golden**, restored from the halves in `image/` and booted only as a throwaway copy. |
+
 Case collisions are resolved on the machine, where the filesystem is case-sensitive and the
-tapes' own names survive.
+tapes' own names survive. A 1989 system has neither gzip (1992) nor bzip2 (1996) — `cmd/`
+carries `compress(.Z)` and `pack(.z)` — so anything handed to it must be plain `tar`.
 
 **The missing host step.** `mkimage` formats a second drive — it runs `mkbitfs` against
 `/dev/ra10`, `/dev/ra14` and `/dev/ra15` — but a simulated drive needs a **file** behind it, and
 V10 cannot create a sparse one. That file has to exist on the host and be attached as `rq1`
-before the machine is booted. No script in this repository creates it; the one that did was
-deleted with the rest of the host-side build. Until one is written, fabricating a fresh disk
-means making the file by hand:
+before the machine is booted. No script in this repository creates it. Until one is written,
+fabricating a fresh disk means making the file by hand:
 
 ```bash
-dd if=/dev/zero of=images/v10-new bs=512 count=3920490   # RA73, 1,914 MB, sparse
+dd if=/dev/zero of=image/v10-new bs=512 count=3920490   # RA73, 1,914 MB, sparse
 ```
 
-`tools/v10-launch.sh` attaches `images/v10-golden` as the second drive, so a routine
+`tools/v10-launch.sh` attaches the golden as the second drive, so an ordinary
 build-the-other-disk round needs no new file at all.
 
 ## The tree
 
 `v10/` in this repository **is the machine's own `/usr`**, byte for byte what `taripnx` writes
 and what `mkimage` extracts. A question about what we build from is a `git grep`. A question
-about what a particular tape says is answered by fetching the six again and running `mkv10`.
+about what a particular tape says is answered on the machine, where the tapes are.
 
 `build/usrtrees` is the single statement of the shape, and four scripts read it rather than
 repeating it:
@@ -93,7 +98,7 @@ Five do the work. Everything else in the directory serves them.
 | `ipnxbuild [ROOT]` | build a complete system from `/usr/src` — this machine by default, the disk on `ra1` when given `/v10` | every round |
 | `ipnxclean [ROOT]` | remove everything `ipnxbuild` made, from the list `ipnxbuild` wrote | before archiving |
 | `mkimage` | format the second drive, extract an archive into it, build it | when fabricating a disk |
-| `mkv10 [tapes]` | the six tapes → `v10.tar`, pristine | once, ever |
+| `mkv10 [dir]` | the six tapes, from `/usr/tmp` unless told otherwise → `v10.tar`, pristine | once, ever |
 | `mkipnx [repo]` | `v10.tar` + the build system + the repairs → `ipnxorig.tar` | when the repairs change |
 | `taripnx` | this machine's live `/usr` → `/usr/ipnx/ipnx.tar` | when a machine is worth preserving |
 
@@ -278,6 +283,15 @@ Each is written into more than one script because each was learned the same way.
 8. **V10's `cp` takes only `-z`.** No `-r`, so a directory is copied by a loop per level; no
    `-p`, so a stamp is written with `echo`.
 9. **A guard is `exists at all`**, spelled `-f` or `-d`: this `test` has no `-e`.
+
+## What is left
+
+**The distribution, completed.** Read `/usr/src` against the `Admin` manifests directory by
+directory — not by pattern — and decide per missing file: buildable, absent from every tape,
+or fetchable from V8. The 27 missing from `/usr/lib` are the bulk of it.
+
+**A host-side tool to create the blank disk image** `mkimage` formats. V10 cannot make a
+sparse file, so a fresh disk currently needs a `dd` typed by hand.
 
 ## Testing the golden
 

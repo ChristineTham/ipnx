@@ -25,7 +25,7 @@ puts $fh "set cpu 8m"
 puts $fh "set dz enable"
 puts $fh "set dz lines=8"
 puts $fh "set tto 7b"
-puts $fh "set rq0 ra81"
+puts $fh "set rq0 ra73"
 puts $fh "attach rq0 [file tail $IMG]"
 close $fh
 

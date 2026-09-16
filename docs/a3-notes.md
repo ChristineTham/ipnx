@@ -185,7 +185,7 @@ Not verified yet:
 ## Track B media exchange
 
 Testing how to get the V10 source into V8 turned up two defects and one dead
-end, all recorded in [media-exchange.md](media-exchange.md):
+end:
 
 - The **tape route is unusable**: V8's `ht` driver panics the kernel against
   SIMH's Massbus adapter. The disk courier replaces it.

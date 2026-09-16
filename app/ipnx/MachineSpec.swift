@@ -12,7 +12,7 @@ import Foundation
 /// silently. Now there is one list.
 ///
 /// **V10 IS A DIFFERENT MACHINE, NOT A DIFFERENT FILENAME.** It boots off an
-/// **RA81 on `rq0`** through an MSCP/UDA50A, where V8 uses an **RP07 on `rp0`**
+/// **RA73 on `rq0`** through an MSCP/UDA50A, where V8 uses an **RP07 on `rp0`**
 /// on the Massbus; and it is started by **`run FA02`** — the entry point of the
 /// tape's own boot ROM, which loads `/unix` itself — where V8 is started by
 /// `load -o bootV8 0` and `run 2`. Every value in `v10` below is copied from
@@ -153,15 +153,19 @@ struct MachineSpec: Identifiable, Hashable {
         // kernel puts `sw1' at 0x80001136, i.e. low 0x1136, inside that window.
         // All five conditions hold, and the machine agrees.
         //
-        // `set cpu 8m' is the memory size every V10 harness uses.
-        cpu: ["set cpu 8m", "set cpu idle=4.1BSD"],
+        // 128 MB is what `ipnx-v10.m' configures and what both launchers
+        // (tools/v10-launch.sh, tools/v10-golden.sh) boot with.
+        cpu: ["set cpu 128m", "set cpu idle=4.1BSD"],
         // The idle pattern must be re-issued after `restore' -- `cpu_idle_mask'
         // is not saved -- and the MEMORY SIZE must not be, because sizing memory
         // after a restore writes over what was just restored. This is the whole
         // reason the two lists are separate.
         resumeCpu: ["set cpu idle=4.1BSD"],
         preDevices: ["set dz enable"],
-        disk: ["set rq0 ra81", "attach rq0 v10.disk"],
+        // AN RA73, NOT AN RA81.  ipnx-v10.m:18 configures the boot disk as an
+        // RA73 -- 3,920,490 sectors, 1,914 MB -- and the image is that size; an
+        // RA81 is 891,072 sectors and cannot hold it.
+        disk: ["set rq0 ra73", "attach rq0 v10.disk"],
         extraDevices: [],
         // The registers are deposited because the ROM expects them: sp at 200
         // and r1/r3/r5 cleared, exactly as v10_boot does before `run FA02'.

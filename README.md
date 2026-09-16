@@ -186,7 +186,7 @@ are missing** — the PDP-11 cross-toolchain, seven libraries, and troff and man
 some of which V8 carries and V10's tapes do not. Nobody has yet read `/usr/src` through
 against those lists one directory at a time, and that is the next piece of work.
 [docs/v10-build.md](docs/v10-build.md) is the whole of the build, read off the scripts
-themselves; the lab notebook is [docs/v10-log/](docs/v10-log/).
+themselves.
 
 **And there was never a pure Tenth Edition to restore.** This is the track's most
 important finding (2026-08-17), and it came out of the tape's own `ar` headers rather than
@@ -329,15 +329,7 @@ out of reach for reasons that have nothing to do with engineering.
 | **A4** the screen | ✅ | Two fixed CRT sizes incl. 1152×1024/127 columns, Retina-correct sampling, screen *and* session survive a quit — [screen-size.md](docs/screen-size.md) |
 | **A5** the interface | ✅ | Nine sessions in windows grouped by terminal shape; every DZ line its own port, so a tab labelled `tty03` *is* `tty03` — [ui-redesign.md](docs/ui-redesign.md) |
 | **S** the world build | ✅ | The shipped disk is **built from this repo's V8 source** — toolchain fixpoint, libraries, commands, kernel, and a disk that rebuilds itself — [build-from-source.md](docs/build-from-source.md) |
-| **B0** ingest path | ✅ | Host↔guest file transfer proven both ways — [media-exchange.md](docs/media-exchange.md) |
-| **B0.5** the N track | ✅ | N0–N7: RP07 disk, an Interlan NI1010 modelled for SIMH, **V8 on the Internet**, and **a macOS folder mounted read/write inside V8** over Weinberger's netfs — [n-track-notes.md](docs/n-track-notes.md) |
-| **B0.6** a machine to live in | ✅ | Identity, network up at boot, an account named after the host user, host shares at `/n/macos` and `/n/home` — [machine-config.md](docs/machine-config.md) |
-| **B1** V10 toolchain | ✅ | V10's own compiler, assembler and libc are **in the tarball as linked binaries** and **run on the V8 kernel**; `cpp`, `c2` and `ld` built from source. 9/9 and 10/10 — [v10-log/2026-08-16.md](docs/v10-log/2026-08-16.md) |
-| **B2** the userland | ✅ | V10 builds its own `libc` and its own `/bin` under `mk`, and as of 2026-08-25 the whole `world` target completes — toolchain, libraries, commands, packages — [v10-build.md](docs/v10-build.md) |
-| **B3** kernel + first boot | ✅ | **A V10 kernel has been compiled** — by V10, from `usr/sys`, the tape's own way — and a golden boots to a login prompt and halts cleanly with netfs surviving it |
-| **B3.5** the build, redesigned | ✅ | One tool, three archives, one source tree: `installed` gone for real dependencies, `mk` everywhere, `ipnxbuild`/`ipnxclean` a matched pair — [v10-build.md](docs/v10-build.md) |
-| **B3.6** the distribution, completed | ○ | `/usr/src` read against the tape's own `Admin` manifests, directory by directory: 27 of `/usr/lib`'s 50 files are not built — **next**, [v10-build.md](docs/v10-build.md) |
-| **B4–B5** the experience | ○ | Multi-user, `mux`, **`sam`**, then "Edition 10" in the app |
+| **V10** | ◐ | Boots, builds itself, and has a golden; the distribution is incomplete — [v10-build.md](docs/v10-build.md) |
 | **C** ipnx-ports | ○ | Ports tree; `libcompat` first, then V10's games, then BSD's |
 | **D** ipnx-v11 | ○ | Mostly restoration — V10 already ships a 9P server — [v11-plan.md](docs/v11-plan.md) |
 | — | ○ | App Store submission (needs the Apple account) — [app-store.md](docs/app-store.md) |

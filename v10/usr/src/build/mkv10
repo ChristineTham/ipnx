@@ -11,23 +11,20 @@
 # again.  v10.tar is the answer written down: one file, made once, and the input
 # to mkipnx from then on.  Nothing downstream reads a tape.
 #
-# THE FIVE ARE PLAIN TAR, LOCAL, AND IN /usr/tmp BECAUSE THEY DO NOT STAY.
-# 430 MB against a 1,533 MB /usr, wanted by nothing once this has run, so they
-# go in the scratch directory and this removes them on the way out.  The work is
-# split: the host fetches and decompresses (tools/v10-tapes.sh), the guest
-# extracts and archives.
+# THE SIX ARE PLAIN TAR, LOCAL, AND IN /usr/tmp BECAUSE THEY DO NOT STAY.
+# 430 MB against a 1,533 MB /usr, wanted by nothing once this has run.
 #
 # PLAIN TAR BECAUSE NOTHING HERE CAN READ .gz OR .bz2, and that is not an
 # oversight to fix: gzip is 1992 and bzip2 1996, so a 1989 system has neither,
-# and cmd/ carries compress(.Z) and pack(.z) instead.  tools/v10-tapes.sh
-# decompresses on the host -- decompressing is not extracting, so THE CASE
-# COLLISIONS THE TAPES CARRY ARE RESOLVED HERE, on a case-sensitive filesystem,
-# and never on the Mac.  That is what ./casenames is for and why this is the
-# only command that reads it.
+# and cmd/ carries compress(.Z) and pack(.z) instead.  THE CASE COLLISIONS THE
+# TAPES CARRY ARE RESOLVED HERE, on a case-sensitive filesystem, and never on
+# the Mac.  That is what ./casenames is for and why this is the only command
+# that reads it.
 #
-# WHERE THE FIVE ARE.  /usr/tmp by default -- the machine's own scratch, which
-# is where the host-side half leaves them -- but an image whose /etc/rc still
-# mounts the repository's tapes share runs `mkv10 /n/tapes' instead.
+# WHERE THE SIX ARE.  /usr/tmp by default -- the machine's own scratch.  THE
+# HOST HOLDS NO TAPES: they are fetched once, put on a disk this machine can
+# read, and extracted here.  Name another directory as the argument if they
+# are somewhere else.
 # THE TAPES ARE READ THROUGH A PIPE, NOT OPENED.  tar's endtape() calls
 # backtape(), which does an MTIOCTOP ioctl and only tolerates ENOTTY --
 # tar.c:990 -- so reading an archive off the netfs share dies with `tape
@@ -35,7 +32,7 @@
 # pipe: the ioctl answers ENOTTY, isatape goes to 0, and the read completes.
 # It also means the 413 MB of tapes need no room on this disk, which is the
 # other way this failed -- /usr filled at 163 MB copied.
-TAPES=${1-/n/home/Repositories/Unix/ipnx/tapes}
+TAPES=${1-/usr/tmp}
 GEN=/usr/src/build
 OUT=/v10/usr/ipnx
 

@@ -264,9 +264,9 @@ What this system imposes, and none of it is optional:
   can express "rebuild when the distfile changed", which suffix rules cannot.
 - **The fetch is host-side, and that is not a limitation to fix.** A 1989 system has no
   HTTPS, no `gzip` (1992) and no `bzip2` (1996) — it carries `compress` (`.Z`) and `pack`
-  (`.z`). So a distfile is fetched and decompressed on the Mac and served over netfs,
-  exactly as `tools/v10-tapes.sh` already does for the six tapes. **Decompressing is not
-  extracting**: the archive is unpacked *on the guest*, so case collisions and long names
+  (`.z`). So a distfile is fetched and decompressed on the Mac and served over netfs.
+  **Decompressing is not extracting**: the archive is unpacked *on the guest*, so case
+  collisions and long names
   are resolved by the case-sensitive filesystem that will hold them, never by macOS.
 - **14-byte filenames** are a hard constraint on what a port may contain, and belong in the
   format as a check rather than as a surprise at extraction time.

@@ -10,7 +10,6 @@ the `S`.
 | | | |
 |---|---|---|
 | `ipnx-v8-rp07.img.tar.bz2` | 10.6 MB | the Eighth Edition golden, **as this project builds it** |
-| `ipnx-v10-ra81.img.tar.bz2` | 3.0 MB | a Tenth Edition RA81 |
 | `v10.tar.bz2` | 3.3 MB | the V10 working disk `tools/v10-reset.sh` restores to `images/v10` |
 | `v10-golden.tar.bz2.aa` + `.ab` | 139 MB | the V10 golden, in halves — see below |
 

@@ -60,7 +60,7 @@
 # which is c, d and e under one name.  Naming c and d as swap spends two
 # thirds of it and leaves e.
 #
-# On the RA81 this project has been building, f is 54 MB.  On an RA73 it is
+# On an RA81 f would be 54 MB.  On the RA73 this project builds it is
 # 1,533 MB -- twenty-eight times the room, from one word in the simh config.
 root	regfs	ra	0100			# ra0a, minor 64 = unit 0 part a
 swap	ra	01	20480			# ra0b

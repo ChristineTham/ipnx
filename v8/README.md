@@ -63,8 +63,9 @@ The loser of each group is stored with its uppercase letters percent-escaped —
 `Mail` → `%4Dail`, `C` → `%43` — and [CASEMAP](CASEMAP) records the mapping.
 Escaping a directory de-collides everything beneath it, which is why
 `usr/src/cmd/Mail/Makefile` needs no escape of its own but
-`usr/src/cmd/Mail/manual/cmds/Reply` does. `mk/stage.sh` restores the true names when
-the tree is staged into the guest, whose filesystem is case-sensitive and does not care.
+`usr/src/cmd/Mail/manual/cmds/Reply` does. **`netfsd` un-escapes them on the wire**
+(`netfs/Sources/NetFS/CaseMap.swift`), so the guest — whose filesystem is case-sensitive
+and does not care — simply sees the tape's own names. The tree is served, never staged.
 
 ### 2. Source archives — 21 of them, 878 files
 
@@ -89,7 +90,10 @@ other binary.
 ### 3. Empty directories
 
 git cannot store one. [EMPTYDIRS](EMPTYDIRS) lists the 75 the tape carries with no
-surviving source underneath, and `mk/stage.sh` recreates them.
+surviving source underneath. It is a record of the tape, not an input to the build:
+what the built disk needs is `v8/mk/gen/destdirs.txt`, which `mkdep.py` generates and
+`builddisk.sh` creates a directory per line of — see `tools/mkcarry.py` on why the two
+lists are not interchangeable.
 
 ## Known gaps
 

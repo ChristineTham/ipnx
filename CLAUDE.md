@@ -18,8 +18,7 @@ The repository is four things at once, and confusing them is the main way to get
 
 `README.md` is the project's own account of itself; `docs/` is the living detail
 (`architecture.md`, `v10-build.md`, `golden-disk.md`,
-`build-from-source.md`); `RESEARCH.md` is frozen evidence, not a living doc;
-`docs/v10-log/` is a dated lab notebook for the restoration.
+`build-from-source.md`); `RESEARCH.md` is frozen evidence, not a living doc.
 
 ## Layout worth knowing before you touch anything
 
@@ -34,7 +33,9 @@ The repository is four things at once, and confusing them is the main way to get
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
 | `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. |
 | `image/` | The only committed binaries: four bzip2 tars. `*.tar.bz2` go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`); the V10 golden is committed in halves `.aa`/`.ab`, which the LFS filter does not match. |
-| `work/`, `images/` | Gitignored working areas that the scripts nonetheless expect to exist — including `work/tapes/`, the six V10 archives as plain tar. |
+| `image/` | The **current working V10 image** and the committed `.tar.bz2` archives beside it. Everything but the archives and this README is gitignored. |
+| `images/` | The **V10 golden**, restored from the halves in `image/`. Plural on purpose; not the same directory. |
+| `work/` | V8's gitignored workbench — `work/myv8` (the golden and its build filesystems) and `work/opensimh` (the desktop simulator). Nothing V10 uses it. |
 
 ## Commands
 
@@ -100,14 +101,18 @@ the `rp06build` filesystem stage 1 left behind.
 
 ### V10
 
-**The machine builds itself; the host only fetches tapes and boots it.**
+**The machine builds itself; the host restores disks and boots them.** The tapes are the
+machine's own — none is held on the host.
 
 ```bash
-bash tools/v10-tapes.sh                 # fetch the six TUHS archives -> work/tapes/, plain tar
-bash tools/v10-reset.sh                 # restore images/: both disks (joining the golden's halves) + the boot ROM
-bash tools/v10-launch.sh                # boot images/v10, golden on the second drive, both shares up
+bash tools/v10-reset.sh                 # the committed archives -> image/v10 (working), images/v10-golden, image/uda
+bash tools/v10-launch.sh                # boot image/v10, golden on the second drive, both shares up
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
 ```
+
+`image/` is the **current working image** and `images/` is the **golden** — two directories,
+on purpose. `image/` also holds the committed `.tar.bz2` archives; everything else in it is
+gitignored.
 
 **There is no host tool that creates a blank disk image**, and `mkimage` cannot make one —
 V10 has no sparse files. The file must exist on the host and be attached as `rq1` first
@@ -188,7 +193,7 @@ SIMH vax780 (C, thread)  --DZ11 line 0-->  dmd_core (Rust, thread)  -->  Metal/S
   into one another, so tabs only ever group sessions of the same size.
 
 `MachineSpec.swift` holds everything that differs between editions as data — V8 is an RP07
-on the Massbus started by `load -o bootV8 0; run 2`; V10 is an RA81 on MSCP/UDA50A started
+on the Massbus started by `load -o bootV8 0; run 2`; V10 is an RA73 on MSCP/UDA50A started
 by `run FA02`. The resume path is a *different* list from the boot path on both machines.
 The app shell is edition-agnostic by design: it knows about machines, not editions.
 
