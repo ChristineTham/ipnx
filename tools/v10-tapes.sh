@@ -25,10 +25,10 @@
 #	r70include  /usr/include, r70's reconstruction
 #	blit        the 68000 Blit, a different terminal
 #
-# THIS USED TO EXTRACT THEM TOO, into a pristine v10tapes/ that fed a host-side
-# reconstruction: v10-tree.py merged them into a corpus and v10-dist.py shaped
-# that into v10/.  The machine does all of it now, so those 300 lines went with
-# the corpus.  What they knew is not lost -- mkv10 reads the tapes through a
+# THIS USED TO EXTRACT THEM TOO, into a pristine tree that fed a host-side
+# reconstruction: a corpus merged from the six, shaped into v10/.  The machine
+# does all of it now, so those 300 lines went with the corpus and so did the
+# tools that walked it.  What they knew is not lost -- mkv10 reads the tapes through a
 # PIPE (tar's endtape() calls backtape(), an MTIOCTOP ioctl that tolerates only
 # ENOTTY, so an archive opened off a netfs share dies at the end-of-archive
 # block), and build/casenames carries the case decisions with the evidence for

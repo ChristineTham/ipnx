@@ -9,8 +9,8 @@
    Lost with it are GNU CC 1.21's lines 386-518: the rest of the invert-jump
    block, the jump-to-jump detection, the "if (foo) bar; else break;" transform
    and the cross-jump code.  jump.c is the only file under cmd/gcc with an
-   unbalanced #if count, and v10tapes/norman/cmd/gcc/jump.c is byte-identical to
-   the extracted copy, so the damage is the archive's and not this project's.
+   unbalanced #if count, and the norman tape's own copy is byte-identical to
+   the extracted one, so the damage is the archive's and not this project's.
 
    Rebuilt from GNU CC 1.21 (1988) with the four local changes the undamaged
    parts of the tape's file carry, and nothing else:

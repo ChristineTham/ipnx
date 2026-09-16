@@ -121,7 +121,7 @@ IPC=$SRC/ipc
 # path, so the property the old comment here recorded still holds: nothing in
 # this file reads a netfs share.  updatebuild is the one thing that does.
 GEN=/usr/src/build
-# THE KERNEL IS NOT UNDER /usr/src.  v10-dist.py places lsys/ at /usr/sys --
+# THE KERNEL IS NOT UNDER /usr/src.  lsys/ lands at /usr/sys --
 # lsys/lib/mk.star:1 is `LD=../lib' and lsys/mkall cds to /usr/sys/$i, so the
 # tree's own files name that path.  KLIB is where every archive, the config
 # tables and mkconf itself live, and mk.star reaches it as ../lib.
@@ -1553,8 +1553,9 @@ $ROOT/usr/bin/bprint: $LCC/etc/bprint
 # recipe name comes from; our config is built the same way from its own site
 # directory, /usr/sys/ipnx.
 #
-# EACH ARCHIVE ARRIVES HERE AS A DIRECTORY, not a file.  v10-tree.py unpacks
-# every ar member as a file, which keeps every byte and destroys the order, so
+# EACH ARCHIVE ARRIVES HERE AS A DIRECTORY, not a file.  The checked-in tree
+# carries every ar member unpacked as a file -- which keeps every byte and
+# destroys the order -- so
 # /usr/sys/lib/os.a is 23 files and an ORDER.  ./installed is `test -f "$1"' and
 # a directory does not satisfy it, so the rule fires; `ar r' will not write into
 # a directory, so it is removed first.  After the build each is a real archive
@@ -1994,8 +1995,8 @@ $ROOT/usr/lib/libI77.a: $SRC/libI77/libI77.a
 # why they are packaged that way.
 #
 # THE .c.a ARE ARCHIVES ON THE MACHINE, WHATEVER THEY LOOK LIKE IN THE
-# REPOSITORY.  v10-tree.py unpacks every ar member as a file, so in the
-# checked-in tree plot.c.a is a DIRECTORY with an ORDER file beside the
+# REPOSITORY.  The checked-in tree carries every ar member unpacked as a file,
+# so there plot.c.a is a DIRECTORY with an ORDER file beside the
 # members; but mkv10 fills /usr/src straight from the six tapes
 # (`cd /v10/usr/src && tar xf $TAPES/secombe.tar'), so what the build sees is
 # the archive the tape holds.  Rules written for the unpacked form fail here
@@ -4450,10 +4451,10 @@ $ROOT/usr/bin/WWB/proofr: $CMD/wwb/.built
 # own output for its own source -- which the native cc compiles into a
 # translator that can then recompile the C++.  That half-preprocessed set is
 # what is missing here.  The search for it: dcl4.c and simpl2.c, two names
-# unique to cfront, occur in exactly seven directories in v10/ and the same
-# seven in v10superset/, and all fourteen are C++; xptcfront/cfront.cpio is a
-# cpio of the same tree, its first member alloc.c opening with the same ident
-# line; and there is no generated C anywhere else in either tree.  Cpre, the
+# unique to cfront, occur in exactly seven directories in v10/ and all seven
+# are C++; xptcfront/cfront.cpio is a cpio of the same tree, its first member
+# alloc.c opening with the same ident line; and there is no generated C
+# anywhere else in the tree.  Cpre, the
 # 1979 C-with-Classes preprocessor cfront grew out of, is not here either --
 # the only trace of it in the corpus is a credit, cfront/lex.c:11, "lexical
 # analyser based on pcc's and cpre's scanners".  The chain has no first link on

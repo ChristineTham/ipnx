@@ -313,7 +313,7 @@ DROP	v10/usr/src/ipc/mgrs/tcpmgr/tcp_lib.O
 # u_u_    ideal/lib Arc and charlib lH (4 dirs): the extractor's u_ARC/u_Arc and
 #         u_LH/u_lH pairs collide with EACH OTHER on the Mac, and the checkout
 #         had silently lost the second file of each -- 830 + 4x2,308 bytes that
-#         survived only on the machine.  v10tapes/CASEMAP shows both names
+#         survived only on the machine.  The extractor recorded both names as
 #         intended.  Recovered into the checkout as u_u_ names.
 # NOTE    cmd/troff/devaps/u_Cw is restored to Cw by the install rule (the
 #         installed font directory is case-sensitive).  postscript's and

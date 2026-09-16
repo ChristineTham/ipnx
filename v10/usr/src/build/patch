@@ -1478,8 +1478,8 @@ sed \
 # EXPO.c newer than the tape's prebuilt EXPO.o, so libpc's makefile:45-48
 # recompiles that one object and re-archives -- on the guest `libpc' is the
 # tape's ar file, which is why it read as up to date until now (the host
-# checkout shows it unpacked into a directory of members, which is v10-tree.py's
-# doing and not what mkv10 extracts).
+# checkout shows it unpacked into a directory of members, which is how the tree
+# is committed and not what mkv10 extracts).
 # The two seds avoid matching 'e' -- a single quote inside a single-quoted sed
 # expression ends the string, which is how the seventeen operator casts above
 # silently did nothing on their first attempt.
@@ -2226,8 +2226,8 @@ cp $GEN/src/streamio.c $SYS/os/streamio.c || exit 1
 # the machine roster of Bell Labs' Computing Science Research Center, and ipnx
 # is not one of their machines.  toronto/ is the tape's own precedent that a
 # separate site gets a separate directory.  Keeping our config out of astro
-# leaves that directory byte-identical to the tape and makes v10-tree.py report
-# our kernel as a directory wholly ours rather than an extra entry in theirs.
+# leaves that directory byte-identical to the tape and keeps our kernel a
+# directory wholly ours rather than an extra entry in theirs.
 #
 # AND THE OLD COPY GOES, on machines that already have one.  `ipnx-v10.*'
 # catches the config and everything its build leaves beside it -- the .u, the

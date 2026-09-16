@@ -8,8 +8,8 @@
 # u_u_ MARKS A DOUBLE COLLISION: ideal/lib held ARC, Arc and arc, and the
 # extractor's u_ARC and u_Arc collide with each other on the Mac -- the
 # checkout silently LOST Arc's 830 bytes (and charlib's lH, four times) until
-# this machine's tree gave them back.  v10tapes/CASEMAP records the extractor
-# intending both names; only one survived.
+# this machine's tree gave them back.  The extractor recorded both names as
+# intended; only one survived.
 #
 # rm is confined to: files the build regenerates (USERMEM, three Version.c),
 # the sail hard-link's second name, an unreferenced header (libstring

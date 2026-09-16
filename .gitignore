@@ -52,41 +52,24 @@ __pycache__/
 # own contents, and without this exception the tree silently loses those files.
 !v10/**
 
-# THE TAPES ARE NOT COMMITTED, AND NEITHER IS ANY TREE MADE FROM THEM.
-#
-# work/tapes/ holds the six archives as plain tar, written by
-# tools/v10-tapes.sh -- the host half of the bootstrap, and the only part of it
-# that is not on the machine.  v10/usr/src/build/mkv10 reads them and writes
-# v10.tar; docs/v10-build.md is the whole procedure.
-#
-# v10tapes/ and v10superset/ were a host-side reconstruction: a pristine extract
-# per tape, merged into a corpus, shaped into v10/.  The machine does all of
-# that now, so both trees were deleted; git history still has them (751594dd
-# and later), and the six tools that read them have followed -- v10-tree.py,
-# v10-dist.py, v10-check.py, v10-read.py, v10-files.py and v10-plan.py, none of
-# which was part of the build docs/v10-build.md describes.  The two rules below
-# stay: a local rebuild of either tree must not be committable by accident.
+# THE TAPES ARE NOT COMMITTED.  work/tapes/ holds the six archives as plain
+# tar, written by tools/v10-tapes.sh -- the host half of the bootstrap, and the
+# only part of it that is not on the machine.  v10/usr/src/build/mkv10 reads
+# them and writes v10.tar; docs/v10-build.md is the whole procedure.  work/ is
+# ignored above, so they need no rule of their own.
 #
 # What IS committed is v10/ -- byte for byte the machine's own ipnx.tar, which
 # is what `taripnx' writes and what mkimage extracts -- so a question about what
 # we build from is a git grep.  A question about what a particular TAPE says is
 # answered by fetching the six again and running mkv10.
-v10tapes/
-v10superset/
 
 # images/ is the working set the launcher boots -- a disk and the boot ROM,
 # copied there so tools/v10-launch.sh has one place to point at.  Both are
 # reproducible: the ROM is v10/usr/sys/boot/star/uda byte for byte, and the
 # disk is a build output.  Note this is images/, PLURAL, and is nothing to do
-# with image/, which holds the two committed .xz goldens named above.
+# with image/, which holds the four committed .tar.bz2 archives un-ignored
+# above; image/README.md is what each one is.
 images/
-
-# THE TAPE ARCHIVES THEMSELVES ARE NOT COMMITTED EITHER.  tapes/ is 505 MB of
-# raw tar -- the six V10 archives plus V8 and batterpudding -- decompressed
-# from the copies in work/, which is what tools/v10-tapes.sh actually reads.
-# Committing them would put half a gigabyte of tape into every clone to say
-# what v10superset/ already says, checked, in a form git can diff.
-tapes/
 
 # ipnx.tar never enters git (github is correct): v10/ holds the extracted tree.
 *.tar

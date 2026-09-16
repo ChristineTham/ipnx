@@ -40,13 +40,13 @@ rc=0
 if [ "$#" -gt 0 ]; then
 	for f in "$@"; do check_one "$f" || rc=1; done
 else
-	# OURS ONLY.  Eight of the tracked `.md' files are not markdown at all --
-	# cmd/gcc/vax.md and its siblings are GCC MACHINE DESCRIPTIONS, in both
-	# v10/ and v10superset/ -- and nothing under the tape trees was written
-	# as a link into this repository.
+	# OURS ONLY.  Four of the tracked `.md' files are not markdown at all:
+	# v10/usr/src/cmd/gcc/vax.md and its three siblings are GCC MACHINE
+	# DESCRIPTIONS -- and nothing under the tape trees was written as a link
+	# into this repository.
 	cd "$ROOT" || exit 1
 	while IFS= read -r f; do
-		case "$f" in v10/*|v10superset/*|v8/usr/*) continue ;; esac
+		case "$f" in v10/*|v8/usr/*) continue ;; esac
 		check_one "$f" || rc=1
 	done < <(git ls-files '*.md')
 fi

@@ -6,7 +6,7 @@ ARCHIVE=libcc.a
 	${CC} ${CFLAGS} -c $stem.c && touch $stem.t
 
 # THE TAPE SHIPS THE STAMPS AND NOT THE OBJECTS.  balloc.t, getbitmap.t,
-# inbitmap.t and outbitmap.t are all on the tape (v10tapes/MANIFEST) with no
+# inbitmap.t and outbitmap.t are all on the tape, with no
 # .o beside them, so the %.t rule below sees its stamp up to date, compiles
 # nothing, and `ar r libcc.a *.o' then creates an empty archive and `rm *.[oO]'
 # fails -- which is exactly how this package failed.  The archive names its own
