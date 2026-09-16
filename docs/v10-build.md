@@ -34,13 +34,16 @@ archives**, so every `ar` archive is a directory of its members with an `ORDER` 
 
 ## The split: what the host does, and what it cannot
 
-**The host holds no tapes.** They were fetched once, put where the machine can read them, and
-extracted there — `mkv10` reads them from `/usr/tmp` by default. Nothing on the Mac decides
-anything about the shape of the tree. What the host does is restore disks from the committed
-archives and boot them:
+**The host fetches the tapes and never unpacks one.** `tools/v10-tapes.sh` downloads the six
+archives from TUHS and decompresses them into `v10tapes/` — gitignored, 430 MB — because TUHS
+answers plain HTTP with a 301 to https and **V10 has no TLS**, and because **gzip is 1992 and
+bzip2 1996**, so a 1989 machine can read neither. Decompressing is not extracting: nothing on
+the Mac decides anything about the shape of the tree. `mkv10` extracts them on the machine,
+reading them straight off the netfs share if you name it. What the host does:
 
 | | |
 |---|---|
+| `tools/v10-tapes.sh` | fetch the six TUHS archives and decompress them to plain `tar` in `v10tapes/` |
 | `tools/v10-reset.sh` | restore the two disks from the committed archives, and the boot ROM |
 | `tools/v10-launch.sh` | boot `image/v10` — the working disk — with the golden on the second drive and both netfs shares up |
 | `tools/v10-golden.sh` | boot a throwaway copy of `images/v10-golden`, one drive, no shares |
@@ -56,8 +59,8 @@ Two directories, and they are not the same one:
 | `images/` | the **golden**, restored from the halves in `image/` and booted only as a throwaway copy. |
 
 Case collisions are resolved on the machine, where the filesystem is case-sensitive and the
-tapes' own names survive. A 1989 system has neither gzip (1992) nor bzip2 (1996) — `cmd/`
-carries `compress(.Z)` and `pack(.z)` — so anything handed to it must be plain `tar`.
+tapes' own names survive — `cmd/` carries `compress(.Z)` and `pack(.z)`, so anything handed to
+it must be plain `tar`.
 
 **The missing host step.** `mkimage` formats a second drive — it runs `mkbitfs` against
 `/dev/ra10`, `/dev/ra14` and `/dev/ra15` — but a simulated drive needs a **file** behind it, and
@@ -98,7 +101,7 @@ Five do the work. Everything else in the directory serves them.
 | `ipnxbuild [ROOT]` | build a complete system from `/usr/src` — this machine by default, the disk on `ra1` when given `/v10` | every round |
 | `ipnxclean [ROOT]` | remove everything `ipnxbuild` made, from the list `ipnxbuild` wrote | before archiving |
 | `mkimage` | format the second drive, extract an archive into it, build it | when fabricating a disk |
-| `mkv10 [dir]` | the six tapes, from `/usr/tmp` unless told otherwise → `v10.tar`, pristine | once, ever |
+| `mkv10 [dir]` | the six tapes → `v10.tar`, pristine. `/usr/tmp` unless told otherwise; the share works too, and costs the disk nothing | once, ever |
 | `mkipnx [repo]` | `v10.tar` + the build system + the repairs → `ipnxorig.tar` | when the repairs change |
 | `taripnx` | this machine's live `/usr` → `/usr/ipnx/ipnx.tar` | when a machine is worth preserving |
 

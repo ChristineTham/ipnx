@@ -51,16 +51,17 @@ __pycache__/
 # own contents, and without this exception the tree silently loses those files.
 !v10/**
 
-# THE TAPES ARE NOT COMMITTED.  work/tapes/ holds the six archives as plain
-# tar, written by tools/v10-tapes.sh -- the host half of the bootstrap, and the
-# only part of it that is not on the machine.  v10/usr/src/build/mkv10 reads
-# them and writes v10.tar; docs/v10-build.md is the whole procedure.  work/ is
-# ignored above, so they need no rule of their own.
+# THE TAPES ARE NOT COMMITTED.  v10tapes/ holds the six archives as plain tar,
+# written by tools/v10-tapes.sh -- the host half of the bootstrap, and the only
+# part of it that is not on the machine.  430 MB that says nothing git can
+# diff, and nothing here unpacks one: v10/usr/src/build/mkv10 extracts them on
+# the machine and writes v10.tar.  docs/v10-build.md is the whole procedure.
 #
 # What IS committed is v10/ -- byte for byte the machine's own ipnx.tar, which
 # is what `taripnx' writes and what mkimage extracts -- so a question about what
 # we build from is a git grep.  A question about what a particular TAPE says is
 # answered by fetching the six again and running mkv10.
+v10tapes/
 
 # image/ HOLDS TWO KINDS OF FILE AND ONLY ONE IS COMMITTED.  The archives are
 # committed -- the V8 golden, the V10 working disk, the V10 golden in halves --

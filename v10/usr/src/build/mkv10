@@ -21,10 +21,13 @@
 # the Mac.  That is what ./casenames is for and why this is the only command
 # that reads it.
 #
-# WHERE THE SIX ARE.  /usr/tmp by default -- the machine's own scratch.  THE
-# HOST HOLDS NO TAPES: they are fetched once, put on a disk this machine can
-# read, and extracted here.  Name another directory as the argument if they
-# are somewhere else.
+# WHERE THE SIX ARE.  /usr/tmp by default -- the machine's own scratch.  The
+# host fetches and decompresses them into v10tapes/ (tools/v10-tapes.sh) and
+# NEVER unpacks one; this is where they are extracted.  Reading them straight
+# off the share works and needs no room on this disk, because of the pipe
+# below:
+#
+#	mkv10 /n/macos/<path to the repository>/v10tapes
 # THE TAPES ARE READ THROUGH A PIPE, NOT OPENED.  tar's endtape() calls
 # backtape(), which does an MTIOCTOP ioctl and only tolerates ENOTTY --
 # tar.c:990 -- so reading an archive off the netfs share dies with `tape

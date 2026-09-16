@@ -35,7 +35,8 @@ The repository is four things at once, and confusing them is the main way to get
 | `image/` | The only committed binaries: four bzip2 tars. `*.tar.bz2` go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`); the V10 golden is committed in halves `.aa`/`.ab`, which the LFS filter does not match. |
 | `image/` | The **current working V10 image** and the committed `.tar.bz2` archives beside it. Everything but the archives and this README is gitignored. |
 | `images/` | The **V10 golden**, restored from the halves in `image/`. Plural on purpose; not the same directory. |
-| `work/` | V8's gitignored workbench — `work/myv8` (the golden and its build filesystems) and `work/opensimh` (the desktop simulator). Nothing V10 uses it. |
+| `v10tapes/` | The six TUHS archives as plain `tar`, gitignored. The host fetches and decompresses them and **never unpacks one** — `mkv10` extracts them on the machine. |
+| `work/` | V8's gitignored workbench — `work/myv8` (the golden and its build filesystems) and `work/opensimh` (the desktop simulator). |
 
 ## Commands
 
@@ -101,10 +102,10 @@ the `rp06build` filesystem stage 1 left behind.
 
 ### V10
 
-**The machine builds itself; the host restores disks and boots them.** The tapes are the
-machine's own — none is held on the host.
+**The machine builds itself; the host fetches tapes, restores disks and boots them.**
 
 ```bash
+bash tools/v10-tapes.sh                 # the six TUHS archives -> v10tapes/, plain tar, gitignored
 bash tools/v10-reset.sh                 # the committed archives -> image/v10 (working), images/v10-golden, image/uda
 bash tools/v10-launch.sh                # boot image/v10, golden on the second drive, both shares up
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
