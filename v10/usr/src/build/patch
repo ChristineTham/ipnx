@@ -2829,3 +2829,28 @@ sed 's|^char	\*direct	= "/crp/nlearn/lib";.*$|char	*direct	= "/usr/lib/learn";	/
 						 * and said CHANGE THIS ON YOUR\
 						 * SYSTEM; makefile:15, README:3 */|' \
     lrndef > l$$ && mv l$$ lrndef
+
+# macrunch DOES NOT PARSE UNDER v10's sh, so the macro packages could not be
+# built at all -- and the failure is at PARSE time, so it happens whatever the
+# arguments.  Line 13 is
+#	then echo usage: macrunch [-m] [-d path] [{-n or -t} "package name"] ...
+# and this shell answers `macrunch: syntax error at line 13: `{' unexpected'.
+# The brace is inside a usage MESSAGE and is an argument to echo, not a command,
+# but v10's sh treats `{' as reserved wherever it appears unquoted; a modern
+# Bourne shell does not, which is why the line has survived this long unnoticed.
+# The `then' branch is never taken -- $# is 1 -- and that makes no difference:
+# sh parses the whole compound command before executing any of it.
+#
+# MEASURED ON THE MACHINE, 17 Sep 2026: seven `sh macrunch <name>' runs, seven
+# identical syntax errors, no output file from any of them.
+#
+# The message is WRAPPED, not retyped.  `_\bo_\br' in it is troff underlining
+# for `or' -- a literal backspace either side of the o and the r -- and a
+# replacement that spelled those bytes out would be a replacement v10's own sed
+# mangles (see the note on sh.local.h above).  Matching what follows `echo ' and
+# putting quotes around whatever that was leaves every byte of it alone.  Single
+# quotes because the message contains two double-quoted phrases and no
+# apostrophe, and they are what makes a second pass a no-op: the pattern needs
+# `usage:' directly after `echo ' and after one pass it is `'usage:'.
+cd $SRC/cmd/troff/ancient.nroff/macros.d || exit 1
+sed "s|^\(	then echo \)\(usage:.*\)\$|\1'\2'|" macrunch > m$$ && mv m$$ macrunch

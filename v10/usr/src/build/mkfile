@@ -4192,7 +4192,7 @@ $ROOT/usr/bin/flex: $CMD/flex/flex
 # IDDIR being /usr/lib/ideal (ideal.cmd:2).  `t' is the DEFAULT (`filter=t' at
 # :5), so it is not merely -p and -tex that were broken: plain `ideal file'
 # piped into a filter that was never installed.  Only -n, which prints ideal's
-# own intermediate output, worked.
+# own intermediate output, worked.  Two of the four build here; see below.
 #
 # THE PACKAGE'S OWN INSTALL BUILDS THEM AND COPIES NONE.  ideal/mkfile:109 is
 # `(cd idfilt; make install)' and idfilt/makefile:24 is
@@ -4200,11 +4200,29 @@ $ROOT/usr/bin/flex: $CMD/flex/flex
 # spells the same target with a bare `:'.  So the tape builds four filters and
 # installs zero, and that is the whole defect.
 #
+# TWO OF THE FOUR, AND THE OTHER TWO ARE psych's PROBLEM.  Built on the machine
+# 17 Sep 2026, one at a time, because mk stops at the first failure and building
+# all four hid which ones worked:
+#
+#   tfilt    links `tfilt.o idfilt.o' and nothing else.  BUILDS.  This is the
+#            one that matters -- ideal.cmd:5 is `filter=t', so it is what plain
+#            `ideal file' runs.
+#   texfilt  the same, `idfilt.o texfilt.o'.  BUILDS.
+#   4filt    `-l4014 -lm' -> `Undefined: _space _label'.
+#   pfilt    `-lplot -lm' -> `Undefined: _openpl _erase _space _line _circle'.
+#
+# Both failures are the CLASSIC plot(3), and the note beside psych in the games
+# block below already names where it went: cont, space and label live only in
+# libplot/oldplot, which the ULIB block records as having no build file.  v10's
+# lib4014 and libplot are a different library with a different API -- move, vec,
+# line, arc, box, circle, point, spline.  So `ideal -p' and `-4' wait on
+# oldplot exactly as psych does, and `ideal' and `-tex' work now.
+#
 # idsort IS NOT BUILT, BECAUSE NOTHING SAYS HOW.  idsort.c is in the directory
 # and neither build file has a rule for it, so `ideal -s' stays broken; it
 # sorts pictures into columns and nothing else uses it.
-P_CMD_ideal_idfilt:V:	$PREP $ROOT/usr/lib/lib4014.a $ROOT/usr/lib/libplot.a
-	cd $CMD/ideal/idfilt; mk 4filt tfilt pfilt texfilt || echo 'ideal filters: FAILED'
+P_CMD_ideal_idfilt:V:	$PREP
+	cd $CMD/ideal/idfilt; mk tfilt texfilt || echo 'ideal filters: FAILED'
 
 P_CMD_ideal_a_out:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/ideal; mk a.out || echo 'ideal: FAILED'
@@ -4217,8 +4235,8 @@ $ROOT/usr/bin/ideal: $CMD/ideal/a.out P_CMD_ideal_idfilt
 	cd $CMD/ideal; cp a.out $ROOT/usr/lib/ideal/ideal || echo 'ideal: FAILED'; cp ideal.cmd $ROOT/usr/bin/ideal && chmod +x $ROOT/usr/bin/ideal || :; cp lib/* $ROOT/usr/lib/ideal/lib || :
 	cd $CMD/ideal; strip $ROOT/usr/lib/ideal/ideal || echo 'ideal: install FAILED'
 	test -d $ROOT/usr/lib/ideal/idfilt || mkdir $ROOT/usr/lib/ideal/idfilt
-	cd $CMD/ideal/idfilt; cp 4filt tfilt pfilt texfilt $ROOT/usr/lib/ideal/idfilt || echo 'ideal filters: install FAILED'
-	cd $ROOT/usr/lib/ideal/idfilt; strip 4filt tfilt pfilt texfilt || echo 'ideal filters: strip FAILED'
+	cd $CMD/ideal/idfilt; cp tfilt texfilt $ROOT/usr/lib/ideal/idfilt || echo 'ideal filters: install FAILED'
+	cd $ROOT/usr/lib/ideal/idfilt; strip tfilt texfilt || echo 'ideal filters: strip FAILED'
 
 P_CMD_ipa_ipa_trans:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/ipa; mk ipa_trans || echo 'ipa: FAILED'
@@ -5093,20 +5111,21 @@ ARTEFACTS4=U=$CMD/tbl/tbl $CMD/tee $CMD/telno $CMD/tk \
 # tape; they compile directly, the cref pattern.  rnd.c is a
 # subroutine, not a game: worm.c calls rnd() and compiles it in.
 #
-# canfield, psych AND rain WERE MISSING WITH NO REASON WRITTEN, which is the
-# one thing every other absence here has.  canfield.c is 1,145 lines of
-# Berkeley curses and links exactly as hanoi and worm do; psych.c is 54 lines
-# whose own header says "compile as cc psych.c -lm -l4014" and both libraries
-# are in ULIB; rain/ has a makefile AND an mkfile, `rain: rain.o' and
-# `cc -o rain rain.o -ltermlib'.  All three are built now.
+# canfield WAS MISSING WITH NO REASON WRITTEN, which is the one thing every
+# other absence here has.  1,145 lines of Berkeley curses, linking exactly as
+# hanoi and worm do; built on the machine and measured at 56,275 bytes.
 #
-# boggle IS NAMED ABOVE AND STILL NOT BUILT, and the reason is /usr/dict.
-# boggle/makedict is three lines -- `cc comp.c -o comp',
-# `sed -f sfile /usr/dict/words | uniq | comp >/usr/games/bogdict' -- and
-# boggle.c:50 is `char defname[] = "/usr/games/bogdict"'.  There is no
-# /usr/dict on any of the six tapes, so the dictionary cannot be generated and
-# the game has nothing to check a word against.  It waits on the same import
-# spell does.
+# psych, rain AND boggle ALREADY HAD THEIR REASONS, further down this file, and
+# a first reading of the games block missed all three -- the note on psych sits
+# beside ppt and the one on boggle and rain is in the NOT WIRED block near
+# netnews.  Both are right, and building the three on the machine reproduced
+# exactly what they say: psych is `Undefined: _cont' and rain `Undefined:
+# _gtty _stty'.  They are not repeated here, because a reason written twice is
+# a reason that will disagree with itself.  boggle has a SECOND blocker its
+# note does not mention and this one does: boggle/makedict is
+# `sed -f sfile /usr/dict/words | uniq | comp >/usr/games/bogdict' and
+# boggle.c:50 opens that file by name, so even ported it would have nothing to
+# check a word against until /usr/dict is imported.
 GAMESRC=$SRC/games
 GAMEPROD= $GAMESRC/pacman/pacr $GAMESRC/des/encrypt \
  $GAMESRC/atc/atc \
@@ -5116,8 +5135,7 @@ GAMEPROD= $GAMESRC/pacman/pacr $GAMESRC/des/encrypt \
 	$GAMESRC/crypt $GAMESRC/festoon $GAMESRC/fish $GAMESRC/fortune \
 	$GAMESRC/hangman $GAMESRC/imp $GAMESRC/morse $GAMESRC/ppt \
 	$GAMESRC/quiz $GAMESRC/rnd $GAMESRC/rot $GAMESRC/say $GAMESRC/thanks $GAMESRC/wump \
-	$GAMESRC/hanoi $GAMESRC/worm $GAMESRC/canfield $GAMESRC/psych \
-	$GAMESRC/rain/rain
+	$GAMESRC/hanoi $GAMESRC/worm $GAMESRC/canfield
 GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
  $ROOT/usr/games/atc \
 	$ROOT/usr/games/sail $ROOT/usr/games/word_clout $ROOT/usr/games/rogue \
@@ -5129,7 +5147,7 @@ GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
 	$ROOT/usr/games/ppt $ROOT/usr/games/quiz $ROOT/usr/games/rnd \
 	$ROOT/usr/games/rot $ROOT/usr/games/say $ROOT/usr/games/thanks \
 	$ROOT/usr/games/wump $ROOT/usr/games/hanoi $ROOT/usr/games/worm \
-	$ROOT/usr/games/canfield $ROOT/usr/games/psych $ROOT/usr/games/rain
+	$ROOT/usr/games/canfield
 
 games:V:	$GAMES
 
@@ -5441,28 +5459,6 @@ $GAMESRC/canfield: $PREP $GAMESRC/canfield.c
 $ROOT/usr/games/canfield: $GAMESRC/canfield
 	cd $GAMESRC; cp canfield $ROOT/usr/games/canfield || echo 'canfield: FAILED'
 	cd $GAMESRC; strip $ROOT/usr/games/canfield || echo 'canfield: install FAILED'
-
-# psych.c:3-4 is the build line: "compile as cc psych.c -lm -l4014 / could use
-# other plot-type library".  It draws on a Tektronix 4014, which on this
-# machine means the 5620 running a 4014 emulation or nothing at all.
-$GAMESRC/psych: $PREP $ROOT/usr/lib/lib4014.a $GAMESRC/psych.c
-	cd $GAMESRC; cc -O -o psych psych.c -lm -l4014 || echo 'psych: FAILED'
-
-$ROOT/usr/games/psych: $GAMESRC/psych
-	cd $GAMESRC; cp psych $ROOT/usr/games/psych || echo 'psych: FAILED'
-	cd $GAMESRC; strip $ROOT/usr/games/psych || echo 'psych: install FAILED'
-
-# rain has its own mkfile, unlike the flat games; its install is
-# `mv rain /usr/games', absolute, so the copy is done here.
-P_GAMES_rain_rain:V:	$PREP
-	cd $GAMESRC/rain; mk rain || echo 'rain: FAILED'
-
-$GAMESRC/rain/rain: P_GAMES_rain_rain
-	test -f $GAMESRC/rain/rain || echo '$GAMESRC/rain/rain: the package did not produce it'
-
-$ROOT/usr/games/rain: $GAMESRC/rain/rain
-	cd $GAMESRC/rain; cp rain $ROOT/usr/games/rain || echo 'rain: FAILED'
-	cd $GAMESRC/rain; strip $ROOT/usr/games/rain || echo 'rain: install FAILED'
 
 
 # THE REST OF THE DISTRIBUTION'S COMMANDS, wired by the same evidence rules
