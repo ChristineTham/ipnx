@@ -18,9 +18,31 @@ contradicted by the tree.
 
 ## 0. Status
 
-*Status pass, 2026-09-17, after the reading below was acted on. **Nothing here has been
-boot-tested** — it was written and checked on a Linux host with neither the VAX nor a Mac,
-so every claim below is a claim about the files, not about a machine that ran them.*
+*Status pass, 2026-09-17, after the reading below was acted on, **and then checked against a
+running machine**. open-simh was built from the pinned revision on this Linux host, the
+committed golden was extracted and booted, and the claims were put to it one at a time with
+`tools/v10drive.py`. That is what the "measured" notes below mean; where a claim is still
+only read off the files, it says so.*
+
+**What the machine confirmed.** `man ls` answers `nroff: cannot open file
+/usr/lib/tmac/tmac.an`. `nm /usr/bin/awk` lists symbols where `nm /bin/ls` says `no name
+list`, so the strip rules did leave their binaries unstripped. `/usr/lib/uucp`,
+`/usr/lib/learn`, `Rpull`, `Rpush`, `grap.defines`, `vaxspitv35.err` and `tabset` are absent;
+`/usr/lib/dict` is an empty directory; `at`, `ct`, `oops`, `load` and `server` carry no
+set-id bit; `dump` is in `/usr/bin`; `/usr/lib/plot` holds `hplot`.
+
+**What it refuted — three of the fixes were wrong.** `macrunch` does not parse under V10's
+`sh`, so the macro packages could not be built at all until `build/patch` repaired it; with
+that in, `man`, `-ms` and `-mm` all work. `psych` and `rain` do not link (`Undefined: _cont`
+and `Undefined: _gtty _stty`) and the mkfile already said so in notes this reading missed, so
+they are backed out. `ideal` builds two of its four filters, not four — `tfilt` (its default)
+and `texfilt` build; `4filt` and `pfilt` want the classic plot(3) that only
+`libplot/oldplot` has.
+
+**Still only read, not run:** the ownership and set-id installs (their primitives are
+measured — numeric `/etc/chown`, `chmod -rw,+x,g+s`, `: >>` — but not the rules), and the
+`pascal`/`picasso`/`cyntax` ROOT fixes, which need a `mk ROOT=/v10 world` against a second
+disk.*
 
 **Done.** All of §1. In §2, every product the build actually installs. In §4: the macro
 packages, uucp's destinations and set-uid bits, `/usr/lib/tabset`, `grap.defines`, matlab's

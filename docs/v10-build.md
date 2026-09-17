@@ -315,9 +315,16 @@ Acted on 2026-09-17: all of §1, the ownership and set-id installs for every pro
 actually installs, and most of §4 — the macro packages, uucp's two destinations and its
 set-uid bits, `/usr/lib/tabset`, `grap.defines`, matlab's help database, spitbol's error
 text, atc's flow files, dict's ten helpers, worm's six, ideal's four filters, `lcomp`,
-learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`, `psych` and `rain`. **None of it
-is boot-tested**: it was written on a Linux host with neither the VAX nor a Mac, so each
-change is verifiable by inspection and by its citation and by nothing else.
+learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`.
+
+**Then it was checked against a running machine**, which is why that list no longer includes
+`psych` and `rain`. open-simh builds on a plain Linux host, the committed golden boots on it
+with one disk and no netfsd, and `tools/v10drive.py` runs a script of shell commands on it.
+Every gap the reading claimed is real on the machine; three of the fixes for them were not.
+`macrunch` did not parse under V10's `sh` at all — repaired in `build/patch`, and `man`,
+`-ms` and `-mm` then work. `psych` and `rain` do not link, and this file's own notes already
+said why. `ideal` builds two of its four filters. What is still unrun: the ownership installs
+and the three ROOT fixes, which need a `mk ROOT=/v10 world` against a second disk.
 
 What is still open there: the rest of §3 (fifteen packages declined for a reason the tree
 contradicts — the decision may still be right, only the reason is wrong), §5 (data no tape

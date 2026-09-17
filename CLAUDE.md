@@ -78,6 +78,7 @@ tools/boot-newdisk.sh              # disk behaviour: boots alone, has mux, games
 bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web server, DNS
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
+bash tools/v10-golden.sh                # V10: does the golden still boot to login
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
 ```
 
@@ -108,7 +109,16 @@ bash tools/v10-tapes.sh                 # the six TUHS archives -> v10tapes/, pl
 bash tools/v10-reset.sh                 # image/*.tar.bz2 -> run/v10, run/v10-golden, run/uda
 bash tools/v10-launch.sh                # boot run/v10, golden on the second drive, both shares up
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
+python3 tools/v10drive.py run/v10-test.img cmds   # run a script of shell commands on it
 ```
+
+**The golden boots on anything that can build open-simh**, which includes a plain Linux
+container: `git clone` open-simh at the revision `libsimh/build-xcframework.sh` pins,
+`libsimh/patches/apply.sh work/opensimh`, `make vax780`, then join `image/v10-golden.tar.bz2.a?`
+and `tar -xSjf`. No Xcode, no Mac, no netfsd — `v10-golden.sh` and `v10drive.py` attach one
+disk and serve nothing. That is the difference between checking a build rule by reading it
+and checking it by running it, and three of this project's own rules were wrong in ways only
+the second kind of check found. **Always boot a fresh copy**, never `run/v10-golden` itself.
 
 `image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
 working** disks restored from them. Two directories, on purpose.
@@ -267,9 +277,22 @@ status 0.
   claim_images …`. Two runs once overlapped and both exited 0, one of them measuring a disk
   that was being zeroed underneath it.
 - **Console automation matches markers, never prompts, and never a literal.** Use
-  `tools/v8drive.exp`. The tty echoes what you type into whatever is already printing, a
-  prompt repeats, and `login:` arrives with mark parity. Three harnesses each grew their own
-  prompt matcher and all three hung.
+  `tools/v8drive.exp`, or `tools/v10drive.py` where there is no expect. The tty echoes what
+  you type into whatever is already printing, a prompt repeats, and `login:` arrives with
+  mark parity. Three harnesses each grew their own prompt matcher and all three hung.
+- **The console drops anything past 256 bytes on a line and says nothing.**
+  `v10/usr/sys/io/nttyld.c:28` is `#define CANBSIZ 256` and `:348` is
+  `static char canonb[CANBSIZ]`. A 330-byte `chmod` typed by a harness was truncated, the
+  shell never saw a complete command, the marker never printed, and it read exactly like a
+  slow machine. Only the *tty* has this limit — `mk` hands a recipe to `sh` without one, so
+  the mkfile's own 300-character lines are fine.
+- **A harness halts the guest; it never just drops it.** `^E` then `quit` leaves every
+  filesystem marked mounted, and the next boot's `fsck` finds the files the killed run had
+  open and stops at `UNEXPECTED INCONSISTENCY; RUN fsck MANUALLY` — single user, no
+  `login:`, and a driver waiting for one hangs until its timeout. `/etc/down` is the halt,
+  and the caller must `cd /` first: `iget.c`'s `ifsbusy` counts a cwd as a held inode, so a
+  shell sitting in `/usr/src` makes `umount -a` answer `/usr: In use` and `down` correctly
+  refuses.
 - **A harness must terminate itself; needing to kill one is the bug** — and expect's `exit`
   closes the spawn, which kills a running guest.
 - **Never answer IAC on the remote console** (`ConsoleLink(replyToIAC: false)`): a client
