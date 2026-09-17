@@ -1,4 +1,4 @@
-# What the V10 build does not do
+# What the V10 build did not do
 
 *A file-by-file reading of `v10/usr/src`, 2026-09-17. Eight partitions, every one of the 670
 directories walked in full, every claim cited to a file and line and checked against
@@ -6,11 +6,48 @@ directories walked in full, every claim cited to a file and line and checked aga
 mechanically against the tree; the rest carry their evidence and need a person to accept
 each one.*
 
+*Much of it has since been acted on — §0 says what, and marks the four places where the
+reading below was **wrong**. The evidence is kept as it was written, with the status added
+beside it, rather than rewritten to match the result.*
+
 **The pattern the reading found: the build installs programs and not the data they read, and
 not the ownership they need.** Nothing fails at build time when it doesn't — the program is
 there and says `cannot open` the first time someone runs it. A second pattern sits behind
 several entries in §3: the mkfile declines a package with a stated reason, and the reason is
 contradicted by the tree.
+
+## 0. Status
+
+*Status pass, 2026-09-17, after the reading below was acted on. **Nothing here has been
+boot-tested** — it was written and checked on a Linux host with neither the VAX nor a Mac,
+so every claim below is a claim about the files, not about a machine that ran them.*
+
+**Done.** All of §1. In §2, every product the build actually installs. In §4: the macro
+packages, uucp's destinations and set-uid bits, `/usr/lib/tabset`, `grap.defines`, matlab's
+help database, spitbol's error text, atc's flow files, dict's ten helpers, worm's six,
+ideal's four filters, `lcomp`, learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`,
+`psych` and `rain`. In §3: the reasons recorded for `ancient.nroff`, `learn` and `dk`'s four
+`/etc` programs have been replaced with ones the tree supports.
+
+**Four claims in the reading below were wrong and are corrected in place**, each marked
+*CORRECTED*: cyntax's leak is real but one level lower than stated; `ex`, `struct` and
+`apsend` do not take the ownership the §2 table gives them; `ideal` was broken in its
+*default* mode, not merely in `-p` and `-tex`; and `refer`'s `lookbib` and `pubindex` are not
+V10 commands at all.
+
+**Three more `strip` defects** of the same shape as §1.1 were found by a better detector and
+fixed with it.
+
+**Still open**, and each needs a decision rather than a patch: the rest of §3 (fifteen
+packages declined for a reason the tree contradicts — the decision may still be right), §5
+(data no tape carries, which is the `/usr/dict` import), §6, and `ipc/`, which is essentially
+unbuilt.
+
+**One inconsistency found while working and not yet resolved:** `build/mkfile:23-26` says the
+`./installed` predicate "is gone", and there is no `:P` attribute and no `installed` script
+anywhere — but six comments still describe it as live, including the one that justifies the
+whole `config:V:` target. Either those comments or that target's reason needs rewriting, and
+which one is a question for whoever knows why `config` was added.
 
 ## 1. Defects in the build as it stands
 
@@ -34,6 +71,15 @@ and leaves the binary unstripped while the log reports a failure that is not one
 $ROOT/usr/lib/apsend/apsend.mkhd`, whose first argument is the directory `mkdir`'d three
 lines above, so *both* files ship unstripped.
 
+**FIXED**, and **three more of the same shape were missed by this reading**: `troff`'s
+`strip $ROOT/usr/bin/troff/a.out`, and `ex`'s `$ROOT/usr/lib/ex3.7recover/exrecover` and
+`.../ex3.7preserve/expreserve`, where the parent in each case is the installed file. The
+detector that found only 24 matched a `cp` against the line after it; troff's `strip` is
+eight lines below its `cp`. The right test asks of every `strip` argument whether the build
+ever creates its parent *directory* — that finds exactly 27 and now finds none. `ex`'s two
+`chmod`s also moved to after its `strip`, because `strip/symwrite.c:66` rewrites the file
+with `creat(2)`, which on a file that exists takes the mode already there.
+
 **1.2 Three packages install to the builder rather than to `$ROOT`.** This is the most
 serious item here: `ipnxbuild /v10` silently writes onto the running machine.
 
@@ -45,11 +91,23 @@ serious item here: `ipnxbuild /v10` silently writes onto the running machine.
 - **cyntax** — `build/mkfile:4109` passes `BIN=` and `LIB=`, but the recipes ignore them:
   `cyn/Makefile:37` is `cp ccom /usr/lib/cyntax/ccom`, `cem/Makefile:38,41` are
   `cp cyntax /usr/bin/cyntax` and `cp cem /usr/lib/cyntax/cem`. The declared target
-  `$ROOT/usr/bin/cyntax` is never created.
+  `$ROOT/usr/bin/cyntax` is never created. *CORRECTED*: the fourth subdirectory, `sets`, is
+  **not** a leak — `sets/mkfile:5` is `INSDIR = ../cyn` and it installs a build-time filter
+  into a sibling source directory. And this is the worst of the three, because
+  `lib/mkfile:2-3` are `CCOM = ${LIB}/ccom` and `CEM = ${LIB}/cem`: cyntax's libraries are
+  generated by *running* what the two previous steps installed, so a `ccom` that went to the
+  builder is a `libc` and `libj` that cannot be built for the target at all.
 - **picasso** — `picasso/mkfile:1,63,65` are literal `/usr/…`; `build/mkfile:4250` runs
   `mk all INS=cp ROOT=$ROOT` and `ROOT` appears nowhere in that mkfile except an unused
   target. With no `/usr/lib/postscript` on the builder the `cd ${POSTLIB}` fails, the whole
   block returns non-zero, and `|| echo 'picasso: FAILED'` swallows it.
+
+**ALL THREE FIXED.** Re-checked afterwards by asking, of every package whose own `install`
+`build/mkfile` runs, whether any recipe beneath it copies to a literal `/usr`, `/bin`, `/etc`
+or `/lib` path: six hits in three packages, of which only cyntax's three are in an install
+chain. `picasso` needed a different fix from the other two — `picasso/mkfile:90` compiles
+`-DGWBFILES="${POSTLIB}"` into the binary, so `GWB` cannot be moved to `$ROOT` and the
+package's `INS` is left at its default `:` instead, with the copies done in `build/mkfile`.
 
 **1.3 `dump` is installed to the wrong directory.** `build/mkfile:5078` installs
 `$ROOT/usr/bin/dump`; `dump/Makefile:34` is `mv dump $(DESTDIR)/etc`, the man page is
@@ -63,6 +121,8 @@ that wire `$ROOT/etc/config` and `$ROOT/bin/tp` correctly.
 **1.5 `sail`'s log is truncated on every build.** `build/mkfile:4777` is an unconditional
 `: > $ROOT/usr/games/lib/saillog`; `sail/makefile:118-121` makes it a *file target*, so the
 tape creates it only when absent.
+
+**1.4, 1.5 and 1.6 FIXED**, along with 1.3.
 
 **1.6 `/usr/bin/cflow` ships mode 644.** `cflow/Makefile:28` copies `cflow.sh` with no
 `chmod`, and `cflow.sh` is 644 in the tree. Every other script install in `build/mkfile`
@@ -87,11 +147,30 @@ The whole 5,219-line mkfile carries one `chown` (`sh`, :826) and two set-id inst
 | `/usr/bin/inews` | mode 6755, user+group `news` | `netnews/src/Makefile:35` |
 | uucp's four in `/usr/bin` | set-uid uucp | `uucp/mkfile:103-106`, `doc/rtmdiff/filemodes:22-39` |
 | `/usr/lib/asd/mkspool`, `asdrcv` | set-uid | `asd++/Makefile:15-16`, `asd/install.asd:26-31` |
-| `egrep`, `ex`, `sign`, `struct`, `apsend` | `chmod 775`, `chown bin,bin` | `egrep/mkfile:8-12`, `ex/makefile:122`, `sign/mkfile:26-28`, `struct/mkfile:22-26` |
+| `egrep` | `chmod 775`, `chown bin,bin` | `egrep/mkfile:11-12` |
+| `ex` | `chmod 775` **only** | `ex/makefile:122` — *CORRECTED*: the `/etc/chown bin,bin` on :121 is commented out on the tape |
+| `sign`'s four | `chmod 775`, no chown | `sign/mkfile:26-28`, `:4` for `$X` |
+| `/usr/lib/struct` the **directory** | `chown bin,bin`, `chmod 775` | `struct/mkfile:23-26` — *CORRECTED*: the two binaries under it are only stripped and copied |
+| `apsend` | nothing beyond `chmod +x` | *CORRECTED*: `apsend/mkfile:9` is the whole of it, and `build/mkfile` already did it |
+| `/usr/games/lib/atc` | `chown bin,bin`, `chmod o-w,g+w` | `atc/Makefile:6-11` — not in the original reading |
 
-**Blocker.** `build/etc/passwd` holds root, daemon, sys, bin and `build/etc/group` holds
-other, sys, man, bin. There is no `games`, no `uucp` (which `parms.h:24-25` fixes at uid 48),
-no `news`. Those accounts must exist before any of the above can be applied.
+**Blocker — RESOLVED for the products the build installs.** `uucp` (uid 48, gid 1) is the
+tape's own number, from `parms.h:24-25` and again from `v8/etc/passwd`, which ships the
+identical line; it is added. `games` (uid 49, gid 5) is **ours** — no tape names a number for
+it, only `games/adv/adv.c:3013` knows the name — and it is added because rogue's score files
+are a set-gid mechanism and every existing group already owns something (`bin` owns `/bin/sh`,
+so a set-gid-`bin` rogue would be a game that can write the shell). `mail` and `news` are
+**not** needed: `mailx`, `netnews`/`inews` and `/etc/dkdialsub` are not installed by this
+build at all, so the three rows above that want them are moot until they are.
+
+Every chown added names its **number**, not its name: `/etc/chown` resolves a name against
+the *builder's* `/etc/passwd` (`chown.c:63`), never `$ROOT/etc/passwd`, and `chown.c:61` takes
+a number without consulting any passwd. `chown1()` in `sys4.c` clears `ISGID` only for a
+non-root caller, so chown-then-chmod is safe for a build that runs as root.
+
+**FIXED**: `at`, `ct`, `oops`, `load`, `server`, `egrep`, `sign`, `struct`, `ex`, `rogue`
+(with its two score files, which `rip.c:107` opens `O_RDWR` with no `O_CREAT` and nothing
+created), `sail` and its driver and log, uucp's six, and atc's data directory.
 
 ## 3. Exclusions whose stated reason the tree contradicts
 
@@ -109,24 +188,33 @@ The decision may still be right — the *reason* needs replacing before anyone c
 | `sml` | "no build file at the top level" | `sml/src/makeml` is a 372-line driver with its own man page; `cd src; makeml -vax -v9` |
 | `PDP11` | "only half of it is here" | `11as/` and `11c/` are both present; only the archiver is absent, which `README:19-28` says is not needed |
 | `cfront` | "C++, deferred to V11" | scoped to seven named dirs; `cfront/demangle/` is plain C (`makefile:7` is `CC = cc`) |
-| `learn` | "nothing on the tape says where the lesson tree goes" | `lib/src/README:3` — "Lessons are in `/usr/lib/learn/*`"; the tree is in `lib/lib/`, 519 files |
-| `dk`'s four `/etc` programs | "installed nowhere, exactly as the tape has it" | `dk/cmd/Makefile:48-51` installs all four and set-uids one |
+| `learn` — **REASON REPLACED, PACKAGE NOW BUILT** | "nothing on the tape says where the lesson tree goes" | three files say it: `makefile:15` `LLIB = /usr/lib/learn`, `lib/src/README:3-4`, and `makefile:64-69`, the `check` target, which is a manifest of what `LLIB` must hold. 542 files in `lib/lib/`, not 519 |
+| `dk`'s four `/etc` programs — **REASON REPLACED, DECISION KEPT** | "installed nowhere, exactly as the tape has it" | `dk/cmd/Makefile:49-51` installs all four and set-uids one. The reason that holds: none of the four is in any Admin list, and all four drive Datakit hardware this machine does not have. `Rpull`/`Rpush` from the same install **are** in `ulibfiles` and are now made |
 | `libj`'s `jerq.h` | "the include tree already carries it" | `v10/usr/include/jerq.h` does not exist; the three other copies all differ |
 | `chuck` | listed as not built at :3056 | and built at :5029 — to `/usr/bin`, where the package and `man8/chuck.8` say `/etc`. `upchuck`, which `rc(8)` invokes, is never built |
-| `ancient.nroff` | "its install is `mv nroff /usr/bin`, over the link made here" | true of the parent; `macros.d` writes only `/usr/lib/tmac` and `/usr/lib/macros` — see §4 |
+| `ancient.nroff` — **`macros.d` NOW BUILT** | "its install is `mv nroff /usr/bin`, over the link made here" | true of the parent; `macros.d/makefile:12-15,44-47` writes only `/usr/lib/tmac` and `/usr/lib/macros` and builds no binary but the `ntar` filter its own pipeline uses |
 | `ncurses` | "its `libcurses.a` would land on the Berkeley one" | true of the library; `tic` and the terminfo database are a separate install and collide with nothing |
 | `movie` | "the install target … copies nothing" | true of `movie/mkfile`; `blit.make:43-45` is a real install, and seven of the eight products need only `cc` |
 
 ## 4. Missing installs, with the sources present
 
-**The macro packages are the biggest user-visible gap.** Nothing populates `/usr/lib/tmac`
+*Most of this section is now done; each paragraph says which parts.*
+
+**The macro packages are the biggest user-visible gap. FIXED.** Twelve `tmac` files are
+installed where the tape's list names eleven — `makefile:6-7` omits `tmac.srefs` and
+`tmac.s:55` is `.so /usr/lib/tmac/tmac.srefs`, so the tape's own `-ms` stopped at its
+reference macros. Going the other way, `tmac.org:2` sources `/usr/lib/macros/org` and there
+is no `org.src` anywhere, so `-morg` stays broken and `tmac.org` is installed as the tape
+installs it.
+
+ Nothing populates `/usr/lib/tmac`
 or `/usr/lib/macros`, both named in `Admin/ulibfiles`, while `troff/tdef.h:13` compiles in
 `TMACDIR "/usr/lib/tmac/tmac."`. So on this disk `nroff -ms`, `troff -ms`, `-mm` and **`man`**
 all fail. Sources and rule: `troff/ancient.nroff/macros.d/{makefile:4-5,12-15,44-47}`. There
 is a decision inside it — three different `-ms` copies exist in the tree (`macros.d/tmac.s`,
 `/usr/man/man0/tmac.s`, `/usr/vol2/ms/tmac.s`) and only this one has an install rule.
 
-**Whole configurations, never installed:** `/usr/lib/uucp` (Devices, Dialers, Dialcodes,
+**Whole configurations, never installed** — *partly CORRECTED*: `/usr/lib/uucp` (Devices, Dialers, Dialcodes,
 Permissions, Poll, remote.unknown, uups, the `uudemon.*` scripts, and the generated
 `Maxuuxqts`/`Maxuuscheds`) — and six uucp binaries are installed to `/usr/bin` while
 `uucp.h:219-221` hardcodes `/usr/lib/uucp/` for them, with `uulog`, `uupick` and `uuto` not
@@ -134,23 +222,44 @@ installed at all. `/usr/lib/upas` routing configuration. `/usr/lib/learn` (six c
 `/usr/lib/dict` (ten helper binaries built and discarded, so `/usr/bin/dict`'s every branch
 execs something absent). `/usr/lib/tabset` (`termcap/makefile:12-14`).
 
-**Programs whose data was never installed:** `grap` without `/usr/lib/grap.defines`, so every
-`bullet` and `star` is an undefined name. `matlab` without `mathelp.dac`/`mathelp.idx`, its
-whole HELP database, both pre-built and present. `spitbol` without `vaxspitv35.err`, so every
-diagnostic is numeric. `sky` without `/usr/lib/startab`. `atc` without `Apple1.flow`, which
-its *default* airspace needs. `rogue` cannot record a score at all — `rip.c:107` opens the
-file `O_RDWR` with no `O_CREAT` and the tape's Makefile creates both.
+*CORRECTED, and FIXED:* the uucp gap was not the whole directory. The **site** files —
+`Systems`, `Devices`, `Dialcodes`, `Permissions`, `Poll` — the package deliberately does not
+install: there is no `Systems` in the tree at all and the other four are in `samples/`, named
+as samples, which `uucp/mkfile`'s `cp` target does not copy. They describe a site's modems
+and neighbours. What *was* missing is now in: the destination of six binaries, three
+commands (`uulog`, `uupick`, `uuto`), eight scripts, `Dialers`, and the set-uid bits.
+`learn`, `dict` and `tabset` are also done. `/usr/lib/upas` remains open.
 
-**Binaries built and then dropped:** `worm` builds fifteen and installs nine (`wdir wreset
-wmv wtmpdir wmount wcopy` missing). `ideal`'s four output filters, so every mode except `-n`
-is broken. `learn`'s `tee` and `lcount`. `lcomp`'s driver script, leaving `/usr/bin/lprint`
-with nothing to drive it. `refer`'s `lookbib` and `pubindex`, both documented commands.
-`backup.old`'s 23. `canfield`, 1,145 lines of buildable curses game that appears **nowhere**
-in the mkfile while every other unbuilt game carries a recorded reason.
+**Programs whose data was never installed — ALL FIXED but `sky`:** `grap` without
+`/usr/lib/grap.defines`, so every `bullet` and `star` is an undefined name. `matlab` without
+its whole HELP database, both pre-built and present — *CORRECTED*: the two halves of the tape
+disagree about where it lives, `src/helper.f:10-11` (the reader) saying `/usr/lib` and
+`helpset.f:6-7` (the generator) `/usr/local/lib`, and the reader is the one that runs.
+`spitbol` without `vaxspitv35.err`, so every diagnostic is numeric. `sky` without
+`/usr/lib/startab` — still open, `sky` is not built. `atc` without its flow files —
+*CORRECTED*: a missing flow file is **not** an error, `aread.c:115-132` falls through and the
+game plays with no traffic flow, which is not the game but is not a failure either. `rogue`
+cannot record a score at all — `rip.c:107` opens the file `O_RDWR` with no `O_CREAT`.
 
-**Links never made:** `/usr/lib/Rpull` and `/usr/lib/Rpush` — `pull.c:10` and `push.c:11`
-hardcode them as their server, so both installed binaries are inert, and both names are in
-`Admin/ulibfiles`.
+**Binaries built and then dropped — FIXED but `backup.old`:** `worm` builds fifteen and
+installs nine (`wdir wreset wmv wtmpdir wmount wcopy` missing). `ideal`'s output filters —
+*CORRECTED*: there are **five** names in `ideal.cmd` (`tfilt`, `pfilt`, `4filt`, `texfilt`,
+`idsort`) and `t` is the **default** (`ideal.cmd:5`), so plain `ideal file` was broken too,
+not merely `-p` and `-tex`; `idfilt/makefile:24` is `install: 4filt tfilt pfilt texfilt`
+*with no recipe*, so the tape builds four and installs none. `idsort` has no build rule
+anywhere, so `-s` stays broken. `learn`'s `tee` and `lcount`. `lcomp`'s driver script,
+leaving `/usr/bin/lprint` with nothing to drive it. `refer`'s `lookbib` and `pubindex` —
+*CORRECTED*: these are **not** V10 commands. Neither has a manual page in `v10/usr/man`,
+neither is in any Admin list, and `refer`'s own install target names neither; the tape's
+decision to leave them stands and they are not installed. `backup.old`'s 23 — still open.
+`canfield`, 1,145 lines of buildable curses game that appears **nowhere** in the mkfile while
+every other unbuilt game carries a recorded reason — and `psych` and `rain` were the same,
+all three now built. `boggle` stays out and now says why: `boggle/makedict` reads
+`/usr/dict/words` and no tape carries `/usr/dict`.
+
+**Links never made — FIXED:** `/usr/lib/Rpull` and `/usr/lib/Rpush` — `pull.c:10` and
+`push.c:11` hardcode them as their server, so both installed binaries were inert, and both
+names are in `Admin/ulibfiles`.
 
 **`ipc/` is essentially unbuilt.** The tape's driver names five directories
 (`libipc libin bin mgrs internet`); the build takes four files. `/usr/ipc` is not in

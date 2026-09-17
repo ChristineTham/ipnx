@@ -179,32 +179,36 @@ what runs whichever disk is being filled, and there is no copy on the target tha
 ## What the build does not reach
 
 The tape carries its own manifests of what a V10 machine holds — `cmd/Admin/binfiles`,
-`etcfiles`, `libfiles`, `ulibfiles` — and they are the measure. Compared against the mkfile's
-install lists on 2026-09-16:
+`etcfiles`, `libfiles`, `ulibfiles` — and they are the measure. Recounted against the
+mkfile's install lists on 2026-09-17:
 
 | | on the tape's list | not built | |
 |---|---|---|---|
 | `/bin` | 57 | **4** | `iostat` `mail` `rmail` `rsh` — each explained in the mkfile header |
 | `/etc` | 56 | **4** | `analyze` `backsh` `catman` `dklisten` — no source on any tape |
-| `/usr/lib` | 50 | **27** | below |
+| `/usr/lib` | 50 | **23** | below; it was 27 |
 | `/lib` | 1 | 1 | `dknames`, which nothing in the corpus produces or reads |
 
-The 27 missing from `/usr/lib` are the real hole, and they are not one kind of thing:
+The 23 still missing from `/usr/lib` are not one kind of thing:
 
 ```
 11as2 11c0 11c1 11c2 11crt0.o      the PDP-11 cross-toolchain
 libbt.a libg.a libnew.a libport.a  libraries
 libr.a libsa.a libtc.a
-suftab macros man manprog tel      troff and man data files
+suftab man manprog tel             troff and man data files
 ikeya.term ikeya.tmac lib.b
-lisp uucp Rpull Rpush cunumber     programs and their support
+lisp cunumber                      programs and their support
 ex3.6preserve ex3.6recover
 ```
 
-Some of these have no source on any tape and never will be built. Others are data files V8
-carries and V10's tapes do not. **Nobody has been through them one at a time**, and that is the
-next piece of work: a directory-by-directory reading of `/usr/src` against these manifests,
-rather than pattern-matching on what looks like a program.
+`macros`, `uucp`, `Rpull` and `Rpush` came off that list on 2026-09-17; the file-by-file
+reading below is what found them. Some of the rest have no source on any tape and never will
+be built; others are data files V8 carries and V10's tapes do not.
+
+**A name counted present is a weaker statement than it looks.** `tmac` counted as installed
+before any of this work, because `docgen` and `postscript` each `mkdir` it for their own
+helpers — and it held no macro package at all, which is why `man(1)` could not format a page
+on any disk this project has built. Check what is *in* a directory the manifest names.
 
 Directories under `/usr/src` that the mkfile never names at all: `lbin/Mail`, `lbin/kermit`,
 `lbin/mailx`, and four under `ipc/` (`h`, `mgrs`, `perf`, `servers`). Everything else is named
@@ -301,14 +305,24 @@ installs. **19 are in neither tree and V8 has them at the identical path** — `
 `macros/*` of the mm package, `upas/forwardlist`, and three uucp limits files. Bring them
 across per file, with the provenance recorded.
 
-**2. `/usr/src`, read file by file — done, and written up in [v10-gaps.md](v10-gaps.md).**
-Every one of the 670 directories was walked in full, against `build/mkfile`, with each claim
-cited to a file and line. The pattern it found: **the build installs programs and not the data
-they read, nor the ownership they need**, and nothing fails at build time when it doesn't —
-the program says `cannot open` the first time someone runs it. It also found 24 `strip` rules
-that address a path under a regular file, three packages that install to the *builder* rather
-than to `$ROOT`, and sixteen packages declined for a reason the tree contradicts.
-`tools/v10-datafiles.py` re-runs the data-file half of that measurement at any time.
+**2. `/usr/src`, read file by file — done, acted on, and written up in
+[v10-gaps.md](v10-gaps.md).** Every one of the 670 directories was walked in full, against
+`build/mkfile`, with each claim cited to a file and line. The pattern it found: **the build
+installs programs and not the data they read, nor the ownership they need**, and nothing fails
+at build time when it doesn't — the program says `cannot open` the first time someone runs it.
+
+Acted on 2026-09-17: all of §1, the ownership and set-id installs for every product the build
+actually installs, and most of §4 — the macro packages, uucp's two destinations and its
+set-uid bits, `/usr/lib/tabset`, `grap.defines`, matlab's help database, spitbol's error
+text, atc's flow files, dict's ten helpers, worm's six, ideal's four filters, `lcomp`,
+learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`, `psych` and `rain`. **None of it
+is boot-tested**: it was written on a Linux host with neither the VAX nor a Mac, so each
+change is verifiable by inspection and by its citation and by nothing else.
+
+What is still open there: the rest of §3 (fifteen packages declined for a reason the tree
+contradicts — the decision may still be right, only the reason is wrong), §5 (data no tape
+carries, which is task 1), `/usr/lib/upas`, `backup.old`'s 23, `sky`, and `ipc/`.
+`tools/v10-datafiles.py` re-runs the data-file half of the measurement at any time.
 
 **3. `/usr/jerq` or `/usr/blit` against the DMD emulator.** The host side is on the tape as a
 VAX binary; the terminal side is the open question. Nothing here has been tried yet.

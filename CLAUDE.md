@@ -152,8 +152,12 @@ must exist before the mkfile will run.
 **V10 is not a complete distribution, and the measure is the tape's own.**
 `v10/usr/src/cmd/Admin/{binfiles,etcfiles,libfiles,ulibfiles}` are the manifests of what a
 V10 machine holds. Against them: 4 of `/bin`'s 57 and 4 of `/etc`'s 56 are not built (each
-with a reason), and **27 of `/usr/lib`'s 50 are missing**. Check a claim about completeness
-against those lists, never against a pattern over the source tree.
+with a reason), and **23 of `/usr/lib`'s 50 are missing** — 27 were, before `macros`, `uucp`,
+`Rpull` and `Rpush` went in. Counting a name present is weaker than it sounds: `tmac` counted
+before, because two unrelated rules made the directory, and it held no macro package, which
+is why `man(1)` could not format a page. Check a claim about completeness against those
+lists, never against a pattern over the source tree — and check what is *in* a directory the
+list names, not that it exists.
 
 ### Website and release
 
@@ -223,10 +227,22 @@ run that check before spending an hour.
 ### The V10 build
 
 `$ROOT` means **only where output goes**. The toolchain is always the running machine's, so
-one process with a target parameter builds either disk. `mkfile`'s `installed` predicate is
-`test -f`, so nothing is ever rebuilt on the strength of a timestamp — `.patched` and
-`.ranlib` are plain stamp files. `docs/v10-build.md` describes the whole of it, read off
-the scripts themselves — where that document and a script disagree, the script is right.
+one process with a target parameter builds either disk — and a rule that ignores `$ROOT`
+therefore writes the golden disk's contents onto the machine building it, which is what
+`mkimage:77`'s `mk ROOT=/v10 world` makes live. `.patched` and `.ranlib` are plain stamp
+files. Times **are** compared: the `./installed` predicate 424 rules once carried is gone
+(`mkfile:23-26`), though six comments in that file still describe it as live and one of them
+is the stated reason for the `config:V:` target — unresolved, and recorded in
+`docs/v10-gaps.md`. `docs/v10-build.md` describes the whole of it, read off the scripts
+themselves — where that document and a script disagree, the script is right.
+
+Two invariants worth knowing before adding a rule. **`ipnxclean` needs no maintenance when
+you add one**: `/usr/ipnx/derived` is a set difference of the `build/usrtrees` roots taken
+before and after the build, so anything a new rule leaves in the source tree is swept
+already. **But it sweeps nothing outside those roots** — `usrtrees` omits `bin` and `lib` as
+"product, not shape", so installed binaries are not its business — and it cannot undo an
+**overwrite**, which is what `build/preserve` is for. A rule that starts rewriting a tape
+file is reported by ipnxbuild as `OVERWRITTEN AND NOT PRESERVED`, not cleaned.
 
 V10 is a **reconstruction and labelled as one**: there was never a pure Tenth Edition to
 restore. The tape is one machine's working tree caught mid-upgrade from V9 — `libc.a`'s 261
