@@ -5,6 +5,9 @@ was proven, and the channel semantics that cost real debugging time.
 Runbook-style evidence lives in the gitignored `work/` scripts named below;
 their transcripts are quoted where they matter.*
 
+*The `work/` harnesses named below were scratch files and were never committed; `work/`
+itself is the gitignored workbench the V8 tooling still uses.*
+
 ## What A1 delivers
 
 - **open-simh vax780 as a static library** — `libsimh/` builds

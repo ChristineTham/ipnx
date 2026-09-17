@@ -5,6 +5,9 @@ emulator into a shippable app, and adds the macOS build that was never on
 the roadmap but costs almost nothing once the cores are xcframeworks.
 Submission steps that need a person are in [app-store.md](app-store.md).*
 
+*The `work/` harnesses named below were scratch files and were never committed; `work/`
+itself is the gitignored workbench the V8 tooling still uses.*
+
 ## The macOS app
 
 Both build scripts already produced macOS artifacts for their own smoke

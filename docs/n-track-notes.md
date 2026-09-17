@@ -4,6 +4,9 @@
 for SIMH, TCP and UDP to the outside world, and Weinberger's netfs with a server to talk to.
 All of it ships.*
 
+*The `work/` harnesses named below were scratch files and were never committed; `work/`
+itself is the gitignored workbench the V8 tooling still uses.*
+
 ## N0 — the 516 MB RP07 disk *(done 2026-08-09)*
 
 `work/myv8/rp07v8.golden` — 516,096,000 B, boots on its own, `/usr` grown from

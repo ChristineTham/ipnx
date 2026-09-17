@@ -1810,6 +1810,29 @@ REFUSE = {
 
 
 
+def makefile_in(d):
+    """The directory's build file, under whatever case the tape spelled it.
+
+    NOT `os.path.exists(d + "/makefile")'.  That test answers TRUE on macOS for
+    a directory holding `Makefile' -- and 66 of usr/src/cmd's spell it that way
+    against 47 lowercase -- so the generator read the right file there and
+    skipped the directory entirely on any case-SENSITIVE filesystem.  Output
+    that depends on which Mac you run it on is not generated output, and the
+    symptom was quiet: `--check' reported four files stale, and a regeneration
+    on Linux dropped 26 stage-6 commands -- adb, cp, ed, mail, man, mv, passwd,
+    ps among them -- from the world build with no error anywhere.
+
+    Lowercase is tried first so the macOS answer is unchanged: no directory in
+    the tree carries both spellings, and CASEMAP would have escaped one if it
+    did.
+    """
+    for n in ("makefile", "Makefile"):
+        f = os.path.join(d, n)
+        if os.path.isfile(f):
+            return f
+    return None
+
+
 def derive_dirs(taken):
     """Entries for usr/src/cmd/<dir>/makefile that fit the common shape.
 
@@ -1828,7 +1851,10 @@ def derive_dirs(taken):
 
     for name in sorted(os.listdir(d0)):
         p = os.path.join(d0, name)
-        if not os.path.isdir(p) or not os.path.exists(os.path.join(p, "makefile")):
+        if not os.path.isdir(p):
+            continue
+        mkpath = makefile_in(p)
+        if mkpath is None:
             continue
         if name in hand:
             skipped.append((name + "/", "a loose file or a hand-written entry "
@@ -1839,7 +1865,7 @@ def derive_dirs(taken):
             skipped.append((name + "/", "directory name is not a binary on the image"))
             continue
 
-        mk = open(os.path.join(p, "makefile"), errors="replace").read()
+        mk = open(mkpath, errors="replace").read()
         if name in REFUSE:
             skipped.append((name + "/", REFUSE[name]))
             continue

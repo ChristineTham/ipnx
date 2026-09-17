@@ -5,15 +5,20 @@
 #	updatebuild <dir>      from somewhere else, said explicitly
 #
 # The repository is the source of truth for the build system, so pulling from it
-# is not a decision -- it is the first half of every round.  The ninety-character
-# share path was typed by hand every time before this existed, which meant it
-# could be forgotten, and a forgotten pull builds the previous edit while saying
-# nothing about it.  Here it is a default.
+# is not a decision -- it is the first half of every round.  The share path was
+# typed by hand every time before this existed, which meant it could be
+# forgotten, and a forgotten pull builds the previous edit while saying nothing
+# about it.  Here it is a default.
+#
+# THROUGH /n/home, WHICH IS THE OPERATOR'S OWN HOME (FileShare.swift serves it
+# on 9201 and /etc/rc mounts it), so the default names no user.  It still
+# assumes the clone is at ~/Repositories/Unix/ipnx; say the directory outright
+# if it is somewhere else.
 #
 # ipnxbuild reads no share at all.  That is deliberate: one command needs the
 # Mac and the other does not, so a build never fails for a reason that has
 # nothing to do with building.
-REPO=${1-/n/macos/Users/christie/Repositories/Unix/ipnx/v10/usr/src/build}
+REPO=${1-/n/home/Repositories/Unix/ipnx/v10/usr/src/build}
 
 # SAY SO.  netfs unmounted looks exactly like an empty directory, and mkbuild's
 # per-file `cp' would then fail eighteen times over rather than once clearly.

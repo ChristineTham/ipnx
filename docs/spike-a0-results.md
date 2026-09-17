@@ -1,8 +1,5 @@
 # Phase A0 — spike results (session 1, 2026-08-08)
 
-*The harnesses named below were scratch files in the spike's working directory and were
-never committed; what they proved is what this document is for.*
-
 **Bottom line: the V8 appliance works end-to-end on this Mac.** Classic SIMH 3.12-5 built
 clean, myv8 produced the RP06 image in ~2.5 minutes, V8 boots to multiuser, and a scripted
 DZ-line session logged in, listed `/proc`, compiled and ran C, and started `mux` far enough
@@ -10,15 +7,18 @@ to capture its terminal-identification handshake. The only unfinished leg is a r
 emulator on the other end of the wire — blocked by a machine constraint (no package
 manager), with a clear path forward.
 
+*The `work/` harnesses named below were scratch files and were never committed; `work/`
+itself is the gitignored workbench the V8 tooling still uses.*
+
 ## What was proven
 
 | Step | Result | Evidence |
 |---|---|---|
-| SIMH build | `simhv312-5.zip` → `make vax780` in the `sim/` subdir; **warnings only** on modern clang | `simh312/sim/BIN/vax780` (639 KB) |
-| V8 install | `./setup` ran unattended to "Done." | `myv8/setup.log`; `rp06v8` + `rp06bsd` (174 MB each), **~2.5 min wall clock** |
-| Boot | `vax780 run.conf` → single-user `# ` shell, no prompts; `^D` → multiuser with DZ gettys | `myv8/boot.log` |
+| SIMH build | `simhv312-5.zip` → `make vax780` in the `sim/` subdir; **warnings only** on modern clang | `work/simh312/sim/BIN/vax780` (639 KB) |
+| V8 install | `./setup` ran unattended to "Done." | `work/myv8/setup.log`; `rp06v8` + `rp06bsd` (174 MB each), **~2.5 min wall clock** |
+| Boot | `vax780 run.conf` → single-user `# ` shell, no prompts; `^D` → multiuser with DZ gettys | `work/myv8/boot.log` |
 | DZ login | `login: root` (no password) over telnet :8888 | full Eighth Edition motd ("a trolley car is certain to grow in your stomach…") |
-| System alive | `ps`, **`ls /proc`** (populated!), `cc h.c && a.out` → "hello from V8" | `dztalk.py` transcript |
+| System alive | `ps`, **`ls /proc`** (populated!), `cc h.c && a.out` → "hello from V8" | `work/dztalk.py` transcript |
 | Terminal software | `/usr/jerq/bin` (5620: mux, 32ld, jim, crabs, proof, paint…) and `/usr/blit/bin` (68K: mpx, 68ld…) both installed | ls output in transcript |
 | mux handshake | `/usr/jerq/bin/mux` emits **`ESC [ c`** (hex `1b 5b 63`, a Device Attributes query) and waits for the terminal's identification — exactly what a 5620 with 8;7;3 firmware answers | dztalk mux-poke capture |
 
@@ -36,7 +36,7 @@ manager), with a clear path forward.
 
 1. **No Homebrew on this machine.** The runbook's `brew install …` prerequisites were
    wrong for this host. Stock macOS provides `expect` (all myv8 needs). There is **no
-   telnet client**; `dztalk.py` (Python, handles IAC negotiation) replaces it.
+   telnet client**; `work/dztalk.py` (Python, handles IAC negotiation) replaces it.
 2. **A shell-pipeline trap**: `brew install … | tail` masked the "command not found" —
    the SDL2 "install" silently did nothing. Check exit codes of the *first* pipe stage.
 3. **Mark parity on first contact**: V8's getty sends the initial `login:` prompt with the
@@ -87,9 +87,9 @@ avoids WE32100 corner-cases that dmd_core never needed for SVR3.** Two viable pa
 2. Finish dmd_core's WE32100 fidelity (MOVTRW semantics from the manual + unaligned
    access support) and upstream it to Seth Morabito.
 
-**Experiment state** (gitignored): `dmd_core` = patched checkout (÷8 turbo,
+**Experiment state** (gitignored): `work/dmd_core` = patched checkout (÷8 turbo,
 MOVTRW-identity); `tools/dmdbridge/.cargo/config.toml` redirects the build to it — delete
-that file to build pristine. `turbo-run.sh` = one-shot run-with-cleanup harness.
+that file to build pristine. `work/turbo-run.sh` = one-shot run-with-cleanup harness.
 
 ## Session 3 (2026-08-08, evening): the 8;7;3 ROM — found, fixed, nearly there
 
@@ -176,7 +176,7 @@ register/value it polls (same technique that cracked the self-test); (2) run Set
 against this same SIMH via a pty↔telnet bridge to bisect transport vs. emulator vs. bridge;
 (3) inspect V8-side mux's open fds/wait channel via /proc at stall. A login-retry loop was
 added to the bridge (intermittent keystroke loss makes runs a coin flip — root cause still
-open in the kb path). Bridge run logs: `run*.log`.
+open in the kb path). Bridge run logs: `work/run*.log`.
 
 ## Session 6 (2026-08-09): there was no stall — mux works end-to-end
 
@@ -198,7 +198,7 @@ A 16-slot ring scanned for `(flags & 0x401) == 1` — with `MAXPCHAN 16`, that i
 an idle desktop.
 
 Three ground truths converged (protocol sources read from `v8jerq.tap`, de-tapped and
-untarred locally into `v8src/` — no boot needed):
+untarred locally into `work/v8src/` — no boot needed):
 
 - **The mpx packet protocol** (`jerq/src/mux/proto/`): header `0x80|cntl<<6|chan<<2|seq`,
   SEQMOD 4, CRC-16 trailing. The captured host tail `80 03 04 02 03 01 3a` is a valid
@@ -233,7 +233,7 @@ the known stale self-test artifact. Two sessions of theories shared one wrong pr
 **Result (run 13):** button-3 menu renders (`New/Reshape/Move/Top/Bottom/Current/Memory/
 Delete` — `menutext[]` verbatim), sweep creates a layer, host mux forks a shell into it,
 and typed `date` + `cat /etc/motd` round-trip — the trolley-car motd rendered inside a
-mux window on the emulated 5620. Screenshots: `shots-final/`. **A0's exit criterion
+mux window on the emulated 5620. Screenshots: `work/shots-final/`. **A0's exit criterion
 "mux usable end-to-end" is met.**
 
 **Definitive timing** (the spike's last open measurement): the wire burst is **55,156
@@ -243,7 +243,7 @@ it computes to **~6 minutes** (156 B/s). The community's "15–17 minutes" lore 
 reproduced by pure line arithmetic on this muxterm — likely later/larger terminal
 programs or host-side stalls; our numbers above are measured, not inherited.
 
-## Session artifacts (all under gitignored ``)
+## Session artifacts (all under gitignored `work/`)
 
 `simh312/sim/BIN/vax780` · `myv8/rp06v8` (the bootable V8 disk) · `myv8/setup.log` ·
 `myv8/boot.log` · `boot-hold.exp` · `dz-login.exp` · `dztalk.py` · `turbo-run.sh` ·

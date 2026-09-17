@@ -274,12 +274,12 @@ status 0.
 - **Generated files stay in step with their source** — `mkdep.py --check`,
   `ipnx-release.py --check`, `mkcarry.py --check`. A stale makefile is the one failure that
   looks like a source bug.
-- **Regenerate `v8/mk/gen/` on a case-insensitive filesystem only.** `derive_dirs()` tests
-  for `os.path.exists(<dir>/makefile)`, and 66 of the command directories spell it
-  `Makefile`. On macOS that test passes; on Linux it does not, so `mkdep.py --check`
-  reports `provenance.txt stage6.order stage6-skipped.txt destfiles.txt` stale and a
-  regeneration there would silently drop ~26 stage-6 commands (`adb`, `cp`, `ed`, `mail`,
-  `man`, `mv`, `passwd`, `ps` …) from the world build.
+- **Generated output must not depend on which filesystem generated it.** `mkdep.py` used to
+  test `os.path.exists(<dir>/makefile)`, which macOS answers for a directory holding
+  `Makefile` — 66 of the command directories spell it that way — so a regeneration on any
+  case-sensitive filesystem silently dropped ~26 stage-6 commands (`adb`, `cp`, `ed`,
+  `mail`, `man`, `mv`, `passwd`, `ps` …) from the world build. `makefile_in()` resolves the
+  real name now, and `--check` passing on Linux is what proves it byte-identical.
 - **Guest-side constraints that shape any port:** V8's 1985 `cc` takes no prototypes
   (`expected a NAME in list` is the rejection), filenames are 14 bytes, an archive must be
   re-`ranlib`'d at its destination after a copy, and `--` is not end-of-options.

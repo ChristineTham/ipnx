@@ -42,7 +42,7 @@ struct MachineSpec: Identifiable, Hashable {
     /// V8 must re-issue its idle pattern, because `UNIT_IDLE` survives a
     /// save/restore (it is not in `UNIT_RFLAGS`) while `cpu_idle_mask` does
     /// NOT — so a restored machine idles only if told to again. V10 must NOT
-    /// re-issue `set cpu 8m`: sizing memory after `restore` would write over
+    /// re-issue `set cpu 128m`: sizing memory after `restore` would write over
     /// the state that was just restored. Different lists, and conflating them
     /// would be a bug that only shows up on the second launch.
     let resumeCpu: [String]

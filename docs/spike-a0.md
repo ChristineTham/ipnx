@@ -5,6 +5,9 @@ terminal connects, `mux` runs** — and measure the serial-pacing problem, befor
 iOS code. Everything here has been done by others; our job is to reproduce it and take
 numbers.*
 
+*The `work/` harnesses named below were scratch files and were never committed; `work/`
+itself is the gitignored workbench the V8 tooling still uses.*
+
 *No **VERIFY** markers remain. The last four were resolved on 2026-08-09: the two `mux`
 paths in §4 are confirmed present in the image, and the two third-party 5620 frontends were
 superseded by driving `dmd_core`'s C FFI directly, so their flag syntax is moot. Where a step

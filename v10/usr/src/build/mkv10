@@ -27,7 +27,7 @@
 # off the share works and needs no room on this disk, because of the pipe
 # below:
 #
-#	mkv10 /n/macos/<path to the repository>/v10tapes
+#	mkv10 /n/home/Repositories/Unix/ipnx/v10tapes
 # THE TAPES ARE READ THROUGH A PIPE, NOT OPENED.  tar's endtape() calls
 # backtape(), which does an MTIOCTOP ioctl and only tolerates ENOTTY --
 # tar.c:990 -- so reading an archive off the netfs share dies with `tape
