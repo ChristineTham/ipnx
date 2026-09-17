@@ -301,15 +301,14 @@ installs. **19 are in neither tree and V8 has them at the identical path** — `
 `macros/*` of the mm package, `upas/forwardlist`, and three uucp limits files. Bring them
 across per file, with the provenance recorded.
 
-**2. `/usr/src`, read file by file.** Not by pattern: the mkfile names almost every directory,
-which is not the same as building what is in it. Two measures exist already. Against the tape's
-`Admin` manifests, 27 of `/usr/lib`'s 50 files are not installed. Against the source itself,
-`tools/v10-datafiles.py` finds **118 data files that are in the tree and that nothing installs**
-— the whole of `style`'s `.t`/`.st` set, the `postscript` prologues, `spell`'s `amspell` and
-`brspell`, `uucp`'s samples, the nroff macro package under `cmd/troff/ancient.nroff/macros.d`.
-The pattern is consistent: **the build installs programs and not the data they read**, and
-nothing fails at build time when it doesn't — the program says `cannot open` the first time
-someone runs it. Those candidates are matched by basename and need a person to accept each.
+**2. `/usr/src`, read file by file — done, and written up in [v10-gaps.md](v10-gaps.md).**
+Every one of the 670 directories was walked in full, against `build/mkfile`, with each claim
+cited to a file and line. The pattern it found: **the build installs programs and not the data
+they read, nor the ownership they need**, and nothing fails at build time when it doesn't —
+the program says `cannot open` the first time someone runs it. It also found 24 `strip` rules
+that address a path under a regular file, three packages that install to the *builder* rather
+than to `$ROOT`, and sixteen packages declined for a reason the tree contradicts.
+`tools/v10-datafiles.py` re-runs the data-file half of that measurement at any time.
 
 **3. `/usr/jerq` or `/usr/blit` against the DMD emulator.** The host side is on the tape as a
 VAX binary; the terminal side is the open question. Nothing here has been tried yet.
