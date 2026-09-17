@@ -561,7 +561,7 @@ $CMD/sortbin: $PREP $CMD/sort.c
 
 $ROOT/usr/bin/sort: $CMD/sortbin
 	cd $CMD; cp sortbin $ROOT/usr/bin/sort || echo 'sort: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/sort/sortbin || echo 'sort: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/sort || echo 'sort: install FAILED'
 
 # ranlib is COMPILED.  cmd/ranlib is also a prebuilt binary on the norman tape
 # -- 12288 bytes, a.out little-endian 32-bit demand paged pure executable,
@@ -580,7 +580,7 @@ $CMD/ranlibbin: $PREP $CMD/ranlib.c
 
 $ROOT/usr/bin/ranlib: $CMD/ranlibbin
 	cd $CMD; cp ranlibbin $ROOT/usr/bin/ranlib || echo 'ranlib: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/ranlib/ranlibbin || echo 'ranlib: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/ranlib || echo 'ranlib: install FAILED'
 
 # Admin/large is keyed on the SOURCE name and does not hold sleep.c, so this
 # takes Mk's default -Od2.
@@ -2216,7 +2216,7 @@ $CMD/byteyearsbin: $PREP $CMD/byteyears.c
 
 $ROOT/usr/bin/byteyears: $CMD/byteyearsbin
 	cd $CMD; cp byteyearsbin $ROOT/usr/bin/byteyears || echo 'byteyears: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/byteyears/byteyearsbin || echo 'byteyears: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/byteyears || echo 'byteyears: install FAILED'
 
 $CMD/cal: $PREP $CMD/cal.c
 	cd $CMD; cc -Od2 -o cal cal.c || echo 'cal: FAILED'
@@ -2290,7 +2290,7 @@ $CMD/cpiobin: $PREP $CMD/cpio.c
 
 $ROOT/usr/bin/cpio: $CMD/cpiobin
 	cd $CMD; cp cpiobin $ROOT/usr/bin/cpio || echo 'cpio: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/cpio/cpiobin || echo 'cpio: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/cpio || echo 'cpio: install FAILED'
 
 $CMD/coreid: $PREP $CMD/coreid.c
 	cd $CMD; cc -Od2 -o coreid coreid.c || echo 'coreid: FAILED'
@@ -2377,7 +2377,7 @@ $CMD/disbin: $PREP $ROOT/usr/lib/libtermcap.a $CMD/dis.c
 
 $ROOT/usr/bin/dis: $CMD/disbin
 	cd $CMD; cp disbin $ROOT/usr/bin/dis || echo 'dis: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/dis/disbin || echo 'dis: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/dis || echo 'dis: install FAILED'
 
 $CMD/dkname: $PREP $CMD/dkname.c
 	cd $CMD; cc -Od2 -o dkname dkname.c || echo 'dkname: FAILED'
@@ -2542,7 +2542,7 @@ $CMD/lastbin: $PREP $CMD/last.c
 
 $ROOT/usr/bin/last: $CMD/lastbin
 	cd $CMD; cp lastbin $ROOT/usr/bin/last || echo 'last: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/last/lastbin || echo 'last: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/last || echo 'last: install FAILED'
 
 $CMD/limiter: $PREP $CMD/limiter.c
 	cd $CMD; cc -Od2 -o limiter limiter.c || echo 'limiter: FAILED'
@@ -2570,7 +2570,7 @@ $CMD/logttybin: $PREP $CMD/logtty.c
 
 $ROOT/usr/bin/logtty: $CMD/logttybin
 	cd $CMD; cp logttybin $ROOT/usr/bin/logtty || echo 'logtty: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/logtty/logttybin || echo 'logtty: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/logtty || echo 'logtty: install FAILED'
 
 $CMD/look: $PREP $CMD/look.c
 	cd $CMD; cc -Od2 -o look look.c || echo 'look: FAILED'
@@ -2796,7 +2796,7 @@ $CMD/setpartbin: $PREP $CMD/setpart.c
 
 $ROOT/usr/bin/setpart: $CMD/setpartbin
 	cd $CMD; cp setpartbin $ROOT/usr/bin/setpart || echo 'setpart: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/setpart/setpartbin || echo 'setpart: install FAILED'
+	cd $CMD; strip $ROOT/usr/bin/setpart || echo 'setpart: install FAILED'
 
 $CMD/settod: $PREP $ROOT/usr/lib/libipc.a $CMD/settod.c
 	cd $CMD; cc -O   -o settod settod.c -lipc || echo 'settod: FAILED'
@@ -3150,7 +3150,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/usr/bin/dump
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3193,7 +3193,7 @@ $CMD/awk/a.out: P_CMD_awk_a_out
 
 $ROOT/usr/bin/awk: $CMD/awk/a.out
 	cd $CMD/awk; cp a.out $ROOT/usr/bin/awk || echo 'awk: FAILED'
-	cd $CMD/awk; strip $ROOT/usr/bin/awk/a.out || echo 'awk: install FAILED'
+	cd $CMD/awk; strip $ROOT/usr/bin/awk || echo 'awk: install FAILED'
 
 
 # cb, LIKE spell, HAS BOTH AND THE mkfile IS THE ONE THAT WORKS: cb.c defines
@@ -3207,7 +3207,7 @@ $CMD/cb/a.out: P_CMD_cb_a_out
 
 $ROOT/usr/bin/cb: $CMD/cb/a.out
 	cd $CMD/cb; cp a.out $ROOT/usr/bin/cb || echo 'cb: FAILED'
-	cd $CMD/cb; strip $ROOT/usr/bin/cb/a.out || echo 'cb: install FAILED'
+	cd $CMD/cb; strip $ROOT/usr/bin/cb || echo 'cb: install FAILED'
 
 P_CMD_clear_clear:V:	$PREP
 	cd $CMD/clear; mk clear || echo 'clear: FAILED'
@@ -3238,7 +3238,7 @@ $CMD/efl/a.out: P_CMD_efl_a_out
 
 $ROOT/usr/bin/efl: $CMD/efl/a.out
 	cd $CMD/efl; cp a.out $ROOT/usr/bin/efl || echo 'efl: FAILED'
-	cd $CMD/efl; strip $ROOT/usr/bin/efl/a.out || echo 'efl: install FAILED'
+	cd $CMD/efl; strip $ROOT/usr/bin/efl || echo 'efl: install FAILED'
 
 P_CMD_eqn_a_out:V:	$PREP
 	cd $CMD/eqn; mk a.out || echo 'eqn: FAILED'
@@ -3248,7 +3248,7 @@ $CMD/eqn/a.out: P_CMD_eqn_a_out
 
 $ROOT/usr/bin/eqn: $CMD/eqn/a.out
 	cd $CMD/eqn; cp a.out $ROOT/usr/bin/eqn || echo 'eqn: FAILED'
-	cd $CMD/eqn; strip $ROOT/usr/bin/eqn/a.out || echo 'eqn: install FAILED'
+	cd $CMD/eqn; strip $ROOT/usr/bin/eqn || echo 'eqn: install FAILED'
 
 P_CMD_neqn_a_out:V:	$PREP
 	cd $CMD/neqn; mk a.out || echo 'neqn: FAILED'
@@ -3258,7 +3258,7 @@ $CMD/neqn/a.out: P_CMD_neqn_a_out
 
 $ROOT/usr/bin/neqn: $CMD/neqn/a.out
 	cd $CMD/neqn; cp a.out $ROOT/usr/bin/neqn || echo 'neqn: FAILED'
-	cd $CMD/neqn; strip $ROOT/usr/bin/neqn/a.out || echo 'neqn: install FAILED'
+	cd $CMD/neqn; strip $ROOT/usr/bin/neqn || echo 'neqn: install FAILED'
 
 # factor, primes, load, oops and ct each take their whole destination path from
 # a single make variable, so their own install targets run.
@@ -3340,7 +3340,7 @@ $CMD/m4/a.out: P_CMD_m4_a_out
 
 $ROOT/usr/bin/m4: $CMD/m4/a.out
 	cd $CMD/m4; cp a.out $ROOT/usr/bin/m4 || echo 'm4: FAILED'
-	cd $CMD/m4; strip $ROOT/usr/bin/m4/a.out || echo 'm4: install FAILED'
+	cd $CMD/m4; strip $ROOT/usr/bin/m4 || echo 'm4: install FAILED'
 
 P_CMD_numdate_numdate:V:	$PREP
 	cd $CMD/numdate; mk numdate CFLAGS=-O || echo 'numdate: FAILED'
@@ -3384,7 +3384,7 @@ $CMD/pic/a.out: P_CMD_pic_a_out
 
 $ROOT/usr/bin/pic: $CMD/pic/a.out
 	cd $CMD/pic; cp a.out $ROOT/usr/bin/pic || echo 'pic: FAILED'
-	cd $CMD/pic; strip $ROOT/usr/bin/pic/a.out || echo 'pic: install FAILED'
+	cd $CMD/pic; strip $ROOT/usr/bin/pic || echo 'pic: install FAILED'
 
 P_CMD_pp_pp:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/pp; mk pp CFLAGS=-O || echo 'pp: FAILED'
@@ -3414,7 +3414,7 @@ $CMD/ratfor/a.out: P_CMD_ratfor_a_out
 
 $ROOT/usr/bin/ratfor: $CMD/ratfor/a.out
 	cd $CMD/ratfor; cp a.out $ROOT/usr/bin/ratfor || echo 'ratfor: FAILED'
-	cd $CMD/ratfor; strip $ROOT/usr/bin/ratfor/a.out || echo 'ratfor: install FAILED'
+	cd $CMD/ratfor; strip $ROOT/usr/bin/ratfor || echo 'ratfor: install FAILED'
 
 P_CMD_sno_sno:V:	$PREP
 	cd $CMD/sno; mk sno || echo 'sno: FAILED'
@@ -3434,7 +3434,7 @@ $CMD/snocone/sc2: P_CMD_snocone_sc2
 
 $ROOT/usr/bin/snocone: $CMD/snocone/sc2
 	cd $CMD/snocone; cp sc2 $ROOT/usr/bin/snocone || echo 'snocone: FAILED'
-	cd $CMD/snocone; strip $ROOT/usr/bin/snocone/sc2 || echo 'snocone: install FAILED'
+	cd $CMD/snocone; strip $ROOT/usr/bin/snocone || echo 'snocone: install FAILED'
 
 # sum's mkfile sets CC=lcc.
 P_CMD_sum_sum:V:	$PREP $LCCOK
@@ -3565,7 +3565,7 @@ $CMD/spitbol/newspit: P_CMD_spitbol_newspit
 
 $ROOT/usr/bin/spitbol: $CMD/spitbol/newspit
 	cd $CMD/spitbol; cp newspit $ROOT/usr/bin/spitbol || echo 'spitbol: FAILED'
-	cd $CMD/spitbol; strip $ROOT/usr/bin/spitbol/newspit || echo 'spitbol: install FAILED'
+	cd $CMD/spitbol; strip $ROOT/usr/bin/spitbol || echo 'spitbol: install FAILED'
 
 P_CMD_dired_dired:V:	$PREP
 	cd $CMD/dired; mk dired || echo 'dired: FAILED'
@@ -3732,7 +3732,7 @@ $CMD/compat/v7run: P_CMD_compat_v7run
 
 $ROOT/usr/bin/compat: $CMD/compat/v7run
 	cd $CMD/compat; cp v7run $ROOT/usr/bin/compat || echo 'compat: FAILED'
-	cd $CMD/compat; strip $ROOT/usr/bin/compat/v7run || echo 'compat: install FAILED'
+	cd $CMD/compat; strip $ROOT/usr/bin/compat || echo 'compat: install FAILED'
 
 # man(1) is three shell scripts and no binary.
 $ROOT/usr/bin/man: $PREP
@@ -3760,6 +3760,10 @@ $CMD/cflow/.built: P_CMD_cflow__built
 
 $ROOT/usr/bin/cflow: $CMD/cflow/.built
 	cd $CMD/cflow; mk install ROOT=$ROOT || echo 'cflow: FAILED'
+	# AND THE MODE, WHICH THE PACKAGE'S INSTALL DOES NOT SET.  cflow.sh is 644
+	# in the tree and cflow/Makefile:28 copies it with no chmod, so the command
+	# shipped unexecutable; cflow/cflow.mk:42-43 has the chmod, commented out.
+	chmod +x $ROOT/usr/bin/cflow || echo 'cflow: mode FAILED'
 
 # xref, punct, kasb, ideal and ipa all want lex: -ll at the link, and kasb,
 # ideal and ipa run the lex command as well.  Its Makefile has no install
@@ -3822,7 +3826,7 @@ $ROOT/usr/bin/apsend: $CMD/apsend/apsend
 	test -d $ROOT/usr/lib/apsend || mkdir $ROOT/usr/lib/apsend
 	cd $CMD/apsend; cp apsend apsend.mkhd $ROOT/usr/lib/apsend || :
 	echo 'exec /usr/lib/apsend/apsend' > $ROOT/usr/bin/apsend || :; chmod +x $ROOT/usr/bin/apsend || :
-	cd $CMD/apsend; strip $ROOT/usr/lib/apsend $ROOT/usr/lib/apsend/apsend.mkhd || echo 'apsend: FAILED'
+	cd $CMD/apsend; strip $ROOT/usr/lib/apsend/apsend $ROOT/usr/lib/apsend/apsend.mkhd || echo 'apsend: FAILED'
 
 P_CMD_dict__built:V:	$PREP
 	cd $CMD/dict; mk all && echo done > $CMD/dict/.built || echo 'dict: FAILED'
@@ -3905,7 +3909,7 @@ $CMD/learn/a.out: P_CMD_learn_a_out
 
 $ROOT/usr/bin/learn: $CMD/learn/a.out
 	cd $CMD/learn; cp a.out $ROOT/usr/bin/learn || echo 'learn: FAILED'
-	cd $CMD/learn; strip $ROOT/usr/bin/learn/a.out || echo 'learn: install FAILED'
+	cd $CMD/learn; strip $ROOT/usr/bin/learn || echo 'learn: install FAILED'
 
 # refer's install is two targets, and they disagree about destinations on
 # purpose: refer-install puts refer in /usr/bin, lib-install puts mkey, hunt
@@ -3992,7 +3996,7 @@ $CMD/ideal/a.out: P_CMD_ideal_a_out
 $ROOT/usr/bin/ideal: $CMD/ideal/a.out
 	test -d $ROOT/usr/lib/ideal || mkdir $ROOT/usr/lib/ideal; test -d $ROOT/usr/lib/ideal/lib || mkdir $ROOT/usr/lib/ideal/lib
 	cd $CMD/ideal; cp a.out $ROOT/usr/lib/ideal/ideal || echo 'ideal: FAILED'; cp ideal.cmd $ROOT/usr/bin/ideal && chmod +x $ROOT/usr/bin/ideal || :; cp lib/* $ROOT/usr/lib/ideal/lib || :
-	cd $CMD/ideal; strip $ROOT/usr/lib/ideal/ideal/a.out || echo 'ideal: install FAILED'
+	cd $CMD/ideal; strip $ROOT/usr/lib/ideal/ideal || echo 'ideal: install FAILED'
 
 P_CMD_ipa_ipa_trans:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/ipa; mk ipa_trans || echo 'ipa: FAILED'
@@ -4054,8 +4058,13 @@ $CMD/plot/tek: P_CMD_plot_tek
 
 $ROOT/usr/lib/plot/tek: $CMD/plot/tek
 	test -d $ROOT/usr/lib/plot || mkdir $ROOT/usr/lib/plot
-	cd $CMD/plot; cp tek hplot trplot penplot $ROOT/usr/lib/plot || :
-	cd $CMD/plot; strip $ROOT/usr/lib/plot/tek $ROOT/usr/lib/plot/hplot $ROOT/usr/lib/plot/trplot $ROOT/usr/lib/plot/penplot || :
+	# hplot IS THE BUILD NAME AND hpplot IS THE INSTALLED ONE.  plot/mkfile:4
+	# builds `hplot'; plot/mkfile:15, man1/plot.1:66-73 and man/filnam:355 all
+	# name /usr/lib/plot/hpplot.  Copied here under the name plot(1) looks for,
+	# or `plot -Thp' and `-T2621' find nothing at all.
+	cd $CMD/plot; cp tek trplot penplot $ROOT/usr/lib/plot || :
+	cd $CMD/plot; cp hplot $ROOT/usr/lib/plot/hpplot || :
+	cd $CMD/plot; strip $ROOT/usr/lib/plot/tek $ROOT/usr/lib/plot/hpplot $ROOT/usr/lib/plot/trplot $ROOT/usr/lib/plot/penplot || :
 
 # config, dump and tp take DESTDIR; their destinations are /etc, /etc and /bin.
 $ROOT/etc/config: $PREP
@@ -4144,7 +4153,7 @@ $CMD/ex/a.out: P_CMD_ex_a_out
 $ROOT/usr/bin/ex: $CMD/ex/a.out
 	test -d $ROOT/usr/preserve || mkdir $ROOT/usr/preserve
 	cd $CMD/ex; cp a.out $ROOT/usr/bin/ex || :; rm -f $ROOT/usr/bin/vi $ROOT/usr/bin/view $ROOT/usr/bin/edit || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/vi || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/view || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/edit || :; cp exrecover $ROOT/usr/lib/ex3.7recover || :; cp expreserve $ROOT/usr/lib/ex3.7preserve || :; chmod 4755 $ROOT/usr/lib/ex3.7recover $ROOT/usr/lib/ex3.7preserve || :
-	cd $CMD/ex; strip $ROOT/usr/bin/ex/a.out $ROOT/usr/lib/ex3.7recover/exrecover $ROOT/usr/lib/ex3.7preserve/expreserve || echo 'ex: FAILED'
+	cd $CMD/ex; strip $ROOT/usr/bin/ex $ROOT/usr/lib/ex3.7recover/exrecover $ROOT/usr/lib/ex3.7preserve/expreserve || echo 'ex: FAILED'
 
 P_CMD_face_faced:V:	$PREP $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libipc.a
 	cd $CMD/face; mk faced && mk faces || echo 'face: FAILED'
@@ -4166,7 +4175,7 @@ $CMD/grap/a.out: P_CMD_grap_a_out
 
 $ROOT/usr/bin/grap: $CMD/grap/a.out
 	cd $CMD/grap; cp a.out $ROOT/usr/bin/grap || echo 'grap: FAILED'
-	cd $CMD/grap; strip $ROOT/usr/bin/grap/a.out || echo 'grap: install FAILED'
+	cd $CMD/grap; strip $ROOT/usr/bin/grap || echo 'grap: install FAILED'
 
 P_CMD_imscan_imscan:V:	$PREP
 	cd $CMD/imscan; mk all || echo 'imscan: FAILED'
@@ -4774,7 +4783,10 @@ $ROOT/usr/games/sail: $GAMESRC/sail/sail
 	cd $GAMESRC/sail; strip $ROOT/usr/games/sail || echo 'sail: install FAILED'
 	cd $GAMESRC/sail; cp driver $ROOT/usr/games/lib/saildriver && strip $ROOT/usr/games/lib/saildriver || echo 'saildriver: install FAILED'
 	cd $GAMESRC/sail; cp sail.log $ROOT/usr/games/sail.log && strip $ROOT/usr/games/sail.log || echo 'sail.log: install FAILED'
-	: > $ROOT/usr/games/lib/saillog || echo 'saillog: install FAILED'
+	# CREATED IF ABSENT, NEVER TRUNCATED.  sail/makefile:118-121 makes saillog
+	# a FILE target, so the tape writes it only when it is not there; an
+	# unconditional `: >' threw away every game ever logged on each rebuild.
+	test -f $ROOT/usr/games/lib/saillog || : > $ROOT/usr/games/lib/saillog || echo 'saillog: install FAILED'
 
 P_GAMES_word_clout_word_clout:V:	$PREP
 	cd $GAMESRC/word_clout; mk all || echo 'word_clout: FAILED'
@@ -5075,9 +5087,12 @@ P_CMD_dump_dump:V:	$PREP
 $CMD/dump/dump: P_CMD_dump_dump
 	test -f $CMD/dump/dump || echo '$CMD/dump/dump: the package did not produce it'
 
-$ROOT/usr/bin/dump: $CMD/dump/dump
-	cd $CMD/dump; cp dump $ROOT/usr/bin/dump || echo 'dump: FAILED'
-	cd $CMD/dump; strip $ROOT/usr/bin/dump || echo 'dump: install FAILED'
+# /etc, NOT /usr/bin.  dump/Makefile:34 is `mv dump $(DESTDIR)/etc', the man
+# page is section 8 and its FILES are all /etc files, and the comment above
+# the config rule in this file says so too -- it was the rule that disagreed.
+$ROOT/etc/dump: $CMD/dump/dump
+	cd $CMD/dump; cp dump $ROOT/etc/dump || echo 'dump: FAILED'
+	cd $CMD/dump; strip $ROOT/etc/dump || echo 'dump: install FAILED'
 
 $CMD/agh: $PREP $CMD/agh.c
 	cd $CMD; cc -Od2 -o agh agh.c || echo 'agh: FAILED'
