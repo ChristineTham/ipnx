@@ -4055,9 +4055,35 @@ $ROOT/usr/bin/spell: $CMD/spell/sprog
 	cd $CMD/spell; strip $ROOT/usr/lib/spell/sprog || :
 
 # learn's install target is EMPTY -- the header is there with no recipe under
-# it -- so nothing on the tape says where the lesson tree goes beyond
-# makefile:15, LLIB=/usr/lib/learn.  The binary is installed; the lessons are
-# left where they are.
+# it -- and the reason recorded here before, that "nothing on the tape says
+# where the lesson tree goes beyond makefile:15", was reading one file.  Three
+# say it: makefile:15 is `LLIB = /usr/lib/learn', lib/src/README:3-4 is
+# "Lessons are in /usr/lib/learn/*", and makefile:64-69 -- the `check' target --
+# is a manifest of what must be in LLIB for learn to run: tee, lcount, play,
+# log, and an L0 in each of the six courses.  That is what this rule installs.
+#
+# THE COMPILED-IN PATH IS REPAIRED IN build/patch, NOT HERE.  lrndef:2 is
+#     char *direct = "/crp/nlearn/lib";	/* CHANGE THIS ON YOUR SYSTEM */
+# -- a Bell Labs development directory, and the comment beside it is the tape
+# instructing its reader to change it.  It is a source edit, so it belongs with
+# the other source edits; without it learn chdirs to a path that has never
+# existed on any machine here and every lesson tree is invisible.
+#
+# THE LESSONS ARE DIRECTORIES IN THIS TREE, NOT ARCHIVES.  makefile:38-42
+# extracts $(LLIB)/$@.a and makefile:45-51 is the target that MAKES those
+# archives with `ar r' -- so the tape's own flow is lessons unpacked in LLIB,
+# packed for shipping, unpacked again.  cmd/learn/lib/lib holds them unpacked
+# already: six course directories, 542 files, and Linfo and Xinfo beside them.
+# build/arcfix names none of them and there is no ORDER file anywhere under
+# learn, which is the proof they were directories on the tape too and not
+# something arcfix unpacked.
+#
+# play AND log ARE DIRECTORIES AND MUST BE WRITABLE: makefile:35-36 is
+# `-rm -r $(LLIB)/$@; mkdir $(LLIB)/$@; chmod +w $(LLIB)/$@'.  learn copies a
+# lesson's files into play/ before running it, as the user, so a read-only one
+# fails on the first exercise.  Not removed and remade the way the tape does
+# it -- that would throw away a session in progress on a rebuild, the saillog
+# mistake -- only created when absent.
 P_CMD_learn_a_out:V:	$PREP
 	cd $CMD/learn; mk a.out || echo 'learn: FAILED'
 
@@ -4067,6 +4093,22 @@ $CMD/learn/a.out: P_CMD_learn_a_out
 $ROOT/usr/bin/learn: $CMD/learn/a.out
 	cd $CMD/learn; cp a.out $ROOT/usr/bin/learn || echo 'learn: FAILED'
 	cd $CMD/learn; strip $ROOT/usr/bin/learn || echo 'learn: install FAILED'
+	test -d $ROOT/usr/lib/learn || mkdir $ROOT/usr/lib/learn
+	# makefile:30-31, `cc $(CFLAGS) -s $@.c -o $(LLIB)/$@' -- compiled straight
+	# into LLIB, which is why there is no copy step for these two.
+	cd $CMD/learn; cc -O -s -o $ROOT/usr/lib/learn/tee tee.c || echo 'learn tee: FAILED'
+	cd $CMD/learn; cc -O -s -o $ROOT/usr/lib/learn/lcount lcount.c || echo 'learn lcount: FAILED'
+	cd $CMD/learn/lib/lib; cp Linfo Xinfo $ROOT/usr/lib/learn || echo 'learn info: FAILED'
+	# `cd' first and glob bare names: param.h:10 is `#define NCARGS (16*1024)'
+	# and editor/ alone holds 242 files, which as full paths is most of it.
+	for c in C editor eqn files macros morefiles
+	do
+		test -d $ROOT/usr/lib/learn/$c || mkdir $ROOT/usr/lib/learn/$c
+		cd $CMD/learn/lib/lib/$c; cp * $ROOT/usr/lib/learn/$c || echo "learn $c: FAILED"
+	done
+	test -d $ROOT/usr/lib/learn/play || mkdir $ROOT/usr/lib/learn/play
+	test -d $ROOT/usr/lib/learn/log || mkdir $ROOT/usr/lib/learn/log
+	chmod +w $ROOT/usr/lib/learn/play $ROOT/usr/lib/learn/log || echo 'learn dirs: mode FAILED'
 
 # refer's install is two targets, and they disagree about destinations on
 # purpose: refer-install puts refer in /usr/bin, lib-install puts mkey, hunt
@@ -4144,16 +4186,39 @@ $ROOT/usr/bin/flex: $CMD/flex/flex
 	cd $CMD/flex; cp flex $ROOT/usr/bin/flex && cp flex.skel $ROOT/usr/local/lib/flex.skel || echo 'flex: FAILED'
 	cd $CMD/flex; strip $ROOT/usr/bin/flex || echo 'flex: install FAILED'
 
+# AND ITS OUTPUT FILTERS, WITHOUT WHICH ideal PRODUCES NOTHING AT ALL.
+# ideal.cmd is the driver installed as /usr/bin/ideal, and its last block execs
+# $IDDIR/idfilt/tfilt, /pfilt, /4filt, /texfilt or /idsort for every mode --
+# IDDIR being /usr/lib/ideal (ideal.cmd:2).  `t' is the DEFAULT (`filter=t' at
+# :5), so it is not merely -p and -tex that were broken: plain `ideal file'
+# piped into a filter that was never installed.  Only -n, which prints ideal's
+# own intermediate output, worked.
+#
+# THE PACKAGE'S OWN INSTALL BUILDS THEM AND COPIES NONE.  ideal/mkfile:109 is
+# `(cd idfilt; make install)' and idfilt/makefile:24 is
+# `install: 4filt tfilt pfilt texfilt' WITH NO RECIPE UNDER IT -- the mkfile
+# spells the same target with a bare `:'.  So the tape builds four filters and
+# installs zero, and that is the whole defect.
+#
+# idsort IS NOT BUILT, BECAUSE NOTHING SAYS HOW.  idsort.c is in the directory
+# and neither build file has a rule for it, so `ideal -s' stays broken; it
+# sorts pictures into columns and nothing else uses it.
+P_CMD_ideal_idfilt:V:	$PREP $ROOT/usr/lib/lib4014.a $ROOT/usr/lib/libplot.a
+	cd $CMD/ideal/idfilt; mk 4filt tfilt pfilt texfilt || echo 'ideal filters: FAILED'
+
 P_CMD_ideal_a_out:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/ideal; mk a.out || echo 'ideal: FAILED'
 
 $CMD/ideal/a.out: P_CMD_ideal_a_out
 	test -f $CMD/ideal/a.out || echo '$CMD/ideal/a.out: the package did not produce it'
 
-$ROOT/usr/bin/ideal: $CMD/ideal/a.out
+$ROOT/usr/bin/ideal: $CMD/ideal/a.out P_CMD_ideal_idfilt
 	test -d $ROOT/usr/lib/ideal || mkdir $ROOT/usr/lib/ideal; test -d $ROOT/usr/lib/ideal/lib || mkdir $ROOT/usr/lib/ideal/lib
 	cd $CMD/ideal; cp a.out $ROOT/usr/lib/ideal/ideal || echo 'ideal: FAILED'; cp ideal.cmd $ROOT/usr/bin/ideal && chmod +x $ROOT/usr/bin/ideal || :; cp lib/* $ROOT/usr/lib/ideal/lib || :
 	cd $CMD/ideal; strip $ROOT/usr/lib/ideal/ideal || echo 'ideal: install FAILED'
+	test -d $ROOT/usr/lib/ideal/idfilt || mkdir $ROOT/usr/lib/ideal/idfilt
+	cd $CMD/ideal/idfilt; cp 4filt tfilt pfilt texfilt $ROOT/usr/lib/ideal/idfilt || echo 'ideal filters: install FAILED'
+	cd $ROOT/usr/lib/ideal/idfilt; strip 4filt tfilt pfilt texfilt || echo 'ideal filters: strip FAILED'
 
 P_CMD_ipa_ipa_trans:V:	$PREP $ROOT/usr/bin/lex
 	cd $CMD/ipa; mk ipa_trans || echo 'ipa: FAILED'
@@ -4175,6 +4240,14 @@ $CMD/lcomp/bb: P_CMD_lcomp_bb
 
 $ROOT/usr/bin/lprint: $CMD/lcomp/bb
 	cd $CMD/lcomp; cp bb nexit.o $ROOT/usr/lib || :; cp lprint $ROOT/usr/bin/lprint || :
+	# AND lcomp ITSELF, WHICH IS THE COMMAND THE MANUAL PAGE IS NAMED FOR.
+	# lcomp.1:3 is "lcomp, lprint \(mi line-by-line profiler"; lcomp is the
+	# shell driver that compiles with -g -S, runs /usr/lib/bb over the assembly
+	# and links /usr/lib/nexit.o, and lprint is only the half that PRINTS what
+	# it collected.  The package's install (makefile) copies bb, nexit.o and
+	# lprint and not the script, so this disk had the reporter and no way to
+	# produce a report.  Both files it drives are installed on the line above.
+	cd $CMD/lcomp; cp lcomp $ROOT/usr/bin/lcomp && chmod +x $ROOT/usr/bin/lcomp || echo 'lcomp: FAILED'
 	cd $CMD/lcomp; strip $ROOT/usr/lib/bb $ROOT/usr/bin/lprint || echo 'lcomp: FAILED'
 
 # map's mkfile sets CC=lcc and its default target v10 is the iplot build.  The
@@ -4635,7 +4708,13 @@ $CMD/worm/wmkfs: P_CMD_worm_wmkfs
 
 $ROOT/usr/lib/worm/wmkfs: $CMD/worm/wmkfs
 	test -d $ROOT/usr/lib/worm || mkdir $ROOT/usr/lib/worm
-	cd $CMD/worm; cp wmkfs wstat wwrite wread wls woffline wcat wbtree wrm $ROOT/usr/lib/worm || :
+	# FIFTEEN BUILT, NINE INSTALLED.  The line above named nine of the
+	# fifteen the rule above builds; worm/mkfile:9-11 is
+	# `ALL=wmkfs ... wcopy jukebox scsish' and `BALL=${ALL:%=$BIN/%}' with
+	# BIN=/usr/lib/worm at :4, so the package installs every one it makes.
+	# jukebox and scsish are the two that do not build here, for the reason
+	# above; the other six were simply left behind.
+	cd $CMD/worm; cp wmkfs wstat wwrite wread wls woffline wcat wbtree wrm wdir wreset wmv wtmpdir wmount wcopy $ROOT/usr/lib/worm || :
 
 # backup.old is the tape backup package: UBIN=/usr/lib/backup for the user half
 # and ABIN=/usr/backup/bin for the administrator half.  It compiles -I../worm,
@@ -4949,9 +5028,24 @@ ARTEFACTS4=U=$CMD/tbl/tbl $CMD/tee $CMD/telno $CMD/tk \
 # conversions and drive the build, except rogue and mille, whose files still
 # carry .SUFFIXES and build with make from the tape's Makefiles, the PDP11
 # precedent.  sread is built by atc's `all' and installed by nothing, so it
-# is not built here.  adv, boggle and the single-file games have no build
-# file on any tape; they compile directly, the cref pattern.  rnd.c is a
+# is not built here.  adv and the single-file games have no build file on any
+# tape; they compile directly, the cref pattern.  rnd.c is a
 # subroutine, not a game: worm.c calls rnd() and compiles it in.
+#
+# canfield, psych AND rain WERE MISSING WITH NO REASON WRITTEN, which is the
+# one thing every other absence here has.  canfield.c is 1,145 lines of
+# Berkeley curses and links exactly as hanoi and worm do; psych.c is 54 lines
+# whose own header says "compile as cc psych.c -lm -l4014" and both libraries
+# are in ULIB; rain/ has a makefile AND an mkfile, `rain: rain.o' and
+# `cc -o rain rain.o -ltermlib'.  All three are built now.
+#
+# boggle IS NAMED ABOVE AND STILL NOT BUILT, and the reason is /usr/dict.
+# boggle/makedict is three lines -- `cc comp.c -o comp',
+# `sed -f sfile /usr/dict/words | uniq | comp >/usr/games/bogdict' -- and
+# boggle.c:50 is `char defname[] = "/usr/games/bogdict"'.  There is no
+# /usr/dict on any of the six tapes, so the dictionary cannot be generated and
+# the game has nothing to check a word against.  It waits on the same import
+# spell does.
 GAMESRC=$SRC/games
 GAMEPROD= $GAMESRC/pacman/pacr $GAMESRC/des/encrypt \
  $GAMESRC/atc/atc \
@@ -4961,7 +5055,8 @@ GAMEPROD= $GAMESRC/pacman/pacr $GAMESRC/des/encrypt \
 	$GAMESRC/crypt $GAMESRC/festoon $GAMESRC/fish $GAMESRC/fortune \
 	$GAMESRC/hangman $GAMESRC/imp $GAMESRC/morse $GAMESRC/ppt \
 	$GAMESRC/quiz $GAMESRC/rnd $GAMESRC/rot $GAMESRC/say $GAMESRC/thanks $GAMESRC/wump \
-	$GAMESRC/hanoi $GAMESRC/worm
+	$GAMESRC/hanoi $GAMESRC/worm $GAMESRC/canfield $GAMESRC/psych \
+	$GAMESRC/rain/rain
 GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
  $ROOT/usr/games/atc \
 	$ROOT/usr/games/sail $ROOT/usr/games/word_clout $ROOT/usr/games/rogue \
@@ -4972,7 +5067,8 @@ GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
 	$ROOT/usr/games/hangman $ROOT/usr/games/imp $ROOT/usr/games/morse \
 	$ROOT/usr/games/ppt $ROOT/usr/games/quiz $ROOT/usr/games/rnd \
 	$ROOT/usr/games/rot $ROOT/usr/games/say $ROOT/usr/games/thanks \
-	$ROOT/usr/games/wump $ROOT/usr/games/hanoi $ROOT/usr/games/worm
+	$ROOT/usr/games/wump $ROOT/usr/games/hanoi $ROOT/usr/games/worm \
+	$ROOT/usr/games/canfield $ROOT/usr/games/psych $ROOT/usr/games/rain
 
 games:V:	$GAMES
 
@@ -5275,6 +5371,37 @@ $GAMESRC/worm: $PREP $GAMESRC/worm.c
 $ROOT/usr/games/worm: $GAMESRC/worm
 	cd $GAMESRC; cp worm $ROOT/usr/games/worm || echo 'gworm: FAILED'
 	cd $GAMESRC; strip $ROOT/usr/games/worm || echo 'gworm: install FAILED'
+
+# canfield keeps no score file and reads nothing: the Berkeley original's
+# /usr/games/lib/cfscores is in neither this source nor any Admin list.
+$GAMESRC/canfield: $PREP $GAMESRC/canfield.c
+	cd $GAMESRC; cc -O -o canfield canfield.c -lcurses -ltermlib || echo 'canfield: FAILED'
+
+$ROOT/usr/games/canfield: $GAMESRC/canfield
+	cd $GAMESRC; cp canfield $ROOT/usr/games/canfield || echo 'canfield: FAILED'
+	cd $GAMESRC; strip $ROOT/usr/games/canfield || echo 'canfield: install FAILED'
+
+# psych.c:3-4 is the build line: "compile as cc psych.c -lm -l4014 / could use
+# other plot-type library".  It draws on a Tektronix 4014, which on this
+# machine means the 5620 running a 4014 emulation or nothing at all.
+$GAMESRC/psych: $PREP $ROOT/usr/lib/lib4014.a $GAMESRC/psych.c
+	cd $GAMESRC; cc -O -o psych psych.c -lm -l4014 || echo 'psych: FAILED'
+
+$ROOT/usr/games/psych: $GAMESRC/psych
+	cd $GAMESRC; cp psych $ROOT/usr/games/psych || echo 'psych: FAILED'
+	cd $GAMESRC; strip $ROOT/usr/games/psych || echo 'psych: install FAILED'
+
+# rain has its own mkfile, unlike the flat games; its install is
+# `mv rain /usr/games', absolute, so the copy is done here.
+P_GAMES_rain_rain:V:	$PREP
+	cd $GAMESRC/rain; mk rain || echo 'rain: FAILED'
+
+$GAMESRC/rain/rain: P_GAMES_rain_rain
+	test -f $GAMESRC/rain/rain || echo '$GAMESRC/rain/rain: the package did not produce it'
+
+$ROOT/usr/games/rain: $GAMESRC/rain/rain
+	cd $GAMESRC/rain; cp rain $ROOT/usr/games/rain || echo 'rain: FAILED'
+	cd $GAMESRC/rain; strip $ROOT/usr/games/rain || echo 'rain: install FAILED'
 
 
 # THE REST OF THE DISTRIBUTION'S COMMANDS, wired by the same evidence rules

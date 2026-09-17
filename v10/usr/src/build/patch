@@ -2812,3 +2812,20 @@ sed -e 's|^\(			q = \)morespace(n,p,size);$|\1(struct coreblk *)morespace(n,p,si
     -e 's|^\(	q = \)malloc(i=t\*sizeof(\*(q->blk))+sizeof(\*q));$|\1(struct coreblk *)malloc(i=t*sizeof(*(q->blk))+sizeof(*q));|' \
     -e 's|^	q->blk = q + 1;$|	q->blk = (int *)(q + 1);|' \
     0.alloc.c > a$$ && mv a$$ 0.alloc.c
+
+# learn's lesson directory is COMPILED IN and the tape ships a development
+# path.  lrndef:2 is
+#	char	*direct	= "/crp/nlearn/lib";	/* CHANGE THIS ON YOUR SYSTEM */
+# -- /crp/nlearn is a Bell Labs working directory that has never existed on any
+# machine this project builds, and the comment beside it is the tape telling
+# its reader to do exactly this.  Every other statement in the package agrees on
+# the answer: makefile:15 is `LLIB = /usr/lib/learn', lib/src/README:3-4 is
+# "Lessons are in /usr/lib/learn/*", and build/mkfile installs the six courses
+# there.  Without this, learn starts, chdirs to nothing and reports no lessons.
+# The comment goes with the value so the next reader sees why it is not the
+# tape's, and matching on the OLD path is what makes a second pass a no-op.
+cd $SRC/cmd/learn || exit 1
+sed 's|^char	\*direct	= "/crp/nlearn/lib";.*$|char	*direct	= "/usr/lib/learn";	/* ipnx: the tape shipped /crp/nlearn/lib\
+						 * and said CHANGE THIS ON YOUR\
+						 * SYSTEM; makefile:15, README:3 */|' \
+    lrndef > l$$ && mv l$$ lrndef
