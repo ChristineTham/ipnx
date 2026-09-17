@@ -134,6 +134,25 @@ hp 7	mb 0	drive 7
 # ========================================================= MASSBUS TAPE ====
 # simh's `tu' is a TM03 formatter with TE16 drives, and V10 has both in its
 # device catalogue as `mb' and `sub' class.  seki.m's own three lines.
+#
+# DECLARED, AND IT PANICS THIS MACHINE THE FIRST TIME ANYTHING OPENS IT.
+# Measured 17 Sep 2026: `set tu enable', `attach tu0 <image>', boot, then
+# `tar xvfb /dev/rmt0 20' on the guest ->
+#	>>MBA1: invalid adapter read mask, pa = 0x20012404, lnt = 2
+#	Machine check, type 0 / read timeout fault
+#	panic: mchk
+# simh puts TU exactly where these two lines ask for it -- `show devices' is
+# `TU  Massbus adapter 1, TM03, 8 units', and MBA1 is nexus 9 at 20012000 --
+# so the addresses are right and the ACCESS WIDTH is not.  0x20012404 is MBA1's
+# external register 1, te16.c:23's htds, and `lnt = 2' is a WORD read of it;
+# every register in that struct (:22-31) is declared int, so the word access is
+# a probe, and simh's MBA implements longword access only.  Nothing here has
+# ever read a tape, so this cost nothing until somebody tried.
+#
+# The lines stay: they are seki.m's, they describe the hardware this tree was
+# written for, and boot does not touch the drive -- only an open does.  Anyone
+# wanting a tape needs either a word-access path in simh's MBA or a driver that
+# probes with a longword.  Until then the way into this machine is netfs.
 tm03 0	mb 1	drive 0
 te16 0	ctl 0	unit 0
 

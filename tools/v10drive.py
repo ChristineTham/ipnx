@@ -169,12 +169,17 @@ def main():
     # golden changes it even when everything passes.
     if os.path.realpath(img) == os.path.join(ROOT, "run", "v10-golden"):
         sys.exit("v10drive: that is the golden itself -- boot a copy of it")
-    # AN OPTIONAL TAPE, WHICH IS HOW A FILE GETS IN WITHOUT netfsd.  The kernel
-    # configures a Massbus TM03/TE16 (ipnx-v10.m:137-138), not the TMSCP drive
-    # the launchers enable, and Massbus addresses are FIXED -- so unlike every
-    # Unibus device in this config, adding `tu' floats nothing and the machine
-    # stays the one ipnx-v10.m was measured against.  On the guest:
-    #     cd /; tar xvfb /dev/rmt0 20
+    # AN OPTIONAL TAPE -- WHICH DOES NOT WORK ON THIS KERNEL YET, AND THE
+    # ARGUMENT IS KEPT SO THE NEXT PERSON DOES NOT SPEND THE AFTERNOON FINDING
+    # OUT AGAIN.  The device set is right: the kernel declares a Massbus
+    # TM03/TE16 (ipnx-v10.m:137-138), simh's `show devices' puts TU on Massbus
+    # adapter 1 where those lines ask for it, and Massbus addresses are fixed,
+    # so adding `tu' floats no Unibus device and the machine stays the one
+    # ipnx-v10.m was measured against.  What fails is the first open:
+    #     >>MBA1: invalid adapter read mask, pa = 0x20012404, lnt = 2
+    #     panic: mchk
+    # -- a WORD read of te16.c's htds, which simh's MBA answers only longword.
+    # See the note in ipnx-v10.m.  Until that is fixed, netfsd is the way in.
     tape = ""
     if len(sys.argv) > 3:
         tape = "set tu enable\nattach tu0 %s\n" % os.path.abspath(sys.argv[3])
