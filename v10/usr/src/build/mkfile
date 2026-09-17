@@ -1220,6 +1220,15 @@ $ETC/wall: $CMD/wall
 
 $ETC/termcap: $PREP
 	cd $CMD/termcap; mk install DESTDIR=$ROOT || echo 'termcap: FAILED'
+	# AND tabset, WHICH IS A SECOND TARGET IN THE SAME PACKAGE AND TAKES NO
+	# DESTDIR.  termcap/makefile:12-14 is `tabset: /tmp', `mkdir
+	# /usr/lib/tabset', `cp tabset/* /usr/lib/tabset' -- absolute, and with a
+	# bare mkdir that fails on the second run, which is why it is done here
+	# instead.  Seven files, one per terminal that needs its tab stops set by
+	# a script: 3101, beehive, diablo, std, teleray, vt100, xerox1720.
+	# /usr/lib/tabset is not in Admin/ulibfiles; the package is.
+	test -d $ROOT/usr/lib/tabset || mkdir $ROOT/usr/lib/tabset
+	cd $CMD/termcap; cp tabset/* $ROOT/usr/lib/tabset || echo 'tabset: FAILED'
 	cd $CMD/termcap; mk clean || :
 
 $CMD/finddev: $PREP $CMD/finddev.c
@@ -3683,6 +3692,12 @@ $CMD/spitbol/newspit: P_CMD_spitbol_newspit
 $ROOT/usr/bin/spitbol: $CMD/spitbol/newspit
 	cd $CMD/spitbol; cp newspit $ROOT/usr/bin/spitbol || echo 'spitbol: FAILED'
 	cd $CMD/spitbol; strip $ROOT/usr/bin/spitbol || echo 'spitbol: install FAILED'
+	# AND THE ERROR TEXT, WITHOUT WHICH EVERY DIAGNOSTIC IS A BARE NUMBER.
+	# openerr.c:10 is `return open( "/usr/lib/vaxspitv35.err\0", 0 );' -- the
+	# whole of the file's contents -- and Makefile:15 states both halves of
+	# the product: `FILES = /usr/bin/spitbol /usr/lib/vaxspitv35.err'.  Only
+	# the first was installed.
+	cd $CMD/spitbol; cp vaxspitv35.err $ROOT/usr/lib/vaxspitv35.err || echo 'spitbol err: FAILED'
 
 P_CMD_dired_dired:V:	$PREP
 	cd $CMD/dired; mk dired || echo 'dired: FAILED'
@@ -3958,6 +3973,20 @@ $CMD/dict/.built: P_CMD_dict__built
 $ROOT/usr/bin/dict: $CMD/dict/.built
 	test -d $ROOT/usr/lib/dict || mkdir $ROOT/usr/lib/dict
 	cd $CMD/dict; cp dict.sh $ROOT/usr/bin/dict && chmod +x $ROOT/usr/bin/dict || :
+	# AND THE TEN HELPERS, BUILT AND THEN DISCARDED.  Makefile:6-8 is
+	# `install: $(ALL)', `strip $(ALL)', `cp $(ALL) /usr/lib/dict' and :1-2
+	# names them; the directory was made here and left empty, so every branch
+	# of dict.sh exec'd something that was not there.
+	#
+	# THE HELPERS DO NOT MAKE dict WORK, AND THAT IS NOT THIS RULE'S DOING.
+	# dict.sh:2-5 defaults to /n/jones and /n/bowell -- other Bell Labs
+	# machines -- and overriding LIBDICT and DICT points it at /usr/lib/dict
+	# and /usr/dict, which is what makes these copies reachable.  The
+	# DICTIONARIES are the part no tape carries: w7full, web2, thesaurus,
+	# slang and the rest are hundreds of megabytes of licensed text, and
+	# docs/v10-gaps.md counts them under data that exists nowhere.
+	cd $CMD/dict; cp wdefine ldefine odefine colthlook colthread slanglook oedread namelook namelook1 nameread $ROOT/usr/lib/dict || echo 'dict helpers: FAILED'
+	cd $ROOT/usr/lib/dict; strip wdefine ldefine odefine colthlook colthread slanglook oedread namelook namelook1 nameread || echo 'dict helpers: strip FAILED'
 
 # diction, style and wwb share /usr/lib/style; each has BIN and LIB.
 P_CMD_diction__built:V:	$PREP
@@ -4315,6 +4344,14 @@ $CMD/grap/a.out: P_CMD_grap_a_out
 $ROOT/usr/bin/grap: $CMD/grap/a.out
 	cd $CMD/grap; cp a.out $ROOT/usr/bin/grap || echo 'grap: FAILED'
 	cd $CMD/grap; strip $ROOT/usr/bin/grap || echo 'grap: install FAILED'
+	# AND ITS DEFINITIONS FILE, WITHOUT WHICH EVERY grap PICTURE IS A SYNTAX
+	# ERROR.  main.c:12 is `#define GRAPDEFINES "/usr/lib/grap.defines"' and
+	# that file is what defines bullet, star, plus, times, box and the rest of
+	# the plotting vocabulary -- grap's own manual page uses them in its first
+	# example.  The package has no install target at all; the file is in the
+	# source directory, named only in makefile:38 and :43, which are its
+	# bundle lists.
+	cd $CMD/grap; cp grap.defines $ROOT/usr/lib/grap.defines || echo 'grap.defines: FAILED'
 
 P_CMD_imscan_imscan:V:	$PREP
 	cd $CMD/imscan; mk all || echo 'imscan: FAILED'
@@ -4367,6 +4404,22 @@ $CMD/matlab/matlab: P_CMD_matlab_matlab
 $ROOT/usr/bin/matlab: $CMD/matlab/matlab
 	cd $CMD/matlab; cp matlab $ROOT/usr/bin/matlab || echo 'matlab: FAILED'
 	cd $CMD/matlab; strip $ROOT/usr/bin/matlab || echo 'matlab: install FAILED'
+	# AND THE HELP DATABASE, WHICH IS matlab's WHOLE `help' COMMAND.
+	# THE TWO HALVES OF THE TAPE DISAGREE ABOUT WHERE IT LIVES AND THE READER
+	# WINS.  src/helper.f:10-11 -- the routine matlab calls -- is
+	# `parameter(idfile='/usr/lib/mathelp.idx')' and the same for
+	# /usr/lib/mathelp.dac; helpset.f:6-7, the GENERATOR, names
+	# /usr/local/lib for both.  /usr/lib is the path at runtime, so that is
+	# where these go.
+	#
+	# THE PRE-BUILT PAIR, NOT A REGENERATION.  helpset.f is a Fortran program
+	# that reads the `help' file and opens both outputs with `status='NEW'',
+	# which fails on a file that already exists -- so it is a once-ever step,
+	# and it writes to absolute paths that no ROOT can redirect.  The tape
+	# ships its output beside it: mathelp.dac is 49,764 bytes of text and
+	# mathelp.idx 768 bytes of record offsets.
+	cd $CMD/matlab; cp mathelp.dac mathelp.idx $ROOT/usr/lib || echo 'mathelp: FAILED'
+	cd $ROOT/usr/lib; chmod 644 mathelp.dac mathelp.idx || echo 'mathelp: mode FAILED'
 
 # monk is three subdirectories and takes MHOME and MBIN.
 #
@@ -4965,6 +5018,21 @@ $ROOT/usr/games/atc: $GAMESRC/atc/atc
 	cd $GAMESRC/atc; cp atc $ROOT/usr/games/atc || echo 'atc: FAILED'
 	cd $GAMESRC/atc; strip $ROOT/usr/games/atc || echo 'atc: install FAILED'
 	cd $GAMESRC/atc; cp airspaces $ROOT/usr/games/lib/atc/airspaces || echo 'atc data: install FAILED'
+	# AND THE TWO FLOW FILES, WHICH THE TAPE'S OWN INSTALL LEAVES BEHIND.
+	# Makefile:14 copies airspaces and nothing else.  aread.c:115-132 looks for
+	# `<directory of AIRFILE>/<airspace>.flow' when no -f was given, and
+	# ahdr.h:11 is `#define AIRFILE "/usr/games/lib/atc/airspaces"', so the
+	# name it tries is exactly /usr/games/lib/atc/Apple1.flow -- atc.c:27 being
+	# `char *airspace = {"Apple1"}'.  A missing flow file is NOT an error:
+	# fopen fails, flowfile stays null and :133's `if (flowfile)' skips the
+	# whole block, so the game plays with no flow control at all.  Both files
+	# are in the source directory and the game is the author's with them.
+	cd $GAMESRC/atc; cp Apple1.flow Apple3.flow $ROOT/usr/games/lib/atc || echo 'atc flow: install FAILED'
+	# Makefile:6-11 makes the directory `chown bin', `chgrp bin',
+	# `chmod o-w,g+w' -- 3,4 is bin,bin.  dirs already creates it, so only the
+	# owner and mode are left, and they are set every round rather than inside
+	# a `test -d' guard so an earlier round's root-owned directory is corrected.
+	/etc/chown 3,4 $ROOT/usr/games/lib/atc && chmod o-w,g+w $ROOT/usr/games/lib/atc || echo 'atc dir: mode FAILED'
 
 # doctor is NOT built: doctor.l is Franz Lisp, not lex -- its rule runs
 # `liszt -mr doctor.l' -- and no tape carries a lisp system.  ELIZA joins
@@ -5375,8 +5443,24 @@ P_CMD_nupas_v10_all:V:	$PREP
 # DATAKIT'S USERLAND.  dk/libc makes libdk.a; dk/cmd's `all' makes eleven
 # programs of which the tape's own install names seven for /usr/bin -- dcon,
 # pull, push, rx, nrx, ndcon, track (`libipc.a for track' was already in
-# this file's plans above).  mgrproc, dkhup, dkzap and dkdialsub are built
-# and installed nowhere, exactly as the tape has it.
+# this file's plans above).
+#
+# mgrproc, dkhup, dkzap AND dkdialsub STAY OUT, AND THE REASON WRITTEN HERE
+# BEFORE WAS WRONG.  It said they are "built and installed nowhere, exactly as
+# the tape has it"; dk/cmd/Makefile:49-51 installs all four to /etc, strips
+# them, and does `/etc/chown root /etc/dkdialsub; chmod u+s,go-w' on the last.
+# The reason they stay out is a different one and it is Admin's: not one of the
+# four is in binfiles, etcfiles, libfiles or ulibfiles, so nothing on the tape
+# says a V10 machine holds them -- and all four drive Datakit hardware this
+# machine does not have and the kernel has no device for.  Four more names to
+# add if a dkmgr ever runs here; they are not built either (see P_DK_cmd_all).
+#
+# Rpull AND Rpush ARE A DIFFERENT CASE AND DO GO IN.  Both are in
+# Admin/ulibfiles -- the tape's own statement of what /usr/lib carries -- and
+# pull.c:10 is `char SERVER[]="/usr/lib/Rpush"' with push.c the mirror of it,
+# compiled in.  Without the links the two installed binaries are inert: each
+# execs a server by a path nothing had created.  Makefile:45-47 is the `rm -f'
+# and the two `ln'.
 P_DK_libc_libdk_a:V:	$PREP
 	cd $SRC/dk/libc; mk all || echo 'libdk.a: FAILED'
 
@@ -5398,6 +5482,11 @@ $SRC/dk/cmd/pull: P_DK_cmd_all
 $ROOT/usr/bin/pull: $SRC/dk/cmd/pull
 	cd $SRC/dk/cmd; cp pull $ROOT/usr/bin/pull || echo 'pull: FAILED'
 	cd $SRC/dk/cmd; strip $ROOT/usr/bin/pull || echo 'pull: install FAILED'
+	# Makefile:45-46.  push.c:11 execs /usr/lib/Rpull, so this link is what
+	# makes the OTHER command work; a hard link and not a copy, because the
+	# tape's is one and because /usr/bin and /usr/lib are the same filesystem
+	# under either root.
+	rm -f $ROOT/usr/lib/Rpull || :; ln $ROOT/usr/bin/pull $ROOT/usr/lib/Rpull || echo 'Rpull: FAILED'
 
 $SRC/dk/cmd/push: P_DK_cmd_all
 	test -f $SRC/dk/cmd/push || echo '$SRC/dk/cmd/push: the package did not produce it'
@@ -5405,6 +5494,8 @@ $SRC/dk/cmd/push: P_DK_cmd_all
 $ROOT/usr/bin/push: $SRC/dk/cmd/push
 	cd $SRC/dk/cmd; cp push $ROOT/usr/bin/push || echo 'push: FAILED'
 	cd $SRC/dk/cmd; strip $ROOT/usr/bin/push || echo 'push: install FAILED'
+	# Makefile:47, and pull.c:10's `char SERVER[]="/usr/lib/Rpush"'.
+	rm -f $ROOT/usr/lib/Rpush || :; ln $ROOT/usr/bin/push $ROOT/usr/lib/Rpush || echo 'Rpush: FAILED'
 
 $SRC/dk/cmd/rx: P_DK_cmd_all
 	test -f $SRC/dk/cmd/rx || echo '$SRC/dk/cmd/rx: the package did not produce it'
