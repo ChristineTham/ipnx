@@ -33,8 +33,11 @@ bits.c: tables.c
 	$(CC) -E tables.c | ./sets > bits.c
 
 
+# ipnx: $(LIB), not the literal path -- cyntax/mkfile:10 passes LIB in and this
+# recipe ignored it, so a build with ROOT set installed ccom onto the builder.
+LIB	= /usr/lib/cyntax
 install: ccom
-	cp ccom /usr/lib/cyntax/ccom
+	cp ccom $(LIB)/ccom
 	
 ctags:
 	ctags *.c

@@ -1,4 +1,6 @@
 CFLAGS	= -O
+# ipnx: LIB was absent from this file; see the install rule below.
+LIB	= /usr/lib/cyntax
 OBS	=\
 	code_gen.o constant.o decl.o decl_item.o decl_shared.o\
 	expr.o f_equiv.o f_expr.o f_id.o f_life.o\
@@ -33,8 +35,13 @@ bits.c: tables.c
 	${CC} -E tables.c | ./sets > bits.c
 
 
+# ipnx: ${LIB}, NOT THE LITERAL PATH.  cyntax/mkfile:10 already passes
+# `LIB=${LIB}' into this directory and the recipe ignored it, so a build with
+# ROOT set installed ccom onto the BUILDER -- and cyntax/lib/mkfile:2-3 then
+# looked for ${LIB}/ccom under the root to generate libc and libj and did not
+# find it.  The default at :2 keeps `mk install' by hand working as it did.
 install: ccom
-	cp ccom /usr/lib/cyntax/ccom
+	cp ccom ${LIB}/ccom
 ctags:
 	ctags *.c
 

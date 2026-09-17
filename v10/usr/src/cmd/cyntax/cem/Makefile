@@ -34,9 +34,12 @@ clean	:
 
 install	: $(BIN)/cyntax $(LIB)/cem
 
+# ipnx: $(BIN) and $(LIB) -- the targets already were, only the recipes were
+# literal, so mk and make were told to make a file under the root by copying to
+# the builder and the target never appeared.
 $(BIN)/cyntax: cyntax
-	cp cyntax /usr/bin/cyntax
+	cp cyntax $(BIN)/cyntax
 
 $(LIB)/cem: cem
-	cp cem /usr/lib/cyntax/cem
+	cp cem $(LIB)/cem
 

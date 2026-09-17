@@ -34,11 +34,15 @@ clean	:
 
 install	: ${BIN}/cyntax ${LIB}/cem
 
+# ipnx: the TARGETS were already ${BIN}/cyntax and ${LIB}/cem and only the
+# recipes were literal, so with ROOT set mk was told to make a file under the
+# root by copying to the builder -- the target never appeared and mk did not
+# notice.  :2-3 give BIN and LIB the same defaults the tape had.
 ${BIN}/cyntax: cyntax
-	cp cyntax /usr/bin/cyntax
+	cp cyntax ${BIN}/cyntax
 
 ${LIB}/cem: cem
-	cp cem /usr/lib/cyntax/cem
+	cp cem ${LIB}/cem
 
 
 
