@@ -38,6 +38,7 @@ tools/dmdbridge/.cargo/
 *.cpio
 *.iso
 *.img
+!image/*.tar.bz2
 app/*.log
 libdmd/build-*.log
 libdmd/*.pgm
@@ -63,22 +64,14 @@ __pycache__/
 # answered by fetching the six again and running mkv10.
 v10tapes/
 
-# image/ HOLDS TWO KINDS OF FILE AND ONLY ONE IS COMMITTED.  The archives are
-# committed -- the V8 golden, the V10 working disk, the V10 golden in halves --
-# and beside them tools/v10-reset.sh writes the CURRENT WORKING IMAGE itself:
-# image/v10, the boot ROM, the simh configs the launchers generate, a throwaway
-# copy of the golden.  None of that belongs in git and most of it is a gigabyte,
-# so the directory is ignored except for exactly what is named here.
-image/*
-!image/README.md
-!image/*.tar.bz2
-!image/*.tar.bz2.a?
-
-# images/ HOLDS THE GOLDEN, restored there by tools/v10-reset.sh from the halves
-# in image/ and booted by tools/v10-golden.sh.  Note the PLURAL: images/ is the
-# golden, image/ is the current working image, and they are different
-# directories on purpose.
-images/
+# run/ IS THE WORKING SET AND NONE OF IT IS COMMITTED: the uncompressed disks
+# tools/v10-reset.sh writes there, the boot ROM beside them, the simh configs
+# the launchers generate, a throwaway copy of the golden.  Every one of them is
+# reproducible -- the disks from the archives in image/, the ROM from
+# v10/usr/sys/boot/star/uda byte for byte.  It was called images/ and was one
+# character from image/, which holds the committed archives; that pair cost
+# enough confusion to be worth renaming.
+run/
 
 # ipnx.tar never enters git (github is correct): v10/ holds the extracted tree.
 *.tar

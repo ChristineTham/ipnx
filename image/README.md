@@ -1,6 +1,6 @@
 # The committed disks
 
-Four archives, and they are the only binaries in this repository. Each is
+Three archives, and they are the only binaries in this repository. Each is
 `bzip2`-compressed tar, because **`tar -xSjf` is the only standard format that
 restores a hole**: the zero runs come back as holes rather than allocated
 blocks, so a 1.9 GB RA73 costs its non-zero bytes on disk. zip cannot do this
@@ -10,12 +10,12 @@ the `S`.
 | | | |
 |---|---|---|
 | `ipnx-v8-rp07.img.tar.bz2` | 10.6 MB | the Eighth Edition golden, **as this project builds it** |
-| `v10.tar.bz2` | 3.3 MB | the V10 working disk `tools/v10-reset.sh` restores to `images/v10` |
+| `v10.tar.bz2` | 3.3 MB | the V10 working disk `tools/v10-reset.sh` restores to `run/v10` |
 | `v10-golden.tar.bz2.aa` + `.ab` | 139 MB | the V10 golden, in halves — see below |
 
 ```bash
 git lfs pull                                            # see below
-tar -xSjf ipnx-v8-rp07.img.tar.bz2 -C ../work/myv8      # -> work/myv8/ipnx-v8-rp07.img
+tar -xSjf ipnx-v8-rp07.img.tar.bz2 -C ../work/myv8      # -> work/myv8/rp07new
 bash ../tools/v10-reset.sh                              # both V10 disks + the boot ROM
 ```
 
@@ -32,7 +32,7 @@ a file over 100 MB. The LFS filter matches `*.tar.bz2` and so does not take the
 clone. Join them by streaming, never on disk:
 
 ```bash
-cat v10-golden.tar.bz2.a? | tar -xSjf - -C ../images
+cat v10-golden.tar.bz2.a? | tar -xSjf - -C ../run
 ```
 
 `cat ... > v10-golden.tar.bz2` leaves a 139 MB file that `.gitignore`'s

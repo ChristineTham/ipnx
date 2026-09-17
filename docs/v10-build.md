@@ -46,9 +46,9 @@ reading them straight off the netfs share if you name it. What the host does:
 | | |
 |---|---|
 | `tools/v10-tapes.sh` | fetch the six TUHS archives and decompress them to plain `tar` in `v10tapes/` |
-| `tools/v10-reset.sh` | restore the two disks from the committed archives, and the boot ROM |
-| `tools/v10-launch.sh` | boot `image/v10` — the working disk — with the golden on the second drive and both netfs shares up |
-| `tools/v10-golden.sh` | boot a throwaway copy of `images/v10-golden`, one drive, no shares |
+| `tools/v10-reset.sh` | `image/*.tar.bz2` → `run/`: both disks uncompressed, and the boot ROM beside them |
+| `tools/v10-launch.sh` | boot `run/v10` with `run/v10-golden` on the second drive and both netfs shares up |
+| `tools/v10-golden.sh` | boot a throwaway copy of the golden, one drive, no shares |
 | `tools/v10-proto.py` | the kernel config and `sys/lib/tab` → `build/proto-dev` |
 | `tools/v10-makedev.py` | `build/proto-dev` → `build/mkdev` |
 | *(no tool)* | **create the blank disk image file the machine formats** — see below |
@@ -57,8 +57,8 @@ Two directories, and they are not the same one:
 
 | | |
 |---|---|
-| `image/` | the **current working image** — `image/v10`, the boot ROM, the simh configs the launchers write — beside the committed `.tar.bz2` archives they came from. Everything but the archives is gitignored. |
-| `images/` | the **golden**, restored from the halves in `image/` and booted only as a throwaway copy. |
+| `image/` | the **committed compressed** disks — three bzip2 tars through Git LFS, the V10 golden in halves. The only binaries in the repository. |
+| `run/` | the **uncompressed working** disks restored from them, plus the boot ROM and the simh configs the launchers write. Gitignored, and every file in it is reproducible. |
 
 Case collisions are resolved on the machine, where the filesystem is case-sensitive and the
 tapes' own names survive — `cmd/` carries `compress(.Z)` and `pack(.z)`, so anything handed to
@@ -71,7 +71,7 @@ before the machine is booted. No script in this repository creates it. Until one
 fabricating a fresh disk means making the file by hand:
 
 ```bash
-dd if=/dev/zero of=image/v10-new bs=512 count=3920490   # RA73, 1,914 MB, sparse
+dd if=/dev/zero of=run/v10-new bs=512 count=3920490   # RA73, 1,914 MB, sparse
 ```
 
 `tools/v10-launch.sh` attaches the golden as the second drive, so an ordinary
@@ -301,8 +301,8 @@ sparse file, so a fresh disk currently needs a `dd` typed by hand.
 ## Testing the golden
 
 ```bash
-bash tools/v10-reset.sh     # image/ -> images/v10, images/v10-golden, images/uda
-bash tools/v10-launch.sh    # boots images/v10, golden on the second drive, shares up
+bash tools/v10-reset.sh     # image/ -> run/v10, run/v10-golden, run/uda
+bash tools/v10-launch.sh    # boots run/v10, golden on the second drive, shares up
 bash tools/v10-golden.sh    # boots a throwaway copy of the golden alone
 ```
 

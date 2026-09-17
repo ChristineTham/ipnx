@@ -32,9 +32,8 @@ The repository is four things at once, and confusing them is the main way to get
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
 | `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. |
-| `image/` | The only committed binaries: four bzip2 tars. `*.tar.bz2` go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`); the V10 golden is committed in halves `.aa`/`.ab`, which the LFS filter does not match. |
-| `image/` | The **current working V10 image** and the committed `.tar.bz2` archives beside it. Everything but the archives and this README is gitignored. |
-| `images/` | The **V10 golden**, restored from the halves in `image/`. Plural on purpose; not the same directory. |
+| `image/` | The **committed compressed disks**, and the only binaries in the repository: three bzip2 tars. They go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`) except the V10 golden's `.aa`/`.ab` halves, which the filter does not match. |
+| `run/` | The **uncompressed working disks** `tools/v10-reset.sh` writes from those archives, plus the boot ROM and the configs the launchers generate. Gitignored, all of it reproducible. Plural on purpose; not the same directory as `image/`. |
 | `v10tapes/` | Scratch: the six TUHS archives as plain `tar`, gitignored, **needed by nothing**. `mkv10` reads them once ever and `v10/` is the committed result, so delete the directory when the bootstrap is done. The host never unpacks one. |
 | `work/` | V8's gitignored workbench — `work/myv8` (the golden and its build filesystems) and `work/opensimh` (the desktop simulator). |
 
@@ -106,18 +105,17 @@ the `rp06build` filesystem stage 1 left behind.
 
 ```bash
 bash tools/v10-tapes.sh                 # the six TUHS archives -> v10tapes/, plain tar, gitignored
-bash tools/v10-reset.sh                 # the committed archives -> image/v10 (working), images/v10-golden, image/uda
-bash tools/v10-launch.sh                # boot image/v10, golden on the second drive, both shares up
+bash tools/v10-reset.sh                 # image/*.tar.bz2 -> run/v10, run/v10-golden, run/uda
+bash tools/v10-launch.sh                # boot run/v10, golden on the second drive, both shares up
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
 ```
 
-`image/` is the **current working image** and `images/` is the **golden** — two directories,
-on purpose. `image/` also holds the committed `.tar.bz2` archives; everything else in it is
-gitignored.
+`image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
+working** disks restored from them. Two directories, on purpose.
 
 **There is no host tool that creates a blank disk image**, and `mkimage` cannot make one —
 V10 has no sparse files. The file must exist on the host and be attached as `rq1` first
-(`dd if=/dev/zero of=images/v10-new bs=512 count=3920490` is an RA73). `v10-launch.sh`
+(`dd if=/dev/zero of=run/v10-new bs=512 count=3920490` is an RA73). `v10-launch.sh`
 attaches the golden as the second drive, so an ordinary round needs no new file.
 
 The tapes are not committed and **neither is any tree made from them**. The host-side

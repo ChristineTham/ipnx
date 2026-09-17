@@ -5,16 +5,16 @@ set -uo pipefail
 # anywhere else -- including in a checkout of this repository beside it.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-IMG="${1:-$ROOT/image/v10}"            # the CURRENT WORKING image
+IMG="${1:-$ROOT/run/v10}"
 # 9200 and 9201 are the app's own share ports -- FileShare.swift:46 gives
 # .macos 9200 and .home 9201 -- and /etc/rc mounts them at /n/macos and
 # /n/home, so the machine sees what the app serves.
 PORT="${2:-9200}"
 HPORT=$(( PORT + 1 ))
 NETFSD="$ROOT/netfs/.build/release/netfsd"
-ROM="$ROOT/image/uda"
-NEW="$ROOT/images/v10-golden"          # the golden, on the second drive
-CONF="$ROOT/image/v10.conf"
+ROM="$ROOT/run/uda"
+NEW="$ROOT/run/v10-golden"
+CONF="$ROOT/run/v10.conf"
 NETPID=""; HOMEPID=""
 trap 'kill $NETPID $HOMEPID 2>/dev/null' EXIT
 
