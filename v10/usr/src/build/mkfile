@@ -4503,6 +4503,49 @@ $ROOT/usr/bin/u9fs: $CMD/u9fs/u9fs
 # uucp is fifteen programs and its mkfile links them -lipc.  Its own install is
 # `install:N: all cp', where cp is a target that copies to absolute paths, so
 # the copy is done here.
+#
+# TWO DESTINATIONS AND NOT ONE, AND THE HEADER IS WHAT SETTLES IT.  uucp.h:219-
+# 221 is `#define UUCICO "/usr/lib/uucp/uucico"' and the same for UUSCHED and
+# UUXQT, and uugrep is named at that path too -- compiled in, so the copies in
+# /usr/bin were copies nothing ever exec'd.  uucp/mkfile:43-46 says it from the
+# other side: BIN=$ROOT/usr/bin takes four commands, INSDIR=$ROOT/usr/lib/uucp
+# takes six, and :103-117 is which is which.  /usr/lib/uucp is one of the fifty
+# names Admin/ulibfiles carries.
+#
+# AND THREE COMMANDS WERE NOT INSTALLED AT ALL.  mkfile:115-117 copies uulog,
+# uupick and uuto to $BIN; each is a shell script with its own manual page and
+# none of them was here.
+#
+# THE SET-UID BIT IS WHAT THE uucp ACCOUNT IS FOR.  mkfile:104-110 is
+# `/etc/chown ${OWNER},$GRP' with OWNER=uucp and GRP=bin (:43-44) and
+# `chmod 04775', and doc/rtmdiff/filemodes:22-39 says the same in prose --
+# uucico, uusched, uuxqt, uucp, uustat and uux "should be set-user-ID uucp ...
+# They need not be set-group-ID".  mkfile:111 is the exception, `# don't suid
+# uucleanup', and uucheck goes with it at 0775.  48,4 is uucp,bin; see the note
+# on build/etc/passwd for why the numbers rather than the names.
+#
+# THE SITE CONFIGURATION IS NOT INSTALLED, AND THAT IS THE PACKAGE'S DECISION,
+# NOT AN OMISSION HERE.  uucp.h:122 is `#define SYSFILE
+# "/usr/lib/uucp/Systems"' and there is no Systems in the package at all;
+# samples/ holds one Devices, Dialcodes, Permissions and Poll, named as samples,
+# and mkfile's cp target copies not one of them.  They describe a site's modems
+# and its neighbours, and this machine has neither.  Dialers is the exception
+# and does go in: it sits in the package root rather than samples/, it is a
+# table of dialer types rather than a description of this site, and the source
+# names /usr/lib/uucp/Dialers directly.  uups stays out -- uucp.h:221-223 wants
+# it only `#ifdef V7' and parms.h:13 leaves V7 commented out.
+#
+# One consequence reaches another file: the note on $ETC/crontab drops v8's
+# three uudemon lines "because /usr/lib/uucp exists only if the uucp package
+# built".  It exists now, and the scripts are in it -- but uudemon.hr polls
+# neighbours out of a Systems file that is still not there, so the lines stay
+# out until a site writes one.
+UUBIN=uuname uucp uux uustat
+UUTOOL=uulog uupick uuto
+UULIBS=uucico uuxqt uusched uugrep
+UULIBP=uucheck uucleanup
+UUSCR=kick debug uucrap remote.unknown uudemon.cleanu uudemon.day uudemon.hr uudemon.poll
+
 P_CMD_uucp_uucp:V:	$PREP $ROOT/usr/lib/libipc.a
 	cd $CMD/uucp; mk all || echo 'uucp: FAILED'
 
@@ -4510,7 +4553,19 @@ $CMD/uucp/uucp: P_CMD_uucp_uucp
 	test -f $CMD/uucp/uucp || echo '$CMD/uucp/uucp: the package did not produce it'
 
 $ROOT/usr/bin/uucp: $CMD/uucp/uucp
-	cd $CMD/uucp; cp uucp uux uuxqt uucico uusched uugrep uuname uucheck uustat uucleanup $ROOT/usr/bin || :
+	test -d $ROOT/usr/lib/uucp || mkdir $ROOT/usr/lib/uucp
+	# AND THE SIX STALE COPIES THIS RULE USED TO LEAVE IN /usr/bin.  They are
+	# not in the derived list and ipnxclean cannot reach them -- build/usrtrees
+	# leaves bin and lib out on purpose, "product, not shape" -- so a disk that
+	# has built once carries them until something says otherwise.  Same `rm -f'
+	# as troff's nroff link and ex's three at :4222.
+	rm -f $ROOT/usr/bin/uucico $ROOT/usr/bin/uuxqt $ROOT/usr/bin/uusched $ROOT/usr/bin/uugrep $ROOT/usr/bin/uucheck $ROOT/usr/bin/uucleanup || :
+	cd $CMD/uucp; cp $UUBIN $UUTOOL $ROOT/usr/bin || echo 'uucp bin: FAILED'
+	cd $CMD/uucp; cp $UULIBS $UULIBP $UUSCR Dialers $ROOT/usr/lib/uucp || echo 'uucp lib: FAILED'
+	cd $ROOT/usr/bin; strip $UUBIN || echo 'uucp: strip FAILED'
+	cd $ROOT/usr/lib/uucp; strip $UULIBS $UULIBP || echo 'uucp: lib strip FAILED'
+	cd $ROOT/usr/bin; /etc/chown 48,4 $UUBIN $UUTOOL && chmod 04775 $UUBIN && chmod 0775 $UUTOOL || echo 'uucp: bin mode FAILED'
+	cd $ROOT/usr/lib/uucp; /etc/chown 48,4 $UULIBS $UULIBP $UUSCR Dialers && chmod 04775 $UULIBS && chmod 0775 $UULIBP $UUSCR && chmod 0644 Dialers || echo 'uucp: lib mode FAILED'
 
 # worm is the write-once optical filesystem; BIN is /usr/lib/worm.  cmd/oworm
 # is the previous copy of the same fifteen programs and is not built.
