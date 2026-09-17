@@ -291,12 +291,36 @@ Each is written into more than one script because each was learned the same way.
 
 ## What is left
 
-**The distribution, completed.** Read `/usr/src` against the `Admin` manifests directory by
-directory — not by pattern — and decide per missing file: buildable, absent from every tape,
-or fetchable from V8. The 27 missing from `/usr/lib` are the bulk of it.
+Four tasks finish V10. The first two are work on this tree; the third and fourth need the
+emulator and the app.
 
-**A host-side tool to create the blank disk image** `mkimage` formats. V10 cannot make a
-sparse file, so a fresh disk currently needs a `dd` typed by hand.
+**1. The data files V10 is missing, from V8.** `tools/v10-datafiles.py` asks the source rather
+than a list: every `/usr/lib` and `/usr/dict` path the tree names, against what the mkfile
+installs. **19 are in neither tree and V8 has them at the identical path** — `/usr/dict/words`,
+`eign`, `units`, `lib.b`, `cunumber`, `Mail.rc`, `lint/llib-port`, `tmac/tmac.cs`, the seven
+`macros/*` of the mm package, `upas/forwardlist`, and three uucp limits files. Bring them
+across per file, with the provenance recorded.
+
+**2. `/usr/src`, read file by file.** Not by pattern: the mkfile names almost every directory,
+which is not the same as building what is in it. Two measures exist already. Against the tape's
+`Admin` manifests, 27 of `/usr/lib`'s 50 files are not installed. Against the source itself,
+`tools/v10-datafiles.py` finds **118 data files that are in the tree and that nothing installs**
+— the whole of `style`'s `.t`/`.st` set, the `postscript` prologues, `spell`'s `amspell` and
+`brspell`, `uucp`'s samples, the nroff macro package under `cmd/troff/ancient.nroff/macros.d`.
+The pattern is consistent: **the build installs programs and not the data they read**, and
+nothing fails at build time when it doesn't — the program says `cannot open` the first time
+someone runs it. Those candidates are matched by basename and need a person to accept each.
+
+**3. `/usr/jerq` or `/usr/blit` against the DMD emulator.** The host side is on the tape as a
+VAX binary; the terminal side is the open question. Nothing here has been tried yet.
+
+**4. The app, rewritten to run V10.** Its `MachineSpec` still describes a machine the kernel
+was not measured against — 8 DZ lines where `ipnx-v10.m` configures 32, no `vh`/`rq*`/`tq`
+lines, and an Interlan with neither address nor vector — so the device set simh autoconfigures
+is not the one the compiled-in addresses assume.
+
+**Also outstanding:** a host-side tool to create the blank disk image `mkimage` formats. V10
+cannot make a sparse file, so a fresh disk currently needs a `dd` typed by hand.
 
 ## Testing the golden
 
