@@ -248,10 +248,9 @@ do
 	rm -rf /v10/usr/$d
 done
 
-# THE TAPES ARE NOT DELETED.  They were, when $TAPES meant a scratch copy in
-# /usr/tmp that this script had no further use for.  $TAPES is the share now,
-# so those two lines were pointed straight at the Mac's own tape archive --
-# 430 MB that no build can recreate.  Nothing here writes to $TAPES at all.
+# The tapes are transient: /usr/tmp is scratch and nothing here has a use for
+# them once v10.tar is written.  Not deleted, because $TAPES can equally name
+# the share, and those six are the Mac's.
 
 # v10's kernel does not sync on halt -- md/machdep.c's boot() calls death()
 # without one -- so an archive written here and then left by ^E is not on the

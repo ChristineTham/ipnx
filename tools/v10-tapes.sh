@@ -3,6 +3,7 @@
 # Fetch the six V10 archives and decompress them for the guest.
 #
 #	bash tools/v10-tapes.sh          # -> v10tapes/*.tar  (gitignored)
+#	bash tools/v10-tapes.sh --keep   # and keep the compressed originals
 #
 # THE HOST HALF OF THE BOOTSTRAP, AND ONLY THAT.  The six archives land in
 # v10tapes/ as plain tar and NOTHING HERE UNPACKS ONE.  Everything about the
@@ -11,8 +12,12 @@
 # docs/v10-build.md is the whole of it.
 #
 # v10tapes/ IS GITIGNORED.  430 MB of tape says nothing git can diff, and what
-# we build from is v10/, which is committed.  The compressed downloads are kept
-# beside the plain tars in v10tapes/compressed, so a re-run re-fetches nothing.
+# we build from is v10/, which is committed.
+#
+# THE DOWNLOADS GO ONCE THEY ARE DECOMPRESSED.  The plain tars are what the
+# guest reads; the .bz2 and .gz they came out of are transient, and TUHS still
+# has them.  --keep retains the originals -- those and nothing else -- for when
+# re-fetching 430 MB is the part worth avoiding.
 #
 # TWO REASONS THE HOST HAS TO DO THIS, both of them about 1989.  www.tuhs.org
 # answers plain HTTP with a 301 to https and V10 HAS NO TLS; and neither .gz nor
@@ -38,6 +43,9 @@
 # ENOTTY, so an archive opened off a netfs share dies at the end-of-archive
 # block), and build/casenames carries the case decisions with the evidence for
 # each.
+KEEP=0
+[[ "${1-}" == "--keep" ]] && KEEP=1
+
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="$ROOT/v10tapes"
@@ -59,6 +67,15 @@ fetch() {
         echo "v10-tapes: could not fetch $2/$3" >&2; rm -f "$DL/$1.part"; return 1; }
     mv "$DL/$1.part" "$DL/$1"
 }
+# NOTHING TO DO IF THE SIX ARE ALREADY HERE.  Without --keep the originals are
+# gone after the first run, so the fetch guard below cannot see them and would
+# pull 430 MB to produce tars that already exist.
+if [[ -s "$W/v10src.tar" && -s "$W/v10blit.tar" && -s "$W/secombe.tar" &&
+      -s "$W/milligan.tar" && -s "$W/sellers.tar" && -s "$W/r70include.tar" ]]; then
+    echo "the six are already in ${W#"$ROOT/"}"
+    exit 0
+fi
+
 echo "== six archives =="
 fetch v10src.tar.bz2    "$CROSS"  v10src.tar.bz2    || exit 1
 fetch v10blit.tar.bz2   "$CROSS"  v10blit.tar.bz2   || exit 1
@@ -91,3 +108,9 @@ plain v10-secombe.gz  secombe.tar  || exit 1
 plain v10-milligan.gz milligan.tar || exit 1
 plain v10-sellers.gz  sellers.tar  || exit 1
 cp -f "$DL/r70include.tar" "$W/r70include.tar" || exit 1
+
+if [[ $KEEP == 0 ]]; then
+    rm -rf "$DL"
+else
+    echo "== originals kept in ${DL#"$ROOT/"}"
+fi
