@@ -4515,15 +4515,56 @@ $ROOT/usr/bin/monk: $PREP
 	test -d $ROOT/usr/lib/monk/db || mkdir $ROOT/usr/lib/monk/db
 	cd $CMD/monk; mk all MHOME=$ROOT/usr/lib/monk MBIN=$ROOT/usr/bin && make install MHOME=$ROOT/usr/lib/monk MBIN=$ROOT/usr/bin || echo 'monk: FAILED'
 
-# pascal is `for i in $(DIRS); do (cd $$i; make -o; make -o install); done'
-# followed by pascal.sh into $B.
+# pascal IS SEVEN PACKAGES AND THE PARENT'S install FORWARDS NOTHING TO THEM.
+# pascal/mkfile:20-21 is `for i in ${DIRS}; do (cd $i; make -o; make -o
+# install); done' with no variable passed, so each subdirectory installs against
+# its own default, and every one of those defaults is absolute: eyacc/mkfile:1
+# is `D = /usr/bin/eyacc'; pascal/pascal/mkfile:1-2 are `D = /usr/bin' and
+# `L = /usr/lib/pascal'; libpc, pc0, pi, px and pxp each take a ${DESTDIR} that
+# is EMPTY unless someone sets it (px/mkfile:4 and pxp/mkfile:2 say so outright,
+# `DESTDIR =').
+#
+# So `mk install B=$ROOT/usr/bin' redirected exactly one file, pascal.sh, and
+# the compiler itself did not move.  That is live, not theoretical: mkimage:77
+# is `mk -f $BUILD/mkfile ROOT=/v10 world', so building the golden disk wrote
+# pc, pc0, pi, px, pxp, pmerge, pxref, eyacc, libpc.a and the whole of
+# /usr/lib/pascal onto the BUILDER -- over the builder's own working copies --
+# and left /v10 with a pascal driver script and nothing to drive.
+#
+# Each subdirectory is run here with the variable it actually reads.  `mk' with
+# no target takes each mkfile's first, which is what the parent's `make -o' did.
 $ROOT/usr/bin/pascal: $PREP
 	test -d $ROOT/usr/lib/pascal || mkdir $ROOT/usr/lib/pascal
-	cd $CMD/pascal; mk install B=$ROOT/usr/bin || echo 'pascal: FAILED'
+	cd $CMD/pascal/eyacc;  mk && mk install D=$ROOT/usr/bin/eyacc || echo 'pascal eyacc: FAILED'
+	cd $CMD/pascal/libpc;  mk && mk install DESTDIR=$ROOT || echo 'pascal libpc: FAILED'
+	cd $CMD/pascal/pc0;    mk && mk install DESTDIR=$ROOT || echo 'pascal pc0: FAILED'
+	cd $CMD/pascal/pascal; mk && mk install D=$ROOT/usr/bin L=$ROOT/usr/lib/pascal || echo 'pascal pc: FAILED'
+	cd $CMD/pascal/pi;     mk && mk install DESTDIR=$ROOT || echo 'pascal pi: FAILED'
+	cd $CMD/pascal/px;     mk && mk install DESTDIR=$ROOT || echo 'pascal px: FAILED'
+	cd $CMD/pascal/pxp;    mk && mk install DESTDIR=$ROOT || echo 'pascal pxp: FAILED'
+	# pascal/mkfile:22-25, the parent's own tail.  3,4 is bin,bin.
+	rm -f $ROOT/usr/bin/pascal || :
+	cd $CMD/pascal; cp pascal.sh $ROOT/usr/bin/pascal || echo 'pascal: FAILED'
+	/etc/chown 3,4 $ROOT/usr/bin/pascal && chmod 775 $ROOT/usr/bin/pascal || echo 'pascal: mode FAILED'
 
+# picasso READS NO ROOT, AND ITS GWB CANNOT BE MOVED EITHER.  picasso/mkfile:1-2
+# are `GWB = /usr' and `OL = ${GWB}/', from which :63-66 derive INSDIR,
+# POSTLIB and FONTDIR; ROOT appears nowhere in the file, so the `ROOT=$ROOT'
+# passed here was read by nothing.  What WAS read was INS=cp, and :80-88 is an
+# `if [ "${INS}" != ":" ]' block inside the picasso target that copies to
+# ${INSDIR} and ${POSTLIB} -- absolute, the builder's.
+#
+# AND GWB MUST STAY /usr: :90 compiles main.c with
+# `-DGWBFILES=\"${POSTLIB}\" -DFONTDIR=\"${FONTDIR}\"', so pointing GWB at
+# $ROOT would put /v10/usr/lib/postscript inside the binary and break it on the
+# disk it was built for.  INS is left at its default `:' instead, which makes
+# the block a no-op, and the three products are copied here.
 $ROOT/usr/bin/picasso: $PREP
-	cd $CMD/picasso; mk all INS=cp ROOT=$ROOT || echo 'picasso: FAILED'
-	cd $CMD/picasso; strip picasso || :; cp picasso $ROOT/usr/bin/picasso || :
+	test -d $ROOT/usr/lib/postscript || mkdir $ROOT/usr/lib/postscript
+	cd $CMD/picasso; mk all || echo 'picasso: FAILED'
+	cd $CMD/picasso; strip picasso || :; cp picasso $ROOT/usr/bin/picasso || :; chmod 755 $ROOT/usr/bin/picasso || :
+	cd $CMD/picasso; cp picasso.ps fonts.ps $ROOT/usr/lib/postscript || echo 'picasso ps: FAILED'
+	cd $ROOT/usr/lib/postscript; chmod 744 fonts.ps picasso.ps || echo 'picasso ps: mode FAILED'
 
 # post is the PostScript spooler front end; LDLIBS=-lipc and its LIB is
 # /usr/lib/post.
