@@ -35,7 +35,9 @@ archives**, so every `ar` archive is a directory of its members with an `ORDER` 
 ## The split: what the host does, and what it cannot
 
 **The host fetches the tapes and never unpacks one.** `tools/v10-tapes.sh` downloads the six
-archives from TUHS and decompresses them into `v10tapes/` — gitignored, 430 MB — because TUHS
+archives from TUHS and decompresses them into `v10tapes/` — gitignored, 430 MB, and **scratch**:
+`mkv10` reads them once ever, `v10/` is the committed result, and the directory can be deleted
+the moment the bootstrap is done. The host fetches at all because TUHS
 answers plain HTTP with a 301 to https and **V10 has no TLS**, and because **gzip is 1992 and
 bzip2 1996**, so a 1989 machine can read neither. Decompressing is not extracting: nothing on
 the Mac decides anything about the shape of the tree. `mkv10` extracts them on the machine,

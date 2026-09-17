@@ -11,8 +11,11 @@
 # which extracts these six, applies build/casenames, and writes v10.tar.
 # docs/v10-build.md is the whole of it.
 #
-# v10tapes/ IS GITIGNORED.  430 MB of tape says nothing git can diff, and what
-# we build from is v10/, which is committed.
+# v10tapes/ IS SCRATCH AND NOTHING NEEDS IT.  It is the input to mkv10, which
+# runs once ever, and mkv10's output ends up as v10/ -- committed, and what
+# everything downstream actually builds from.  So delete the directory the
+# moment the bootstrap is done; this script fetches it again if a day comes
+# when someone wants to re-derive the tree from the tapes.
 #
 # THE DOWNLOADS GO ONCE THEY ARE DECOMPRESSED.  The plain tars are what the
 # guest reads; the .bz2 and .gz they came out of are transient, and TUHS still

@@ -35,7 +35,7 @@ The repository is four things at once, and confusing them is the main way to get
 | `image/` | The only committed binaries: four bzip2 tars. `*.tar.bz2` go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`); the V10 golden is committed in halves `.aa`/`.ab`, which the LFS filter does not match. |
 | `image/` | The **current working V10 image** and the committed `.tar.bz2` archives beside it. Everything but the archives and this README is gitignored. |
 | `images/` | The **V10 golden**, restored from the halves in `image/`. Plural on purpose; not the same directory. |
-| `v10tapes/` | The six TUHS archives as plain `tar`, gitignored. The host fetches and decompresses them and **never unpacks one** — `mkv10` extracts them on the machine. |
+| `v10tapes/` | Scratch: the six TUHS archives as plain `tar`, gitignored, **needed by nothing**. `mkv10` reads them once ever and `v10/` is the committed result, so delete the directory when the bootstrap is done. The host never unpacks one. |
 | `work/` | V8's gitignored workbench — `work/myv8` (the golden and its build filesystems) and `work/opensimh` (the desktop simulator). |
 
 ## Commands
