@@ -611,6 +611,9 @@ $CMD/egrep/egrep: P_CMD_egrep_egrep
 $ROOT/usr/bin/egrep: $CMD/egrep/egrep
 	cd $CMD/egrep; cp egrep $ROOT/usr/bin/egrep || echo 'egrep: FAILED'
 	cd $CMD/egrep; strip $ROOT/usr/bin/egrep || echo 'egrep: install FAILED'
+	# egrep/mkfile:11-12, `chmod 775' and `chown bin,bin'.  3 is bin, 4 is the
+	# bin group -- the same pair /bin/sh takes at :826.
+	/etc/chown 3,4 $ROOT/usr/bin/egrep && chmod 775 $ROOT/usr/bin/egrep || echo 'egrep: mode FAILED'
 
 # THE TAPE PLACES NEITHER OF THESE, so /etc is ours and the reason is stated.
 # Admin/etcfiles is cmd/'s destination list and says nothing about ipc/;
@@ -1268,6 +1271,16 @@ $ETC/down: dirs $GEN/etc/down
 $ETC/shutdown: $PREP $ROOT/usr/bin/sleep $ROOT/usr/bin/expr $ROOT/usr/bin/egrep $GEN/etc/shutdown
 	cp $GEN/etc/shutdown $ETC/shutdown && chmod +x $ETC/shutdown
 
+# THE FIFTH GROUP IS OURS AND THE FOUR ABOVE IT ARE THE TAPE'S.  other, sys,
+# man and bin are what v8/etc/group ships, byte for byte, and v10 kept them.
+# `games' (gid 5, the next free number) is this project's addition, and it is
+# here because rogue's install is `chown games', `chgrp games', `chmod g+s'
+# (rogue/Makefile:57-59) over a score file two players share -- and with no
+# games group the only group a set-gid game could take is one that already
+# exists.  bin is the one atc uses for its own /usr/games/lib data
+# (atc/Makefile:8-9), and bin is also what /bin/sh is chowned to at :826, so a
+# set-gid-bin rogue would be a game that can write the shell.  A group of its
+# own is the smaller thing to invent.
 $ETC/group: $PREP $GEN/etc/group
 	cp $GEN/etc/group $ETC/group
 
@@ -1344,6 +1357,39 @@ $ETC/motd: $PREP $GEN/etc/motd
 $ETC/crontab: $PREP $GEN/etc/crontab
 	cp $GEN/etc/crontab $ETC/crontab
 
+# TWO ACCOUNTS ADDED, ONE MEASURED AND ONE OURS.
+#
+# uucp IS THE TAPE'S OWN NUMBER: uucp/parms.h:24-25 is `#define UUCPUID 48'
+# and `#define UUCPGID 1', and v8/etc/passwd -- the sibling edition's shipped
+# file -- is `uucp::48:1:mh2019,m285,nowitz:/usr/lib/uucp:'.  Same uid, same
+# gid, same home directory, from two independent places.  The uucp package
+# set-uids six of its programs to this login (uucp/mkfile:104-110, and
+# doc/rtmdiff/filemodes:22-39 names the same six in prose), so without the
+# account those six install as set-uid root or not at all.
+#
+# games (uid 49) IS NOT ON ANY TAPE.  Neither v8's passwd nor anything under
+# v10/usr names a uid for it; only games/adv/adv.c:3013 knows the NAME, where
+# adventure refuses a shell escape to a caller logged in as `games'.  49 is
+# ours, chosen as the first number free in both trees (v8 uses 0,1,2,3,6,7,48,
+# 238,304,1093), and it exists so rogue's set-gid score files have a group --
+# see the note on build/etc/group.
+#
+# BOTH ARE LOCKED AND NEITHER CAN LOG IN.  v8 shipped uucp with an EMPTY
+# password field; this file already departs from that for sys and bin, which v8
+# gave the password `sorry' and this one gives `x', so locking is the choice
+# already made here and not a new one.  nuucp -- v8's `nuucp::238:1' with
+# /usr/lib/uucp/uucico as its shell -- is deliberately absent: it exists to let
+# a REMOTE uucico log in, nothing in this build chowns anything to it, and an
+# unused login is only surface.
+#
+# A MACHINE THAT ALREADY HAS /etc/passwd DOES NOT GET THESE FROM THIS RULE.
+# Its P predicate is ./installed, which is `test -f' -- deliberately, see the
+# config target's comment -- so `mk config' is what carries a changed passwd or
+# group onto a disk that already carries the old one.  That is why every chown
+# added below names its NUMBER and not its name: /etc/chown resolves a name
+# against the BUILDER'S passwd (chown.c:63), one generation behind on the round
+# that first installs a new account, and chown.c:61 takes a number without
+# consulting it at all.
 $ETC/passwd: $PREP $GEN/etc/passwd
 	cp $GEN/etc/passwd $ETC/passwd
 
@@ -3279,6 +3325,9 @@ $CMD/load/load: P_CMD_load_load
 $ROOT/usr/bin/load: $CMD/load/load
 	cd $CMD/load; cp load $ROOT/usr/bin/load || echo 'load: FAILED'
 	cd $CMD/load; strip $ROOT/usr/bin/load || echo 'load: install FAILED'
+	# load/makefile:10-11, the same shape as oops and for the same reason: it
+	# reads the load average out of /dev/kmem, which is mode 644 and group sys.
+	/etc/chown ,2 $ROOT/usr/bin/load && chmod o-w,g+ws $ROOT/usr/bin/load || echo 'load: mode FAILED'
 
 # oops' own D is /bin/oops, but oops is in no Admin list, so Admin/dest routes
 # it to /usr/bin and that is where it goes.
@@ -3291,6 +3340,11 @@ $CMD/oops/oops: P_CMD_oops_oops
 $ROOT/usr/bin/oops: $CMD/oops/oops
 	cd $CMD/oops; cp oops $ROOT/usr/bin/oops || echo 'oops: FAILED'
 	cd $CMD/oops; strip $ROOT/usr/bin/oops || echo 'oops: install FAILED'
+	# oops/makefile:10-11, `/etc/chown ,sys $D' and `chmod o-w,g+ws $D' -- a
+	# GROUP change with an empty user field, which chown.c:59-60 reads as
+	# `leave the uid'.  2 is sys, and sys is what owns /dev/kmem; oops is the
+	# Berkeley ps and reads it.
+	/etc/chown ,2 $ROOT/usr/bin/oops && chmod o-w,g+ws $ROOT/usr/bin/oops || echo 'oops: mode FAILED'
 
 P_CMD_ct_ct:V:	$PREP
 	cd $CMD/ct; mk ct || echo 'ct: FAILED'
@@ -3301,6 +3355,9 @@ $CMD/ct/ct: P_CMD_ct_ct
 $ROOT/usr/bin/ct: $CMD/ct/ct
 	cd $CMD/ct; cp ct $ROOT/usr/bin/ct || echo 'ct: FAILED'
 	cd $CMD/ct; strip $ROOT/usr/bin/ct || echo 'ct: install FAILED'
+	# ct/mkfile:10-11, `/etc/chown root $D' and `chmod og-w,u+s $D'.  ct logs
+	# its calls to /usr/adm/wtmp, which is root's.
+	/etc/chown 0 $ROOT/usr/bin/ct && chmod og-w,u+s $ROOT/usr/bin/ct || echo 'ct: mode FAILED'
 
 P_CMD_graph_graph:V:	$PREP
 	cd $CMD/graph; mk graph || echo 'graph: FAILED'
@@ -3654,6 +3711,10 @@ $CMD/at/at: P_CMD_at_at
 $ROOT/usr/bin/at: $CMD/at/at
 	cd $CMD/at; cp at $ROOT/usr/bin/at && cp atrun $ROOT/usr/lib/atrun || echo 'at: FAILED'
 	cd $CMD/at; strip $ROOT/usr/bin/at $ROOT/usr/lib/atrun || echo 'at: install FAILED'
+	# AND THE SET-UID BIT THE COMMENT ABOVE ALREADY PROMISED.  at/makefile:17-18
+	# is `/etc/chown root /bin/at' and `chmod u+s,og-w /bin/at'; without it at
+	# cannot write /usr/spool/at and every submission fails for the caller.
+	/etc/chown 0 $ROOT/usr/bin/at && chmod u+s,og-w $ROOT/usr/bin/at || echo 'at: mode FAILED'
 
 # calendar(1) is a driver in /usr/bin and four helpers in /usr/lib.
 P_CMD_calendar_calendar:V:	$PREP
@@ -3873,7 +3934,14 @@ $CMD/struct/structure: P_CMD_struct_structure
 	test -f $CMD/struct/structure || echo '$CMD/struct/structure: the package did not produce it'
 
 $ROOT/usr/bin/struct: $CMD/struct/structure
+	# THE DIRECTORY IS WHAT struct's INSTALL OWNS, NOT THE TWO BINARIES.
+	# struct/mkfile:23-26 is `if [ ! -d /usr/lib/struct ]; then mkdir ...;
+	# /etc/chown bin,bin /usr/lib/struct; chmod 775 ...; fi' -- the binaries
+	# under it are only stripped and copied.  Done unconditionally rather than
+	# inside the mkdir guard, so a directory an earlier round left root-owned
+	# is corrected rather than kept.
 	test -d $ROOT/usr/lib/struct || mkdir $ROOT/usr/lib/struct
+	/etc/chown 3,4 $ROOT/usr/lib/struct && chmod 775 $ROOT/usr/lib/struct || echo 'struct: dir mode FAILED'
 	cd $CMD/struct; cp structure beautify $ROOT/usr/lib/struct || :; cp struct.sh $ROOT/usr/bin/struct && chmod +x $ROOT/usr/bin/struct || :
 	cd $CMD/struct; strip $ROOT/usr/lib/struct/structure $ROOT/usr/lib/struct/beautify || echo 'struct: FAILED'
 
@@ -4154,6 +4222,11 @@ $ROOT/usr/bin/ex: $CMD/ex/a.out
 	test -d $ROOT/usr/preserve || mkdir $ROOT/usr/preserve
 	cd $CMD/ex; cp a.out $ROOT/usr/bin/ex || :; rm -f $ROOT/usr/bin/vi $ROOT/usr/bin/view $ROOT/usr/bin/edit || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/vi || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/view || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/edit || :; cp exrecover $ROOT/usr/lib/ex3.7recover || :; cp expreserve $ROOT/usr/lib/ex3.7preserve || :; chmod 4755 $ROOT/usr/lib/ex3.7recover $ROOT/usr/lib/ex3.7preserve || :
 	cd $CMD/ex; strip $ROOT/usr/bin/ex $ROOT/usr/lib/ex3.7recover/exrecover $ROOT/usr/lib/ex3.7preserve/expreserve || echo 'ex: FAILED'
+	# ex/makefile:122 is `chmod 775 ${DESTDIR}${BINDIR}/ex'.  The
+	# `/etc/chown bin,bin' on the line above it is COMMENTED OUT on the tape,
+	# so ex takes the mode and not the owner -- and the three links inherit it,
+	# being the same inode.
+	chmod 775 $ROOT/usr/bin/ex || echo 'ex: mode FAILED'
 
 P_CMD_face_faced:V:	$PREP $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libipc.a
 	cd $CMD/face; mk faced && mk faces || echo 'face: FAILED'
@@ -4318,6 +4391,10 @@ $CMD/sign/verify: P_CMD_sign_verify
 $ROOT/usr/bin/sign: $CMD/sign/verify
 	cd $CMD/sign; cp verify resign enroll sign $ROOT/usr/bin || :
 	cd $CMD/sign; strip $ROOT/usr/bin/verify $ROOT/usr/bin/resign $ROOT/usr/bin/enroll $ROOT/usr/bin/sign || echo 'sign: FAILED'
+	# sign/mkfile:26-28 is `cp $X /usr/bin' then `(cd /usr/bin; strip $X; chmod
+	# 775 $X)', where :4 is `X= resign enroll sign verify'.  chmod ONLY -- the
+	# package does no chown, unlike egrep's.
+	chmod 775 $ROOT/usr/bin/verify $ROOT/usr/bin/resign $ROOT/usr/bin/enroll $ROOT/usr/bin/sign || echo 'sign: mode FAILED'
 
 P_CMD_town_town:V:	$PREP
 	cd $CMD/town; mk town || echo 'town: FAILED'
@@ -4787,6 +4864,15 @@ $ROOT/usr/games/sail: $GAMESRC/sail/sail
 	# a FILE target, so the tape writes it only when it is not there; an
 	# unconditional `: >' threw away every game ever logged on each rebuild.
 	test -f $ROOT/usr/games/lib/saillog || : > $ROOT/usr/games/lib/saillog || echo 'saillog: install FAILED'
+	# AND THE MODES, THREE DIFFERENT ONES, ALL FROM sail/makefile:104-121.
+	# :40-41 are `SAIL.LOG= sail.log' and `SHIPSLOG= lib/saillog', :44 is
+	# `SAILMASTER= daemon' -- uid 1.  sail and the driver are set-uid daemon
+	# 4711 because the driver is a separate process the players talk to through
+	# files only daemon may open; sail.log is 711 and unowned; saillog is 644.
+	cd $GAMESRC/sail; /etc/chown 1 $ROOT/usr/games/sail && chmod 4711 $ROOT/usr/games/sail || echo 'sail: mode FAILED'
+	cd $GAMESRC/sail; /etc/chown 1 $ROOT/usr/games/lib/saildriver && chmod 4711 $ROOT/usr/games/lib/saildriver || echo 'saildriver: mode FAILED'
+	chmod 711 $ROOT/usr/games/sail.log || echo 'sail.log: mode FAILED'
+	/etc/chown 1 $ROOT/usr/games/lib/saillog && chmod 644 $ROOT/usr/games/lib/saillog || echo 'saillog: mode FAILED'
 
 P_GAMES_word_clout_word_clout:V:	$PREP
 	cd $GAMESRC/word_clout; mk all || echo 'word_clout: FAILED'
@@ -4807,6 +4893,25 @@ $GAMESRC/rogue/a.out: P_GAMES_rogue_a_out
 $ROOT/usr/games/rogue: $GAMESRC/rogue/a.out
 	cd $GAMESRC/rogue; cp a.out $ROOT/usr/games/rogue || echo 'rogue: FAILED'
 	cd $GAMESRC/rogue; strip $ROOT/usr/games/rogue || echo 'rogue: install FAILED'
+	# AND THE SCORE FILES, WITHOUT WHICH ROGUE CANNOT RECORD A GAME AT ALL.
+	# rip.c:107 is `open(cheating?"/usr/games/lib/cheat_roll":SCOREFILE, 2)' --
+	# mode 2 is O_RDWR and there is no O_CREAT, so a missing file is not
+	# created, it is an error at the end of every game.  mach_dep.h:9 fixes
+	# SCOREFILE at /usr/games/lib/rogue_roll.
+	#
+	# `: >>' AND NOT `: >': the tape's own Makefile:60-61 is a bare `>>' for
+	# each, which creates the file when it is absent and appends nothing when
+	# it is there.  A truncating `>' would throw away the high scores on every
+	# rebuild -- the same mistake this file had for saillog.
+	: >> $ROOT/usr/games/lib/rogue_roll || echo 'rogue_roll: FAILED'
+	: >> $ROOT/usr/games/lib/cheat_roll || echo 'cheat_roll: FAILED'
+	# Makefile:57-59 and :62-64.  49 is games and 5 is the games group, both
+	# added to build/etc/{passwd,group} for this: a set-gid binary and a
+	# group-writable score file are one mechanism, and it is the only way two
+	# players share a score list without the file being world-writable.
+	/etc/chown 49,5 $ROOT/usr/games/rogue && chmod -rw,+x,g+s $ROOT/usr/games/rogue || echo 'rogue: mode FAILED'
+	/etc/chown 49,5 $ROOT/usr/games/lib/rogue_roll $ROOT/usr/games/lib/cheat_roll || echo 'rogue: score owner FAILED'
+	chmod o-w,g+w $ROOT/usr/games/lib/rogue_roll $ROOT/usr/games/lib/cheat_roll || echo 'rogue: score mode FAILED'
 
 P_GAMES_mille_mille:V:	$PREP
 	cd $GAMESRC/mille; make mille || echo 'mille: FAILED'
@@ -5075,6 +5180,9 @@ $CMD/server/server: P_CMD_server_server
 $ROOT/usr/bin/server: $CMD/server/server
 	cd $CMD/server; cp server $ROOT/usr/bin/server || echo 'server: FAILED'
 	cd $CMD/server; strip $ROOT/usr/bin/server || echo 'server: install FAILED'
+	# server/mkfile:11-12, `/etc/chown daemon,sys ${DEST}' and
+	# `chmod a=rx,u+ws ${DEST}'.  1 is daemon, 2 is sys.
+	/etc/chown 1,2 $ROOT/usr/bin/server && chmod a=rx,u+ws $ROOT/usr/bin/server || echo 'server: mode FAILED'
 
 
 
