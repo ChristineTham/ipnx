@@ -1382,14 +1382,15 @@ $ETC/crontab: $PREP $GEN/etc/crontab
 # a REMOTE uucico log in, nothing in this build chowns anything to it, and an
 # unused login is only surface.
 #
-# A MACHINE THAT ALREADY HAS /etc/passwd DOES NOT GET THESE FROM THIS RULE.
-# Its P predicate is ./installed, which is `test -f' -- deliberately, see the
-# config target's comment -- so `mk config' is what carries a changed passwd or
-# group onto a disk that already carries the old one.  That is why every chown
-# added below names its NUMBER and not its name: /etc/chown resolves a name
-# against the BUILDER'S passwd (chown.c:63), one generation behind on the round
-# that first installs a new account, and chown.c:61 takes a number without
-# consulting it at all.
+# EVERY CHOWN ADDED BELOW NAMES ITS NUMBER AND NOT ITS NAME.  /etc/chown
+# resolves a name against whatever passwd the process running it can see
+# (chown.c:63, getpwnam), and that is the BUILDER'S /etc/passwd -- never
+# $ROOT/etc/passwd.  Three ways that is the wrong file: `mk ROOT=/v10 ...'
+# installs into another disk while /etc/chown reads this one; `mk pkgs' or
+# `mk games' run alone never reach this rule; and the round in which a new
+# account first appears is a round whose builder does not have it yet.
+# chown.c:61 takes a number without consulting any passwd at all, so the
+# numbers are written here and the account names are in this comment.
 $ETC/passwd: $PREP $GEN/etc/passwd
 	cp $GEN/etc/passwd $ETC/passwd
 
@@ -3196,7 +3197,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3578,7 +3579,66 @@ $ROOT/usr/bin/troff: $CMD/troff/a.out
 	cd $CMD/troff/devaps; cp * $ROOT/usr/lib/font/devaps && { test -f $ROOT/usr/lib/font/devaps/u_Cw && mv $ROOT/usr/lib/font/devaps/u_Cw $ROOT/usr/lib/font/devaps/Cw || :; } || echo 'troff devaps: FAILED'
 	cd $CMD/troff/devcat; cp * $ROOT/usr/lib/font/devcat || echo 'troff devcat: FAILED'
 	cd $CMD/troff/devi10; cp * $ROOT/usr/lib/font/devi10 || echo 'troff devi10: FAILED'
-	cd $CMD/troff; strip $ROOT/usr/bin/troff/a.out || echo 'troff: install FAILED'
+	cd $CMD/troff; strip $ROOT/usr/bin/troff || echo 'troff: install FAILED'
+
+# ---- the macro packages -----------------------------------------------------
+# man(1) HAS NOT WORKED ON ANY DISK THIS PROJECT HAS BUILT, for want of one
+# file.  ni.c:32 is `char nextf[NS] = TMACDIR;' and tdef.h:13 is
+# `#define TMACDIR "/usr/lib/tmac/tmac."', so `-man' opens
+# /usr/lib/tmac/tmac.an; man.sh:62 is `${1}roff -man $T $opt' and that line is
+# the whole of man's renderer.  Nothing put a macro package in /usr/lib/tmac --
+# docgen (:4195) and postscript (:4609) make the directory and fill it with
+# their own helpers -- so `man ls' answered with a troff diagnostic, and so did
+# -ms, -mm and -me.  Admin/ulibfiles names both tmac and macros.
+#
+# THE PACKAGE IS IN ancient.nroff, AND THE REASON RECORDED ABOVE FOR NOT
+# BUILDING ancient.nroff IS THE PARENT'S.  "its install is `mv nroff
+# /usr/bin', over the link made here" is true of ancient.nroff itself; macros.d
+# is a subdirectory whose own makefile:12-15 and :44-47 write /usr/lib/macros
+# and /usr/lib/tmac and produce no binary but ntar, a filter used in the build
+# and not installed.  Nothing it does can reach nroff.
+#
+# TWELVE tmac FILES WHERE THE TAPE LISTS ELEVEN.  makefile:6-7 omits
+# tmac.srefs, and tmac.s:55 is `.so /usr/lib/tmac/tmac.srefs' -- so the tape's
+# own -ms is a package that stops at its reference macros.  The file is in the
+# directory; only the list is short.  Going the other way, tmac.org:2 sources
+# /usr/lib/macros/org and there is NO org.src here: makefile:29-30 has a rule
+# for it, OUTFILES:8 leaves it out, and no tape carries the source.  tmac.org
+# is installed as the tape installs it and -morg stays broken.
+#
+# macrunch IS RUN WITHOUT -m, WHICH IS WHAT MAKES IT USABLE AGAINST A ROOT.
+# Its :74-84 block is an installer that copies to ${path}/lib/macros itself and
+# knows nothing of ROOT; without -m it stops after the sed-into-ntar pipeline
+# at :42, leaving the compiled package in the source directory, which is where
+# this rule takes it from.  `./ntar' at :42 is why each line cds first.
+#
+# The modes are the package's own: makefile:14-15 is `chown bin', `chgrp bin',
+# `chmod 664' for the compiled packages and :46-47 `chmod 644', `chown bin',
+# `chgrp bin' for the tmac files.  3,4 is bin,bin, and it is written as numbers
+# for the reason given on build/etc/passwd.  There is no chgrp on this machine
+# -- it is in neither Admin/binfiles nor Admin/etcfiles and nothing builds one
+# -- so the pair goes to /etc/chown, which takes `uid,gid' (chown.c:24).
+MACROSD=$CMD/troff/ancient.nroff/macros.d
+TMACF=tmac.an tmac.an6 tmac.m tmac.org tmac.ptx tmac.osd tmac.s tmac.sdisp tmac.scover tmac.skeep tmac.srefs tmac.v
+MACROF=mmn mmt vmca osdd an an6 ptx
+
+P_CMD_macros_an:V:	$PREP
+	cd $MACROSD; cc -o ntar ntar.c || echo 'macros ntar: FAILED'
+	cd $MACROSD; for m in $MACROF
+	do
+		sh macrunch $m || echo "macros $m: FAILED"
+	done
+
+$MACROSD/an: P_CMD_macros_an
+	test -f $MACROSD/an || echo '$MACROSD/an: the package did not produce it'
+
+$ROOT/usr/lib/tmac/tmac.an: $MACROSD/an
+	test -d $ROOT/usr/lib/tmac || mkdir $ROOT/usr/lib/tmac
+	test -d $ROOT/usr/lib/macros || mkdir $ROOT/usr/lib/macros
+	cd $MACROSD; cp $TMACF $ROOT/usr/lib/tmac || echo 'tmac: FAILED'
+	cd $ROOT/usr/lib/tmac; chmod 644 $TMACF && /etc/chown 3,4 $TMACF || echo 'tmac: mode FAILED'
+	cd $MACROSD; cp $MACROF $ROOT/usr/lib/macros || echo 'macros: FAILED'
+	cd $ROOT/usr/lib/macros; chmod 664 $MACROF && /etc/chown 3,4 $MACROF || echo 'macros: mode FAILED'
 
 $ROOT/usr/bin/tsort: $PREP
 	cd $CMD/tsort; mk clean || :; mk install B=$ROOT/usr/bin || echo 'tsort: FAILED'
@@ -4220,12 +4280,18 @@ $CMD/ex/a.out: P_CMD_ex_a_out
 
 $ROOT/usr/bin/ex: $CMD/ex/a.out
 	test -d $ROOT/usr/preserve || mkdir $ROOT/usr/preserve
-	cd $CMD/ex; cp a.out $ROOT/usr/bin/ex || :; rm -f $ROOT/usr/bin/vi $ROOT/usr/bin/view $ROOT/usr/bin/edit || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/vi || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/view || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/edit || :; cp exrecover $ROOT/usr/lib/ex3.7recover || :; cp expreserve $ROOT/usr/lib/ex3.7preserve || :; chmod 4755 $ROOT/usr/lib/ex3.7recover $ROOT/usr/lib/ex3.7preserve || :
-	cd $CMD/ex; strip $ROOT/usr/bin/ex $ROOT/usr/lib/ex3.7recover/exrecover $ROOT/usr/lib/ex3.7preserve/expreserve || echo 'ex: FAILED'
-	# ex/makefile:122 is `chmod 775 ${DESTDIR}${BINDIR}/ex'.  The
-	# `/etc/chown bin,bin' on the line above it is COMMENTED OUT on the tape,
-	# so ex takes the mode and not the owner -- and the three links inherit it,
-	# being the same inode.
+	cd $CMD/ex; cp a.out $ROOT/usr/bin/ex || :; rm -f $ROOT/usr/bin/vi $ROOT/usr/bin/view $ROOT/usr/bin/edit || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/vi || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/view || :; ln $ROOT/usr/bin/ex $ROOT/usr/bin/edit || :; cp exrecover $ROOT/usr/lib/ex3.7recover || :; cp expreserve $ROOT/usr/lib/ex3.7preserve || :
+	cd $CMD/ex; strip $ROOT/usr/bin/ex $ROOT/usr/lib/ex3.7recover $ROOT/usr/lib/ex3.7preserve || echo 'ex: FAILED'
+	# THE MODES COME AFTER THE STRIP, NOT BEFORE IT.  ex/makefile:122 is
+	# `chmod 775 ${DESTDIR}${BINDIR}/ex' and :124 `chmod 4755' the two helpers,
+	# both before its own strip -- but strip/symwrite.c:66 is
+	# `creat(a->name, a->filstat.st_mode)', which rewrites the file, and
+	# creat(2) on a file that exists takes the mode it already has rather than
+	# the one passed.  Set the modes last and the question does not arise.
+	# The `/etc/chown bin,bin' on ex/makefile:121 is COMMENTED OUT on the tape,
+	# so ex takes the mode and not the owner -- and vi, view and edit inherit
+	# it, being the same inode.
+	chmod 4755 $ROOT/usr/lib/ex3.7recover $ROOT/usr/lib/ex3.7preserve || echo 'ex: helper mode FAILED'
 	chmod 775 $ROOT/usr/bin/ex || echo 'ex: mode FAILED'
 
 P_CMD_face_faced:V:	$PREP $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libipc.a
