@@ -31,7 +31,8 @@ The repository is four things at once, and confusing them is the main way to get
 | `v8/` | Our V8 tree, laid out as the guest filesystem (`v8/usr/src/cmd/ls.c` is `/usr/src/cmd/ls.c`). `v8/mk/` is ours — V8 never had a world build. |
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
-| `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. |
+| `tools/` | Host harnesses and probes. `*.exp` drive a guest over the console; `*.sh` wrap them with the guards. `tools/ipnx` is the Linux host: `doctor`, `reset`, `serve`, `run`, `web`. |
+| `webterm/` | **The browser front end.** One HTML page and one JS file, no dependencies and no build step — it draws its own terminal, because cdn.jsdelivr.net is 403 through this project's proxy and a vendored emulator would be a megabyte of somebody else's code in git. Not the same thing as `website/`. |
 | `image/` | The **committed compressed disks**, and the only binaries in the repository: three bzip2 tars. They go through **Git LFS** (`git lfs pull`, or `tar` says `not a bzip2 file`) except the V10 golden's `.aa`/`.ab` halves, which the filter does not match. |
 | `run/` | The **uncompressed working disks** `tools/v10-reset.sh` writes from those archives, plus the boot ROM and the configs the launchers generate. Gitignored, all of it reproducible. Plural on purpose; not the same directory as `image/`. |
 | `v10tapes/` | Scratch: the six TUHS archives as plain `tar`, gitignored, **needed by nothing**. `mkv10` reads them once ever and `v10/` is the committed result, so delete the directory when the bootstrap is done. The host never unpacks one. |
@@ -82,6 +83,7 @@ bash tools/v10-golden.sh                # V10: does the golden still boot to log
 python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
 python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
 bash tools/9pfs-test.sh                 # the GUEST's 9P client, driven on the host
+python3 tools/webterm-check.py           # the browser app: boot, log in, run a command
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
 ```
 
@@ -193,6 +195,39 @@ before, because two unrelated rules made the directory, and it held no macro pac
 is why `man(1)` could not format a page. Check a claim about completeness against those
 lists, never against a pattern over the source tree — and check what is *in* a directory the
 list names, not that it exists.
+
+### Running it on Linux, with no Xcode and no Mac
+
+The app that ships is Swift and Apple-only. None of that is needed to *run* the machine:
+open-simh builds anywhere, the disks are committed, and the share is python3.
+
+```bash
+tools/ipnx doctor      # what is present, what is missing, what to type
+tools/ipnx reset       # image/*.tar.bz2 -> run/
+tools/ipnx run         # boot; the console is this terminal
+tools/ipnx web         # boot; the console is a browser at http://127.0.0.1:8080/
+```
+
+`web` starts the shares, boots a **copy** of the golden with simh's console on a TCP port,
+and serves `webterm/` beside a WebSocket that bridges the two. `tools/ipnxweb.py` is that
+bridge and is runnable on its own against any simh already listening.
+
+**Telnet IAC is stripped and never answered.** `set console telnet=` speaks telnet, so the
+stream carries negotiation a terminal must not show — and a client that *replies* to
+negotiation on a simh console can silence that session permanently, which is the same rule
+`ConsoleLink(replyToIAC: false)` states for the remote console.
+
+**The console is `buffered=32768`**, so a browser opening a minute after boot still sees the
+boot. Without it simh sends only what happens after the connection, and the page is blank
+until you press Enter — which reads as broken.
+
+**`webterm/term.js` strips mark parity**, for the reason `tools/v10drive.py` records: getty's
+first banner arrives with bit 7 set on every character, so `login:` renders as line noise
+unless it is masked to 7 bits. It is the first thing anyone sees.
+
+V8 is not wired into this CLI: its disk in `image/` is a Git LFS pointer until `git lfs pull`,
+and no `bootV8` ROM is committed — the sequence lives in `tools/*.exp`. `doctor` says so
+rather than letting you find out from a failure, and marks it optional rather than failing.
 
 ### Website and release
 

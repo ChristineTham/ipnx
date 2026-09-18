@@ -1,0 +1,395 @@
+#!/usr/bin/env python3
+"""ipnx -- run Bell Labs Research Unix on Linux, in a terminal or a browser.
+
+    tools/ipnx doctor            what is present, what is missing, what to type
+    tools/ipnx reset             image/*.tar.bz2 -> run/, the disks and the ROM
+    tools/ipnx serve             just the host shares, for driving a guest
+    tools/ipnx run               boot; the console is this terminal
+    tools/ipnx web               boot; the console is a browser at :8080
+
+WHAT THIS IS FOR.  The app that ships is Swift, builds with Xcode and runs on
+iPadOS and macOS.  None of that is needed to RUN the machine: open-simh builds
+anywhere, the disks are committed, and the share is python3.  This is the whole
+host, for a machine with neither Xcode nor a Mac -- which is also the machine
+this project's V10 work is driven from.
+
+EDITIONS.  V10 is the live one here and its share is 9P (tools/9pfsd.py); V8
+speaks netfs (tools/netfsd.py) and needs `git lfs pull' before its disk is
+anything but a 133-byte pointer.  `doctor' says which of that is true right now
+rather than making you find out from a failure.
+
+THE RULES THIS OBEYS, because they are the project's and not this file's:
+  - TWO SIMULATORS MUST NEVER RUN AT ONCE.  `pgrep -x vax780', by process NAME:
+    -f matches a whole command line, so any harness that merely mentions the
+    path counts as a simulator and refuses to start.  That has happened.
+  - NEVER BOOT run/v10-golden ITSELF.  Booting mounts and mounting rewrites the
+    superblock, so a run against the golden changes it even when it passes.
+    Every command here works on a copy.
+  - `set noasynch', and the device set and its order are the kernel's.  simh
+    floats Unibus addresses over the SET of enabled devices, so a different set
+    is a different machine and ipnx-v10.m's measured addresses stop matching.
+"""
+
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SIM = os.path.join(ROOT, "work", "opensimh", "BIN", "vax780")
+
+
+def p(msg):
+    sys.stdout.write(msg + "\n")
+    sys.stdout.flush()
+
+
+def die(msg, code=1):
+    sys.stderr.write("ipnx: " + msg + "\n")
+    sys.exit(code)
+
+
+def sim_running():
+    return subprocess.call(["pgrep", "-x", "vax780"],
+                           stdout=subprocess.DEVNULL) == 0
+
+
+def is_lfs_pointer(path):
+    """A file git-lfs has not fetched is a short text stub, and tar's answer to
+    one is `not a bzip2 file' -- true, and no help at all about why."""
+    try:
+        if os.path.getsize(path) > 1024:
+            return False
+        with open(path, "rb") as f:
+            return f.read(7) == b"version"
+    except OSError:
+        return False
+
+
+# ---------------------------------------------------------------- editions --
+
+class V10(object):
+    name = "v10"
+    title = "Research Unix Tenth Edition"
+    disk = os.path.join(ROOT, "run", "v10-golden")
+    rom = os.path.join(ROOT, "run", "uda")
+    share = "9p"
+    ports = (9200, 9201)
+
+    @staticmethod
+    def config(img, console_port=None):
+        """The device set and its order are ipnx-v10.m's, which is what its
+        measured Unibus addresses were taken against."""
+        lines = [
+            "set noasynch",
+            "set cpu 128m",
+            "set vh disable",
+            "set rq enable", "set rqb enable", "set rqc enable", "set rqd enable",
+            "set tq enable",
+            "set dz enable", "set dz lines=32",
+            "set il enable", "set il address=2013E800", "set il vector=E8",
+            "attach il nat:",
+            "set tto 7b",
+        ]
+        if console_port:
+            lines.append("set console telnet=%d" % console_port)
+            # BUFFERED, so a browser that connects after the machine has booted
+            # still sees the boot.  Without it simh only sends what happens
+            # AFTER the connection, and opening the page a minute late shows a
+            # blank screen until you press Enter -- which reads as broken.
+            lines.append("set console telnet=buffered=32768")
+        lines += [
+            "set rq0 ra73",
+            "attach rq0 %s" % img,
+            "load -o %s FA00" % V10.rom,
+            "dep sp 200", "dep r1 0", "dep r3 0", "dep r5 0",
+            "run FA02",
+        ]
+        return "\n".join(lines) + "\n"
+
+
+class V8(object):
+    name = "v8"
+    title = "Research Unix Eighth Edition"
+    disk = os.path.join(ROOT, "work", "myv8", "rp07new")
+    rom = None
+    share = "netfs"
+    ports = (9200, 9201)
+
+    @staticmethod
+    def config(img, console_port=None):
+        die("v8 booting is not wired into this CLI yet -- "
+            "no bootV8 ROM is committed and the harnesses in tools/*.exp "
+            "carry the sequence.  `doctor' says what is missing.")
+
+
+EDITIONS = {"v10": V10, "v8": V8}
+
+
+def edition(name):
+    ed = EDITIONS.get(name)
+    if ed is None:
+        die("unknown edition %r -- try v10 or v8" % name)
+    return ed
+
+
+# ------------------------------------------------------------------ doctor --
+
+def cmd_doctor(args):
+    """REQUIRED AND OPTIONAL ARE NOT THE SAME THING, and conflating them makes
+    the exit status useless.  A checkout with a perfectly good V10 and no
+    `git lfs pull' is ready to run -- saying otherwise trains people to ignore
+    this command."""
+    ok = True
+
+    def check(label, good, detail, required=True):
+        nonlocal ok
+        mark = "ok  " if good else ("MISS" if required else "--  ")
+        p("  %s  %-34s %s" % (mark, label, detail))
+        if not good and required:
+            ok = False
+
+    p("simulator")
+    check("open-simh vax780", os.path.isfile(SIM),
+          SIM if os.path.isfile(SIM)
+          else "libsimh/patches/apply.sh work/opensimh && (cd work/opensimh && make vax780)")
+
+    p("python")
+    check("python3", True, sys.version.split()[0])
+
+    p("v10  (%s)" % V10.title)
+    halves = [os.path.join(ROOT, "image", "v10-golden.tar.bz2.a" + s) for s in "ab"]
+    check("committed golden halves", all(os.path.isfile(h) for h in halves),
+          "image/v10-golden.tar.bz2.a?")
+    check("restored disk", os.path.isfile(V10.disk),
+          V10.disk if os.path.isfile(V10.disk) else "tools/ipnx reset")
+    check("boot ROM", os.path.isfile(V10.rom),
+          V10.rom if os.path.isfile(V10.rom) else "tools/ipnx reset")
+    check("9P server", os.path.isfile(os.path.join(ROOT, "tools", "9pfsd.py")),
+          "tools/9pfsd.py")
+
+    p("v8   (%s)" % V8.title)
+    v8img = os.path.join(ROOT, "image", "ipnx-v8-rp07.img.tar.bz2")
+    ptr = is_lfs_pointer(v8img)
+    check("committed disk", os.path.isfile(v8img) and not ptr,
+          "an LFS POINTER -- run `git lfs pull'" if ptr else v8img,
+          required=False)
+    check("netfs server", os.path.isfile(os.path.join(ROOT, "tools", "netfsd.py")),
+          "tools/netfsd.py", required=False)
+    p("  note  v8 boots from tools/*.exp for now; this CLI runs v10.")
+
+    p("browser app")
+    check("webterm/", os.path.isdir(os.path.join(ROOT, "webterm")), "webterm/index.html")
+    check("bridge", os.path.isfile(os.path.join(ROOT, "tools", "ipnxweb.py")),
+          "tools/ipnxweb.py")
+
+    p("")
+    p("ready -- `tools/ipnx web' for a browser, `tools/ipnx run' for this terminal"
+      if ok else "something marked MISS is missing; `--' is optional and fine")
+    return 0 if ok else 1
+
+
+# ------------------------------------------------------------------- reset --
+
+def cmd_reset(args):
+    script = os.path.join(ROOT, "tools", "v10-reset.sh")
+    if not os.path.isfile(script):
+        die("no tools/v10-reset.sh")
+    return subprocess.call(["bash", script])
+
+
+# ------------------------------------------------------------------ shares --
+
+def start_shares(ed, macos, home, quiet=True):
+    """Start the share servers this edition's /etc/rc will look for."""
+    out = subprocess.DEVNULL if quiet else None
+    procs = []
+    if ed.share == "9p":
+        srv = os.path.join(ROOT, "tools", "9pfsd.py")
+        # -L: 9P2000.u describes a symlink and netb's <rf.h> has nowhere to put
+        # one, so without it every link under the share is visible to the guest
+        # and unreadable.  A real tree has plenty.
+        procs.append(subprocess.Popen(
+            [sys.executable, srv, "-L", "-p", str(ed.ports[0]), macos],
+            stdout=out, stderr=out))
+        procs.append(subprocess.Popen(
+            [sys.executable, srv, "-L", "-w", "-p", str(ed.ports[1]), home],
+            stdout=out, stderr=out))
+    else:
+        srv = os.path.join(ROOT, "tools", "netfsd.py")
+        procs.append(subprocess.Popen(
+            [sys.executable, srv, "-p", str(ed.ports[0]), macos],
+            stdout=out, stderr=out))
+        procs.append(subprocess.Popen(
+            [sys.executable, srv, "-w", "-p", str(ed.ports[1]), home],
+            stdout=out, stderr=out))
+    return procs
+
+
+def cmd_serve(args):
+    ed = edition(args.pop(0) if args else "v10")
+    macos, home = share_paths(args)
+    procs = start_shares(ed, macos, home, quiet=False)
+    p("ipnx: %s shares up -- %s on %d (ro), %s on %d (rw)"
+      % (ed.share, macos, ed.ports[0], home, ed.ports[1]))
+    p("ipnx: ^C to stop")
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for q in procs:
+            q.terminate()
+    return 0
+
+
+def share_paths(args):
+    macos = ROOT
+    home = os.path.expanduser("~")
+    while args:
+        a = args.pop(0)
+        if a == "--macos":
+            macos = args.pop(0)
+        elif a == "--home":
+            home = args.pop(0)
+    return macos, home
+
+
+# --------------------------------------------------------------- the disks --
+
+def working_copy(ed, tag):
+    """ALWAYS A COPY.  Booting mounts, mounting rewrites the superblock, and
+    the golden is a committed artefact -- so the golden itself is never
+    attached to anything."""
+    if not os.path.isfile(ed.disk):
+        die("no disk at %s -- run `tools/ipnx reset'" % ed.disk)
+    copy = os.path.join(ROOT, "run", "%s-%s.img" % (ed.name, tag))
+    if os.path.exists(copy):
+        os.unlink(copy)
+    # --sparse=always keeps a 1.9 GB image at the ~500 MB it occupies.
+    if subprocess.call(["cp", "--reflink=auto", "--sparse=always", ed.disk, copy]) != 0:
+        if subprocess.call(["cp", ed.disk, copy]) != 0:
+            die("could not copy %s" % ed.disk)
+    return copy
+
+
+def write_conf(ed, img, console_port, tag):
+    conf = os.path.join(ROOT, "run", "%s-%s.conf" % (ed.name, tag))
+    with open(conf, "w") as f:
+        f.write(ed.config(img, console_port))
+    return conf
+
+
+# --------------------------------------------------------------------- run --
+
+def cmd_run(args):
+    ed = edition(args[0]) if args and args[0] in EDITIONS else V10
+    if args and args[0] in EDITIONS:
+        args = args[1:]
+    macos, home = share_paths(args)
+    if sim_running():
+        die("a vax780 is already running -- refusing to start a second")
+    if not os.path.isfile(SIM):
+        die("no simulator at %s -- see `tools/ipnx doctor'" % SIM)
+
+    procs = start_shares(ed, macos, home)
+    img = working_copy(ed, "run")
+    conf = write_conf(ed, img, None, "run")
+    p("ipnx: %s -- shares on %d/%d, console on this terminal" % (ed.title, ed.ports[0], ed.ports[1]))
+    p("ipnx: ^E for the simh prompt; `/etc/down' then ^E quit to halt cleanly")
+    try:
+        return subprocess.call([SIM, conf])
+    finally:
+        for q in procs:
+            q.terminate()
+
+
+# --------------------------------------------------------------------- web --
+
+def cmd_web(args):
+    ed = edition(args[0]) if args and args[0] in EDITIONS else V10
+    if args and args[0] in EDITIONS:
+        args = args[1:]
+    http_port, console_port, keep = 8080, 5100, False
+    rest = []
+    while args:
+        a = args.pop(0)
+        if a in ("-p", "--port"):
+            http_port = int(args.pop(0))
+        elif a in ("-c", "--console"):
+            console_port = int(args.pop(0))
+        elif a == "--keep":
+            keep = True                 # leave the working copy behind
+        else:
+            rest.append(a)
+    macos, home = share_paths(rest)
+
+    if sim_running():
+        die("a vax780 is already running -- refusing to start a second")
+    if not os.path.isfile(SIM):
+        die("no simulator at %s -- see `tools/ipnx doctor'" % SIM)
+
+    procs = start_shares(ed, macos, home)
+    img = working_copy(ed, "web")
+    conf = write_conf(ed, img, console_port, "web")
+
+    # simh's TELNET CONSOLE MOVES THE GUEST'S CONSOLE, NOT SIMH'S OWN PROMPT,
+    # so stdin still belongs to the simulator command loop.  It is given
+    # /dev/null: nothing here should be able to type at the simh prompt by
+    # accident, and the browser reaches the guest through the telnet port.
+    sim = subprocess.Popen([SIM, conf], stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    procs.append(sim)
+
+    def shutdown(*_):
+        for q in procs:
+            try:
+                q.terminate()
+            except Exception:
+                pass
+        if not keep:
+            for f in (img, conf):
+                try:
+                    os.unlink(f)
+                except OSError:
+                    pass
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    p("ipnx: %s" % ed.title)
+    p("ipnx: shares on %d/%d, guest console on %d" % (ed.ports[0], ed.ports[1], console_port))
+    p("ipnx: open http://127.0.0.1:%d/" % http_port)
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import ipnxweb
+    try:
+        ipnxweb.serve({"port": http_port, "console": console_port,
+                       "bind": "127.0.0.1", "chost": "127.0.0.1",
+                       "root": os.path.join(ROOT, "webterm"), "verbose": False})
+    finally:
+        shutdown()
+    return 0
+
+
+# -------------------------------------------------------------------- main --
+
+COMMANDS = {"doctor": cmd_doctor, "reset": cmd_reset, "serve": cmd_serve,
+            "run": cmd_run, "web": cmd_web}
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        sys.stdout.write(__doc__)
+        return 0
+    cmd = argv[0]
+    if cmd not in COMMANDS:
+        die("unknown command %r -- try `tools/ipnx help'" % cmd, 2)
+    return COMMANDS[cmd](argv[1:])
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

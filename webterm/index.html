@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ipnx</title>
+<style>
+  :root {
+    --bg: #14110e;
+    --panel: #1d1915;
+    --rule: #332c24;
+    --fg: #e8dcc8;
+    --dim: #9a8c76;
+    --accent: #d8a657;
+    --ok: #a3b565;
+    --bad: #d98a72;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--fg);
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  }
+  body { display: flex; flex-direction: column; }
+  header {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid var(--rule);
+    background: var(--panel); flex: none;
+  }
+  header h1 {
+    margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .02em;
+  }
+  header .sub { color: var(--dim); font-size: 12px; }
+  header .spacer { flex: 1; }
+  #status {
+    font-size: 12px; font-variant-numeric: tabular-nums;
+    padding: 2px 8px; border: 1px solid var(--rule); border-radius: 999px;
+    color: var(--dim);
+  }
+  #status.up   { color: var(--ok);  border-color: color-mix(in srgb, var(--ok) 45%, var(--rule)); }
+  #status.down { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--rule)); }
+  main {
+    flex: 1; display: grid; place-items: center; padding: 16px; min-height: 0;
+  }
+  #screen {
+    background: #0d0b09;
+    border: 1px solid var(--rule); border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    max-width: 100%; max-height: 100%;
+    cursor: text;
+  }
+  #screen:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  footer {
+    flex: none; padding: 8px 16px; border-top: 1px solid var(--rule);
+    color: var(--dim); font-size: 12px; background: var(--panel);
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  kbd {
+    font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    border: 1px solid var(--rule); border-bottom-width: 2px;
+    border-radius: 4px; padding: 2px 5px; color: var(--fg);
+  }
+  @media (max-width: 600px) {
+    header { flex-wrap: wrap; gap: 6px; }
+    main { padding: 8px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>ipnx</h1>
+    <span class="sub">Research Unix on an emulated VAX-11/780</span>
+    <span class="spacer"></span>
+    <span id="status">connecting…</span>
+  </header>
+
+  <main>
+    <canvas id="screen" tabindex="0" aria-label="Research Unix console"></canvas>
+  </main>
+
+  <footer>
+    <span>Click the screen, then type.</span>
+    <span><kbd>Ctrl</kbd>+<kbd>D</kbd> end of file</span>
+    <span><kbd>Ctrl</kbd>+<kbd>C</kbd> interrupt</span>
+    <span id="hint"></span>
+  </footer>
+
+  <script src="term.js"></script>
+</body>
+</html>
