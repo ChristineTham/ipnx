@@ -122,6 +122,13 @@ and `/usr/sys/ipnx/ipnx-v10.m` did not. Both files are now targets in `build/mkf
 the repository's copy as their prerequisite, `cmp`-guarded so an unchanged `.m` does not
 re-date itself and rebuild the kernel every round.
 
+**The result, measured.** A full `ipnxbuild` on a disk that had already been built once --
+which is the case that exposes `ether`, and a case this project had never run -- reports
+**no `FAILED` line at all**. `/usr/bin/cyntax`, `/usr/bin/sign`, `/usr/bin/pxp`,
+`/usr/ether/netconfig`, the nine products in `/usr/lib/pascal` and a 164,882-byte
+`/usr/lib/spell/brspell` are all there, and `/etc/9pfs` is replaced while it is serving the
+share it is replaced through.
+
 **This repository had already diagnosed the bug once and not generalised it.**
 `build/mkfile:4429-4433` — the `cbt` rule — reads *"cbt's mkfile is the tape's own, and its
 `all: $ALL` has no recipe … Naming them sidesteps the aggregate without touching the tape's
