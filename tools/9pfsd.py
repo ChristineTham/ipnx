@@ -547,9 +547,34 @@ class Conn(object):
             except Exception:
                 pass
 
+    def trace(self, typ, tag, body):
+        """-v, with the fields that matter.  A bare message name told us a
+        directory read had happened and nothing about why it came back empty,
+        which is the one question the log is ever asked."""
+        extra = ""
+        try:
+            if typ in (Tread, Twrite):
+                fid, off, cnt = struct.unpack("<IQI", body[:16])
+                extra = " fid=%d offset=%d count=%d" % (fid, off, cnt)
+            elif typ == Twalk:
+                fid, nfid, n = struct.unpack("<IIH", body[:10])
+                names, i = [], 10
+                for _ in range(n):
+                    ln = struct.unpack("<H", body[i:i + 2])[0]
+                    names.append(body[i + 2:i + 2 + ln].decode("utf-8", "replace"))
+                    i += 2 + ln
+                extra = " fid=%d->%d %s" % (fid, nfid, "/".join(names) or "(clone)")
+            elif typ == Topen:
+                extra = " fid=%d mode=%#x" % struct.unpack("<IB", body[:5])
+            elif typ in (Tclunk, Tstat, Tremove, Twstat):
+                extra = " fid=%d" % struct.unpack("<I", body[:4])[0]
+        except Exception:
+            pass
+        sys.stderr.write("%s tag=%d%s\n" % (TNAME.get(typ, "T?%d" % typ), tag, extra))
+
     def dispatch(self, typ, tag, body):
         if self.verbose:
-            sys.stderr.write("%s tag=%d\n" % (TNAME.get(typ, "T?%d" % typ), tag))
+            self.trace(typ, tag, body)
         p = Parse(body)
         if typ == Tversion:  return self.do_version(tag, p)
         if typ == Tauth:     raise NineError(E.EPERM, "no authentication required")
@@ -717,6 +742,9 @@ class Conn(object):
             pos += len(sb)
             offs.append(pos)
         f.dirents, f.diroffs = ents, offs
+        if self.verbose:
+            sys.stderr.write("  -> opendir %s: %d entries, %d bytes\n" % (
+                f.path, len(ents), pos))
 
     # -- data -------------------------------------------------------------
     def do_read(self, tag, p):
@@ -737,6 +765,9 @@ class Conn(object):
                 data = f.f.read(count)
             except OSError as exc:
                 raise oserror(exc)
+        if self.verbose:
+            sys.stderr.write("  -> Rread %d bytes%s\n" % (
+                len(data), " (directory)" if f.dirents is not None else ""))
         self.reply(Rread, tag, Buf().u32(len(data)).raw(data).b)
 
     def _readdir(self, f, offset, count):
@@ -745,6 +776,15 @@ class Conn(object):
         rather than arithmetic'd.  Offset 0 rewinds; anything else that is not
         an entry boundary is EINVAL, which is what the protocol asks for."""
         if offset == 0:
+            # A REWIND RE-READS THE DIRECTORY.  The snapshot taken at Topen is
+            # what makes offsets stable, but the guest holds one open fid per
+            # directory for the life of its handle, so without this a file
+            # created through the share never appears in a later listing --
+            # measured on the machine: `mkdir' and `echo > f' both succeeded
+            # and the next `ls' still showed only what was there at mount
+            # time.  Offsets only have to stay valid within one pass, and a
+            # read at 0 IS the start of a new pass.
+            self._opendir(f)
             idx = 0
         else:
             try:

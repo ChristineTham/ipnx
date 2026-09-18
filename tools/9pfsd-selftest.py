@@ -528,7 +528,37 @@ def test_write(root, port):
     c.walk(0, 5, [])
     t, _, b = c.remove(5)
     check("the export root cannot be removed", t == Rerror, t)
+
+    # A REWIND MUST RE-READ.  The guest holds one open fid per directory for
+    # the life of its handle, so a snapshot that is never refreshed means a
+    # file created through the share is invisible to every later listing --
+    # which is exactly what happened on the machine.
+    c.walk(0, 6, [])
+    c.open(6)
+    before = dirnames(c, 6)
+    open(os.path.join(root, "appeared"), "w").write("x")
+    after = dirnames(c, 6)
+    check("a directory rewind picks up a new file",
+          "appeared" not in before and "appeared" in after, (before, after))
     c.close()
+
+
+def dirnames(c, fid):
+    """Read a whole directory from offset 0 and return the names."""
+    names, off = [], 0
+    while True:
+        t, _, b = c.read(fid, off, 4096)
+        if t != Rread:
+            break
+        n = struct.unpack("<I", b[:4])[0]
+        if n == 0:
+            break
+        data, i = b[4:4 + n], 0
+        while i < len(data):
+            st, i = unstat(data, i)
+            names.append(st["name"])
+        off += n
+    return names
 
 
 def wstat_entry(name="", mode=NOTOUCH4, atime=NOTOUCH4, mtime=NOTOUCH4,

@@ -49,7 +49,10 @@
  * whichever copy it does not keep.  So ino must be a stable per-file identity
  * or the same file gets two tags.  9P's qid.path is exactly that, and
  * tools/9pfsd.py hands out small dense ones on purpose, because V10's ino_t is
- * an unsigned short and Rfile.ino has to survive the trip into a struct direct.
+ * an unsigned short, so Rfile.ino has to survive the trip into a struct stat's
+ * st_ino.  (dirread(2) renders an i-number as decimal text and is not bound by
+ * that, but stat(2) is, and a folded i-number would make two files look like
+ * links to each other.)
  *
  * TWO FIDS PER FILE, AND 9P REQUIRES IT.  A fid must be opened with Topen
  * before Tread or Twrite, and an opened fid may not be walked.  V10 hands us
@@ -130,13 +133,15 @@
 #define	N9NOTOUCH4	0xFFFFFFFFL
 
 /*
- * V10's own limits, which bound what we can hand back.
+ * NAMES ARE NOT LIMITED TO 14 BYTES HERE, which is worth stating because the
+ * disk's are.  <sys/dir.h>'s DIRSIZ bounds a name in a V10 DIRECTORY; netb
+ * carries a name as a counted string in the namei message and dirread(2)
+ * returns it as NUL-terminated text, so neither end of this program has a
+ * fourteen-byte field in it.  netfs/serv/libdir.c -- Bell Labs' own portable
+ * directory reader for a netb server -- passes dp->d_name through whole for
+ * exactly that reason.  64 is this program's own buffer and nothing else's.
  */
-#define	DIRSIZ		14		/* <sys/dir.h> */
-struct	direct {
-	unsigned short d_ino;
-	char	d_name[DIRSIZ];
-};
+#define	N9NAMELEN	64
 
 /*
  * ------------------------------------------------------------ private data
@@ -476,7 +481,7 @@ typedef struct {
 	long	atime;
 	long	mtime;
 	long	length;
-	char	name[DIRSIZ+1];
+	char	name[N9NAMELEN];
 } N9dir;
 
 /*
@@ -552,6 +557,16 @@ register N9dir *d;
 	f->mode = n9mode(d->mode);
 	f->type = (d->qtype & N9QTDIR) ? RFTDIR : RFTREG;
 	f->nlink = (d->qtype & N9QTDIR) ? 2 : 1;
+	/*
+	 * OWNERSHIP FOLLOWS THE CALLER, deliberately.  The share presents every
+	 * file as one owner -- 9pfsd's -u and -g, root by default -- so there
+	 * is no per-file identity to carry across, and reporting a fixed uid
+	 * would make the share unusable to anyone else on the machine.  Naming
+	 * the caller as the owner is what netfsd did from the guest's point of
+	 * view and is what makes perm.c's owner check pass for whoever mounted
+	 * it.  rfuid is zero during fsinit, before any request has arrived,
+	 * which is right: that is root building the root.
+	 */
 	f->uid = rfuid;
 	f->gid = rfgid;
 	f->rdev = 0;
@@ -668,6 +683,48 @@ bad:
 }
 
 /*
+ * ONE dirread(2) RECORD: the i-number in decimal ascii, a tab, the name, a
+ * NUL.  Writes nothing and returns -1 if it will not fit, which is what lets
+ * the caller stop on a record boundary instead of half way through one.
+ */
+static
+putent(pp, leftp, ino, name)
+char **pp;
+int *leftp;
+long ino;
+char *name;
+{
+	char num[16];
+	register char *p, *t;
+	register int i;
+	int need;
+	long m;
+
+	i = sizeof(num);
+	num[--i] = 0;
+	m = ino;
+	if (m == 0)
+		num[--i] = '0';
+	while (m > 0) {
+		num[--i] = (int)(m % 10) + '0';
+		m /= 10;
+	}
+	need = ((int)sizeof(num) - 1 - i) + 1 + strlen(name) + 1;
+	if (need > *leftp)
+		return (-1);
+	p = *pp;
+	for (t = &num[i]; *t; t++)
+		*p++ = *t;
+	*p++ = '\t';
+	for (t = name; *t; t++)
+		*p++ = *t;
+	*p++ = 0;
+	*leftp -= need;
+	*pp = p;
+	return (0);
+}
+
+/*
  * ------------------------------------------------------------ the callbacks
  */
 
@@ -698,6 +755,20 @@ char **argv;
 	}
 	host = argv[1];
 	port = atoi(argv[2]);
+	/*
+	 * THE ID MAPS, AND NOTHING WORKS WITHOUT THEM.  libnetb translates
+	 * user and group ids between this process and the client BY NAME,
+	 * through two tables built from a password and a group file, and
+	 * everything that consults them -- the ownership it reports, and every
+	 * permission check in perm.c -- answers RFNOID (-1) while they are
+	 * null.  Measured, on the machine: `ls -l' showed every file owned by
+	 * `-1', and a write to a read/WRITE share came back `Permission
+	 * denied', because the owner check could not match and the mode fell
+	 * through to `other'.  zarf.c:101 does exactly this and it is not
+	 * optional.
+	 */
+	rfuidmap = rfmkidmap("/etc/passwd", (Namemap *)0);
+	rfgidmap = rfmkidmap("/etc/group", (Namemap *)0);
 	if ((faddr = in_address(host)) == 0) {
 		rflog("9pfs: bad address %s\n", host);
 		return (NULL);
@@ -1020,6 +1091,37 @@ register Rfile *nf;
 {
 	int i;
 
+	/*
+	 * A Twstat THAT WOULD CHANGE NOTHING IS NOT SENT AT ALL, and that is
+	 * not an optimisation -- it is the difference between a read-only share
+	 * working and not.  V10 releases an inode with
+	 *
+	 *	if (ip->i_flag & ICHG) nbupdat(ip, &time, &time, 0)
+	 *
+	 * (fs/netb.c:48), so closing a file or a directory sends an update as a
+	 * matter of course.  libnetb then fills in the CURRENT values for
+	 * anything the message left at zero -- funcs.c:494-507 -- so what
+	 * arrives here is usually every attribute exactly as we last reported
+	 * it.  Sending that on as a Twstat asks a read-only server to write,
+	 * which answers EROFS, which n9err maps to RFEACCES, which comes back
+	 * to the guest as `Permission denied' -- reported against whatever
+	 * syscall happened to do the iput.  Measured: with this unconditional,
+	 * `ls' worked and `ls -l' said `ls: /n/9p: Permission denied', because
+	 * -l is the flag that makes ls close what it opened.
+	 *
+	 * AND THE MODE COMPARISON IS MASKED, which is the whole of the second
+	 * half of that bug.  What arrives is nbtofsmode(SUP_MODE), and
+	 * funcs.c:59 defines that as `(m)&07777' -- permission bits only --
+	 * while f->mode is what unpack() built, a full Unix mode with IFDIR or
+	 * IFREG in it.  Comparing the two unmasked makes 0755 and 0040755
+	 * differ on every single update, so the test above never fired and the
+	 * spurious Twstat went out anyway: `ls -l' then worked and `ls -li'
+	 * said `Permission denied', which is as arbitrary as it sounds.
+	 */
+	if ((nf->mode & 07777) == (f->mode & 07777)
+	 && nf->ta == f->ta && nf->tm == f->tm && nf->size == f->size)
+		return (0);
+
 	pstart(Twstat);
 	p32(fsp(f)->fid);
 	/*
@@ -1052,9 +1154,9 @@ register Rfile *nf;
 	 * sending the length either way would re-truncate a file that grew
 	 * under a held handle.
 	 */
-	p32((long)(nf->mode & 07777));
-	p32(nf->ta);
-	p32(nf->tm);
+	p32(nf->mode == f->mode ? N9NOTOUCH4 : (long)(nf->mode & 07777));
+	p32(nf->ta == f->ta ? N9NOTOUCH4 : nf->ta);
+	p32(nf->tm == f->tm ? N9NOTOUCH4 : nf->tm);
 	if (nf->size != f->size && nf->type != RFTDIR)
 		p64(nf->size);
 	else {
@@ -1134,24 +1236,46 @@ int len;
 }
 
 /*
- * fsdirread: hand back struct direct entries.
+ * fsdirread: hand back directory entries IN THE FORMAT dirread(2) DEFINES,
+ * which is text and not `struct direct'.  Each record is
  *
- * A 9P directory read returns machine-independent stat entries and NO "." OR
- * "..": the dot names are a walk's business there, not a read's.  V10 expects
- * them -- pwd walks up by matching inode numbers, and every directory reader
- * on the machine was written against a real V7 directory -- so they are
- * synthesised here, at offset zero only.
+ *	nnnn TAB name NUL
  *
- * THE OFFSET IS OURS TO DEFINE, which is what makes that possible.  libnetb
- * passes whatever *offp we return straight back next time, so:
+ * with nnnn the i-number in decimal ascii, and the return value is the number
+ * of bytes used.  netfs/serv/libdir.c says so in its header comment and
+ * fs/fs.c:634 is the kernel proving it -- fsdirread() there converts d_ino
+ * digit by digit into a scratch buffer, writes a tab, copies the name and
+ * appends a NUL, for every slot in the directory block.
  *
- *	off == 0	the two dot entries, then 9P entries from 9P offset 0
+ * THIS COST A RUN AND IS WORTH THE PARAGRAPH.  The first version of this
+ * function wrote binary `struct direct' records, on the assumption that a
+ * directory read returns what a directory contains.  It does not: the whole
+ * point of V10's dirread(2) is that the kernel converts, so a client never
+ * sees an on-disk layout.  Everything worked -- the mount came up, cat read
+ * files through it, the server logged correct Twalk/Topen/Tread traffic -- and
+ * `ls' printed NOTHING, because ls hides `.' and `..' and those two were the
+ * only records it could parse.  A wrong format here is invisible from the
+ * server side and looks like an empty directory.
+ *
+ * A 9P directory read returns machine-independent stat entries and no dot
+ * names at all: `.' and `..' are a walk's business there, not a read's.  V10
+ * expects them, because readdir(3) on a real directory returns them and pwd
+ * identifies a parent by i-number, so they are synthesised at offset zero --
+ * and `..' costs one extra walk and stat to get the parent's real i-number,
+ * which is what pwd is actually looking at.
+ *
+ * THE OFFSET IS OURS TO DEFINE.  libnetb hands back whatever *offp we set --
+ * funcs.c:591 turns it into a delta from the requested offset and the kernel
+ * adds that to u_offset -- and libdir.c's own comment says to leave it "set to
+ * something we'll want to use next time".  So:
+ *
+ *	off == 0	the two dot records, then 9P entries from 9P offset 0
  *	off != 0	9P entries from 9P offset (off - 1)
  *
- * and we return 1 + (the 9P offset we stopped at).  The bias is what keeps
- * offset zero meaning `the very beginning' for both sides at once.  9P offsets
- * must be ones the server handed back, so we stop on an entry boundary and
- * never compute one.
+ * and we return 1 + the 9P offset we stopped at.  The bias is what keeps zero
+ * meaning `the very beginning' for both sides at once.  9P offsets must be
+ * ones the server handed back, so we stop on an entry boundary and never
+ * compute one: an entry that will not fit is un-read by rewinding the cursor.
  */
 int
 fsdirread(f, off, buf, len, offp)
@@ -1161,56 +1285,32 @@ char *buf;
 int len;
 long *offp;
 {
-	struct direct de;
 	N9dir d;
-	register int out;
+	char *p;			/* not register: putent takes its address */
 	long n9off;
-	int n, avail, entry;
+	int n, avail, entry, left;
 
 	if (n9io(f, N9OREAD) < 0)
 		return (-1);
-	if (len < 2 * (int)sizeof(struct direct)) {
-		fserrno = RFENOSPC;
-		return (-1);
-	}
-	out = 0;
+	p = buf;
+	left = len;
 	n9off = off ? off - 1 : 0;
 	if (off == 0) {
-		/*
-		 * ".." IS NOT f's OWN INODE and it matters: pwd identifies the
-		 * parent by inode number.  One extra walk and stat per
-		 * directory read from the start buys a correct answer, and at
-		 * the root the server maps ".." to the root itself, which is
-		 * what a mounted filesystem shows anyway.
-		 */
 		Rfile *up;
+		long upino;
 
-		de.d_ino = f->ino;
-		for (n = 0; n < DIRSIZ; n++)
-			de.d_name[n] = 0;
-		de.d_name[0] = '.';
-		n9copy(buf + out, (char *)&de, sizeof(de));
-		out += sizeof(de);
-
-		de.d_ino = f->ino;
+		upino = f->ino;
 		if (f != rootf && (up = fswalk(f, "..")) != NULL) {
-			de.d_ino = up->ino;
+			upino = up->ino;
 			fsdone(up);
 		}
-		fserrno = 0;
-		for (n = 0; n < DIRSIZ; n++)
-			de.d_name[n] = 0;
-		de.d_name[0] = '.';
-		de.d_name[1] = '.';
-		n9copy(buf + out, (char *)&de, sizeof(de));
-		out += sizeof(de);
+		fserrno = 0;		/* fswalk may have set it; not our error */
+		if (putent(&p, &left, f->ino, ".") < 0
+		 || putent(&p, &left, upino, "..") < 0) {
+			fserrno = RFENOSPC;
+			return (-1);
+		}
 	}
-	/*
-	 * Ask for as much as the reply buffer will hold.  We may not use all of
-	 * it -- the user's buffer decides -- and whatever is left over is read
-	 * again next time from the offset we stop at, which costs one duplicate
-	 * server read per call and keeps the offsets honest.
-	 */
 	avail = msize - N9IOHDR;
 	pstart(Tread);
 	p32(fsp(f)->iofid);
@@ -1230,20 +1330,19 @@ long *offp;
 	 */
 	rlen = rp + n;
 	while (rp < rlen) {
-		if (out + (int)sizeof(struct direct) > len)
-			break;
 		entry = rp;
 		if (gdir(&d) < 0)
 			break;
+		if (putent(&p, &left, d.qpath, d.name) < 0) {
+			rp = entry;		/* un-read it */
+			break;
+		}
 		n9off += rp - entry;
-		de.d_ino = d.qpath;
-		for (n = 0; n < DIRSIZ; n++)
-			de.d_name[n] = 0;
-		for (n = 0; n < DIRSIZ && d.name[n]; n++)
-			de.d_name[n] = d.name[n];
-		n9copy(buf + out, (char *)&de, sizeof(de));
-		out += sizeof(de);
+	}
+	if (p == buf && rp < rlen) {	/* not even one record fitted */
+		fserrno = RFENOSPC;
+		return (-1);
 	}
 	*offp = n9off + 1;
-	return (out);
+	return (p - buf);
 }
