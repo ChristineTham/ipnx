@@ -436,6 +436,41 @@ def test_dirsiz(port, strictport):
     c.close()
 
 
+def test_follow(port):
+    """-L mode: the guest has nowhere to put a symlink, so the server stats
+    through one.  A link that leaves the export is refused at walk time,
+    because following is exactly the operation that could escape."""
+    c = Client(port)
+    c.version()
+    c.attach(0)
+    t, _, b = c.walk(0, 1, ["link"])
+    check("-L: a symlink still walks", t == Rwalk, t)
+    t, _, b = c.stat(1)
+    st, _ = unstat(b, 2)
+    check("-L: it is NOT DMSYMLINK", (st["mode"] & DMSYMLINK) == 0, hex(st["mode"]))
+    check("-L: qid is not QTSYMLINK", (st["qid"][0] & QTSYMLINK) == 0, hex(st["qid"][0]))
+    check("-L: it has the target's length", st["length"] == 13, st["length"])
+    t, _, b = c.open(1)
+    check("-L: and it OPENS", t == Ropen, t)
+    t, _, b = c.read(1, 0, 100)
+    n = struct.unpack("<I", b[:4])[0]
+    check("-L: and reads the target", b[4:4+n] == b"hello, world\n", b[4:4+n])
+    check("-L: a symlink and its target share a qid.path",
+          st["qid"][2] == qidof(c, "hello"), st["qid"][2])
+
+    fserr = c.walk(0, 9, ["escape"])
+    check("-L: a link out of the tree is refused", fserr[0] == Rerror, fserr[0])
+    c.close()
+
+
+def qidof(c, name):
+    c.walk(0, 30, [name])
+    t, _, b = c.stat(30)
+    st, _ = unstat(b, 2)
+    c.clunk(30)
+    return st["qid"][2]
+
+
 def test_write(root, port):
     c = Client(port)
     c.version()
@@ -529,10 +564,11 @@ def main():
     make_tree(ro)
     procs = []
     try:
-        p1, p2, p3 = freeport(), freeport(), freeport()
+        p1, p2, p3, p4 = freeport(), freeport(), freeport(), freeport()
         procs.append(start(ro, p1))
         procs.append(start(ro, p2, ["-T"]))
         procs.append(start(rw, p3, ["-w"]))
+        procs.append(start(ro, p4, ["-L"]))
         print("session")
         test_session(p1)
         print("walk and stat")
@@ -545,6 +581,8 @@ def main():
         test_readdir(p1)
         print("the 14-byte fallback")
         test_dirsiz(p1, p2)
+        print("-L, following symlinks")
+        test_follow(p4)
         print("write, create, wstat, remove")
         test_write(rw, p3)
         print("malformed input")

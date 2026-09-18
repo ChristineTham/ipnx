@@ -11,6 +11,7 @@
       -g  gid to present every file as (default 0)
       -m  largest message to negotiate (default 8216 = 8192 + IOHDRSZ)
       -T  strict 9P: no 14-byte name fallback (see DIRSIZ below)
+      -L  follow symlinks instead of describing them (see SYMLINKS below)
 
 The guest reaches this at 10.0.2.2:<port>.  Nothing is forwarded: SLiRP
 rewrites every address inside its virtual network to host loopback, so
@@ -40,6 +41,20 @@ macOS or inside an iPad, which are this project's actual hosts.  Measured, so
 that nobody re-opens this by guessing: diod 1.0.24 answers Tversion("9P2000")
 and Tversion("9P2000.u") alike with Rlerror EIO, and only "9P2000.L" gets an
 Rversion.
+
+SYMLINKS, AND WHY -L EXISTS.  9P2000.u can describe a symlink -- DMSYMLINK
+with the target in the extension field -- and by default this server does,
+because that is what the dialect is for.  The guest cannot use it.  netb's
+<rf.h> gives an Rfile exactly two types, RFTREG and RFTDIR, so 9pfs.c has
+nowhere to put a third; it maps DMSYMLINK to a regular file, and then the
+Topen fails because a walk here never resolves a final symlink and the open
+carries O_NOFOLLOW.  The result is a file the guest can see and cannot read.
+With -L the server stats THROUGH a symlink instead, so the guest sees the
+target as an ordinary file or directory and never learns a link was involved
+-- which is what netfsd did and what u9fs does.  Containment is checked on the
+RESOLVED path in that mode, because following is exactly the operation that
+could otherwise leave the export.  A dangling link still appears, described as
+the broken link it is, rather than failing the whole directory read.
 
 DIRSIZ, AND THE ONE PLACE THIS IS NOT STRICT 9P.  V10's `struct direct' has a
 14-byte name field, so the client cannot hand userland a longer name than
@@ -248,6 +263,7 @@ class Export(object):
         self.uid = cfg["uid"]
         self.gid = cfg["gid"]
         self.strict = cfg["strict"]
+        self.follow = cfg["follow"]
         self.uname = "root" if self.uid == 0 else str(self.uid)
         self.gname = "root" if self.gid == 0 else str(self.gid)
         rst = os.lstat(self.root)
@@ -295,6 +311,8 @@ class Export(object):
             raise NineError(E.EACCES, "outside the export")
         try:
             os.lstat(new)
+            if self.follow and not self.inside(new):
+                raise NineError(E.EACCES, "symlink leaves the export")
             return new
         except OSError as exc:
             if exc.errno != E.ENOENT:
@@ -317,10 +335,28 @@ class Export(object):
 
     # -- attributes -------------------------------------------------------
     def lstat(self, path):
+        """The stat every other method uses.  With -L this follows a symlink
+        and falls back to the link itself when the target is missing, so a
+        dangling link is reported rather than turning a directory read into an
+        error."""
         try:
+            if self.follow:
+                try:
+                    return os.stat(path)
+                except OSError:
+                    return os.lstat(path)
             return os.lstat(path)
         except OSError as exc:
             raise oserror(exc)
+
+    def inside(self, path):
+        """Is the FULLY RESOLVED path inside the export?  Only asked in -L
+        mode, where following a link is the one operation that can leave."""
+        try:
+            rp = os.path.realpath(path)
+        except OSError:
+            return False
+        return rp == self.root or rp.startswith(self.root + os.sep)
 
     def qid(self, st):
         """qid.path must be unique per file for the life of the server and
@@ -640,7 +676,10 @@ class Conn(object):
             # O_NOFOLLOW: a walk never resolves a final symlink (lstat), so
             # opening one here would be the one place the export could be
             # escaped through a link the client can see but must not follow.
-            flags |= getattr(os, "O_NOFOLLOW", 0)
+            # In -L mode the link was resolved and containment-checked at walk
+            # time, so following it here is the whole point.
+            if not self.ex.follow:
+                flags |= getattr(os, "O_NOFOLLOW", 0)
             try:
                 fd = os.open(f.path, flags)
                 f.f = os.fdopen(fd, "r+b" if acc in (ORDWR, OWRITE) else "rb")
@@ -916,7 +955,8 @@ def serve_forever(cfg):
 
 def main(argv):
     cfg = {"port": 9200, "readonly": True, "verbose": False, "uid": 0,
-           "gid": 0, "msize": DEFMSIZE, "strict": False, "root": None}
+           "gid": 0, "msize": DEFMSIZE, "strict": False, "follow": False,
+           "root": None}
     args = list(argv)
     while args:
         a = args.pop(0)
@@ -934,6 +974,8 @@ def main(argv):
             cfg["msize"] = int(args.pop(0))
         elif a == "-T":
             cfg["strict"] = True
+        elif a == "-L":
+            cfg["follow"] = True
         elif a in ("-h", "--help"):
             sys.stderr.write(__doc__)
             return 0
