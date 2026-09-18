@@ -311,6 +311,17 @@ def test_walk_stat(port):
 
     t, _, b = c.walk(0, 9, ["sub/deep"])
     check("a slash in a walk name is refused", t == Rerror, t)
+
+    # The guest uses qid.path as an i-number and V10's ino_t is 16 bits, so
+    # the paths have to stay small and the root has to be ROOTINO.
+    t, _, b = c.walk(0, 10, [])
+    t, _, b = c.stat(10)
+    st, _ = unstat(b, 2)
+    check("the export root's qid.path is ROOTINO (2)", st["qid"][2] == 2, st["qid"])
+    t, _, b = c.stat(2)
+    st2, _ = unstat(b, 2)
+    check("other qid.paths are dense and fit a short",
+          3 <= st2["qid"][2] < 65535, st2["qid"])
     c.close()
 
 

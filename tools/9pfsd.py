@@ -230,12 +230,28 @@ class Export(object):
 
     def __init__(self, cfg):
         self.root = cfg["root"]
+        # THE DENSE qid.path TABLE, AND WHY IT IS BACK.  9P's qid.path is 8
+        # bytes and (st_dev,st_ino) would fit it with room to spare, which is
+        # what this server did first.  The guest cannot use it.  V10's ino_t is
+        # `unsigned short' (sys/types.h:40), so `struct direct' is 16 bytes and
+        # `struct stat' carries a 16-bit st_ino -- a client handed a 64-bit
+        # path has to fold it, and folding 10,000 files into 16 bits collides
+        # about as often as not.  So the paths are handed out dense and small,
+        # from 3 upward, exactly as netfsd's synthetic inode namespace did and
+        # for exactly the same reason.  2 is reserved: param.h:51 is
+        # `#define ROOTINO ((ino_t)2) /* i number of all roots */' and every
+        # mounted root must carry it.
+        self.qidpaths = {}
+        self.nextpath = 3
+        self.qidlock = threading.Lock()
         self.readonly = cfg["readonly"]
         self.uid = cfg["uid"]
         self.gid = cfg["gid"]
         self.strict = cfg["strict"]
         self.uname = "root" if self.uid == 0 else str(self.uid)
         self.gname = "root" if self.gid == 0 else str(self.gid)
+        rst = os.lstat(self.root)
+        self.qidpaths[(rst.st_dev, rst.st_ino)] = 2      # ROOTINO
 
     # -- containment ------------------------------------------------------
     def contains(self, path):
@@ -308,17 +324,23 @@ class Export(object):
 
     def qid(self, st):
         """qid.path must be unique per file for the life of the server and
-        qid.version must change when the contents do.  (dev,ino) gives the
-        first in 64 bits with room to spare; mtime gives the second.  netfsd
-        had to invent a synthetic 16-bit namespace for this because netfs
-        inode numbers were shorts -- 9P's 8-byte path needs no such table,
-        and dropping it drops the only unbounded allocation in that server."""
+        qid.version must change when the contents do.  The table above gives
+        the first, small enough for the guest to use as an i-number; mtime
+        gives the second."""
         t = QTFILE
         if S.S_ISDIR(st.st_mode):
             t = QTDIR
         elif S.S_ISLNK(st.st_mode):
             t = QTSYMLINK
-        path = (((st.st_dev & 0xFFFFFFFF) << 32) ^ st.st_ino) & 0xFFFFFFFFFFFFFFFF
+        key = (st.st_dev, st.st_ino)
+        path = self.qidpaths.get(key)
+        if path is None:
+            with self.qidlock:
+                path = self.qidpaths.get(key)
+                if path is None:
+                    path = self.nextpath
+                    self.nextpath += 1
+                    self.qidpaths[key] = path
         return (t, int(st.st_mtime) & 0xFFFFFFFF, path)
 
     def mode(self, st):
