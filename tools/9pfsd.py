@@ -17,16 +17,26 @@ The guest reaches this at 10.0.2.2:<port>.  Nothing is forwarded: SLiRP
 rewrites every address inside its virtual network to host loopback, so
 10.0.2.2 IS 127.0.0.1 as far as a connection is concerned.
 
-WHY 9P AND NOT netfs.  netfs was Weinberger's, it is in every V8 and V10
-kernel, and it was never going to be in anything else -- one protocol, one
-client, and a server we had to write twice (Swift for the app, python3 for a
-host without Swift) with a 563-line specification standing between them to
-keep the two honest.  9P is the same idea with a published wire format and
-other implementations to check ours against.  The cost is that the guest needs
-a client, because there is none: v10/usr/src/cmd/u9fs is a 9P *server* that
-Bell Labs ran on V10 to serve Plan 9 machines, and it speaks the original
-protocol (Tclone/Tclwalk/Tsession, NAMELEN 28, a fixed 116-byte Dir), not
-9P2000.  v10/usr/sys/fs/net9.c is that client.
+WHY 9P AND NOT netfs.  netfs was Weinberger's, and it was never going to be in
+anything but a Research Unix kernel -- one protocol, one client, and a server
+we had to write twice (Swift for the app, python3 for a host without Swift)
+with a 563-line specification standing between them to keep the two honest.
+9P is the same idea with a published wire format and other implementations to
+check ours against, which earned its keep on the first run: 9fans.net/go/plan9
+found a dialect bug here that neither of our own test suites could see.
+
+THIS SERVES V10 ONLY, AND netfs IS NOT RETIRED.  V8 has only `neta', the first
+of the two netfs protocols, and no tape carries a libneta -- so the trick V10
+uses is not available there and V8 would need a kernel 9P client for no gain.
+netfs/, tools/netfsd.py and docs/netfs-protocol.md are V8's and stay.
+
+THE GUEST SIDE IS v10/usr/src/build/src/9pfs.c AND IT IS NOT A KERNEL CLIENT.
+There is no 9P client in any Research Unix kernel: v10/usr/src/cmd/u9fs is a
+9P *server* Bell Labs ran on V10 to serve Plan 9 machines, and it speaks the
+original protocol (Tclone/Tclwalk/Tsession, NAMELEN 28, a fixed 116-byte Dir)
+rather than 9P2000.  None is needed, because V10's fmount(2) takes a FILE
+DESCRIPTOR: netfs/libnetb/runfs.c pipes a local user process onto a mount
+point, so 9pfs speaks netb to the kernel and 9P to this server.
 
 WHY 9P2000.u AND NOT 9P2000 OR 9P2000.L.  The deciding field is Rerror's.
 Plain 9P2000 returns only a string, and the client half of this is a 1989

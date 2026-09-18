@@ -23,11 +23,15 @@
  *	(fs/netb.c)                    (this file)                 (tools/9pfsd.py)
  *
  * and the netb half is BELL LABS' CODE ON BOTH SIDES: fs/netb.c in the kernel,
- * netfs/libnetb in userland.  We implement neither.  What retiring netfs
- * actually means for this project is retiring OUR netfs -- the Swift NetFS
- * target, tools/netfsd.py and the 563-line protocol document that existed to
- * keep those two honest -- and all of that goes.  netb survives as a detail
+ * netfs/libnetb in userland.  We implement neither.  netb survives as a detail
  * between two programs that already shipped with the machine.
+ *
+ * NETFS IS NOT BEING RETIRED, and that is a decision rather than an oversight.
+ * V8 has only neta -- the first of Weinberger's two protocols -- and no tape
+ * carries a libneta, so the trick this file depends on is not available there:
+ * V8 would need a kernel 9P client, for no gain.  So netfs/, tools/netfsd.py
+ * and docs/netfs-protocol.md are V8's and stay exactly as they are, 9P is
+ * V10's, and the app will have to serve both.
  *
  * WHAT THIS FILE IS, THEREFORE: the thirteen callbacks in <rf.h>, expressed as
  * 9P messages.  libnetb supplies main() (netfs/libnetb/setupmain.c), the setup

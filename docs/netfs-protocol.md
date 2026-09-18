@@ -1,5 +1,12 @@
 # The Research Unix netfs wire protocol
 
+> **This is V8's protocol.** V10's share is 9P — `tools/9pfsd.py` on the host and
+> `v10/usr/src/build/src/9pfs.c` on the guest — and moved there because V10's `fmount(2)`
+> takes a file descriptor, so a user process on a pipe can serve a mount. V8 cannot follow:
+> it has only `neta`, no tape carries a `libneta`, and moving it would mean writing a kernel
+> 9P client for no gain. So netfs stays, this document stays, and both servers ship. See
+> *Two share protocols* in `CLAUDE.md`.
+
 **Phase N4. Status: derived and measured, 2026-08-10.** Not yet exercised
 against a live server — that is N5.
 

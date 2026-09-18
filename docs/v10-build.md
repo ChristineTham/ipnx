@@ -41,13 +41,13 @@ the moment the bootstrap is done. The host fetches at all because TUHS
 answers plain HTTP with a 301 to https and **V10 has no TLS**, and because **gzip is 1992 and
 bzip2 1996**, so a 1989 machine can read neither. Decompressing is not extracting: nothing on
 the Mac decides anything about the shape of the tree. `mkv10` extracts them on the machine,
-reading them straight off the netfs share if you name it. What the host does:
+reading them straight off the share if you name it. What the host does:
 
 | | |
 |---|---|
 | `tools/v10-tapes.sh` | fetch the six TUHS archives and decompress them to plain `tar` in `v10tapes/` |
 | `tools/v10-reset.sh` | `image/*.tar.bz2` → `run/`: both disks uncompressed, and the boot ROM beside them |
-| `tools/v10-launch.sh` | boot `run/v10` with `run/v10-golden` on the second drive and both netfs shares up |
+| `tools/v10-launch.sh` | boot `run/v10` with `run/v10-golden` on the second drive and both shares up |
 | `tools/v10-golden.sh` | boot a throwaway copy of the golden, one drive, no shares |
 | `tools/v10-proto.py` | the kernel config and `sys/lib/tab` → `build/proto-dev` |
 | `tools/v10-makedev.py` | `build/proto-dev` → `build/mkdev` |
@@ -108,7 +108,7 @@ Five do the work. Everything else in the directory serves them.
 | `taripnx` | this machine's live `/usr` → `/usr/ipnx/ipnx.tar` | when a machine is worth preserving |
 
 `updatebuild` is the sixth and is not part of a build: it refreshes `/usr/src/build` from the
-repository over the netfs share, and it is **the only script here that touches `/n`**. The inner
+repository over the share, and it is **the only script here that touches `/n`**. The inner
 loop is `updatebuild; ipnxbuild`.
 
 `ipnxinstall` installs what `ipnxbuild` deliberately does not — the files that belong to the
@@ -261,9 +261,17 @@ repair.
 
 `build/src` holds the sources this project wrote, which no tape carries:
 
-- **`nafsmnt.c`** — mounts a netfs share. V10 removed `gmount` and `fmount` takes an open file
-  descriptor, so the connection is named by the fd; `fstab(5)` has five fields and none holds a
-  host or a port, so this cannot be reached through `/etc/mount -a`.
+- **`9pfs.c`** — **the share.** It serves a remote 9P2000.u tree to this machine's own netb
+  client, which is what lets the host run a standard 9P server and this project implement no
+  netfs at all. No kernel change was needed: `fmount(2)` takes an open **file descriptor**, and
+  `netfs/libnetb/runfs.c` pipes a local user process onto a mount point, so the far end of a
+  mount can be a program. `/etc/rc` starts it as `runfs /n/macos /etc/9pfs 10.0.2.2 9200`.
+  It is the thirteen `<rf.h>` callbacks expressed as 9P messages; `libnetb` does the netb wire,
+  the tag table, the permission checks and the dispatch loop. See its header comment.
+- **`nafsmnt.c`** — mounts a **netfs** share, and stays. It is what a golden older than `9pfs`
+  boots with, and netfs is still V8's protocol. V10 removed `gmount` and `fmount` takes an open
+  file descriptor, so the connection is named by the fd; `fstab(5)` has five fields and none
+  holds a host or a port, so neither mounter can be reached through `/etc/mount -a`.
 - **`ipnx-v10.m`** — the kernel configuration: a VAX-11/780 with an **RA73** root, 128 MB,
   sixteen MSCP disks, thirty-two DZ11 lines and an Interlan.
 - **`streamio.c`** — the tape's `lsys/os/streamio.c` plus the four repairs netfs needs, carried
@@ -319,7 +327,8 @@ learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`.
 
 **Then it was checked against a running machine**, which is why that list no longer includes
 `psych` and `rain`. open-simh builds on a plain Linux host, the committed golden boots on it
-with one disk and no netfsd, and `tools/v10drive.py` runs a script of shell commands on it.
+with one disk and no share at all, and `tools/v10drive.py` runs a script of shell commands on
+it.
 Every gap the reading claimed is real on the machine; three of the fixes for them were not.
 `macrunch` did not parse under V10's `sh` at all — repaired in `build/patch`, and `man`,
 `-ms` and `-mm` then work. `psych` and `rain` do not link, and this file's own notes already

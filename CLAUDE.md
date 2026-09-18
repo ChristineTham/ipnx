@@ -27,7 +27,7 @@ The repository is four things at once, and confusing them is the main way to get
 | `app/ipnx/` | One Swift/SwiftUI source folder, two targets: `ipnx` (iPadOS) and `ipnxMac`. Every file is shared. |
 | `libsimh/` | CMake wrapper turning an open-simh checkout into `SimhVAX.xcframework`. `patches/` adds the Interlan NI1010 driver and three `UNIT_IDLE` flags. Deliberately built **without** `SIM_ASYNCH_IO`. |
 | `libdmd/` | dmd_core (Rust) → `DmdCore.xcframework`. Patches live in `tools/dmdbridge/patches/`. |
-| `netfs/` | SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency — and builds on Linux, which is what that rule was for. `tools/netfsd.py` is the same server in python3, for a host with no Swift. |
+| `netfs/` | **V8's share.** SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency — and builds on Linux, which is what that rule was for. `tools/netfsd.py` is the same server in python3, for a host with no Swift. |
 | `v8/` | Our V8 tree, laid out as the guest filesystem (`v8/usr/src/cmd/ls.c` is `/usr/src/cmd/ls.c`). `v8/mk/` is ours — V8 never had a world build. |
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
@@ -79,7 +79,9 @@ bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web ser
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
 bash tools/v10-golden.sh                # V10: does the golden still boot to login
-python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator
+python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
+python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
+bash tools/9pfs-test.sh                 # the GUEST's 9P client, driven on the host
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
 ```
 
@@ -121,20 +123,24 @@ reading it and checking it by running it, and three of this project's own rules 
 ways only the second kind of check found. **Always boot a fresh copy**, never
 `run/v10-golden` itself.
 
-**And the share works there too**, which is what lets `updatebuild` run: `tools/netfsd.py` is
-a second netfs server in python3 with no dependency at all, for hosts that cannot build the
-Swift one. Same arguments, same protocol, same read-only default:
+**And the share works there too**, which is what lets `updatebuild` run. **V10's share is 9P;
+V8's is netfs.** Both servers stay, and the split is deliberate — see *Two share protocols*
+below.
 
 ```bash
-python3 tools/netfsd.py    -p 9200 /path/to/ipnx &   # /n/macos, read-only
-python3 tools/netfsd.py -w -p 9201 "$HOME"       &   # /n/home,  read/write
+python3 tools/9pfsd.py -L    -p 9200 /path/to/ipnx &   # /n/macos, read-only
+python3 tools/9pfsd.py -L -w -p 9201 "$HOME"       &   # /n/home,  read/write
 ```
 
-`/etc/rc` mounts both at boot (`nafsmnt 10.0.2.2 9200 /n/macos 64`), so start them before
-booting. **Two servers of one protocol is a real risk and it is managed rather than
-ignored**: `docs/netfs-protocol.md` is the authority for the wire, both implementations quote
-its tables field by field, and where behaviour rather than layout is at stake the Python says
-which Swift comment it is following.
+`-L` matters: 9P2000.u can describe a symlink and netb's `<rf.h>` has nowhere to put one, so
+without it a link in the shared tree is visible and unreadable. `/etc/rc` mounts both at boot
+with `runfs /n/macos /etc/9pfs 10.0.2.2 9200`, so start the servers before booting.
+
+**The committed golden still mounts with `nafsmnt`**, because `image/v10-golden.tar.bz2.a?`
+predates this and carries its own `/etc/rc`. So a golden needs `tools/netfsd.py` on those
+ports and a freshly built disk needs `tools/9pfsd.py` on them; they cannot both be served at
+once. That ends when the golden is rebuilt, and `tools/v10-launch.sh` and `v10-golden.sh`
+still start `netfsd` until it is.
 
 `image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
 working** disks restored from them. Two directories, on purpose.
@@ -226,14 +232,55 @@ on the Massbus started by `load -o bootV8 0; run 2`; V10 is an RA73 on MSCP/UDA5
 by `run FA02`. The resume path is a *different* list from the boot path on both machines.
 The app shell is edition-agnostic by design: it knows about machines, not editions.
 
-### netfs, and why it works inside the iOS sandbox
+### The share, and why it works inside the iOS sandbox
+
+SIMH's SLiRP rewrites any address inside its virtual network to host loopback, so the guest
+dialling `10.0.2.2:PORT` arrives at `127.0.0.1:PORT` inside the same process — no port
+forwarding, no host interface, no entitlement. `/n/macos` is served read-only (the absence of
+`-w` is the whole guard); `/n/home` is read/write.
+
+### Two share protocols, and why both stay
+
+**V8 speaks netfs. V10 speaks 9P. Neither is going away.**
 
 Weinberger's netfs client has been compiled into every V8 kernel since 1985 with nothing to
-talk to. `netfs/` is a server for it. SIMH's SLiRP rewrites any address inside its virtual
-network to host loopback, so the guest dialling `10.0.2.2:PORT` arrives at
-`127.0.0.1:PORT` inside the same process — no port forwarding, no host interface, no
-entitlement. `/n/macos` is served read-only (the absence of `-w` is the whole guard);
-`/n/home` is read/write.
+talk to, and `netfs/` is a server for it. V8 has only `neta` — the first of the two netfs
+protocols — and no tape carries a `libneta`, so V8 cannot be moved off it without writing a
+kernel client. It is not worth it, so `netfs/`, `tools/netfsd.py` and
+`docs/netfs-protocol.md` are V8's and stay exactly as they are.
+
+V10 is different, and the reason is `fmount(2)`: **it takes a file descriptor**, so the far
+end of a mount can be a local user process on a pipe. `netfs/libnetb/runfs.c` is the
+mechanism — `pipe(); fork(); child: fmount(NBFS, pipefd, mpoint, dev); parent: execv(server)`
+— which is the FUSE arrangement about twenty years early. So V10 gets 9P with no kernel
+change at all:
+
+```
+V10 kernel  --netb over a pipe-->  9pfs  --9P2000.u over TCP-->  host
+(fs/netb.c)              (build/src/9pfs.c)             (tools/9pfsd.py)
+```
+
+`9pfs` is the thirteen `<rf.h>` callbacks expressed as 9P messages. The netb half is **Bell
+Labs' code on both sides** — `fs/netb.c` in the kernel, `netfs/libnetb` in userland, the
+latter already built and installed by our own mkfile — so this project implements neither
+half of it.
+
+**9P2000.u, not 9P2000 and not 9P2000.L.** The deciding field is `Rerror`'s: plain 9P2000
+returns only a string, and the client is a 1989 kernel whose entire error convention is
+`u.u_error = <errno>`. `.u` adds the number. `.L` would too, but it is three times the
+surface and Linux-shaped, and diod — the one 9P server Ubuntu packages — does not run on
+macOS or inside an iPad. Measured, so nobody re-opens it by guessing: diod 1.0.24 answers
+`Tversion("9P2000")` and `Tversion("9P2000.u")` alike with `Rlerror` EIO.
+
+Two things a 9P share cannot do that a netfs one could: **there is no `Tlink`**, so a hard
+link fails with `EXDEV` (checked — every `ln` in `build/mkfile` is on a local disk path and
+`updatebuild` uses `cp`, so nothing in the workflow needs one); and a **symlink needs `-L`**,
+because `<rf.h>` gives an `Rfile` exactly two types and neither is a link.
+
+**The app still serves netfs and only netfs.** `FileShare.swift` compiles the Swift `NetFS`
+target in-process and cannot shell out to a server, so shipping 9P to V10 means writing a
+Swift 9P2000.u server beside the netfs one — not replacing it, since V8 needs netfs from the
+same app.
 
 ### The V8 build
 

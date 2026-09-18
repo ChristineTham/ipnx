@@ -1433,9 +1433,12 @@ $ETC/nafsmnt: $CMD/nafsmnt
 # tag table, the permission checks); -lin for tcp_sock/tcp_connect/in_address
 # and -lipc for errstr, exactly as nafsmnt needs them.
 #
-# nafsmnt STAYS beside it rather than being deleted, and not out of sentiment:
-# a golden disk older than this change has no 9pfs on it, and tools/v10drive.py
-# boots such disks.  It goes when nothing serves neta any more.
+# nafsmnt STAYS beside it, permanently.  Two reasons, and the second is the one
+# that settles it: a golden disk older than this change has no 9pfs on it and
+# tools/v10drive.py boots such disks; and netfs is not being retired at all --
+# V8 has only neta, no tape carries a libneta, and moving V8 off it would mean
+# writing a kernel client for no gain.  So netfs is V8's protocol and 9P is
+# V10's, both stay, and this machine can speak either.
 $CMD/9pfs: $PREP $CMD/9pfs.c $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
 	cd $CMD; cc -O   -o 9pfs 9pfs.c -lnetb -lin -lipc || echo '9pfs: FAILED'
 
