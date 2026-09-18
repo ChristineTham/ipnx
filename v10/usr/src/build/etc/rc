@@ -95,16 +95,23 @@ then
 	/etc/tcpconfig /dev/ip6 >/dev/null 2>&1 &
 	echo "network: il0 10.0.2.15, gateway 10.0.2.2"
 
-	# The host's two shares, v8/etc/rc:115-116's own ports and mount ids:
-	# FileShare.swift:46,49 give .macos 9200/64 and .home 9201/65, so the
-	# same app shares serve a v10 machine unchanged.  netfs cannot be
-	# described in fstab -- nafsmnt takes a host and a port, not a block
-	# device, and fstab(5) has no field for either.
+	# The host's two shares.  FileShare.swift:46,49 give .macos port 9200
+	# and .home 9201, and the host now serves 9P2000.u on both -- so these
+	# are runfs, not nafsmnt: runfs pipes /etc/9pfs onto the mount point
+	# with fmount(2) and 9pfs speaks 9P to the host.  A share cannot be
+	# described in fstab either way, since fstab(5) has no field for a host
+	# or a port.
+	#
+	# NO MOUNT ID HERE, unlike nafsmnt's 64 and 65: runfs picks the device
+	# number itself, walking 200 down to 100 until fmount stops saying
+	# EBUSY, so two shares can no longer collide by bookkeeping error.
 	#
 	# Backgrounded and silenced because a share the user has not chosen is
-	# simply not listening, and a boot must not wait on one.
-	/etc/nafsmnt 10.0.2.2 9200 /n/macos 64 >/dev/null 2>&1 &
-	/etc/nafsmnt 10.0.2.2 9201 /n/home  65 >/dev/null 2>&1 &
+	# simply not listening, and a boot must not wait on one.  runfs is the
+	# server's own process -- it execs 9pfs over itself -- so these stay in
+	# the background for as long as the mount lives.
+	/etc/runfs /n/macos /etc/9pfs 10.0.2.2 9200 >/dev/null 2>&1 &
+	/etc/runfs /n/home  /etc/9pfs 10.0.2.2 9201 >/dev/null 2>&1 &
 fi
 
 # rc MUST EXIT 0.  init.c:163-165 is `while(wait(&status) != pid); if(status)

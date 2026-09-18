@@ -125,6 +125,13 @@ done
 # nafsmnt is ours -- no v10 tape has it.  Staged like the v8 imports.
 cp $GEN/src/nafsmnt.c $SRC/cmd/nafsmnt.c || exit 1
 
+# 9pfs is ours too, and it is what replaces nafsmnt: the host serves 9P now and
+# this is the program that speaks it.  It needs no kernel change, because V10
+# mounts a FILE DESCRIPTOR -- netfs/libnetb/runfs.c pipes a local server onto a
+# mount point with fmount(2) -- so the kernel keeps talking netb to a process
+# that talks 9P to the host.  See the file's own header comment.
+cp $GEN/src/9pfs.c $SRC/cmd/9pfs.c || exit 1
+
 # libin's mkfile makes every archive member depend on cyntax, its lint, which is
 # not built here; libipc's mkfile makes no such demand and is why that one built.
 cd $SRC/ipc/libin || exit 1

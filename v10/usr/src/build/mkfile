@@ -158,7 +158,7 @@ SRCOK=dirs $CMD/.ranlib $CMD/.patched
 # bootstrapping one into a blank disk with nothing to bootstrap it from.
 LCCOK=/usr/bin/lcc /usr/lib/rcc /usr/lib/gcc-cpp
 BIN=$DEST/adb $DEST/ar $DEST/arff $DEST/as $DEST/cat $DEST/cc $DEST/chmod $DEST/cmp $DEST/cp $DEST/csh $DEST/date $DEST/dd $DEST/df $DEST/diff $DEST/du $DEST/e $DEST/echo $DEST/ed $DEST/false $DEST/grep $DEST/kill $DEST/ld $DEST/ln $DEST/login $DEST/ls $DEST/make $DEST/mkdir $DEST/mt $DEST/mv $DEST/newgrp $DEST/nice $DEST/nm $DEST/nohup $DEST/od $DEST/passwd $DEST/pr $DEST/ps $DEST/pstat $DEST/pwd $DEST/rm $DEST/rmdir $DEST/sh $DEST/size $DEST/stty $DEST/sync $DEST/tar $DEST/test $DEST/time $DEST/track $DEST/true $DEST/vmstat $DEST/who $DEST/write $DEST/'['
-ETCF=$ETC/login $ETC/down $ETC/dipconfig $ETC/tcpconfig $ETC/ac $ETC/accton $ETC/chown $ETC/clri $ETC/cron $ETC/dcheck $ETC/dmesg $ETC/dskcpy $ETC/fsck $ETC/getty $ETC/halt $ETC/hideblock $ETC/icheck $ETC/init $ETC/mkbitfs $ETC/mkfs $ETC/mknod $ETC/mount $ETC/ncheck $ETC/quot $ETC/reboot $ETC/renice $ETC/sa $ETC/savecore $ETC/setlog $ETC/showq $ETC/su $ETC/smash $ETC/swapon $ETC/umount $ETC/update $ETC/wall $ETC/termcap $ETC/finddev $ETC/install $ETC/mklost+found $ETC/shutdown $ETC/group $ETC/whoami $ETC/mtab $ETC/utmp $ETC/ttys $ETC/fstab $ETC/motd $ETC/crontab $ETC/passwd $ETC/services $ETC/hosts $ETC/networks $ETC/rc $ETC/512restor $ETC/bad144 $ETC/dumpdir $ETC/fstat $ETC/restor $ETC/rp07dump $ETC/rp07rest $ETC/nafsmnt $ETC/mkimage
+ETCF=$ETC/login $ETC/down $ETC/dipconfig $ETC/tcpconfig $ETC/ac $ETC/accton $ETC/chown $ETC/clri $ETC/cron $ETC/dcheck $ETC/dmesg $ETC/dskcpy $ETC/fsck $ETC/getty $ETC/halt $ETC/hideblock $ETC/icheck $ETC/init $ETC/mkbitfs $ETC/mkfs $ETC/mknod $ETC/mount $ETC/ncheck $ETC/quot $ETC/reboot $ETC/renice $ETC/sa $ETC/savecore $ETC/setlog $ETC/showq $ETC/su $ETC/smash $ETC/swapon $ETC/umount $ETC/update $ETC/wall $ETC/termcap $ETC/finddev $ETC/install $ETC/mklost+found $ETC/shutdown $ETC/group $ETC/whoami $ETC/mtab $ETC/utmp $ETC/ttys $ETC/fstab $ETC/motd $ETC/crontab $ETC/passwd $ETC/services $ETC/hosts $ETC/networks $ETC/rc $ETC/512restor $ETC/bad144 $ETC/dumpdir $ETC/fstat $ETC/restor $ETC/rp07dump $ETC/rp07rest $ETC/nafsmnt $ETC/mkimage $ETC/9pfs $ETC/runfs
 # strip is builder-relative for the same reason as LCCOK: the recipes below run
 # `strip x' and it is this machine's strip that runs.  $SRCOK stays $ROOT-side --
 # `dirs $CMD/.ranlib $CMD/.patched' is the readiness of the SOURCE TREE being
@@ -1425,6 +1425,44 @@ $CMD/nafsmnt: $PREP $CMD/nafsmnt.c $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
 $ETC/nafsmnt: $CMD/nafsmnt
 	cd $CMD; cp nafsmnt $ETC/nafsmnt || echo 'nafsmnt: FAILED'
 	cd $CMD; strip $ETC/nafsmnt || echo 'nafsmnt: install FAILED'
+
+# 9pfs IS THE SHARE NOW.  It serves a remote 9P2000.u tree to this machine's own
+# netb client, which means the host runs a standard 9P server and nothing here
+# implements netfs -- fs/netb.c and netfs/libnetb are both Bell Labs' and both
+# already present.  -lnetb for the server half (main(), the dispatch loop, the
+# tag table, the permission checks); -lin for tcp_sock/tcp_connect/in_address
+# and -lipc for errstr, exactly as nafsmnt needs them.
+#
+# nafsmnt STAYS beside it rather than being deleted, and not out of sentiment:
+# a golden disk older than this change has no 9pfs on it, and tools/v10drive.py
+# boots such disks.  It goes when nothing serves neta any more.
+$CMD/9pfs: $PREP $CMD/9pfs.c $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
+	cd $CMD; cc -O   -o 9pfs 9pfs.c -lnetb -lin -lipc || echo '9pfs: FAILED'
+
+$ETC/9pfs: $CMD/9pfs
+	cd $CMD; cp 9pfs $ETC/9pfs || echo '9pfs: FAILED'
+	cd $CMD; strip $ETC/9pfs || echo '9pfs: install FAILED'
+
+# runfs IS ON THE TAPE AND NOTHING EVER BUILT IT.  libnetb/mkfile has a bare
+# `runfs:' target that no `all' line reaches, which is why libnetb.a shipped and
+# its two ancillary programs did not.  It is the mounter: pipe(), fork(), the
+# child runs the uid/gid handshake and calls fmount(NBFS, pipefd, mpoint, dev),
+# the parent execs the server.  The DEVICE NUMBER IS CHOSEN BY runfs, looping
+# 200 down to 100 until fmount stops answering EBUSY, so unlike nafsmnt the
+# caller does not have to keep a register of mount ids.
+#
+# setup(8) is the other one and is deliberately NOT built: every transport it
+# knows is Datakit (ipcopen, ipcexec, ipcrexec), the network V10 lost in 1985.
+# runfs needs none of that -- a pipe is a pipe.
+P_SRC_netfs_libnetb_runfs:V:	$PREP
+	cd $SRC/netfs/libnetb; mk runfs || echo 'runfs: FAILED'
+
+$SRC/netfs/libnetb/runfs: P_SRC_netfs_libnetb_runfs
+	test -f $SRC/netfs/libnetb/runfs || echo '$SRC/netfs/libnetb/runfs: the package did not produce it'
+
+$ETC/runfs: $SRC/netfs/libnetb/runfs
+	cd $SRC/netfs/libnetb; cp runfs $ETC/runfs || echo 'runfs: FAILED'
+	cd $SRC/netfs/libnetb; strip $ETC/runfs || echo 'runfs: install FAILED'
 
 # The one file this project adds to root.
 $ETC/mkimage: $PREP
