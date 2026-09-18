@@ -136,11 +136,14 @@ python3 tools/9pfsd.py -L -w -p 9201 "$HOME"       &   # /n/home,  read/write
 without it a link in the shared tree is visible and unreadable. `/etc/rc` mounts both at boot
 with `runfs /n/macos /etc/9pfs 10.0.2.2 9200`, so start the servers before booting.
 
-**The committed golden still mounts with `nafsmnt`**, because `image/v10-golden.tar.bz2.a?`
-predates this and carries its own `/etc/rc`. So a golden needs `tools/netfsd.py` on those
-ports and a freshly built disk needs `tools/9pfsd.py` on them; they cannot both be served at
-once. That ends when the golden is rebuilt, and `tools/v10-launch.sh` and `v10-golden.sh`
-still start `netfsd` until it is.
+**The committed golden carries `9pfs` and mounts with `runfs`** — rebuilt 18 Sep 2026 — so
+`tools/v10-launch.sh` starts `tools/9pfsd.py` and nothing on the V10 side wants `netfsd` any
+more. `/etc/nafsmnt` is still on the disk and still built, because a netfs share is one
+command away if it is ever wanted; nothing mounts one by default.
+
+A boot with **no** server listening is fine: `/etc/rc` backgrounds both mounts and silences
+them, so the machine reaches `login:` with `/n/macos` and `/n/home` simply empty. That is
+checked, not assumed.
 
 `image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
 working** disks restored from them. Two directories, on purpose.
