@@ -99,8 +99,22 @@ class Guest:
         `static char canonb[CANBSIZ]'.  A 330-byte chmod wedged this driver --
         the line was truncated, the shell never saw a complete command, and the
         marker never printed, which reads exactly like a slow machine.
+
+        AND A BACKGROUNDED COMMAND TAKES NO SEMICOLON.  `cmd &; echo MARKER' is
+        a syntax error to V10's sh --
+
+            syntax error: `newline or ;' unexpected
+
+        -- because `&' already terminates the command, so the `;' follows
+        nothing.  The marker then never prints and this waits out the whole
+        timeout, which is how a run that had already done its work sat there
+        for forty minutes looking like a slow mount.  `cmd & echo MARKER' is
+        the correct form and the only difference is the separator.  It matters
+        because anything that serves a mount has to be backgrounded: runfs
+        execs the file server over itself and never returns.
         """
-        full = "%s; echo IP'NX'DONE%d" % (line, n)
+        bg = line.rstrip().endswith("&")
+        full = "%s%s echo IP'NX'DONE%d" % (line, "" if bg else ";", n)
         if len(full) > 240:
             return "DRIVER: %d bytes, over the tty's CANBSIZ of 256" % len(full)
         self.send(full + "\r")
@@ -261,7 +275,8 @@ run FA02
             print("   <TIMED OUT>"); break
         for l in out.split("\n"):
             l = l.strip("\r")
-            if l and "IPNXDONE" not in l and l != line and not l.endswith("; echo IP'NX'DONE%d" % (n - 1)):
+            if (l and "IPNXDONE" not in l and l != line
+                    and not l.endswith("echo IP'NX'DONE%d" % (n - 1))):
                 print("   %s" % l)
         print()
     g.close()
