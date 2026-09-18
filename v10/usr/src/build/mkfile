@@ -4426,11 +4426,19 @@ $ROOT/usr/bin/lp1: $CMD/spool/lp0
 # Apr 27 1988, the date cbt shares with libcbt -- and its install would put its
 # own btlib over the libcbt.a built above, so it is not built.
 $CMD/cbt/btadd: $PREP $CMD/cbt/*.c $CMD/cbt/mkfile
-	# NOT `mk all'.  cbt's mkfile is the tape's own, and its `all: $ALL' has
+	# NOT `mk all'.  cbt's mkfile is the tape's own, and its `all: $ALL' had
 	# no recipe -- mk builds the nine programs and then wants to make `all'
 	# itself, finds no recipe and no file, and stops.  On a tree where the
 	# nine exist that is the FIRST thing it does.  Naming them sidesteps the
 	# aggregate without touching the tape's file.
+	#
+	# THAT DIAGNOSIS WAS RIGHT AND WAS NOT GENERALISED, WHICH COST cyntax.
+	# The same empty recipe is in cyntax/sets, cem and lib -- and there it is
+	# on `install', which the build DOES call, so `mk install' stopped after
+	# sets and /usr/bin/cyntax was never made on any disk this project
+	# produced.  All of them are `:V:' now, cbt's included, so `mk all' would
+	# work here too; the nine names are kept because naming what a rule makes
+	# is better than asking for an aggregate, not because mk cannot do it.
 	cd $CMD/cbt; mk btadd && mk btbuild && mk btcat && mk btcreat && mk btdelete && mk btlook && mk btran && mk btreport && mk btsquash || echo 'cbt: FAILED'
 
 $ROOT/usr/bin/cbt: $CMD/cbt/btadd

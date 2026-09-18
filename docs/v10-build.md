@@ -273,7 +273,15 @@ repair.
   file descriptor, so the connection is named by the fd; `fstab(5)` has five fields and none
   holds a host or a port, so neither mounter can be reached through `/etc/mount -a`.
 - **`ipnx-v10.m`** — the kernel configuration: a VAX-11/780 with an **RA73** root, 128 MB,
-  sixteen MSCP disks, thirty-two DZ11 lines and an Interlan.
+  sixteen MSCP disks, thirty-two DZ11 lines and an Interlan. **Three swap areas, and their
+  minors carry `0100`.** `io/sw.c` frees only index 0 at boot; the rest are freed by
+  `swapon(2)`, which matches the named block device's `rdev` against `swdevt[]` — and
+  `/dev/ra02` is minor 66, not 2, because `0100` marks a bitmapped filesystem. Declared by
+  partition letter, the two 122 MB areas answered `No such device` on every boot and the
+  machine ran on 10 MB. It **and `ipnx.mkfile` are targets in `build/mkfile`**, not only
+  copies made by `build/patch`: patch runs when *patch* changes, so before that an edit to
+  the configuration reached a guest only by coincidence. The rules are `cmp`-guarded, so an
+  unchanged `.m` does not re-date itself and rebuild the kernel every round.
 - **`streamio.c`** — the tape's `lsys/os/streamio.c` plus the four repairs netfs needs, carried
   whole because four edits across fifty lines of C is past what a `sed` can do idempotently.
 

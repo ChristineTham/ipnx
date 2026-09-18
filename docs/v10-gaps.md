@@ -110,6 +110,12 @@ and `/usr/sys/ipnx/ipnx-v10.m` did not. Both files are now targets in `build/mkf
 the repository's copy as their prerequisite, `cmp`-guarded so an unchanged `.m` does not
 re-date itself and rebuild the kernel every round.
 
+**This repository had already diagnosed the bug once and not generalised it.**
+`build/mkfile:4429-4433` — the `cbt` rule — reads *"cbt's mkfile is the tape's own, and its
+`all: $ALL` has no recipe … Naming them sidesteps the aggregate without touching the tape's
+file."* That is exactly right, and it was applied to `cbt` alone. The same empty recipe sat
+in three of `cyntax`'s four subdirectories, on `install`, which the build *does* call.
+
 **The `mk`/`make` idiom is a class, not one package.** A scan of all 670 mkfiles for a
 target with no recipe in any rule naming it found **21 more** in 19 files, all phony
 (`all`, `install`, `clean`, `clobber`, `start`, `sources`, `compilations`, `allprogs`,

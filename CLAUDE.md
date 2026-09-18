@@ -192,9 +192,11 @@ V10 machine holds. Against them: 4 of `/bin`'s 57 and 4 of `/etc`'s 56 are not b
 with a reason), and **23 of `/usr/lib`'s 50 are missing** — 27 were, before `macros`, `uucp`,
 `Rpull` and `Rpush` went in. Counting a name present is weaker than it sounds: `tmac` counted
 before, because two unrelated rules made the directory, and it held no macro package, which
-is why `man(1)` could not format a page. Check a claim about completeness against those
+is why `man(1)` could not format a page; `spell` counted while `/usr/lib/spell/brspell` was
+**zero bytes** on the shipped disk, because the rule that writes it died and `mv` created the
+name anyway. Check a claim about completeness against those
 lists, never against a pattern over the source tree — and check what is *in* a directory the
-list names, not that it exists.
+list names, not that it exists, and that what is in it is not empty.
 
 ### Running it on Linux, with no Xcode and no Mac
 
