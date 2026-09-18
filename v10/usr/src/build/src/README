@@ -16,6 +16,17 @@ Sources written for this project, not carried by any v10 tape.
                 in that tree beforehand is gone -- and nothing copies the
                 repository's own v10/usr/sys to a guest.
 
+                AND THERE WAS A SECOND COPY IN v10/usr/sys/ipnx ANYWAY, which
+                this paragraph had said not to make, and it had drifted in BOTH
+                directions: the tape-drive panic note was only in that one, and
+                the RA81/RA73 sentence was newer here.  Nothing read it.  It is
+                gone, and its note is merged above.  ipnx.mkfile had the same
+                duplicate, byte-identical only by luck.  One file per path.
+
+    ipnx.mkfile the site mkfile, installed as /usr/sys/ipnx/mkfile.  Named
+                ipnx.mkfile here so nothing in this directory is a file mk would
+                pick up by accident.
+
     streamio.c  the tape's lsys/os/streamio.c plus the four repairs netfs needs:
                 a stream head big enough for a reply, an istread that returns on
                 a zero count instead of sleeping thirty seconds, one that waits

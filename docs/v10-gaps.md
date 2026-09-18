@@ -129,6 +129,13 @@ marker, and `:V:` would invert their meaning; nothing requires either of them to
 exactly as `cmd/cyntax/mkfile` did until this round. `cfront` is in no build list, so it
 costs nothing today.
 
+**And the kernel config had two copies, which had drifted in both directions.**
+`build/src/README` says outright that `ipnx-v10.m` is "written here and not in
+`v10/usr/sys/ipnx`" — and a second copy was in `v10/usr/sys/ipnx` anyway, read by nothing.
+The tape-drive panic measurement of 17 Sep was only in that one; the RA81/RA73 sentence was
+newer in the shipping one. `ipnx.mkfile` had the same duplicate, byte-identical only by
+luck. The note is merged into the shipping copy and both duplicates are gone.
+
 **One inconsistency found while working and not yet resolved:** `build/mkfile:23-26` says the
 `./installed` predicate "is gone", and there is no `:P` attribute and no `installed` script
 anywhere — but six comments still describe it as live, including the one that justifies the
