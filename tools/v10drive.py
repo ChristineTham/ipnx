@@ -136,23 +136,32 @@ class Guest:
             self.send("cd /\r")
             self.read(3)
             self.send("/etc/down\r")
-            self.wait_for(r"HALT instruction|sim>", 240)
+            halted = self.wait_for(r"HALT instruction|sim>", 240)
         except Exception:
-            pass
-        # AND ^E ONLY IF THE HALT DID NOT ALREADY GET US THERE.  Sending it at a
-        # prompt that is already `sim>' puts a stray character in front of the
-        # next word, so `quit' arrives as `^Equit', simh rejects it, and the
-        # process sits at its prompt forever -- which is how two simulators came
-        # to be running at once against the same image, the one thing
-        # tools/norun.sh exists to prevent.
+            halted = False
+
+        # ^E ONLY IF THE HALT DID NOT GET US TO THE PROMPT, AND THE TEST IS THE
+        # FLAG, NOT A SECOND WAIT.  Sending ^E at a prompt that is already
+        # `sim>' puts a stray character in front of the next word, so `quit'
+        # arrives as `^Equit' and the process sits there forever -- which is how
+        # two simulators came to be running at once against one image, the thing
+        # tools/norun.sh exists to prevent.  The first version of this guard
+        # asked for `sim>' AGAIN to decide, and that is wrong for a reason worth
+        # writing down: wait_for CONSUMES what it matched, simh prints the
+        # prompt once, so the second wait always timed out and ^E always went.
+        # It looked fixed and behaved exactly as before.
         try:
-            if not self.wait_for(r"sim>", 60):
+            if not halted:
                 self.send("\005")
                 self.wait_for(r"sim>", 30)
             self.send("quit\r")
             self.read(5)
         except Exception:
             pass
+
+        # AND KILL IT IF IT IS STILL THERE.  Every branch above can fail on a
+        # machine that is wedged rather than merely slow, and a driver that
+        # leaves a simulator behind poisons the NEXT run instead of this one.
         try:
             self.p.wait(timeout=30)
         except Exception:
