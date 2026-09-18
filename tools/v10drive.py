@@ -220,6 +220,25 @@ def main():
     tape = ""
     if len(sys.argv) > 3:
         tape = "set tu enable\nattach tu0 %s\n" % os.path.abspath(sys.argv[3])
+    # A SECOND DRIVE, because mkimage needs one: it formats ra1, mounts /v10
+    # and /v10/usr on it and builds a whole system into them.  An environment
+    # variable rather than another positional, because argv[3] is already the
+    # tape and a fourth would be unreadable at the call site.
+    #
+    # THE FILE MUST EXIST ON THE HOST FIRST.  Nothing here makes a blank disk
+    # and mkimage cannot either -- V10 has no sparse files, so it can format a
+    # drive but not conjure the container.  An RA73 is 3920490 sectors of 512
+    # bytes; `truncate -s 2007290880 run/v10-new' makes one instantly and the
+    # holes read as the zeros mkbitfs expects.
+    rq1 = os.environ.get("V10DRIVE_RQ1", "")
+    if rq1:
+        if not os.path.exists(rq1):
+            sys.exit("v10drive: V10DRIVE_RQ1=%s does not exist -- "
+                     "truncate -s 2007290880 it first" % rq1)
+        if os.path.realpath(rq1) == os.path.join(ROOT, "run", "v10-golden"):
+            sys.exit("v10drive: the golden as the SECOND drive is what mkimage "
+                     "would format -- point it at a copy or a blank")
+        tape += "set rq1 ra73\nattach rq1 %s\n" % os.path.abspath(rq1)
     conf = os.path.join(ROOT, "run", "v10drive.conf")
     # The device set and its order are v10-golden.sh's, which is ipnx-v10.m's:
     # simh floats Unibus addresses over the SET of enabled devices, so a
