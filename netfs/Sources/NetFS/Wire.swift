@@ -15,6 +15,47 @@
 //
 import Foundation
 
+// THE PLATFORM'S OWN errno NUMBERS, and the reason this import is here at all.
+// Foundation re-exports Darwin on Apple platforms and Glibc on Linux, so the
+// bare names below resolve either way once one of them is imported -- but only
+// if this file names the module, because `Darwin.ENOENT' does not exist on
+// Linux and that single qualification is what kept the package Mac-only.
+// Server.swift and Export.swift have carried this guard since they were
+// written; Wire.swift was the one file that did not.
+#if canImport(Darwin)
+import Darwin
+#else
+import Glibc
+#endif
+
+// CAPTURED AT FILE SCOPE, WHICH IS THE WHOLE TRICK.  Inside V8Errno the name
+// `ENOENT' resolves to V8Errno's own -- a UInt8, our number, not the host's --
+// so the switch would compare a host errno against the wrong namespace and
+// silently answer wrongly.  The original said `Darwin.ENOENT' to escape that.
+// Out here there is no V8Errno to shadow anything, so the plain name IS the
+// platform's, and no module qualification is needed on either OS.
+private let hostENOENT = ENOENT
+private let hostEACCES = EACCES
+private let hostEPERM = EPERM
+private let hostEISDIR = EISDIR
+private let hostENOTDIR = ENOTDIR
+private let hostEEXIST = EEXIST
+private let hostEINVAL = EINVAL
+private let hostENOSPC = ENOSPC
+private let hostEROFS = EROFS
+private let hostEMFILE = EMFILE
+private let hostENFILE = ENFILE
+private let hostELOOP = ELOOP
+private let hostENOTEMPTY = ENOTEMPTY
+private let hostEXDEV = EXDEV
+private let hostEMLINK = EMLINK
+private let hostEFBIG = EFBIG
+private let hostEBUSY = EBUSY
+private let hostENOMEM = ENOMEM
+private let hostEBADF = EBADF
+private let hostENXIO = ENXIO
+private let hostENODEV = ENODEV
+
 // MARK: - Opcodes
 
 /// The sixteen `cmd` values from `usr/sys/h/neta.h`.
@@ -88,32 +129,35 @@ enum V8Errno {
 
     /// Translate a host `errno` into something V8 can name.
     ///
-    /// The `Darwin.` qualification is not decoration: unqualified `ENOENT`
-    /// inside this enum resolves to *our* `ENOENT` above, which is a UInt8, and
-    /// the switch would then compare a host errno against the wrong namespace
-    /// entirely. Same names, different types, silently wrong answer.
+    /// The `host` prefixes are not decoration: unqualified `ENOENT` inside this
+    /// enum resolves to *our* `ENOENT` above, which is a UInt8, and the switch
+    /// would then compare a host errno against the wrong namespace entirely.
+    /// Same names, different types, silently wrong answer.  The constants at
+    /// the top of this file are the platform's, captured where nothing shadows
+    /// them; they used to be spelled `Darwin.ENOENT', which said the same thing
+    /// and did not exist on Linux.
     static func from(host: Int32) -> UInt8 {
         switch host {
         case 0: return 0
-        case Darwin.ENOENT: return Self.ENOENT
-        case Darwin.EACCES: return Self.EACCES
-        case Darwin.EPERM: return Self.EPERM
-        case Darwin.EISDIR: return Self.EISDIR
-        case Darwin.ENOTDIR: return Self.ENOTDIR
-        case Darwin.EEXIST: return Self.EEXIST
-        case Darwin.EINVAL: return Self.EINVAL
-        case Darwin.ENOSPC: return Self.ENOSPC
-        case Darwin.EROFS: return Self.EROFS
-        case Darwin.EMFILE, Darwin.ENFILE: return Self.EMFILE
-        case Darwin.ELOOP: return Self.ELOOP        // 62 -> 35
-        case Darwin.ENOTEMPTY: return Self.EEXIST   // 66: V8 has no ENOTEMPTY
-        case Darwin.EXDEV: return Self.EXDEV
-        case Darwin.EMLINK: return Self.EMLINK
-        case Darwin.EFBIG: return Self.EFBIG
-        case Darwin.EBUSY: return Self.EBUSY
-        case Darwin.ENOMEM: return Self.ENOMEM
-        case Darwin.EBADF: return Self.EBADF
-        case Darwin.ENXIO, Darwin.ENODEV: return Self.ENXIO
+        case hostENOENT: return Self.ENOENT
+        case hostEACCES: return Self.EACCES
+        case hostEPERM: return Self.EPERM
+        case hostEISDIR: return Self.EISDIR
+        case hostENOTDIR: return Self.ENOTDIR
+        case hostEEXIST: return Self.EEXIST
+        case hostEINVAL: return Self.EINVAL
+        case hostENOSPC: return Self.ENOSPC
+        case hostEROFS: return Self.EROFS
+        case hostEMFILE, hostENFILE: return Self.EMFILE
+        case hostELOOP: return Self.ELOOP           // 62 on macOS, 40 on Linux -> 35
+        case hostENOTEMPTY: return Self.EEXIST      // V8 has no ENOTEMPTY
+        case hostEXDEV: return Self.EXDEV
+        case hostEMLINK: return Self.EMLINK
+        case hostEFBIG: return Self.EFBIG
+        case hostEBUSY: return Self.EBUSY
+        case hostENOMEM: return Self.ENOMEM
+        case hostEBADF: return Self.EBADF
+        case hostENXIO, hostENODEV: return Self.ENXIO
         default: return Self.EIO                    // anything V8 never heard of
         }
     }

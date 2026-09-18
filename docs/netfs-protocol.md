@@ -507,6 +507,29 @@ Read-only is a genuine milestone: `NGET`, `NNAMI`, `NREAD`, `NSTAT`, `NPUT`
 and `NFREE` are enough to mount a host directory and read it. `NWRT`,
 `NTRUNC`, `NUPDAT` and the `NNAMI` side effects can come with N7.
 
+## Two servers now speak it, and this page is the contract between them
+
+`netfs/Sources/NetFS` is the real one: Swift, and it compiles into the iPad app
+as well as into `netfsd`. `tools/netfsd.py` is the same protocol in python3 with
+no dependency at all, for a host that cannot build the Swift — which in practice
+means the Linux box this project's V10 work gets driven from, where the golden
+boots under open-simh and the share was the last missing piece.
+
+**Two implementations of one protocol will disagree unless something stops
+them**, so: the tables above are the authority for the wire and both quote them
+field by field, including the two compiler holes; where *behaviour* rather than
+layout is at stake — the synthetic inode namespace, the forged directories, the
+14-byte truncation in lookup as well as listing, the held-descriptor
+revalidation — the Swift got there first and the Python names the comment it is
+following. A change to either belongs in both, and a change to the wire belongs
+here first.
+
+Measured 18 Sep 2026, python3 server against the V10 golden under open-simh on
+Linux: mounted at boot through `/etc/rc`'s `nafsmnt`, listed and read the
+exported tree byte-exactly (287,796-byte `mkfile` and 1,647-byte `ipnxclean`
+both reported at the host's own sizes), wrote through `/n/home`, and served
+`updatebuild` — thousands of requests with no errno returned on any of them.
+
 ## What it costs: one round trip per path component
 
 Measured across stages 1–5 of the 2026-08-11 world build — 115,446 requests in

@@ -27,7 +27,7 @@ The repository is four things at once, and confusing them is the main way to get
 | `app/ipnx/` | One Swift/SwiftUI source folder, two targets: `ipnx` (iPadOS) and `ipnxMac`. Every file is shared. |
 | `libsimh/` | CMake wrapper turning an open-simh checkout into `SimhVAX.xcframework`. `patches/` adds the Interlan NI1010 driver and three `UNIT_IDLE` flags. Deliberately built **without** `SIM_ASYNCH_IO`. |
 | `libdmd/` | dmd_core (Rust) → `DmdCore.xcframework`. Patches live in `tools/dmdbridge/patches/`. |
-| `netfs/` | SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency. |
+| `netfs/` | SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency — and builds on Linux, which is what that rule was for. `tools/netfsd.py` is the same server in python3, for a host with no Swift. |
 | `v8/` | Our V8 tree, laid out as the guest filesystem (`v8/usr/src/cmd/ls.c` is `/usr/src/cmd/ls.c`). `v8/mk/` is ours — V8 never had a world build. |
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
@@ -115,10 +115,25 @@ python3 tools/v10drive.py run/v10-test.img cmds   # run a script of shell comman
 **The golden boots on anything that can build open-simh**, which includes a plain Linux
 container: `git clone` open-simh at the revision `libsimh/build-xcframework.sh` pins,
 `libsimh/patches/apply.sh work/opensimh`, `make vax780`, then join `image/v10-golden.tar.bz2.a?`
-and `tar -xSjf`. No Xcode, no Mac, no netfsd — `v10-golden.sh` and `v10drive.py` attach one
-disk and serve nothing. That is the difference between checking a build rule by reading it
-and checking it by running it, and three of this project's own rules were wrong in ways only
-the second kind of check found. **Always boot a fresh copy**, never `run/v10-golden` itself.
+and `tar -xSjf`. No Xcode and no Mac. That is the difference between checking a build rule by
+reading it and checking it by running it, and three of this project's own rules were wrong in
+ways only the second kind of check found. **Always boot a fresh copy**, never
+`run/v10-golden` itself.
+
+**And the share works there too**, which is what lets `updatebuild` run: `tools/netfsd.py` is
+a second netfs server in python3 with no dependency at all, for hosts that cannot build the
+Swift one. Same arguments, same protocol, same read-only default:
+
+```bash
+python3 tools/netfsd.py    -p 9200 /path/to/ipnx &   # /n/macos, read-only
+python3 tools/netfsd.py -w -p 9201 "$HOME"       &   # /n/home,  read/write
+```
+
+`/etc/rc` mounts both at boot (`nafsmnt 10.0.2.2 9200 /n/macos 64`), so start them before
+booting. **Two servers of one protocol is a real risk and it is managed rather than
+ignored**: `docs/netfs-protocol.md` is the authority for the wire, both implementations quote
+its tables field by field, and where behaviour rather than layout is at stake the Python says
+which Swift comment it is following.
 
 `image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
 working** disks restored from them. Two directories, on purpose.

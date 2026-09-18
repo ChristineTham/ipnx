@@ -162,7 +162,12 @@ def main():
     # one of them measuring a disk being rewritten underneath it.  It happened
     # again on 17 Sep 2026, when the close() bug above left one at its prompt
     # and the next run attached the same image.
-    if subprocess.call(["pgrep", "-f", "BIN/vax780"],
+    # `pgrep -x vax780', NOT `pgrep -f BIN/vax780'.  -f matches the whole command
+    # LINE of every process, so any harness that merely mentions the path --
+    # a monitor waiting for the simulator to exit, say -- counts as a simulator
+    # and this refuses to start.  That happened.  -x matches the process NAME,
+    # which only the simulator itself has.
+    if subprocess.call(["pgrep", "-x", "vax780"],
                        stdout=subprocess.DEVNULL) == 0:
         sys.exit("v10drive: a vax780 is already running -- refusing to start a second")
     # BOOTING MOUNTS, AND MOUNTING REWRITES THE SUPERBLOCK, so a run against the
@@ -200,6 +205,7 @@ set dz lines=32
 set il enable
 set il address=2013E800
 set il vector=E8
+attach il nat:
 set tto 7b
 set rq0 ra73
 attach rq0 %s
