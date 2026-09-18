@@ -79,6 +79,7 @@ bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web ser
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
 bash tools/v10-golden.sh                # V10: does the golden still boot to login
+python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
 ```
 
