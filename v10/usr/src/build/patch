@@ -2861,3 +2861,30 @@ sed 's|^char	\*direct	= "/crp/nlearn/lib";.*$|char	*direct	= "/usr/lib/learn";	/
 # `usage:' directly after `echo ' and after one pass it is `'usage:'.
 cd $SRC/cmd/troff/ancient.nroff/macros.d || exit 1
 sed "s|^\(	then echo \)\(usage:.*\)\$|\1'\2'|" macrunch > m$$ && mv m$$ macrunch
+
+# SPELL'S pcode ASKS FOR 2 MB OF BSS TO HOLD 260 KB, and during a world build
+# that is the difference between working and `sh: ./pcode: Not enough memory'.
+#
+#	Dict	words[200000];		/* 8 bytes each on a vax: 1,600,000 */
+#	char	space[500000];
+#	Bits	encodes[4094];
+#
+# -- 2,124,980 bytes of bss, measured with size(1) on the machine.  What the
+# tape's own word list actually needs, measured by running it:
+#
+#	words = 31460; space = 261081; codes = 289
+#
+# so the arrays are six and two times larger than the data.  Run by hand on an
+# idle machine it fits and produces the right 164,882 bytes; run from ipnxbuild,
+# with the rest of a world build resident, the exec fails and the rule dies.
+#
+# 50000 and 400000 keep 59% and 53% headroom over the measured figures and drop
+# the bss to 816,376.  SAFE TO SHRINK BECAUSE pcode CHECKS: readinput() tests
+# both arrays every line and exits with `words array too small' or `space array
+# too small', so an overflow is a diagnostic and not a corruption.
+#
+# A second pass is a no-op: after the first there is no 200000 or 500000 left
+# to match.
+cd $SRC/cmd/spell || exit 1
+sed -e 's/words\[200000\]/words[50000]/' \
+    -e 's/space\[500000\]/space[400000]/' pcode.c > p$$ && mv p$$ pcode.c

@@ -1,20 +1,26 @@
 BIN	= /usr/bin
 LIB	= /usr/lib/cyntax
 
+# ipnx: mk, NOT make, AND THAT IS THE WHOLE REASON THIS PACKAGE NEVER BUILT.
+# build/mkfiles delivers sets/, cyn/, cem/ and lib/'s MKFILES to the machine --
+# they are rows 83-87 of that list -- but this file shelled out to `make', and
+# make reads the tape's Makefile, which is delivered by nothing and repaired by
+# nothing.  So every fix made to a cyntax mkfile in this repository was
+# invisible on a real machine, and the build kept running the tape's rules.
 all	:
-	(cd sets; make install)
-	(cd cyn; make)
-	(cd cem; make)
-	(cd lib; make)
+	(cd sets; mk install)
+	(cd cyn; mk)
+	(cd cem; mk)
+	(cd lib; mk)
 
 install	:
-	(cd sets; make install)
-	(cd cyn; make install BIN=${BIN} LIB=${LIB})
-	(cd cem; make install BIN=${BIN} LIB=${LIB})
-	(cd lib; make install BIN=${BIN} LIB=${LIB})
+	(cd sets; mk install)
+	(cd cyn; mk install BIN=${BIN} LIB=${LIB})
+	(cd cem; mk install BIN=${BIN} LIB=${LIB})
+	(cd lib; mk install BIN=${BIN} LIB=${LIB})
 
 clean	:
-	(cd sets; make clean)
-	(cd cyn; make clean)
-	(cd cem; make clean)
-	(cd lib; make clean)
+	(cd sets; mk clean)
+	(cd cyn; mk clean)
+	(cd cem; mk clean)
+	(cd lib; mk clean)

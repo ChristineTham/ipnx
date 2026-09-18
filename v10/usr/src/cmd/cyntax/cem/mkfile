@@ -9,12 +9,11 @@ COBS	= diag.O equiv.O fix.O main.O misc.O read.O string.O symbol.O\
 
 all	: cem cyntax
 
-cem	: ${OBS} ${COBS}
-	cyntax ${COBS}
+# ipnx: the same self-hosting loop cyn/mkfile carries, and the same answer.
+# ${COBS} is the cyntax-produced .O set; `cem' itself is linked from ${OBS} by
+# ${CC} on the line below and never reads a .O.  See cyn/mkfile.
+cem	: ${OBS}
 	${CC} ${LFLAGS} ${OBS} -o cem
-
-%.O: %.o
-	cyntax -c $stem.c
 
 diag.o	: cem.h stdobj.h types.h symbol.h type.h
 equiv.o	: cem.h stdobj.h types.h symbol.h type.h var.h

@@ -4839,7 +4839,15 @@ $ROOT/usr/lib/worm/wmkfs: $CMD/worm/wmkfs
 # backup.old is the tape backup package: UBIN=/usr/lib/backup for the user half
 # and ABIN=/usr/backup/bin for the administrator half.  It compiles -I../worm,
 # so worm's headers have to be there.
-P_CMD_backup_old_bpush:V:	$PREP
+# AND IT NEEDS /lib/ccom INSTALLED, WHICH IS AN ORDER AND NOT A LIBRARY.  Its
+# sources compile with the OLD compiler, so `cc' here reaches for /lib/ccom;
+# with only $PREP to wait for, this ran before $ROOT/lib/ccom existed and every
+# file failed with
+#	Can't find /lib/ccom
+# -- which reads like a missing toolchain and is really a missing edge.  Proved
+# by looking: /lib/ccom is 137,216 bytes on the disk this build produced, dated
+# the same day, so it was built -- just not yet.
+P_CMD_backup_old_bpush:V:	$PREP $ROOT/lib/ccom
 	cd $CMD/backup.old; mk all || echo 'backup.old: FAILED'
 
 $CMD/backup.old/bpush: P_CMD_backup_old_bpush

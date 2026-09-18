@@ -15,11 +15,17 @@ lib:	sprog amspell brspell
 	cp brspell /usr/lib/spell/brspell
 	rm -f sprog amspell brspell
 	
+# ipnx: WRITE TO A TEMPORARY AND MOVE, because `>brspell' truncates the file
+# BEFORE pcode runs and leaves a zero-length one behind if it does not finish.
+# That is not hypothetical: the golden built on 18 Sep 2026 shipped
+# /usr/lib/spell/brspell at 0 bytes, so British spelling was silently dead on
+# a disk whose build had reported only a FAILED line for it.  amspell below
+# survived only because it happens to be built second and the run got that far.
 brspell: pcode  list british local stop
-	./pcode list british local stop >brspell
+	./pcode list british local stop >_brspell && mv _brspell brspell
 
 amspell: pcode  list american local stop
-	./pcode list american local stop >amspell
+	./pcode list american local stop >_amspell && mv _amspell amspell
 
 pcode:	pcode.o
 	lcc -o pcode pcode.o

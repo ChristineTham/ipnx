@@ -20,12 +20,22 @@ COBS	=\
 	memory.O parse.O readonly.O sort.O\
 	stats.O suopt.O sutab.O xnodes.O
 
+# ipnx: NO `cyntax -c' HERE, BECAUSE cyntax IS WHAT THIS BUILDS.  The tape's
+# rule compiled each file twice -- once with ${CC} for the .o, once with
+# cyntax for a .O -- and the ccom rule then linked the .O set with cyntax as
+# well.  That is a self-hosting build, and it cannot start: with no cyntax
+# installed the very first object fails with
+#	cyntax -c code_gen.c
+#	Make: Cannot load cyntax.  Stop.
+# and /usr/bin/cyntax has therefore never existed on any disk this project has
+# produced.  The .O pass is a SELF-CHECK whose output ccom does not use -- the
+# binary comes from `${CC} ${OBS} bits.o -o ccom' on the ordinary objects, one
+# line below -- so dropping it costs nothing but the check, and the check is
+# worth nothing at all while it makes the compiler unbuildable.
 %.o	: %.c
 	${CC} ${CFLAGS} -c $stem.c
-	cyntax -c $stem.c
 
 ccom	: ${OBS} bits.o
-	cyntax ${COBS} bits.O
 	${CC} ${OBS} bits.o -o ccom
 	echo done
 clean	:
