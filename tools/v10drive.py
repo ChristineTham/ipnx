@@ -38,6 +38,15 @@ import os, pty, re, select, subprocess, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIM = os.path.join(ROOT, "work", "opensimh", "BIN", "vax780")
 
+# HOW LONG ONE COMMAND MAY TAKE, and the default is generous on purpose.
+# This drives an emulated VAX-11/780: `updatebuild' copies a directory
+# across netfs at about thirty files a minute (docs/netfs-protocol.md
+# measures the round trips), a compile is minutes, and `ipnxbuild' is hours.
+# A timeout tuned for a shell prompt turns every real step into a spurious
+# failure.  Override with V10DRIVE_TIMEOUT when a step is known to be short
+# and a hang should be caught quickly.
+CMD_TIMEOUT = int(os.environ.get("V10DRIVE_TIMEOUT", "3600"))
+
 
 class Guest:
     def __init__(self, conf, logpath):
@@ -82,7 +91,7 @@ class Guest:
     def send(self, s):
         os.write(self.mfd, s.encode("ascii", "replace"))
 
-    def cmd(self, line, n, timeout=300):
+    def cmd(self, line, n, timeout=CMD_TIMEOUT):
         """Run one shell command; return its output up to the printed marker.
 
         THE CONSOLE DROPS ANYTHING PAST 256 BYTES ON A LINE and says nothing:
@@ -236,7 +245,7 @@ run FA02
         line = line.rstrip("\n")
         if not line or line.startswith("#"):
             continue
-        out = g.cmd(line, n, 600)
+        out = g.cmd(line, n)
         n += 1
         print("$ %s" % line)
         if out is None:
