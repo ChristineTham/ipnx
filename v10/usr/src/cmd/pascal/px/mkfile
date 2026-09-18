@@ -27,8 +27,26 @@ px: Version.c ${PXOBJ}
 
 sources:V: ${PXHDR} ${PXSRC} ${PXUTL}
 	:
-${PSHDR}:
-	cp ${PASCALDIR}/$target $target
+# ipnx: ONE RULE PER FILE.  This was `${PSHDR}:' with `cp ${PASCALDIR}/$target
+# $target', which is the tape's `$@' rule converted name for name -- and mk's
+# $target is the WHOLE list of the rule's out-of-date targets, not the one
+# being made.  With four of the five missing, the recipe came out as
+#	cp /usr/src/cmd/pascal/pascal/OPnames.h whoami.h objfmt.h opc.c \
+#	   OPnames.h whoami.h objfmt.h opc.c
+# and cp answered `Usage: cp: [-z] f1 f2; or cp [-z] f1 ... fn d2'.
+#
+# pic.c is in PSHDR and is on no tape -- ${PASCALDIR} does not hold it -- so it
+# gets no rule.  Nothing requires it: px needs h02opcs.h, which wants OPnames.h
+# and opc.c, and the two headers come in through those.  A rule that cannot
+# work is worse than none, because mk would run it.
+OPnames.h:
+	cp ${PASCALDIR}/OPnames.h OPnames.h
+whoami.h:
+	cp ${PASCALDIR}/whoami.h whoami.h
+objfmt.h:
+	cp ${PASCALDIR}/objfmt.h objfmt.h
+opc.c:
+	cp ${PASCALDIR}/opc.c opc.c
 ${PCHDR}:
 	cp ${LIBPCDIR}/$target $target
 
@@ -116,9 +134,15 @@ utilities.o: whoami.h
 utilities.o: vars.h
 utilities.o: panics.h
 utilities.o: h02opcs.h
-	# DEPENDENCIES MUST END AT END OF FILE
-	# IF YOU PUT STUFF HERE IT WILL GO AWAY
-	# see make depend above
+# ipnx: THESE THREE LINES WERE TAB-INDENTED, WHICH MADE THEM utilities.o's
+# RECIPE.  `make depend' writes the banner that way and make drops a recipe
+# that is only comments; mk does not -- it hands the three lines to sh, sh
+# does nothing, mk records the target as made, and the link then answers
+# `ld:utilities.o: cannot open'.  Unindented they are what they were meant to
+# be, and utilities.o falls through to the %.o: %.c rule above.
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above
 
 
 # ---- added by the converter: mk has no equivalent builtin ----

@@ -1,7 +1,13 @@
 SCCSID = "@(#)makefile	1.2 (Berkeley) 3/5/81"
 DESTDIR=
-ED=	-ed
-AS=	-as
+# ipnx: `ed' and `as', not `-ed' and `-as'.  The leading - is make's
+# ignore-the-status prefix; mk does not strip it, so sh is handed a command
+# called `-as' and answers `sh: -as: not found'.  ${AS} is live in doprnt.o's
+# recipe below; ${ED} is only in the commented-out y.tab.c rule, and is
+# corrected with it so the next person to uncomment that rule does not find
+# out the hard way.
+ED=	ed
+AS=	as
 VERSION= version
 EYACC=	/usr/bin/eyacc
 CFLAGS=	-O -DPXP
@@ -19,6 +25,14 @@ all:V: a.out
 
 a.out:	${OBJS} ${OBJS2}
 	${CC} ${CFLAGS} ${OBJS} ${OBJS2}
+
+# ipnx: treen.o COMES FROM treen.c, SAID OUTRIGHT.  Both treen.c and treen.s
+# are in this directory and mk's builtins make a .o from either, so it stops
+# with `mk: ambiguous recipes for treen.o' and the package fails.  The .c is
+# the one that can build here: treen.s is Berkeley's PDP-11 hand assembly --
+# `/' comment lines and `_tree1:' -- which this machine's as does not read.
+treen.o: treen.c
+	${CC} ${CFLAGS} -c treen.c
 
 doprnt.o: doprnt.c
 	${CC} ${CFLAGS} -E doprnt.c > doprnt.s

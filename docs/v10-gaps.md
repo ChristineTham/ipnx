@@ -65,11 +65,18 @@ packages declined for a reason the tree contradicts — the decision may still b
 (data no tape carries, which is the `/usr/dict` import), §6, and `ipc/`, which is essentially
 unbuilt.
 
-### Second status pass, 2026-09-18: the five failures a full `ipnxbuild` reported
+### Second status pass, 2026-09-18: the failures a full `ipnxbuild` reported
 
-*The golden rebuild of 18 Sep produced exactly five `FAILED` lines. All five are fixed and
-each was measured on a booted machine, not read off the files. Two of them had a cause
-nobody had looked for, and one of those two had been hiding behind a workaround.*
+*The golden rebuild of 18 Sep produced **nine** `FAILED` lines, and a tenth appeared on the
+build that verified the fixes. All ten are fixed and each was measured on a booted machine,
+not read off the files. Two had a cause nobody had looked for, one of those two had been
+hiding behind a workaround, and one is a defect that only shows on the SECOND build of a
+disk.*
+
+**The count was first reported as five, and that was a grep and not a fact:** the pattern
+used to count `FAILED` lines allowed no space in the name, so `pascal pc`, `pascal pi`,
+`pascal px` and `pascal pxp` were invisible in a file they were sitting in. Four of the ten
+below are those.
 
 | Reported | Root cause | Fix |
 |---|---|---|
@@ -78,6 +85,11 @@ nobody had looked for, and one of those two had been hiding behind a workaround.
 | `backup.old: FAILED` | `Can't find /lib/ccom` — `cc.c:384` prints that for *any* `execv` failure, and the one that happened was ENOMEM: the machine had 10 MB of swap, not the 254 MB its config declares | the swap minors, below |
 | `9pfs: FAILED` | `cp: /etc/9pfs: Text file busy` — the build overwrites the binary that is serving `/n/macos` at that moment | copy-new-then-`mv`, the `/bin/sh` precedent |
 | `spell: FAILED` | the same swap shortage as `backup.old`; the workaround that hid it had shrunk `pcode`'s arrays | swap fixed, the shrink backed out |
+| `pascal pc: FAILED` | `./install.sh` is mode 644 — `sh: ./install.sh: cannot execute` | `sh ./install.sh` |
+| `pascal pi: FAILED` | `RM = -rm -f`: make's ignore-the-status prefix, which `mk` does not strip — `sh: -rm: not found`. Behind it: nothing knew how to make `y.tab.c`, and then nothing made `y.tab.h` | `RM = rm -f`; `y.tab.h y.tab.c:` as one rule's two targets; `mk y.tab.h` asked for by name |
+| `pascal px: FAILED` | `${PSHDR}:` with `cp ${PASCALDIR}/$target $target`, converted name-for-name from the tape's `$@` — but mk's `$target` is the **whole** out-of-date target list, so cp got eight arguments. Behind it: `utilities.o`'s whole recipe was the tab-indented `make depend` banner | one rule per file; banner unindented |
+| `pascal pxp: FAILED` | `treen.c` and `treen.s` both present and mk's builtins make `.o` from either — `mk: ambiguous recipes` | explicit `treen.o: treen.c` (the `.s` is Berkeley's PDP-11 hand assembly); `AS= -as` fixed with it |
+| `ether: FAILED` *(second build only)* | `ipnxbuild` restores the tape's `/usr/include/sys/ethernet.h` with `cp`'s mtime at the end of every build, so the next build finds it newer than `cmd/ether`'s own header, skips the copy, and compiles `netconfig.c` against a header with no `CHANS_PER_UNIT` | `rm -f` the destination before the package builds |
 
 **The swap was declared and never attached, and that is the find of this pass.**
 `ipnx-v10.m` asks for three swap areas totalling 254 MB. `io/sw.c:28-38` frees only
@@ -128,6 +140,52 @@ marker, and `:V:` would invert their meaning; nothing requires either of them to
 **One more of the same shape, not fixed:** `cmd/cfront/mkfile:2-3` shells out to `make`,
 exactly as `cmd/cyntax/mkfile` did until this round. `cfront` is in no build list, so it
 costs nothing today.
+
+**Two properties of `mk` that this round had to learn the hard way**, both of which make a
+dependency silently not happen:
+
+1. **A missing prerequisite is time 0, so an existing target is up to date.** Removing
+   `/usr/include/sys/ethernet.h` to force `cmd/ether`'s copy rule did the opposite: with
+   `order.o` and `findslot.o` already built and newer than a file that was not there,
+   `libether.a` read as up to date and the copy was never required. The remedy is to do the
+   copy outside `mk`, which `build/mkfile` now does.
+2. **`mk` *pretends*.** `mk/src/mk.c:136-145`: when a target does not exist and its **parent**
+   is not out of date against it, mk marks it MADE with its own prerequisite's time instead
+   of building it. So `pi/mkfile`'s `yy.h: y.tab.h` is inert — `yy.h` is a source file that
+   exists and is newer than `pas.y` — and every object compiles against a `yy.h` whose
+   `#include "y.tab.h"` cannot resolve. Pretending is guarded on the parent, so it cannot
+   happen to a target named on the command line: `mk y.tab.h` builds it where any number of
+   dependency lines will not.
+
+**A recipe made only of comments is a recipe.** `make depend` writes a three-line banner
+indented with tabs; make drops a comment-only recipe, mk hands it to `sh`, `sh` does nothing,
+and mk records the target as made. `cmd/pascal/px`'s `utilities.o` was one of these — the
+link then said `ld:utilities.o: cannot open`. A scan found nine rules whose entire recipe is
+comments; three are real objects (`px`'s `utilities.o`, `pi`'s `yytree.o`, `libpc`'s
+`WRITLN.o`, plus `lbin/kermit`'s `ckuscr.o`) and the rest are phony targets where it is
+harmless. All are unindented now.
+
+**`$target` is the whole list, and `learn` had it too.** Eight rules in the tree have more
+than one target and use `$target` in the recipe. `cmd/learn`'s three (`lcount tee`,
+`play log`, `${LESSONS}`) would each have produced one command with every name in it the
+first time more than one was out of date; they are `for t in $target` loops now.
+`lbin/Mail`'s `$S: sccs get $target` is left — `sccs` is on no tape and `lbin/Mail` is not
+built. `pi`'s `${SRCS} ${HDRS} ${OTHERS}: touch $target` is correct as it stands.
+
+**Two more mkfiles still shell out to `make`**, the defect that cost `cyntax`:
+`ncurses/terminfo/mkfile:6` and the five `libplot/oldplot/*/mkfile`. Neither package is in a
+build list, so neither costs anything today.
+
+**A restore that defeats a dependency, and it alternates.** `build/preserve` names the tape
+files a rule rewrites in place so a built-and-cleaned tree still matches the archive, and
+`ipnxbuild` copies each back at the end of the build. `cp` has no `-p` on V10 and there is
+no `touch(1)` taking a time, so the restored file carries a *later* mtime than anything the
+build made — and where the rule that overwrote it compares mtimes, the next build skips it.
+`include/sys/ethernet.h` is the one that bites: `cmd/ether`'s header and the tape's are
+different files with one name, and `netconfig.c` needs the former's `CHANS_PER_UNIT`. So a
+disk that has never been built passes and every disk that has does not. **It is worth asking
+whether any of the other 24 preserve rows have the same shape** — this one was found only
+because a second build was run on the same disk, which this project had not done before.
 
 **And the kernel config had two copies, which had drifted in both directions.**
 `build/src/README` says outright that `ipnx-v10.m` is "written here and not in

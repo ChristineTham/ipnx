@@ -4,7 +4,11 @@ VERSION = 2.0
 
 MKSTR = /usr/bin/mkstr
 EYACC = /usr/bin/eyacc
-RM = -rm -f
+# ipnx: `rm -f', not `-rm -f'.  The leading - is make's ignore-the-status
+# prefix and make strips it; mk does not, so sh is handed a command called
+# `-rm' and answers `sh: -rm: not found' -- exit 1, and the package fails.
+# Nothing is lost by dropping it: `rm -f' of a file that is not there succeeds.
+RM = rm -f
 GET = touch
 
 CFLAGS = -O
@@ -49,6 +53,22 @@ OBJS =	ato.o \
 	yypanic.o yyparse.o yyprint.o yyput.o yyrecover.o yyseman.o yytree.o \
 	p2put.o stab.o pcproc.o pcfunc.o pccaseop.o pclval.o
 
+# ipnx: a.out IS THE FIRST RULE AND MUST STAY THE FIRST RULE.  mk's default
+# target is the first rule's, and `build/mkfile' runs a bare `mk' here --
+# a `${OBJS}: y.tab.h' line added above this one made ato.o the default and
+# the package built its objects and never linked.  Anything new goes BELOW.
+#
+# y.tab.h is NOT named here, and build/mkfile asks for it separately, because
+# of mk's `pretending' (mk/src/mk.c:136-145): a prerequisite that does not
+# exist is PRETENDED to be made, with its own prerequisite's time, whenever
+# the PARENT is not out of date against it.  :136's `yy.h: y.tab.h' is
+# therefore inert -- yy.h is a source file that exists and is newer than
+# pas.y -- and the objects compile against a yy.h whose include cannot
+# resolve:
+#	../yy.h: 6: Can't find include file y.tab.h
+# Pretending is guarded on `p', the parent, so it cannot happen to a target
+# asked for on the command line.  That is why `mk y.tab.h' works where a
+# dependency does not.
 a.out: ${OBJS} version
 	${RM} Version.[oc]
 	./version > Version.c
@@ -67,7 +87,13 @@ ${SRCS} ${HDRS} ${OTHERS}:
 		rm -f ../$stem.o; mv $stem.o  ../$stem.o
 	${RM} ${TMPDIR}/$stem.c
 
-y.tab.h: pas.y gram
+# ipnx: y.tab.c IS A TARGET OF THIS RULE TOO.  It was `y.tab.h:' alone, and
+# the recipe plainly makes both -- eyacc writes y.tab.c and y.tab.h, and the
+# last line says so.  y.tab.o is in ${OBJS}, the builtin %.o: %.c needs
+# y.tab.c, mk knew no rule that made it, and the package stopped with
+# `mk: no recipe to make 'y.tab.o''.  Naming both targets is what the recipe
+# already does.
+y.tab.h y.tab.c: pas.y gram
 	${RM} y.tab.c y.tab.h
 	${EYACC} pas.y > /dev/null
 	ex - y.tab.c <gram
@@ -377,9 +403,14 @@ yyseman.o: yy.h
 yytree.o: whoami.h
 yytree.o: 0.h
 yytree.o: tree.h
-	# DEPENDENCIES MUST END AT END OF FILE
-	# IF YOU PUT STUFF HERE IT WILL GO AWAY
-	# see make depend above
+# ipnx: UNINDENTED.  Tab-indented, these lines are the recipe of the rule
+# above -- `make depend' writes the banner that way, make drops a recipe that
+# is only comments, and mk does not: it hands them to sh, sh does nothing, mk
+# records the target as made, and the link later answers `cannot open'.
+# cmd/pascal/px/mkfile carries the measurement.
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above
 
 
 # ---- added by the converter: mk has no equivalent builtin ----

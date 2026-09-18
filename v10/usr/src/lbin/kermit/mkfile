@@ -64,13 +64,16 @@ ckwart.o: ckwart.c
 ckudia.o: ckudia.c ckcker.h ckcdeb.h ckucmd.h
 
 ckuscr.o: ckuscr.c ckcker.h ckcdeb.h
-	#
-	###########################################################################
-	#
-	# Make commands for specific systems:
-	#
-	#
-	#Berkeley Unix 4.1 or 4.2 (and presumably also 4.3), also Ultrix-32 1.x, 2.0
+# ipnx: UNINDENTED, as in cmd/pascal/px/mkfile: tab-indented this banner is
+# ckuscr.o's whole recipe, and mk then records the object as made without
+# compiling it.
+#
+###########################################################################
+#
+# Make commands for specific systems:
+#
+#
+#Berkeley Unix 4.1 or 4.2 (and presumably also 4.3), also Ultrix-32 1.x, 2.0
 bsd:
 	make wermit "CFLAGS= -DBSD4 -DDEBUG -DTLOG"
 

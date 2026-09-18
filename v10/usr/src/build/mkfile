@@ -4664,7 +4664,9 @@ $ROOT/usr/bin/pascal: $PREP
 	cd $CMD/pascal/libpc;  mk && mk install DESTDIR=$ROOT || echo 'pascal libpc: FAILED'
 	cd $CMD/pascal/pc0;    mk && mk install DESTDIR=$ROOT || echo 'pascal pc0: FAILED'
 	cd $CMD/pascal/pascal; mk && mk install D=$ROOT/usr/bin L=$ROOT/usr/lib/pascal || echo 'pascal pc: FAILED'
-	cd $CMD/pascal/pi;     mk && mk install DESTDIR=$ROOT || echo 'pascal pi: FAILED'
+	# `mk y.tab.h' FIRST, and pi/mkfile:56-70 says why: eyacc's header is a
+	# prerequisite mk PRETENDS into existence unless it is asked for by name.
+	cd $CMD/pascal/pi;     mk y.tab.h && mk && mk install DESTDIR=$ROOT || echo 'pascal pi: FAILED'
 	cd $CMD/pascal/px;     mk && mk install DESTDIR=$ROOT || echo 'pascal px: FAILED'
 	cd $CMD/pascal/pxp;    mk && mk install DESTDIR=$ROOT || echo 'pascal pxp: FAILED'
 	# pascal/mkfile:22-25, the parent's own tail.  3,4 is bin,bin.
@@ -5710,6 +5712,41 @@ $ROOT/usr/bin/agh: $CMD/agh
 # reaches this rule.  chaosconfig additionally wants libchaos.a, which only
 # the machine's installed /usr/lib can provide.
 P_CMD_ether_all:V:	$PREP
+	# AND THE HEADER MUST GO FIRST, OR THE SECOND BUILD ON A DISK FAILS.
+	# ether/mkfile's `${INCF}: ${INCNAMES}' copies its OWN ethernet.h over
+	# /usr/include/sys/ethernet.h, and the two files are different headers
+	# with one name: the tape's declares `struct etherpup' and defines no
+	# CHANS_PER_UNIT, ether's declares `struct ether_in' and defines it.
+	# netconfig.c:75 uses it.
+	#
+	# build/preserve:89 lists `19 include/sys/ethernet.h' -- rightly, because
+	# a tree that has built and cleaned must match the archive it came from --
+	# so ipnxbuild RESTORES the tape's copy at the end of every build, with
+	# cp's mtime, which is later than anything the build made.  On the next
+	# build mk therefore finds ${INCF} NEWER than ${INCNAMES}, skips the copy,
+	# and compiles netconfig.c against the tape's header:
+	#	"netconfig.c":75:CHANS_PER_UNIT undefined
+	# Measured: two ipnxbuilds on one disk, the first clean and the second not.
+	# It alternates because the restore is what breaks it, so a disk that has
+	# never been built passes and every disk that has does not.
+	#
+	# V10's cp has no -p and there is no touch(1) that takes a time, so the
+	# restored copy cannot be dated back.  REMOVING the destination does not
+	# work either, and that was measured before this line was written: mk
+	# treats a missing file as time 0, so with order.o and findslot.o already
+	# built and NEWER than a header that is not there, ${LIBF} reads as up to
+	# date, the copy rule is never required, and netconfig.c then fails one
+	# step later with `Can't find include file sys/ethernet.h'.
+	#
+	# So the copy is done HERE instead, before ether's mk is asked for
+	# anything.  It is ether's own recipe, one directory up, and it needs no
+	# dependency reasoning to be right.  ether's `${INCF}: ${INCNAMES}' then
+	# finds its destination newer and does nothing, which is correct -- and
+	# ${OFILES}, which depend on ${INCF}, are older than what we just wrote,
+	# so netconfig.o recompiles against the right header.  Literal /usr and
+	# not $ROOT, as the paragraph above says: ether's own INCDIR is literal
+	# and the /v10 branch never reaches this rule.
+	cd $CMD/ether; cp ethernet.h order.h /usr/include/sys
 	# ipconfig calls tcp_addr(), a Bell library function on no tape; two
 	# of the three configs build.
 	cd $CMD/ether; mk lib netconfig arpconfig || echo 'ether: FAILED'

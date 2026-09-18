@@ -167,9 +167,14 @@ WRITEC.o: h00vars.h
 WRITEF.o: h00vars.h
 WRITES.o: h00vars.h
 WRITLN.o: h00vars.h
-	# DEPENDENCIES MUST END AT END OF FILE
-	# IF YOU PUT STUFF HERE IT WILL GO AWAY
-	# see make depend above
+# ipnx: UNINDENTED.  Tab-indented, these lines are the recipe of the rule
+# above -- `make depend' writes the banner that way, make drops a recipe that
+# is only comments, and mk does not: it hands them to sh, sh does nothing, mk
+# records the target as made, and the link later answers `cannot open'.
+# cmd/pascal/px/mkfile carries the measurement.
+# DEPENDENCIES MUST END AT END OF FILE
+# IF YOU PUT STUFF HERE IT WILL GO AWAY
+# see make depend above
 
 
 # ---- added by the converter: mk has no equivalent builtin ----

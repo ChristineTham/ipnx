@@ -6,8 +6,13 @@ CFLAGS = -O
 all:V: pix px_header pc pc2 pc3 pmerge
 	:
 
-install: all pxref.p
-	./install.sh $D $L
+# ipnx: `sh ./install.sh', NOT `./install.sh'.  The file is mode 644 in this
+# tree and on the tape, so exec'ing it answers `sh: ./install.sh: cannot
+# execute' and the recipe exits 1.  Naming the interpreter is what the tape's
+# own mkfiles do everywhere else a .sh is run, and it does not depend on a mode
+# that a tar extract can lose.
+install:V: all pxref.p
+	sh ./install.sh $D $L
 
 pix: pix.c
 	cc -O -o pix pix.c

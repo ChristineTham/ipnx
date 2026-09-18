@@ -38,19 +38,34 @@ learn: ${OBJECTS}
 ${OBJECTS}: lrnref
 learn.o: lrndef
 
+# ipnx: LOOP OVER $target.  mk's $target is the WHOLE list of the rule's
+# out-of-date targets, not the one being made, so `cc ... $target.c -o
+# ${LLIB}/$target' came out as one cc with both names in it the first time
+# both were out of date -- which is every fresh tree.  cmd/pascal/px/mkfile
+# carries the measurement, where the same shape reached cp and cp said so.
+# A `for' keeps one rule and makes it right for any number of targets.
 lcount tee:
-	cc ${CFLAGS} $target.c -o $target ${LIBRARY}
+	for t in $target
+	do
+		cc ${CFLAGS} $t.c -o $t ${LIBRARY}
+	done
 
 lessons:V:	${LESSONS}
 	:
 
 ${LESSONS}:
-	rm -r ${LLIB}/$target || :
-	mkdir ${LLIB}/$target
-	(cd ${LLIB}/$target; ar x ../$target.a)
+	for t in $target
+	do
+		rm -r ${LLIB}/$t || :
+		mkdir ${LLIB}/$t
+		(cd ${LLIB}/$t; ar x ../$t.a)
+	done
 
 play log:
-	rm -r ${LLIB}/$target; mkdir ${LLIB}/$target; chmod +w ${LLIB}/$target || :
+	for t in $target
+	do
+		rm -r ${LLIB}/$t; mkdir ${LLIB}/$t; chmod +w ${LLIB}/$t || :
+	done
 
 check:
 	test -r ${LLIB}/tee || echo 'tee not present; make tee' || :
