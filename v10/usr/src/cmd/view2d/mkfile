@@ -17,8 +17,10 @@ step: step.c
 	cc -o step step.c -lview2d
 #--------------------
 
-start: level
-all:	$PROG view2d.m libview2d.a
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+start:V: level
+all:V:	$PROG view2d.m libview2d.a
 
 view2d:	view2d.o rd.o sys.o view2d.h
 	$CC $CFLAGS -o view2d view2d.o rd.o sys.o

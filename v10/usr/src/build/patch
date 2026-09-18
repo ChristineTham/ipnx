@@ -2862,29 +2862,31 @@ sed 's|^char	\*direct	= "/crp/nlearn/lib";.*$|char	*direct	= "/usr/lib/learn";	/
 cd $SRC/cmd/troff/ancient.nroff/macros.d || exit 1
 sed "s|^\(	then echo \)\(usage:.*\)\$|\1'\2'|" macrunch > m$$ && mv m$$ macrunch
 
-# SPELL'S pcode ASKS FOR 2 MB OF BSS TO HOLD 260 KB, and during a world build
-# that is the difference between working and `sh: ./pcode: Not enough memory'.
+# SPELL'S pcode GETS ITS OWN ARRAYS BACK, AND THIS STANZA EXISTS TO GIVE THEM
+# BACK.  It used to shrink them:
 #
 #	Dict	words[200000];		/* 8 bytes each on a vax: 1,600,000 */
 #	char	space[500000];
-#	Bits	encodes[4094];
 #
-# -- 2,124,980 bytes of bss, measured with size(1) on the machine.  What the
-# tape's own word list actually needs, measured by running it:
+# -- 2,124,980 bytes of bss to hold the 31,460 words and 261,081 bytes the
+# tape's own list actually needs -- because from ipnxbuild the exec answered
+# `sh: ./pcode: Not enough memory' and the rule died, leaving a ZERO-BYTE
+# /usr/lib/spell/brspell on the shipped disk.
 #
-#	words = 31460; space = 261081; codes = 289
+# THE DIAGNOSIS WAS WRONG BY ONE LEVEL.  ENOMEM on this kernel is a swap
+# shortage (sys/ipnx/ipnx-v10.m:69), and the shortage was not pcode's 2 MB: it
+# was that the machine had 10 MB of swap and not the 254 MB its own
+# configuration declared, because the two extra areas were declared by
+# PARTITION LETTER and /dev names them with the bitmapped-filesystem bit set,
+# so swapon(2) answered ENODEV on every boot.  That is fixed in the config, and
+# with it fixed nothing needs shrinking: 2 MB of bss against 254 MB of swap is
+# not a question.  Shrinking an array to fit a swap area that was never
+# attached is the kind of repair that works and teaches the wrong thing.
 #
-# so the arrays are six and two times larger than the data.  Run by hand on an
-# idle machine it fits and produces the right 164,882 bytes; run from ipnxbuild,
-# with the rest of a world build resident, the exec fails and the rule dies.
-#
-# 50000 and 400000 keep 59% and 53% headroom over the measured figures and drop
-# the bss to 816,376.  SAFE TO SHRINK BECAUSE pcode CHECKS: readinput() tests
-# both arrays every line and exits with `words array too small' or `space array
-# too small', so an overflow is a diagnostic and not a corruption.
-#
-# A second pass is a no-op: after the first there is no 200000 or 500000 left
-# to match.
+# SO THE SED RUNS THE OTHER WAY.  A machine that took the shrink carries it in
+# /usr/src, and patch edits /usr/src in place -- deleting the stanza would
+# leave those trees shrunken for good.  On a pristine tape both patterns miss
+# and this is a no-op, which is also what a second pass is.
 cd $SRC/cmd/spell || exit 1
-sed -e 's/words\[200000\]/words[50000]/' \
-    -e 's/space\[500000\]/space[400000]/' pcode.c > p$$ && mv p$$ pcode.c
+sed -e 's/words\[50000\]/words[200000]/' \
+    -e 's/space\[400000\]/space[500000]/' pcode.c > p$$ && mv p$$ pcode.c

@@ -65,6 +65,64 @@ packages declined for a reason the tree contradicts — the decision may still b
 (data no tape carries, which is the `/usr/dict` import), §6, and `ipc/`, which is essentially
 unbuilt.
 
+### Second status pass, 2026-09-18: the five failures a full `ipnxbuild` reported
+
+*The golden rebuild of 18 Sep produced exactly five `FAILED` lines. All five are fixed and
+each was measured on a booted machine, not read off the files. Two of them had a cause
+nobody had looked for, and one of those two had been hiding behind a workaround.*
+
+| Reported | Root cause | Fix |
+|---|---|---|
+| `cyntax: FAILED` | `install:` with an empty recipe: an ordinary make idiom that `mk` treats as an error (`mk/src/recipe.c:19-27`), so `mk install` stopped in `sets/` before `cyn`, `cem` or `lib` ran | `:V:` on the phony targets in the four subdirectory mkfiles |
+| `sign: FAILED` (twice) | `sign/mkfile:15-19` runs `cyntax` twice per program, and `/usr/bin/cyntax` is a PKG target built *after* the `/usr/src/cmd` pass that first needs it | `$ROOT/usr/bin/cyntax` added as a prerequisite of `P_CMD_sign_verify` |
+| `backup.old: FAILED` | `Can't find /lib/ccom` — `cc.c:384` prints that for *any* `execv` failure, and the one that happened was ENOMEM: the machine had 10 MB of swap, not the 254 MB its config declares | the swap minors, below |
+| `9pfs: FAILED` | `cp: /etc/9pfs: Text file busy` — the build overwrites the binary that is serving `/n/macos` at that moment | copy-new-then-`mv`, the `/bin/sh` precedent |
+| `spell: FAILED` | the same swap shortage as `backup.old`; the workaround that hid it had shrunk `pcode`'s arrays | swap fixed, the shrink backed out |
+
+**The swap was declared and never attached, and that is the find of this pass.**
+`ipnx-v10.m` asks for three swap areas totalling 254 MB. `io/sw.c:28-38` frees only
+*index 0* at boot; every other area is freed by `swapon(2)`, which `/etc/rc` calls as
+`swapon -a`. But `sw.c:108-118` matches the named block device's `rdev` against `swdevt[]`,
+and the config named partitions c and d as `ra 02` and `ra 03` while `/dev/ra02` and
+`/dev/ra03` are minors **66 and 67** — `0100` is the bitmapped-filesystem bit (`io/ra.c:34-35`),
+set on every section `v8/proto-dev` carried a filesystem on. So every boot this project has
+logged printed
+
+```
+Adding /dev/ra02 as swap device
+/dev/ra02: No such device
+```
+
+and the machine ran on `ra0b`'s 10 MB — worse than not declaring the areas at all, because
+`swstrategy()` stripes the map across all `nswdevt` devices whatever their state, so two
+thirds of the stripes belonged to areas nothing had freed. Declaring the minors as `0102`
+and `0103` fixes it; the bit is invisible to the driver (`UNIT()` masks it with `027`,
+`PART()` with `07`) and a swap area has no filesystem to read it. Measured after: all three
+`swapon` calls answer `In use`, `backup.old` builds, and `spell` builds with the tape's own
+array sizes.
+
+**And a delivery gap that would have made that fix dead code.** `$SYS/ipnx/ipnx-v10.m` and
+`$SYS/ipnx/mkfile` reached a machine by one route only — `build/patch:2244,2255` — and
+`patch` runs only when `$CMD/.patched` is older than `patch` *itself*. So an edit to the
+**configuration** reached a guest only if the **script** happened to change in the same
+round. Measured: after `updatebuild`, `/usr/src/build/src/ipnx-v10.m` carried the new text
+and `/usr/sys/ipnx/ipnx-v10.m` did not. Both files are now targets in `build/mkfile` with
+the repository's copy as their prerequisite, `cmp`-guarded so an unchanged `.m` does not
+re-date itself and rebuild the kernel every round.
+
+**The `mk`/`make` idiom is a class, not one package.** A scan of all 670 mkfiles for a
+target with no recipe in any rule naming it found **21 more** in 19 files, all phony
+(`all`, `install`, `clean`, `clobber`, `start`, `sources`, `compilations`, `allprogs`,
+`mkdirs`, `dist`). None is on a path the build takes today — which is why only `cyntax`
+ever failed — and all are now `:V:`. Two idioms were deliberately left alone: `FRC:` (in
+`sh`, `monk`, `prefer/libux3`) and `force:` (in `gcc`) are make's "always out of date"
+marker, and `:V:` would invert their meaning; nothing requires either of them today, and
+`sh/mkfile:2` is `FRC =` — empty — so the reference expands to nothing.
+
+**One more of the same shape, not fixed:** `cmd/cfront/mkfile:2-3` shells out to `make`,
+exactly as `cmd/cyntax/mkfile` did until this round. `cfront` is in no build list, so it
+costs nothing today.
+
 **One inconsistency found while working and not yet resolved:** `build/mkfile:23-26` says the
 `./installed` predicate "is gone", and there is no `:P` attribute and no `installed` script
 anywhere — but six comments still describe it as live, including the one that justifies the

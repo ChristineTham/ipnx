@@ -15,7 +15,9 @@ CFLAGS = -O
 LIBRARY =
 LLIB	= ${DESTDIR}/usr/lib/learn
 
-all:	learn tee lcount
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+all:V:	learn tee lcount
 install:	all
 	install -s learn ${DESTDIR}/usr/bin
 	install -s tee ${LLIB}

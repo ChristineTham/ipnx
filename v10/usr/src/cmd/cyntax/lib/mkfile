@@ -2,7 +2,10 @@ LIB		= /usr/lib/cyntax
 CCOM		= ${LIB}/ccom
 CEM		= ${LIB}/cem
 
-all		: libc libj
+# ipnx: :V: ON THE PHONY TARGETS.  An empty recipe on a file target is an error
+# in mk and was not one in make -- `mk: no recipe to make 'install'', from
+# mk/src/recipe.c:19-27.  sets/mkfile:16-28 carries the whole account.
+all:V:		libc libj
 
 libj		: llib-lj ${CCOM} ${CEM}
 		/lib/cpp -M -I/usr/jerq/include llib-lj | ${CCOM} -llibj - out && ${CEM} -p out && mv out libj
@@ -16,10 +19,10 @@ libk		: llib-lk ${CCOM} ${CEM}
 lib%		: llib-l% var% ${CCOM} ${CEM}
 		/lib/cpp -M llib-l$stem | ${CCOM} `cat var$stem` -llib$stem - out && ${CEM} -p out && mv out lib$stem
 
-install		: ${LIB}/libc ${LIB}/libj
+install:V:	${LIB}/libc ${LIB}/libj
 
 ${LIB}/lib%	: lib%
 		cp lib$stem ${LIB}/lib$stem
 
-clean		:
+clean:V:
 		rm -f libc libj out || :

@@ -42,7 +42,9 @@ shipped:	$BINS
 bison: $OBJECTS
 	$CC $LDFLAGS -o bison $OBJECTS
 
-dist:	bison-dist.tar bison-dist.tar.Z
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+dist:V:	bison-dist.tar bison-dist.tar.Z
 
 bison-dist.tar:
 	tar cvf bison-dist.tar \

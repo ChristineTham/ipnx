@@ -3,7 +3,9 @@ ALL = btadd btbuild btcat btcreat btdelete btlook btran btreport btsquash
 NPROC=2
 BUILTINS=
 
-all:    $ALL
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+all:V:    $ALL
 
 %:	%.c
 	$CC $CFLAGS $prereq $LCBT -o $target

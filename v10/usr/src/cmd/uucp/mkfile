@@ -175,7 +175,9 @@ utility.o permission.o cico.o conn.o callers.o cpmv.o\
 	uucleanup.o uucheck.o uusched.o  uucp.o uustat.o dio.o \
 	uux.o uuxqt.o versys.o xqt.o:	uucp.h parms.h
 
-mkdirs:
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+mkdirs:V:
 
 
 #  lint procedures

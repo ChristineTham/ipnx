@@ -90,7 +90,9 @@ TREE_H = tree.h tree.def machmode.def
 
 all:V: gnulib gcc cc1 cpp
 
-compilations: $OBJS
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+compilations:V: $OBJS
 
 gcc: gcc.o version.o $LIBS
 	$CC $CFLAGS -o gccnew $prereq

@@ -50,7 +50,9 @@ machdefs : vaxdefs
 
 put.o putpcc.o vax.o: pccdefs
 
-install: ${DESTDIR}/usr/bin/f77 ${DESTDIR}/usr/lib/f77pass1
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+install:V: ${DESTDIR}/usr/bin/f77 ${DESTDIR}/usr/lib/f77pass1
 
 ${DESTDIR}/usr/bin/f77 : f77
 	size f77 ${DESTDIR}/usr/bin/f77

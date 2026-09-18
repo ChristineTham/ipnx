@@ -1,4 +1,6 @@
-all:
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+all:V:
 install:
 	(cd cfront; make install)
 	CC -O -o nmunch munch.c

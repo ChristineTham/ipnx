@@ -87,8 +87,47 @@ dump	uddump	0	10240	20480		# into swap, ra0b
 # start until 780,264.  etc/fstab mounts ra00 and ra05 and nothing else, and
 # mkimage's two mkbitfs calls are both on unit 1, so blocks 30,720..780,263
 # have never held anything.  Taking c and d leaves e (122 MB) still spare.
-swap	ra	02	249848			# ra0c, alice.m:5's size
-swap	ra	03	249848			# ra0d, alice.m:6's size
+
+# AND THE MINORS CARRY 0100, WHICH IS THE DIFFERENCE BETWEEN DECLARING THE
+# SWAP AND HAVING IT.  These two areas were declared as `ra 02' and `ra 03'
+# -- the partition letters -- and the kernel never used either of them.
+#
+# io/sw.c:28-38 is why: swopen() calls swfree(0) once, for index 0 alone, so
+# every area past the first is freed into the swap map by swapon(2) and by
+# nothing else.  That is what /etc/rc's `/etc/swapon -a' is for, and it reads
+# /etc/fstab's three `sw' lines.  But sw.c:108-118 matches the named block
+# device's rdev against swdevt[] and answers ENODEV when nothing matches, and
+# /dev/ra02 is minor 66, not 2: 0100 in an ra minor marks a bitmapped
+# filesystem (ra.c:34-35), and v8/proto-dev sets it on every section that
+# carried one -- tools/v10-proto.py:60 is that table, where ra00 is 64, ra02
+# is 66, ra03 is 67, and ra01, the swap, is 1 with the bit CLEAR.
+#
+# So every boot this project has logged says
+#	Adding /dev/ra01 as swap device
+#	/dev/ra01: In use			<- EBUSY: minor 1 matched, already freed
+#	Adding /dev/ra02 as swap device
+#	/dev/ra02: No such device	<- ENODEV: 66 never matched 2
+#	Adding /dev/ra03 as swap device
+#	/dev/ra03: No such device
+# and the machine has been running on ra0b's 10 MB alone -- the exact shortage
+# the paragraph above says was fixed.  It was not; it was declared.  And it is
+# worse than not declaring it, because swstrategy() (sw.c:40-64) stripes the
+# map across all nswdevt devices whatever their state, so two thirds of the
+# stripes belong to areas nothing ever freed.
+#
+# THE BIT IS INVISIBLE TO THE DRIVER, so putting it in the config costs
+# nothing: ra.c:39 is `UNIT(dev) ((dev>>3) & 027)', whose mask clears it, and
+# PART(dev) is `dev&07', which never sees it.  The only other 0100 in that file
+# is SPDOWN (:78), a bit in ra->flags and not in a minor.  A swap area has no
+# filesystem, so no other code reads it either.
+#
+# AND IT IS THE FIX THAT NEEDS NO /dev.  build/mkdev is create-only by design
+# -- `test -b $DEV/ra02 || mknod ...' -- so a node already made with a minor is
+# never corrected, and changing proto-dev would reach only a disk whose /dev
+# was made after the change.  Changing the config reaches every disk the moment
+# the new kernel boots.
+swap	ra	0102	249848			# ra0c = /dev/ra02, minor 66
+swap	ra	0103	249848			# ra0d = /dev/ra03, minor 67
 
 # ========================================================== THE MEMORY ====
 # TWO MEMORY CONTROLLERS at simh's own nexus numbers (vax780_defs.h:

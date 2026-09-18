@@ -13,14 +13,28 @@ sets.lex.c	: sets.lex.l
 		lex sets.lex.l
 		mv lex.yy.c sets.lex.c
 
-install		: ${INSDIR}/sets
+# ipnx: :V:, BECAUSE AN EMPTY RECIPE ON A FILE TARGET IS AN ERROR IN mk AND WAS
+# NOT ONE IN make.  `install: <prereqs>' with nothing under it is the ordinary
+# make idiom -- build the prerequisites, there is nothing else to do -- but
+# mk/src/recipe.c:19-27 looks for a recipe among the node's prerequisite arcs
+# and, finding none on a target that is neither VIRTUAL (:V:) nor NORECIPE
+# (:N:), prints `mk: no recipe to make '<target>'' and exits 1.  NORECIPE comes
+# only from the :N: attribute (graph.c:53,79,258) -- it is never inferred from
+# an empty recipe -- so the idiom fails.
+#
+# Measured: `mk install' in cyntax built sets, copied it to ../cyn/sets, and
+# then stopped with `mk: no recipe to make 'install'' before cyn, cem or lib
+# ran at all.  That is why /usr/bin/cyntax has never existed on a disk this
+# project has produced, and why cmd/sign -- which runs `cyntax -c ix.c' -- has
+# always failed with `sh: cyntax: not found'.
+install:V:	${INSDIR}/sets
 
 ${INSDIR}/sets	: sets
 		cp sets ${INSDIR}/sets
 
 ${OBS}		: ${INCS}
 
-clean		:
+clean:V:
 		rm -f ${OBS} sets.lex.c  || :
 
 

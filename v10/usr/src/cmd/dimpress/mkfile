@@ -160,7 +160,9 @@ install :
 	    else ${MAKE} INS=${INS} ${ARGS}; \
 	fi
 
-allprogs : ${PROGS}
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+allprogs:V: ${PROGS}
 
 readrast : ${READRAST}
 	cc ${CFLAGS} -o readrast ${READRAST}

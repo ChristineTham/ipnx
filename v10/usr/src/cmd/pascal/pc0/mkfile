@@ -72,7 +72,9 @@ a.out: ${OBJS} version
 	./version > Version.c
 	${CC} ${CFLAGS} ${LDFLAGS} ${OBJS} Version.c
 
-sources: ${SRCS} ${HDRS} ${OTHERS}
+# ipnx: :V: -- an empty recipe on a file target is an error in mk and was not
+# one in make; cmd/cyntax/sets/mkfile:16-28 carries the account.
+sources:V: ${SRCS} ${HDRS} ${OTHERS}
 	
 ${SRCS} ${HDRS} ${OTHERS}:
 	${GET} ${target}

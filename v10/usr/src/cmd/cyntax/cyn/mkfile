@@ -38,7 +38,7 @@ COBS	=\
 ccom	: ${OBS} bits.o
 	${CC} ${OBS} bits.o -o ccom
 	echo done
-clean	:
+clean:V:
 	rm -f ${COBS} ${OBS} ccom
 
 bits.c: tables.c
@@ -50,9 +50,9 @@ bits.c: tables.c
 # ROOT set installed ccom onto the BUILDER -- and cyntax/lib/mkfile:2-3 then
 # looked for ${LIB}/ccom under the root to generate libc and libj and did not
 # find it.  The default at :2 keeps `mk install' by hand working as it did.
-install: ccom
+install:V: ccom
 	cp ccom ${LIB}/ccom
-ctags:
+ctags:V:
 	ctags *.c
 
 ${OBS}:	defs.h

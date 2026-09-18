@@ -1442,9 +1442,17 @@ $ETC/nafsmnt: $CMD/nafsmnt
 $CMD/9pfs: $PREP $CMD/9pfs.c $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libin.a $ROOT/usr/lib/libipc.a
 	cd $CMD; cc -O   -o 9pfs 9pfs.c -lnetb -lin -lipc || echo '9pfs: FAILED'
 
+# COPY-NEW-THEN-mv, THE /bin/sh PRECEDENT (:6036 there, and the same reason).
+# /etc/9pfs IS THE RUNNING SERVER while the build runs: /etc/rc mounts /n/macos
+# and /n/home with `runfs /n/<m> /etc/9pfs ...', runfs execs into it, and the
+# process stays for the life of the machine.  So a plain cp onto the name is an
+# open for writing of a file with a resident text segment, and V10 answers
+# ETXTBSY -- measured, `cp: /etc/9pfs: Text file busy', the only failure in that
+# build the build itself had caused.  mv replaces the DIRECTORY ENTRY and leaves
+# the running inode alone, so the share keeps serving and the next boot takes
+# the new binary.  Strip the copy, not the destination, for the same reason.
 $ETC/9pfs: $CMD/9pfs
-	cd $CMD; cp 9pfs $ETC/9pfs || echo '9pfs: FAILED'
-	cd $CMD; strip $ETC/9pfs || echo '9pfs: install FAILED'
+	cd $CMD; cp 9pfs $ETC/9pfs.new && strip $ETC/9pfs.new && mv $ETC/9pfs.new $ETC/9pfs || echo '9pfs: FAILED'
 
 # runfs IS ON THE TAPE AND NOTHING EVER BUILT IT.  libnetb/mkfile has a bare
 # `runfs:' target that no `all' line reaches, which is why libnetb.a shipped and
@@ -1745,7 +1753,37 @@ $KLIB/star.a: $PREP
 # site.  ipnx/mkfile is `STARS=ipnx-v10.u' and one recipe, so `mk ipnx-v10.u'
 # there resolves the class itself -- and a second machine would be a line in
 # that file rather than another rule in this one.
-P_SYS_ipnx_ipnx_v10_u:V:	$PREP $KERN
+# THE CONFIGURATION IS A PRODUCT OF THIS REPOSITORY, SO IT GETS A RULE.  Both
+# files under $SYS/ipnx are ours -- the tapes have no such directory -- and both
+# reached the machine by one route only: build/patch:2244,2255 copies them, and
+# patch runs only when $CMD/.patched is older than patch ITSELF (:254 above).
+# So an edit to the CONFIG reached a guest only if the SCRIPT happened to change
+# in the same round, and otherwise the kernel rebuilt from whatever .m the disk
+# was carrying -- with no symptom, because it builds and boots either way.  That
+# is the failure this repository already names twice over: a generated file out
+# of step with its source, and an artefact whose consumer never checks its
+# origin.  patch's copies stay (they are what puts the files on a machine that
+# has none); these rules make the .m's own mtime the trigger thereafter.
+#
+# Measured, on the round that added the swap minors below: after updatebuild,
+# `grep -c 0102 /usr/src/build/src/ipnx-v10.m' answered 1 and the same grep on
+# /usr/sys/ipnx/ipnx-v10.m answered 0.  The rule below is what made it 1.
+#
+# cmp BEFORE cp, and it is not an optimisation.  mkbuild copies build/src on
+# every round, so $GEN/src/ipnx-v10.m is always newer than the installed copy
+# and the recipe always runs; an unconditional cp would then re-date the .m
+# every round, mk.star would find it newer than ipnx-v10.c.c, and EVERY round
+# would rebuild the kernel.  Comparing content leaves the mtime alone when
+# nothing changed -- the same trick updatebuild plays on the patch stamp.
+$SYS/ipnx/ipnx-v10.m: $GEN/src/ipnx-v10.m
+	test -d $SYS/ipnx || mkdir $SYS/ipnx
+	cmp -s $GEN/src/ipnx-v10.m $SYS/ipnx/ipnx-v10.m || cp $GEN/src/ipnx-v10.m $SYS/ipnx/ipnx-v10.m || echo 'ipnx-v10.m: FAILED'
+
+$SYS/ipnx/mkfile: $GEN/src/ipnx.mkfile
+	test -d $SYS/ipnx || mkdir $SYS/ipnx
+	cmp -s $GEN/src/ipnx.mkfile $SYS/ipnx/mkfile || cp $GEN/src/ipnx.mkfile $SYS/ipnx/mkfile || echo 'ipnx/mkfile: FAILED'
+
+P_SYS_ipnx_ipnx_v10_u:V:	$PREP $KERN $SYS/ipnx/ipnx-v10.m $SYS/ipnx/mkfile
 	cd $SYS/ipnx; mk ipnx-v10.u || echo 'unix: FAILED'
 
 $SYS/ipnx/ipnx-v10.u: P_SYS_ipnx_ipnx_v10_u
@@ -4694,7 +4732,18 @@ $ROOT/etc/rarct: $CMD/rarepl/rarct
 
 # sign, resign, verify and enroll have no install target of their own and are
 # in no Admin list, so Admin/dest sends all four to /usr/bin.
-P_CMD_sign_verify:V:	$PREP
+# AND IT NEEDS cyntax, WHICH IS NOT AN ORDERING NICETY.  sign/mkfile:15-19 is
+#	%.O %.o: %.c
+#		cyntax -c $stem.c && cc -c $CFLAGS $stem.c
+#	%: %.o
+#		cyntax $stem.O $Y && cc -o $stem $stem.o $L -lipc
+# -- cyntax produces the .O cross-check files that $Y names as prerequisites of
+# all four programs, and it gates the link as well.  So this package cannot
+# build without /usr/bin/cyntax on PATH, and /usr/bin/cyntax is a PKG target,
+# built after the alphabetical /usr/src/cmd pass that first requires this one.
+# Measured: `sh: cyntax: not found' twice in one build, once for CMDF and once
+# for PKG, with cyntax itself installed between them.
+P_CMD_sign_verify:V:	$PREP $ROOT/usr/bin/cyntax
 	cd $CMD/sign; mk resign && mk enroll && mk sign && mk verify || echo 'sign: FAILED'
 
 $CMD/sign/verify: P_CMD_sign_verify

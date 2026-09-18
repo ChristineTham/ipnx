@@ -7,7 +7,10 @@ OBS	= diag.o equiv.o fix.o main.o misc.o read.o string.o symbol.o\
 COBS	= diag.O equiv.O fix.O main.O misc.O read.O string.O symbol.O\
 	  table.O time.O type.O var.O
 
-all	: cem cyntax
+# ipnx: :V: ON THE PHONY TARGETS.  An empty recipe on a file target is an error
+# in mk and was not one in make -- `mk: no recipe to make 'install'', from
+# mk/src/recipe.c:19-27.  sets/mkfile:16-28 carries the whole account.
+all:V:	cem cyntax
 
 # ipnx: the same self-hosting loop cyn/mkfile carries, and the same answer.
 # ${COBS} is the cyntax-produced .O set; `cem' itself is linked from ${OBS} by
@@ -28,10 +31,10 @@ time.o	: cem.h
 type.o	: cem.h stdobj.h 	 symbol.h type.h
 var.o	: cem.h stdobj.h types.h symbol.h type.h var.h
 
-clean	:
+clean:V:
 	rm -f ${OBS} cem cyntax || :
 
-install	: ${BIN}/cyntax ${LIB}/cem
+install:V:	${BIN}/cyntax ${LIB}/cem
 
 # ipnx: the TARGETS were already ${BIN}/cyntax and ${LIB}/cem and only the
 # recipes were literal, so with ROOT set mk was told to make a file under the

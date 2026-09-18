@@ -7,19 +7,19 @@ LIB	= /usr/lib/cyntax
 # make reads the tape's Makefile, which is delivered by nothing and repaired by
 # nothing.  So every fix made to a cyntax mkfile in this repository was
 # invisible on a real machine, and the build kept running the tape's rules.
-all	:
+all:V:
 	(cd sets; mk install)
 	(cd cyn; mk)
 	(cd cem; mk)
 	(cd lib; mk)
 
-install	:
+install:V:
 	(cd sets; mk install)
 	(cd cyn; mk install BIN=${BIN} LIB=${LIB})
 	(cd cem; mk install BIN=${BIN} LIB=${LIB})
 	(cd lib; mk install BIN=${BIN} LIB=${LIB})
 
-clean	:
+clean:V:
 	(cd sets; mk clean)
 	(cd cyn; mk clean)
 	(cd cem; mk clean)
