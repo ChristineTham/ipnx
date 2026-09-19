@@ -24,4 +24,17 @@
 #
 # `rm -rf' rather than `rm -f' because the directory rows are in the same list,
 # and sed re-roots every path for the /v10 case.
-sed "s|^/usr/|${1-}/usr/|" /usr/ipnx/derived | xargs rm -rf
+#
+# usr/maps/map IS THE ONE EXCEPTION.  build/usrtrees calls maps shape because
+# every file in it is, except this one: map's own mkfile has always installed
+# the compiled binary into /usr/maps (map.sh's MAPPROG default agrees, and so
+# does every man page), so it is product sitting inside a shape root, same as
+# bin/lib are product sitting outside one.  It cannot be in the tree before a
+# build (binaries never enter git), so ipnxbuild's before/after walk always
+# calls it derived, and world's own install (build/mkfile:4402-4414) gets
+# swept the moment mkimage runs this script against /v10 -- measured: a
+# from-scratch golden disk shipped map.sh and libmap.a but no /usr/maps/map,
+# so /usr/bin/map ran and failed to find its own binary.  Excluded here,
+# not from the walk itself, because that walk also drives mkipnx's `consumed'
+# accounting and this is the only line ipnxclean owns.
+grep -v '^/usr/maps/map$' /usr/ipnx/derived | sed "s|^/usr/|${1-}/usr/|" | xargs rm -rf
