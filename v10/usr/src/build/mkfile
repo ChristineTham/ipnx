@@ -700,8 +700,19 @@ $ROOT/.profile: dirs $GEN/etc/profile
 
 # ---- commands --------------------------------------------------------------
 
-$DEST/adb: $PREP
-	cd $CMD/adb/vax; mk adb && strip adb && cp adb $DEST/adb || echo 'adb: FAILED'
+# $PREP alone was the pre-split shape this file's own header warns about:
+# once /bin/adb exists, editing anything under adb/vax/ (or the adb/comm/
+# sources it shares) and re-running ipnxbuild rebuilt nothing, because the
+# artefact already existed and was newer than the stamps -- exactly
+# "PROBES: the package's own mk decides" above, just never applied here.
+P_CMD_adb_vax_adb:V:	$PREP
+	cd $CMD/adb/vax; mk adb || echo 'adb: FAILED'
+
+$CMD/adb/vax/adb: P_CMD_adb_vax_adb
+	test -f $CMD/adb/vax/adb || echo '$CMD/adb/vax/adb: the package did not produce it'
+
+$DEST/adb: $CMD/adb/vax/adb
+	cd $CMD/adb/vax; strip adb && cp adb $DEST/adb || echo 'adb: FAILED'
 
 $DEST/ar: $PREP $CMD/ar.c
 	cd $CMD; cc -O   -o ar ar.c && strip ar && cp ar $DEST/ar || echo 'ar: FAILED'
@@ -3326,7 +3337,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/usr/bin/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/bin/bundle
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/usr/bin/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/bin/bundle
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -5010,10 +5021,14 @@ $ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
 	rm -f $target; ln $ROOT/usr/bin/WWB/wwb $target
 
 # THE REST OF cmd/, and why each is not built:
-#   asd asd++ oasd++  the software-distribution package.  Every one of the three
-#             installs into $(ASD), which no makefile in them defines -- the
-#             variable is empty, so `cp $(LIBPROGS) rmlocks $(ASD)' copies into
-#             the current directory.  asd's own install is `./install.asd'
+#   asd++     needs CC=PTCC, a C++ translator absent from all six tapes -- the
+#             same cfront/C++ deferral this file documents elsewhere for dag
+#             and vsw.  asd++/mkfile DOES define ASD=/usr/lib/asd correctly;
+#             the blocker is the compiler, not the install path.
+#             (oasd++ never existed in this tree -- removed from mkfiles.)
+#   asd       IS built, below (`mk all` then per-program cp+strip), but
+#             bypasses both its own `install:' and `./install.asd' --
+#             see the asdrcv rule's own comment for the consequence.
 #   btree     cmd/cbt above, a year newer, and its install would replace the
 #             libcbt.a built from /usr/src/libcbt
 #   dimpress  its install re-invokes make with INS=cp against $(ARGS), which is
@@ -5701,9 +5716,32 @@ $ROOT/usr/bin/inspkg: $CMD/asd/inspkg
 $CMD/asd/asdrcv: P_CMD_asd_all
 	test -f $CMD/asd/asdrcv || echo '$CMD/asd/asdrcv: the package did not produce it'
 
-$ROOT/usr/bin/asdrcv: $CMD/asd/asdrcv
-	cd $CMD/asd; cp asdrcv $ROOT/usr/bin/asdrcv || echo 'asdrcv: FAILED'
-	cd $CMD/asd; strip $ROOT/usr/bin/asdrcv || echo 'asdrcv: install FAILED'
+# asdrcv MUST run setuid root (its own header comment says so) to reach
+# /etc/asd/perm and /etc/asd/keys and change identity per that file's uid/
+# gid -- none of which install.asd's own logic ever ran here, so the
+# built binary was neither setuid nor at a path that could find them.
+# install.asd:5-9 picks /usr/bin/asdrcv only where Honey Danber uucp's own
+# /usr/lib/uucp/L.sys exists; this build's uucp never creates one (grepped
+# the whole tree), so its own logic says /etc/asd/asdrcv is the right path.
+# Not attempting to populate /etc/asd/perm or /etc/asd/keys: those name
+# which remote machine/uid pairs may submit packages and are exactly the
+# kind of per-deployment secret an administrator provisions after boot,
+# never something a golden disk should ship pre-configured with -- with
+# them absent, asdrcv fails closed on every invocation until an admin adds
+# one, which is the secure default, not a bug.
+$ROOT/etc/asd: $PREP
+	test -d $ROOT/etc/asd || mkdir $ROOT/etc/asd
+	/etc/chown 0 $ROOT/etc/asd && chmod 755 $ROOT/etc/asd || echo 'etc/asd: mode FAILED'
+
+$ROOT/etc/asd/asdrcv: $CMD/asd/asdrcv $ROOT/etc/asd
+	cd $CMD/asd; cp asdrcv $ROOT/etc/asd/asdrcv || echo 'asdrcv: FAILED'
+	cd $CMD/asd; strip $ROOT/etc/asd/asdrcv || echo 'asdrcv: install FAILED'
+	/etc/chown 0 $ROOT/etc/asd/asdrcv && chmod u+s,og-w $ROOT/etc/asd/asdrcv || echo 'asdrcv: mode FAILED'
+
+# install.asd:33-34's other half: ship.sh under the name uucico's callers
+# actually invoke.
+$ROOT/usr/bin/uuship: $CMD/asd/ship.sh
+	cp $CMD/asd/ship.sh $ROOT/usr/bin/uuship && chmod 775 $ROOT/usr/bin/uuship || echo 'uuship: FAILED'
 
 # view2d itself needs $MCC=/usr/jerq/bin/3cc (mkfile:3194-3199's jerq/
 # deferral) and so stays excluded, but libview2d.a (view2d.3's own library)

@@ -214,7 +214,6 @@ src/cmd/nupas/sgi/mkfile
 src/cmd/nupas/smtp/mkfile
 src/cmd/nupas/sun4bsd/mkfile
 src/cmd/nupas/v10/mkfile
-src/cmd/oasd++/mkfile
 src/cmd/odist/ape/mkfile
 src/cmd/odist/mkfile
 src/cmd/odist/opkg/mkfile
