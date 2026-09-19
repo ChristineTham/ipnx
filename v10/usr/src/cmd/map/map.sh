@@ -2,8 +2,8 @@
 # MF -m -f or "", M map files, A other arguments
 # MFLAG and FFLAG 0 or 1 for -m or -f ever used
 FEATURE=no
-MAPPROG=${MAPPROG-/usr/lib/map}
-MAPDIR=${MAPDIR-/n/cetus/usr/maps}
+MAPPROG=${MAPPROG-/usr/maps/map}
+MAPDIR=${MAPDIR-/usr/maps}
 A= F=0 FFLAG=0 MFLAG=0
 for i in $*
 do

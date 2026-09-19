@@ -652,6 +652,47 @@ $ETC/tcpconfig: $IPC/internet/tcpconfig
 	cd $IPC/internet; cp tcpconfig tcpc.new && mv tcpc.new $ETC/tcpconfig || echo 'tcpconfig: FAILED'
 	cd $IPC/internet; strip $ETC/tcpconfig || echo 'tcpconfig: install FAILED'
 
+# ipc/bin builds con, rcp, loopback, telnet, scriptcon and qns -- none of
+# which any other package on this disk provides.  dk/cmd (:5771 below)
+# already owns push, pull, rx, nrx and ndcon with its own, deliberately
+# chosen Datakit implementations, and dcon is deliberately excluded there
+# too (BSD sgttyb) -- so this stanza runs ipc/bin's own `all' (which only
+# ever touches files inside $IPC/bin itself) and then hand-copies just the
+# names nothing else builds, instead of ipc/bin/mkfile's own `install:',
+# which would overwrite dk/cmd's push/pull/rx/nrx/ndcon with its plainer
+# versions.  dcon/rogin/rlogin/nogin link to this con; rsh links to the
+# dk/cmd rx that already exists by the time this runs.
+P_IPC_bin_all:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a
+	cd $IPC/bin; mk all || echo 'ipc/bin: FAILED'
+
+$IPC/bin/con: P_IPC_bin_all
+	test -f $IPC/bin/con || echo '$IPC/bin/con: the package did not produce it'
+
+$ROOT/usr/bin/con: $IPC/bin/con
+	cd $IPC/bin; cp con $ROOT/usr/bin/con && /etc/chown bin,bin $ROOT/usr/bin/con && chmod 775 $ROOT/usr/bin/con || echo 'con: FAILED'
+
+$ROOT/usr/bin/dcon: $ROOT/usr/bin/con
+	rm -f $target; ln $ROOT/usr/bin/con $target
+$ROOT/usr/bin/rogin: $ROOT/usr/bin/con
+	rm -f $target; ln $ROOT/usr/bin/con $target
+$ROOT/usr/bin/rlogin: $ROOT/usr/bin/con
+	rm -f $target; ln $ROOT/usr/bin/con $target
+$ROOT/usr/bin/nogin: $ROOT/usr/bin/con
+	rm -f $target; ln $ROOT/usr/bin/con $target
+$ROOT/usr/bin/rsh: $ROOT/usr/bin/rx
+	rm -f $target; ln $ROOT/usr/bin/rx $target
+
+$ROOT/usr/bin/rcp: $IPC/bin/con
+	cd $IPC/bin; cp rcp $ROOT/usr/bin/rcp && /etc/chown bin,bin $ROOT/usr/bin/rcp && chmod 775 $ROOT/usr/bin/rcp || echo 'rcp: FAILED'
+$ROOT/usr/bin/loopback: $IPC/bin/con
+	cd $IPC/bin; cp loopback $ROOT/usr/bin/loopback && /etc/chown bin,bin $ROOT/usr/bin/loopback && chmod 775 $ROOT/usr/bin/loopback || echo 'loopback: FAILED'
+$ROOT/usr/bin/telnet: $IPC/bin/con
+	cd $IPC/bin; cp telnet $ROOT/usr/bin/telnet && /etc/chown bin,bin $ROOT/usr/bin/telnet && chmod 775 $ROOT/usr/bin/telnet || echo 'telnet: FAILED'
+$ROOT/usr/bin/scriptcon: $IPC/bin/con
+	cd $IPC/bin; cp scriptcon $ROOT/usr/bin/scriptcon && /etc/chown bin,bin $ROOT/usr/bin/scriptcon && chmod 775 $ROOT/usr/bin/scriptcon || echo 'scriptcon: FAILED'
+$ROOT/usr/bin/qns: $IPC/bin/con
+	cd $IPC/bin; cp qns $ROOT/usr/bin/qns && /etc/chown bin,bin $ROOT/usr/bin/qns && chmod 775 $ROOT/usr/bin/qns || echo 'qns: FAILED'
+
 # Root's home is / -- passwd's root line is `root::0:4::/:' -- and sh/main.c:109
 # opens .profile there with no prefix.
 $ROOT/.profile: dirs $GEN/etc/profile
@@ -3285,7 +3326,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/usr/bin/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/usr/bin/asdrcv $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/bin/bundle
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3955,6 +3996,12 @@ $ROOT/usr/bin/man: $PREP
 	cd $CMD/man; cp mancache.sh $ROOT/usr/lib/mancache || :; cp manlinks.sh $ROOT/usr/lib/manlinks || :
 	cd $CMD/man; chmod +x $ROOT/usr/lib/mancache $ROOT/usr/lib/manlinks || :
 
+# bundle is a nine-line shell script with no extension, so it fell through
+# the flat-source dispatch that handles every other loose .c/.sh command --
+# bundle.1 documents it but nothing ever installed it.
+$ROOT/usr/bin/bundle: $PREP
+	cd $CMD; cp bundle $ROOT/usr/bin/bundle && chmod 775 $ROOT/usr/bin/bundle || echo 'bundle: FAILED'
+
 # lint is a script over two passes and a set of llib files in /usr/lib/lint.
 P_CMD_lint__built:V:	$PREP
 	cd $CMD/lint; mk all && echo done > $CMD/lint/.built || echo 'lint: FAILED'
@@ -4203,6 +4250,11 @@ $ROOT/usr/bin/refer: $CMD/refer/refer
 	test -d $ROOT/usr/lib/refer || mkdir $ROOT/usr/lib/refer
 	cd $CMD/refer; cp refer $ROOT/usr/bin/refer || :; cp mkey hunt inv $ROOT/usr/lib/refer || :
 	cd $CMD/refer; strip $ROOT/usr/bin/refer $ROOT/usr/lib/refer/mkey $ROOT/usr/lib/refer/hunt $ROOT/usr/lib/refer/inv || echo 'refer: FAILED'
+	# lookbib and pubindex are refer.1's own documented subcommands -- plain
+	# shell over mkey/hunt/inv, which are already installed above -- but
+	# were never copied anywhere; refer/mkfile's own bundle: target is the
+	# only place that ever named them.
+	cd $CMD/refer; cp lookbib pubindex $ROOT/usr/bin || echo 'lookbib/pubindex: FAILED'
 
 P_CMD_f2c_f2c:V:	$PREP
 	cd $CMD/f2c; mk f2c || echo 'f2c: FAILED'
@@ -4887,13 +4939,26 @@ $CMD/worm/wmkfs: P_CMD_worm_wmkfs
 
 $ROOT/usr/lib/worm/wmkfs: $CMD/worm/wmkfs
 	test -d $ROOT/usr/lib/worm || mkdir $ROOT/usr/lib/worm
-	# FIFTEEN BUILT, NINE INSTALLED.  The line above named nine of the
-	# fifteen the rule above builds; worm/mkfile:9-11 is
+	# All fifteen buildable programs are installed here (jukebox and scsish
+	# are excluded, see below); worm/mkfile:9-11 is
 	# `ALL=wmkfs ... wcopy jukebox scsish' and `BALL=${ALL:%=$BIN/%}' with
 	# BIN=/usr/lib/worm at :4, so the package installs every one it makes.
 	# jukebox and scsish are the two that do not build here, for the reason
-	# above; the other six were simply left behind.
+	# above; all fifteen of the rest are copied below.
 	cd $CMD/worm; cp wmkfs wstat wwrite wread wls woffline wcat wbtree wrm wdir wreset wmv wtmpdir wmount wcopy $ROOT/usr/lib/worm || :
+
+# worm/mkfile's own comment says "remember to change /usr/bin/worm if you
+# add programs" -- implying a hand-maintained dispatcher existed on the
+# source machine, but no such file survives on any of the six tapes, in
+# Admin/binfiles, or anywhere in this repo.  worm.8's own SYNOPSIS
+# (`worm mkfs`, `worm stat`, ...) is otherwise unreachable, so this is new,
+# not restored: a minimal `worm VERB ...' -> `wVERB ...' dispatcher over
+# the fifteen binaries installed above.
+$ROOT/usr/bin/worm: $ROOT/usr/lib/worm/wmkfs
+	echo '#!/bin/sh' >$target
+	echo 'verb=$1; shift' >>$target
+	echo 'exec /usr/lib/worm/w"$verb" "$@"' >>$target
+	chmod 775 $target
 
 # backup.old is the tape backup package: UBIN=/usr/lib/backup for the user half
 # and ABIN=/usr/backup/bin for the administrator half.  It compiles -I../worm,
@@ -4916,6 +4981,14 @@ $ROOT/usr/lib/backup/bpush: $CMD/backup.old/bpush
 	test -d $ROOT/usr/lib/backup || mkdir $ROOT/usr/lib/backup
 	cd $CMD/backup.old; cp bpush bgrep fetch iprint fcheck stats $ROOT/usr/lib/backup || :
 
+# backup.old/mkfile's own install: target already does exactly this ($AALL
+# $UALL /usr/bin/backup) but nothing above ever calls `mk install`, only
+# `mk all` -- so the six helpers land in $ROOT/usr/lib/backup and the actual
+# `backup` dispatcher a user types never ships at all.  backup.1 documents
+# it; add the one copy backup.old/mkfile:70-71 already prescribes.
+$ROOT/usr/bin/backup: $ROOT/usr/lib/backup/bpush
+	cd $CMD/backup.old; cp backup.sh $ROOT/usr/bin/backup && chmod 775 $ROOT/usr/bin/backup || echo 'backup: FAILED'
+
 # wwb's BIN is /usr/bin/WWB, a directory, and its LIB is the /usr/lib/style
 # diction and style share.
 P_CMD_wwb__built:V:	$PREP $ROOT/usr/bin/diction
@@ -4927,6 +5000,14 @@ $CMD/wwb/.built: P_CMD_wwb__built
 $ROOT/usr/bin/WWB/proofr: $CMD/wwb/.built
 	test -d $ROOT/usr/bin/WWB || mkdir $ROOT/usr/bin/WWB; test -d $ROOT/usr/lib/style || mkdir $ROOT/usr/lib/style
 	cd $CMD/wwb; mk install BIN=$ROOT/usr/bin/WWB LIB=$ROOT/usr/lib/style || echo 'wwb: FAILED'
+
+# wwb.1's own SYNOPSIS says `wwb style file` etc, but wwb's BIN (above) is
+# /usr/bin/WWB, which is off the default PATH (:/bin:/usr/bin) -- style,
+# diction and punct get their own top-level PKG entries and work standalone,
+# but the wwb dispatcher script itself is unreachable by the name the page
+# tells a user to type.  rsh hard-links to rx the same way (mkfile:94).
+$ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
+	rm -f $target; ln $ROOT/usr/bin/WWB/wwb $target
 
 # THE REST OF cmd/, and why each is not built:
 #   asd asd++ oasd++  the software-distribution package.  Every one of the three
@@ -5624,8 +5705,21 @@ $ROOT/usr/bin/asdrcv: $CMD/asd/asdrcv
 	cd $CMD/asd; cp asdrcv $ROOT/usr/bin/asdrcv || echo 'asdrcv: FAILED'
 	cd $CMD/asd; strip $ROOT/usr/bin/asdrcv || echo 'asdrcv: install FAILED'
 
+# view2d itself needs $MCC=/usr/jerq/bin/3cc (mkfile:3194-3199's jerq/
+# deferral) and so stays excluded, but libview2d.a (view2d.3's own library)
+# depends on nothing but wr.o and moviefil.o, both ordinary $CC -- a
+# buildable piece was sitting inside an all-or-nothing exclusion.
+P_CMD_view2d_lib:V:	$PREP
+	cd $CMD/view2d; mk libview2d.a || echo 'view2d: FAILED'
+
+$CMD/view2d/libview2d.a: P_CMD_view2d_lib
+	test -f $CMD/view2d/libview2d.a || echo '$CMD/view2d/libview2d.a: the package did not produce it'
+
+$ROOT/usr/lib/libview2d.a: $CMD/view2d/libview2d.a
+	cd $CMD/view2d; cp libview2d.a $ROOT/usr/lib/libview2d.a && ranlib $ROOT/usr/lib/libview2d.a || echo 'libview2d.a: FAILED'
+
 P_CMD_chuck_a_out:V:	$PREP
-	cd $CMD/chuck; mk a.out || echo 'chuck: FAILED'
+	cd $CMD/chuck; mk a.out upchuck || echo 'chuck: FAILED'
 
 $CMD/chuck/a.out: P_CMD_chuck_a_out
 	test -f $CMD/chuck/a.out || echo '$CMD/chuck/a.out: the package did not produce it'
@@ -5633,6 +5727,16 @@ $CMD/chuck/a.out: P_CMD_chuck_a_out
 $ROOT/usr/bin/chuck: $CMD/chuck/a.out
 	cd $CMD/chuck; cp a.out $ROOT/usr/bin/chuck || echo 'chuck: FAILED'
 	cd $CMD/chuck; strip $ROOT/usr/bin/chuck || echo 'chuck: install FAILED'
+
+# upchuck is chuck/mkfile's own sibling target (its `install:' puts both at
+# /etc, gated on a check this build can never pass -- see the comment above
+# P_CMD_chuck_a_out); built by the same invocation, but never copied
+# anywhere until now.  Installed beside chuck for the same reason chuck
+# itself lands in $ROOT/usr/bin rather than /etc: it is in no Admin/*files
+# manifest, so there is no other claimed path for it.
+$ROOT/usr/bin/upchuck: $CMD/chuck/a.out
+	cd $CMD/chuck; cp upchuck $ROOT/usr/bin/upchuck || echo 'upchuck: FAILED'
+	cd $CMD/chuck; strip $ROOT/usr/bin/upchuck || echo 'upchuck: install FAILED'
 
 P_CMD_error_error:V:	$PREP
 	cd $CMD/error; mk error CFLAGS=-O || echo 'error: FAILED'

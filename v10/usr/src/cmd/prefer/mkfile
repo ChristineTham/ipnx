@@ -19,40 +19,40 @@ all:V:	library prefer miscellaneous refstyles awk
 	:
 
 prefer:
-	(cd pref; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}")
+	(cd pref; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}")
 
 awk:
-	(cd prefawk; make PLIB=${PLIB} CFLAGS="${CFLAGS}")
+	(cd prefawk; mk PLIB=${PLIB} CFLAGS="${CFLAGS}")
 
 miscellaneous:
-	(cd misc; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}")
+	(cd misc; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}")
 
 refstyles:
-	(cd styles; make PLIB=${PLIB})
+	(cd styles; mk PLIB=${PLIB})
 
 library:
 	#	cd libux3; make CFLAGS="${CFLAGS}"
 
 clean:
 	#	cd libux3; make CFLAGS="${CFLAGS}" clean
-	(cd pref; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clean)
-	(cd prefawk; make PLIB=${PLIB} clean)
-	(cd misc; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clean)
-	(cd styles; make PLIB=${PLIB} clean)
+	(cd pref; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clean)
+	(cd prefawk; mk PLIB=${PLIB} clean)
+	(cd misc; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clean)
+	(cd styles; mk PLIB=${PLIB} clean)
 
 clobber:
 	#	cd libux3; CFLAGS="${CFLAGS}" clobber
-	(cd pref; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clobber)
-	(cd prefawk; make PLIB=${PLIB} clobber)
-	(cd misc; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clobber)
-	(cd styles; make PLIB=${PLIB} clobber)
+	(cd pref; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clobber)
+	(cd prefawk; mk PLIB=${PLIB} clobber)
+	(cd misc; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} clobber)
+	(cd styles; mk PLIB=${PLIB} clobber)
 
 
 install: all
-	(cd pref; make PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" install)
-	(cd prefawk; make PLIB=${PLIB} CFLAGS="${CFLAGS}" install)
-	(cd misc; make PBIN=${PBIN} PLIB=${PLIB} CFLAGS="${CFLAGS}" PHOME=${PHOME} install)
-	(cd styles; make PLIB=${PLIB} install)
+	(cd pref; mk PBIN=${PBIN} PLIB=${PLIB} PHOME=${PHOME} CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" install)
+	(cd prefawk; mk PLIB=${PLIB} CFLAGS="${CFLAGS}" install)
+	(cd misc; mk PBIN=${PBIN} PLIB=${PLIB} CFLAGS="${CFLAGS}" PHOME=${PHOME} install)
+	(cd styles; mk PLIB=${PLIB} install)
 
 print:
 	(cd pref; make print)

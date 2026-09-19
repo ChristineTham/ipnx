@@ -50,6 +50,8 @@ refer-install:
 	strip refer
 	cp /usr/bin/refer orefer
 	cp refer /usr/bin/refer
+	cp lookbib /usr/bin/lookbib
+	cp pubindex /usr/bin/pubindex
 whatabout: what1.o what2.o what3.o what4.o shell.o mkey3.o
 	cc what?.o shell.o mkey3.o  -o whatabout
 lib-install:
