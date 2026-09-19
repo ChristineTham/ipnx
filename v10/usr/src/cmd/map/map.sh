@@ -30,7 +30,15 @@ do
 		1ilake*[234]|1ishore*[234])	A="$A 106 107 ";;
 		1ilake*|1ishore*)		A="$A 106 ";;
 		1reef*)			A="$A 108 ";;
-		1canal*[34])		A="$A 210 211 212 ";;
+		# 212/212.x is the rank-3 canal file this line used to add; it has
+		# no history anywhere in the repo (unlike 115, genuinely never
+		# captured on any tape, not a reconstruction accident), and
+		# map.c's getdata() has no partial-failure path -- fopen()
+		# failing on a missing feature file is filerror()+exit(1) for
+		# the WHOLE run, discarding whatever 210/211 already plotted.
+		# Falls back to the rank-2 set rather than crash on a feature
+		# map.7 documents but no tape carries the data for.
+		1canal*[34])		A="$A 210 211 ";;
 		1canal*2)		A="$A 210 211 ";;
 		1canal*)		A="$A 210 ";;
 		1glacier*)		A="$A 115 ";;
