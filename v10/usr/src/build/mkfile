@@ -762,7 +762,7 @@ $DEST/df: $PREP $CMD/df.c
 	cd $CMD; rm -f df df.o || :
 
 $DEST/diff: $PREP
-	cd $CMD/diff; mk install DIFF=$DEST/diff DIFFH=$ROOT/usr/lib/diffh || echo 'diff: FAILED'
+	cd $CMD/diff; mk install DIFFDEST=$DEST/diff DIFFHDEST=$ROOT/usr/lib/diffh || echo 'diff: FAILED'
 
 $DEST/du: $PREP $CMD/du.c
 	cd $CMD; cc -O   -o du du.c && strip du && cp du $DEST/du || echo 'du: FAILED'
@@ -1651,7 +1651,7 @@ $ROOT/usr/lib/libln.a: $SRC/libl/libl.a
 # diff's mkfile builds and installs diff and diffh together; DIFF and DIFFH name
 # where each goes, and diffh's own place is /usr/lib (diff/mkfile:2).
 $ROOT/usr/lib/diffh: $PREP
-	cd $CMD/diff; mk install DIFF=$DEST/diff DIFFH=$ROOT/usr/lib/diffh || echo 'diffh: FAILED'
+	cd $CMD/diff; mk install DIFFDEST=$DEST/diff DIFFHDEST=$ROOT/usr/lib/diffh || echo 'diffh: FAILED'
 
 # mk(1)'s NAME line is `mk, mkconv, membername'; both are sh scripts in mk's
 # export directory.

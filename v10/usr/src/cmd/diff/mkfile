@@ -1,5 +1,15 @@
+# DIFF/DIFFH are compiled into the binaries themselves (diff.c:8-9's
+# char diff[]/diffh[]) for diff -r/-h's own execv() of a fresh copy of
+# itself, so they must stay these true absolute paths always -- ROOT-
+# prefixing them (as a $ROOT-targeted install otherwise correctly does
+# for every other destination) would bake the BUILDING machine's path
+# into a binary that runs on a different root once installed. DIFFDEST/
+# DIFFHDEST are where install actually copies the binaries, and are the
+# ones a $ROOT-targeted build should override instead.
 DIFF=	/bin/diff
 DIFFH=	/usr/lib/diffh
+DIFFDEST=	${DIFF}
+DIFFHDEST=	${DIFFH}
 CC=	cc
 CFLAGS=	-O -DDIFF=\"${DIFF}\" -DDIFFH=\"${DIFFH}\"
 
@@ -20,5 +30,5 @@ clean:
 
 install: all
 	strip diff diffh
-	cp diff $DIFF
-	cp diffh $DIFFH
+	cp diff $DIFFDEST
+	cp diffh $DIFFHDEST
