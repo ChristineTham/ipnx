@@ -65,7 +65,18 @@ __input()
 			else
 			{
 				printf("?");	/* input PROMPT */
-				gets(armpit);
+				/* ipnx: not gets() -- the shared ipnx-gets shim
+				   below reads up to 1024 bytes regardless of the
+				   caller's buffer, and armpit is LINMAX (80); the
+				   delimiter scan just below expects a bare '\0'
+				   where gets() would have stripped the newline,
+				   so strip it here the same way that shim does. */
+				{
+					register char *p;
+					fgets(armpit, sizeof armpit, stdin);
+					for (p = armpit; *p; p++)
+						if (*p == '\n') { *p = '\0'; break; }
+				}
 			}
 			k = 0;
 			pflg=0;

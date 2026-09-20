@@ -17,6 +17,10 @@
 pause()
 {
 	char c[10];
-	gets(c);
+	/* ipnx: not gets() -- the shared ipnx-gets shim (input.c) reads up
+	   to 1024 bytes into whatever buffer it's given, and this one is 10;
+	   c is never read afterward, so bounding the read to sizeof c changes
+	   nothing this function actually does. */
+	fgets(c, sizeof c, stdin);
 	return(0);
 }

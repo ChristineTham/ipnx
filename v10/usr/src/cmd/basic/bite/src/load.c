@@ -25,7 +25,7 @@ FILE *fp,*pathopen();
 		getfnam();
 	if(expr[0] != 0)
 	{
-		if(strlen(expr) > 40)
+		if(strlen(expr) >= 40)
 		{
 			error(inst.thing.linno,4);
 			return(-1);
