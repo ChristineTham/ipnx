@@ -141,7 +141,7 @@ openbuf()
 		return;
 	if (read(f, (char *)&omesg, sizeof(omesg)) != sizeof(omesg)
 	||  omesg.msg_magic != MSG_MAGIC)
-		memset((char *)&omesg, sizeof(omesg), 0);
+		memset((char *)&omesg, 0, sizeof(omesg));
 	close(f);
 }
 

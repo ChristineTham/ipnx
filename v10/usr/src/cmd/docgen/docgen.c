@@ -124,7 +124,7 @@ char *argv[];
 			else if(argv[1][2] == 'c')qfile=mcfile;
 			else if(argv[1][2] == 'm')qfile=mmfile;
 			else {
-				fprintf("unknown macro package %s\n",argv);
+				fprintf(stderr,"unknown macro package %s\n",argv[1]);
 				exit(0);
 			}
 			break;
@@ -914,7 +914,7 @@ restart:
 			fputs(line,edp);
 			sprintf(line,"e %s.par\n$r %s.par\nw\n",name1,name2);
 			fputs(line,edp);
-			sprintf(line,"e %s\n/%s/d\nw\na\n",ofile);
+			sprintf(line,"e %s\n/%s/d\nw\na\n",ofile,name1);
 			fputs(line,edp);
 			return(1);
 		default:
