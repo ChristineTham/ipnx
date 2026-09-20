@@ -3935,7 +3935,12 @@ $ROOT/usr/bin/calendar: $CMD/calendar/calendar
 
 # bcp's own install copies only the man page; its /usr/bin/bcp rule is the
 # install, and the target it names is an absolute path, so the binary is built
-# by name and copied here.
+# by name and copied here.  bcp.1/picfile.5 already ship via the wholesale
+# /usr/man tree (v10/usr/man/man{1,5}/), same as every other page -- NOT
+# missing, despite this comment's phrasing; checked before adding a copy
+# rule here, since cmd/bcp/bcp.1 is actually a STALER, less complete draft
+# than the one already committed under usr/man (diffed: the shipped copy
+# documents tiff support this one doesn't) and copying it would regress it.
 P_CMD_bcp_bcp:V:	$PREP
 	cd $CMD/bcp; mk bcp || echo 'bcp: FAILED'
 
