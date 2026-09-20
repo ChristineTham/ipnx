@@ -387,6 +387,7 @@ NODE *p;
 	case TSTRUCT:	c->type = Tstruct; break;
 	case TVOID:	c->type = Tvoid; break;
 	}
+	return(c);
 }
 
 /* does p contain an asgop or Incr (or could it be evaluated twice) */
