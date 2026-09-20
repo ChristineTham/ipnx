@@ -81,7 +81,7 @@ found:
 		    lseek(f, 0L, 1), name);
 		if (read(f, &dkbad, sizeof (struct dkbad)) !=
 		    sizeof (struct dkbad)) {
-			fprintf("%s: can't read bad block info (wrong type disk?)\n");
+			fprintf(stderr, "%s: can't read bad block info (wrong type disk?)\n", name);
 			exit(1);
 		}
 		printf("cartidge serial number: %d(10)\n", dkbad.bt_csn);
