@@ -384,7 +384,7 @@ newlink(re_cw *c, int l, Node *n)
 	static incr = 1000;
 
 	if(next == lim){
-		next = (Link *)malloc(incr*sizeof(Node));
+		next = (Link *)malloc(incr*sizeof(Link));
 		if(next == 0){
 			re_error("link malloc fail");
 			return 0;
