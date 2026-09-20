@@ -3372,7 +3372,11 @@ $ROOT/usr/bin/2500: $CMD/2500/2500
 	cd $CMD/2500; cp 2500 $ROOT/usr/bin/2500 || echo '2500: FAILED'
 	cd $CMD/2500; strip $ROOT/usr/bin/2500 || echo '2500: install FAILED'
 
-P_CMD_awk_a_out:V:	$PREP
+# awk/mkfile sets CC=lcc same as 2500 (the sibling rule right above this
+# one gates on $LCCOK for exactly that reason) -- this rule never did,
+# masked only by awk sitting after 2500 in $PKG and mk processing that
+# list in order.  Latent, not observed to fail; matching the pattern.
+P_CMD_awk_a_out:V:	$PREP $LCCOK
 	cd $CMD/awk; mk a.out CFLAGS='-N -I/usr/include/lcc -A' || echo 'awk: FAILED'
 
 $CMD/awk/a.out: P_CMD_awk_a_out
@@ -4995,7 +4999,7 @@ $CMD/backup.old/bpush: P_CMD_backup_old_bpush
 
 $ROOT/usr/lib/backup/bpush: $CMD/backup.old/bpush
 	test -d $ROOT/usr/lib/backup || mkdir $ROOT/usr/lib/backup
-	cd $CMD/backup.old; cp bpush bgrep fetch iprint fcheck stats absolute wfetch $ROOT/usr/lib/backup || :
+	cd $CMD/backup.old; cp bpush bgrep fetch iprint fcheck stats absolute wfetch remnotdone $ROOT/usr/lib/backup || :
 	# backup.sh's own dispatch (mkfile:5000-5001 installs it) execs
 	# $BACKUPLIB/act and $BACKUPLIB/recover -- act.sh/recover.sh are the
 	# $SUSR half of this package (mkfile:9), never copied at all, so
@@ -5007,9 +5011,14 @@ $ROOT/usr/lib/backup/bpush: $CMD/backup.old/bpush
 
 # backup.old/mkfile's own install: target already does exactly this ($AALL
 # $UALL /usr/bin/backup) but nothing above ever calls `mk install`, only
-# `mk all` -- so the six helpers land in $ROOT/usr/lib/backup and the actual
-# `backup` dispatcher a user types never ships at all.  backup.1 documents
-# it; add the one copy backup.old/mkfile:70-71 already prescribes.
+# `mk all` -- so the nine $USR helpers copied above land in
+# $ROOT/usr/lib/backup but the actual `backup' dispatcher a user types
+# never ships at all.  backup.1 documents it; add the one copy
+# backup.old/mkfile:70-71 already prescribes.  (The rest of $USR --
+# wormy/wormserver/jukeserver/blog/startmunge -- plus all of $ADM/$SADM
+# stay uninstalled: Bell Labs' own site-specific optical-jukebox/WORM
+# service, hardcoded machine names and all, with no hardware counterpart
+# in this reconstruction regardless of which binaries ship.)
 $ROOT/usr/bin/backup: $ROOT/usr/lib/backup/bpush
 	cd $CMD/backup.old; cp backup.sh $ROOT/usr/bin/backup && chmod 775 $ROOT/usr/bin/backup || echo 'backup: FAILED'
 
