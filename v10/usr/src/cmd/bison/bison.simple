@@ -729,14 +729,19 @@ alloca (size)				/* returns pointer to storage */
   }
 }
 
-/* like malloc and realloc but check for no memory left */
-/*
+/* like malloc and realloc but check for no memory left.  ipnx: this
+   trio was commented out (upstream Bison expected them from libiberty,
+   which no tape carries), leaving xmalloc undefined -- called
+   unconditionally above at every parse, so every bison-generated parser
+   failed to link.  Restored with self-contained bodies (no `error()`,
+   whose own signature/origin here was never established) rather than
+   the original memory_full() wrapper. */
 pointer
 xmalloc (size)
      int size;
 {
   pointer val = (pointer) malloc (size);
-  if (!val) memory_full ();
+  if (!val) { fprintf(stderr, "bison: memory exhausted\n"); exit(1); }
   return val;
 }
 
@@ -746,11 +751,6 @@ xrealloc (block, size)
      int size;
 {
   pointer val = (pointer) realloc (block, size);
-  if (!val) memory_full ();
+  if (!val) { fprintf(stderr, "bison: memory exhausted\n"); exit(1); }
   return val;
 }
-memory_full ()
-{
-  error ("Memory exhausted");
-}
-*/
