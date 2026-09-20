@@ -5,7 +5,7 @@ CEM		= ${LIB}/cem
 # ipnx: :V: ON THE PHONY TARGETS.  An empty recipe on a file target is an error
 # in mk and was not one in make -- `mk: no recipe to make 'install'', from
 # mk/src/recipe.c:19-27.  sets/mkfile:16-28 carries the whole account.
-all:V:		libc libj
+all:V:		libc libj libipc libq
 
 libj		: llib-lj ${CCOM} ${CEM}
 		/lib/cpp -M -I/usr/jerq/include llib-lj | ${CCOM} -llibj - out && ${CEM} -p out && mv out libj
@@ -19,7 +19,15 @@ libk		: llib-lk ${CCOM} ${CEM}
 lib%		: llib-l% var% ${CCOM} ${CEM}
 		/lib/cpp -M llib-l$stem | ${CCOM} `cat var$stem` -llib$stem - out && ${CEM} -p out && mv out lib$stem
 
-install:V:	${LIB}/libc ${LIB}/libj
+# ipnx: libg and libk stay out of all:/install:.  Both hardcode an -I path
+# this project has no source for -- libg wants /n/coma/usr/2include (a
+# network mount to a specific, long-gone Bell Labs machine, never a tape),
+# libk wants /usr/ninclude (not on any of the six tapes either, and unlike
+# libg there is no prebuilt binary to fall back on).  Building bit-for-bit
+# tape content isn't available for either, so this is a genuine gap, not
+# an ipnx omission: leave both alone rather than have `mk` fail or, worse,
+# silently regenerate a wrong library once ${CCOM}/${CEM} are freshly built.
+install:V:	${LIB}/libc ${LIB}/libj ${LIB}/libipc ${LIB}/libq
 
 ${LIB}/lib%	: lib%
 		cp lib$stem ${LIB}/lib$stem
