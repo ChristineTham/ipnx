@@ -5872,9 +5872,20 @@ $ROOT/usr/bin/agh: $CMD/agh
 # /usr/lib/libether.a, ethernet.h and order.h into /usr/include/sys, and the
 # four config commands into /usr/ether, each rule ending in its own cp and
 # strip.  That is the tape's design and it is correct on this machine, where
-# $ROOT is empty; the /v10 branch runs only build1 and build2 and never
-# reaches this rule.  chaosconfig additionally wants libchaos.a, which only
-# the machine's installed /usr/lib can provide.
+# $ROOT is empty.  IT IS NOT CORRECT UNDER ROOT=/v10: ipnxbuild's /v10 branch
+# runs build1 THROUGH build4 (checked directly, ipnxbuild:436-439) -- this
+# comment's own claim that "the /v10 branch never reaches this rule" is
+# false as of whenever that branch grew build3/build4, and since every path
+# below is literal, not $ROOT-relative, an unguarded run under ROOT=/v10
+# would overwrite the BUILDING MACHINE's own /usr/include/sys/ethernet.h
+# (with a struct etherpup vs struct ether_in mismatch, per the next
+# paragraph) -- exactly the "golden disk's contents onto the machine
+# building it" failure class documented for mkimage:77.  ether has no
+# guest-side product a V10 disk needs anyway (it configures the BUILDER's
+# own network interfaces), so the recipe below is skipped entirely once
+# $ROOT is set, rather than made to understand $ROOT.  chaosconfig
+# additionally wants libchaos.a, which only the machine's installed
+# /usr/lib can provide.
 P_CMD_ether_all:V:	$PREP
 	# AND THE HEADER MUST GO FIRST, OR THE SECOND BUILD ON A DISK FAILS.
 	# ether/mkfile's `${INCF}: ${INCNAMES}' copies its OWN ethernet.h over
@@ -5908,12 +5919,18 @@ P_CMD_ether_all:V:	$PREP
 	# finds its destination newer and does nothing, which is correct -- and
 	# ${OFILES}, which depend on ${INCF}, are older than what we just wrote,
 	# so netconfig.o recompiles against the right header.  Literal /usr and
-	# not $ROOT, as the paragraph above says: ether's own INCDIR is literal
-	# and the /v10 branch never reaches this rule.
-	cd $CMD/ether; cp ethernet.h order.h /usr/include/sys
-	# ipconfig calls tcp_addr(), a Bell library function on no tape; two
-	# of the three configs build.
-	cd $CMD/ether; mk lib netconfig arpconfig || echo 'ether: FAILED'
+	# not $ROOT, as the paragraph above says -- guarded on $ROOT being empty
+	# so a /v10 build skips this whole rule instead of corrupting the
+	# builder's own header with it.
+	if test -n "$ROOT"
+	then
+		echo 'ether: skipped, no guest-side product ('"$ROOT"' set)'
+	else
+		cd $CMD/ether; cp ethernet.h order.h /usr/include/sys
+		# ipconfig calls tcp_addr(), a Bell library function on no tape;
+		# two of the three configs build.
+		cd $CMD/ether; mk lib netconfig arpconfig || echo 'ether: FAILED'
+	fi
 
 $CMD/ether/netconfig: P_CMD_ether_all
 	test -f $CMD/ether/netconfig || echo '$CMD/ether/netconfig: the package did not produce it'
