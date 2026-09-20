@@ -254,8 +254,9 @@ char *sprntf(char *s, Attr *ap)	/* sprintf(s, attrlist ap) */
 	case 4:
 		sprintf(buf, s, ap->fval, ap->next->fval, ap->next->next->fval, ap->next->next->next->fval);
 		break;
-	case 5:
+	default:
 		ERROR "too many expressions in sprintf" WARNING;
+		return s;
 	}
 	free(s);
 	return tostring(buf);
