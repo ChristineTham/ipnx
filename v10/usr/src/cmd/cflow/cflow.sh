@@ -64,11 +64,19 @@ do
 	*.s)
 		a=`basename ${1} .s`
 		as -o ${TMP}.o ${1}
-		nm -he ${TMP}.o | sort -t'|' -n +1 -2 | ${DIR}/nmf ${a} ${a}.s >>${TMPG}
+		# ipnx: -he is SysV nm; this system's nm has no -h/-e and exits
+		# 2 on any unknown flag, so this always ran empty. Our nm's
+		# plain output already matches what nmf's vax branch parses
+		# (N_FORMAT + class + name at columns 0/9/11); -n keeps
+		# symbol-table (address) order, which is what nmf's "most
+		# recent text/data symbol" tracking needs -- the default
+		# alphabetical order would scramble it. The SysV sort -t'|'
+		# stage assumed pipe-delimited fields this format never had.
+		nm -n ${TMP}.o | ${DIR}/nmf ${a} ${a}.s >>${TMPG}
 		;;
 	*.o)
 		a=`basename ${1} .o`
-		nm -he ${1} | sort -t'|' -n +1 -2 | ${DIR}/nmf ${a} ${a}.o >>${TMPG}
+		nm -n ${1} | ${DIR}/nmf ${a} ${a}.o >>${TMPG}
 		;;
 	*)
 		echo ${1} "-- cflow can't process - file skipped"
