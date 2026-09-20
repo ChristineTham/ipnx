@@ -13,6 +13,8 @@ char **argv;
 	char	outstr[5120];
 	char	*goarg;
 
+	outstr[0] = '\0';
+
 	if(argc < 2) {
 		fputs("usage: getopt legal-args $*\n", stderr);
 		exit(2);
