@@ -214,6 +214,7 @@ struct Literal *litp;
 			sprintf (buf, "ci1_n%ld", -val);
 		else
 			sprintf(buf, "ci1__%ld", val);
+		break;
         case TYSHORT:
 		val = litp -> litval.litival;
 		if (val >= 32768 || val <= -32769)

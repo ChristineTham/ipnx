@@ -16,6 +16,8 @@ typedef struct { real r, i; } complex;
 typedef struct { doublereal r, i; } doublecomplex;
 typedef long int logical;
 typedef short int shortlogical;
+typedef char logical1;
+typedef char integer1;
 
 #define TRUE_ (1)
 #define FALSE_ (0)
@@ -187,6 +189,22 @@ typedef doublereal E_f;	/* real function with -R not specified */
 /* undef any lower-case symbols that your C compiler predefines, e.g.: */
 
 #ifndef Skip_f2c_Undefs
+#undef cray
+#undef gcos
+#undef mc68010
+#undef mc68020
+#undef mips
+#undef pdp11
+#undef sgi
+#undef sparc
+#undef sun
+#undef sun2
+#undef sun3
+#undef sun4
+#undef u370
+#undef u3b
+#undef u3b2
+#undef u3b5
 #undef unix
 #undef vax
 #endif
