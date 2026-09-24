@@ -98,8 +98,8 @@ rfuncs2.o:  rfuncs2.c rparams.h defs.h params.h
 	${CC} ${CFLAGS} -c rfuncs2.c
 
 rextern.o:  rextern.c rparams.h defs.h params.h Makefile
-	${CC} ${CFLAGS} -DSPOOLDIR=\"${SPOOLDIR} -DLIBDIR=\"${LIBDIR}\
-		DNEWSUSR=\"${NEWSUSR}\" -DNEWSGRP=\"${NEWSGRP}\" -c rextern.c || :
+	${CC} ${CFLAGS} -DSPOOLDIR=\"${SPOOLDIR}\" -DLIBDIR=\"${LIBDIR}\" \
+		-DNEWSUSR=\"${NEWSUSR}\" -DNEWSGRP=\"${NEWSGRP}\" -c rextern.c
 
 readr.o:  readr.c rparams.h defs.h params.h Makefile
 	${CC} ${CFLAGS} -c readr.c
