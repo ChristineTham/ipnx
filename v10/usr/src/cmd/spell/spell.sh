@@ -30,7 +30,8 @@ done
 
 case "$spellflags" in
 *c*)
-	$sprog -c -f $dict ;;
+	$sprog -c -f $dict
+	exit ;;
 *C*)
 	$sprog -C -f $dict 
 	exit
