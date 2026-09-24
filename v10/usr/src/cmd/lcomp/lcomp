@@ -37,9 +37,9 @@ do
 	-w|-p|-R|-d|-l*|-N|-n|-t|-z|*.o|*.a)
 		llist="$llist "$i
 		;;
-	*)	echo incomprehensible argument $i ignored
-		;;
 	-g)
+		;;
+	*)	echo incomprehensible argument $i ignored
 		;;
 	esac
 done
