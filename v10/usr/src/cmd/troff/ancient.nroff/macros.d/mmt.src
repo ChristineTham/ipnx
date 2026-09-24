@@ -1159,7 +1159,7 @@
 ''\"	SEE ALSO: .FG, .)F.
 .de TB
 .nr !1 1
-.ie .)F TABLE 1 \\n+(Tb "\\$1" "\\n(H1-" 0
+.ie \\nN=5 .)F TABLE 1 \\n+(Tb "\\$1" "\\n(H1-" 0
 .el .)F TABLE 1 \\n+(Tb "\\$1" "\\$2" 0\\$3
 ..
 '''\"	EC:equation caption lines
@@ -1168,7 +1168,7 @@
 '\"	uses Ec as counter
 .de EC
 .nr !2 1
-.ie .)F Equation 2 \\n+(Ec "\\$1" "\\n(H1-" 0
+.ie \\nN=5 .)F Equation 2 \\n+(Ec "\\$1" "\\n(H1-" 0
 .el .)F Equation 2 \\n+(Ec "\\$1" "\\$2" 0\\$3
 ..
 '''\"	EX: Exhibit Title Line(s)
@@ -1177,7 +1177,7 @@
 ''\"	uses Ex as counter
 .de EX
 .nr !3 1
-.ie .)F Exhibit 3 \\n+(Ex "\\$1" "\\n(H1-" 0
+.ie \\nN=5 .)F Exhibit 3 \\n+(Ex "\\$1" "\\n(H1-" 0
 .el .)F Exhibit 3 \\n+(Ex "\\$1" "\\$2" 0\\$3
 ..
 '''\"	FG: Figure Title Line(s)
@@ -1193,7 +1193,7 @@
 ''\"	SEE ALSO: .TB, .)F
 .de FG
 .nr !0 1
-.ie .)F Figure 0 \\n+(Fg "\\$1" "\\n(H1-" 0
+.ie \\nN=5 .)F Figure 0 \\n+(Fg "\\$1" "\\n(H1-" 0
 .el .)F Figure 0 \\n+(Fg "\\$1" "\\$2" 0\\$3
 ..
 '\"	)F: Figure/Table/Equation line inner macro (for .FG, .TB, .EC)
@@ -3169,7 +3169,7 @@ PRIVATE\h'-\w'PRIVATE'u'\l'\w'PRIVATE'u'
 'nr dn 0
 'nr :s 0
 'if \\n(:q 'nr :n 1
-.if !\\(;C=1 .rr !A	\" if new page - clr long notes on page flag
+.if !\\n(;C=1 .rr !A	\" if new page - clr long notes on page flag
 .)R
 'ps
 'vs \\n(.sp+2p
