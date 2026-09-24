@@ -64,7 +64,7 @@ main(argc, argv)
 
 	argc--, argv++;
 	if (argc == 0) {
-		execl("/bin/cat", "cat", "/usr/lib/pascal/how_pc");
+		execl("/bin/cat", "cat", "/usr/lib/pascal/how_pc", 0);
 		exit(1);
 	}
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN) {
