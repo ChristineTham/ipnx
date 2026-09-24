@@ -18,7 +18,7 @@ initframe() {
 	argp = *(ADDR *) (((ADDR) &u) + AP);
 	frame = *(ADDR *) (((ADDR) &u) + FP);
 	callpc = *(ADDR *) (((ADDR) &u) + PC);
-	if ((frame == 0) || (frame & 0xf0000000 != 0x70000000))
+	if ((frame == 0) || ((frame & 0xf0000000) != 0x70000000))
 		return(badproc);
 	return(adrtoprocp(callpc++));  /* ++ because UNIX backs up instrs */
 }
@@ -35,7 +35,7 @@ nextframe() {
 		argp = get(frame+8, DSP);
 		frame = get(frame+12, DSP) & EVEN;
 	}
-	if ((frame == 0) || (frame & 0xf0000000 != 0x70000000))
+	if ((frame == 0) || ((frame & 0xf0000000) != 0x70000000))
 		return(badproc);
 	return(adrtoprocp(callpc-1));
 }

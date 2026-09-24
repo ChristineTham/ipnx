@@ -44,7 +44,7 @@ ADDR loc; char d; long value; {
 	register long val;
 	
 	val = get(loc, DSP);
-	val = (val & !dmask[dtol(d)]) | (value & dmask[dtol(d)]);
+	val = (val & ~dmask[dtol(d)]) | (value & dmask[dtol(d)]);
 	put(loc, DSP, val);
 }
 
@@ -54,7 +54,7 @@ ADDR reg; char d; long value; {
 	register long val;
 	
 	val = *(ADDR *)(((ADDR)&u)+R0+WORDSIZE*reg);
-	val = (val & !dmask[dtol(d)]) | (value & dmask[dtol(d)]);
+	val = (val & ~dmask[dtol(d)]) | (value & dmask[dtol(d)]);
 	*(ADDR *)(((ADDR)&u)+R0+WORDSIZE*reg) = val;
 }
 
