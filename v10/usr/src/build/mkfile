@@ -5167,11 +5167,27 @@ $ROOT/lib/f1: $PREP $ROOT/usr/bin/yacc
 # Jul 7 1992 against 3.3.1 and May 21 1991 -- and it installs the same paths,
 # so building both would have the older land on the newer or the reverse
 # depending on order.  cmd/postscript is the one built.
-$ROOT/usr/bin/postscript/postio: $PREP
+#
+# ipnx: P_CMD_postscript_postio:V:, not a real prerequisite list, because
+# there is no one right prerequisite list to give it -- this recipe hands
+# off to make -f postscript.mk, which recurses through ~20 subdirectories of
+# its own. A plain `$PREP` prerequisite meant the target file existing at
+# all made mk call this done forever after the first successful build,
+# silently never re-running `make install` again -- so a fix landing in any
+# of those subdirectories, this audit's own included, would build clean and
+# then never actually reach a guest. make itself DOES do correct per-file
+# dependency checking once re-entered (confirmed: postscript.mk's low-level
+# *.mk files build their own .o's with real prerequisites), so this needs
+# the same fix as troff's own `mk a.out` (P_CMD_troff_a_out:V:, above) --
+# always re-enter and let the real build tool do the actual work.
+P_CMD_postscript_postio:V:	$PREP
 	test -d $ROOT/usr/lib/font || mkdir $ROOT/usr/lib/font
 	test -d $ROOT/usr/lib/font/postscript || mkdir $ROOT/usr/lib/font/postscript
 	test -d $ROOT/usr/lib/tmac || mkdir $ROOT/usr/lib/tmac
 	cd $CMD/postscript; make -f postscript.mk ROOT=$ROOT install || echo 'postscript: FAILED'
+
+$ROOT/usr/bin/postscript/postio: P_CMD_postscript_postio
+	test -f $ROOT/usr/bin/postscript/postio || echo '$ROOT/usr/bin/postscript/postio: the package did not produce it'
 
 # ---- the three loose-source directories ------------------------------------
 # cref, lfactor and weather have no build file at any level.  Each is driven

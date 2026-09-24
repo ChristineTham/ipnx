@@ -316,8 +316,14 @@ DROP	v10/usr/src/ipc/mgrs/tcpmgr/tcp_lib.O
 #         survived only on the machine.  The extractor recorded both names as
 #         intended.  Recovered into the checkout as u_u_ names.
 # NOTE    cmd/troff/devaps/u_Cw is restored to Cw by the install rule (the
-#         installed font directory is case-sensitive).  postscript's and
-#         post.src's installs are currently disabled; whoever revives them must
-#         restore their u_ font and charlib names the same way, as must any
+#         installed font directory is case-sensitive).  The same is true of
+#         cmd/postscript's own devpost/devLatin1 -- and there the install
+#         genuinely is currently disabled: build/preserve has no record of
+#         either ever completing, unlike the rest of that package, whose
+#         mpictures/tmac.pictures IS recorded.  post.src carries the
+#         identical u_ names but for a different, unrelated reason: the
+#         whole package is unbuilt (build/mkfile's own comment on it, near
+#         the postio rule, explains why).  Whoever revives either font
+#         install must restore the u_ names the same way, as must any
 #         revival of the cfront ecosystem for include/CC's u_String.h and
 #         u_Regexp.h.
