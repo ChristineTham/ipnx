@@ -5077,7 +5077,8 @@ $ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
 #             K&R and two months NEWER (Mar 21 1990 against Jan 10 1990), and
 #             it is already installed above because membername needs it
 #   oworm     cmd/worm above, the same fifteen programs
-#   sky       `all:' with an empty recipe
+#   sky       on no Admin list and never called; `all:' has a real recipe
+#             (cc -c *.c; rm fmod.o; cc *.o -o sky), so that isn't why
 #   spell.old cmd/spell above.  Its install writes /usr/dict/spellprog and
 #             /usr/bin/spell, the same two names
 
