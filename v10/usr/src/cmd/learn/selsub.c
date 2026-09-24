@@ -74,11 +74,14 @@ char *argv[];
 	}
 	/* after this point, we have a working directory. */
 	/* have to call wrapup to clean up */
-	if (access(sprintf(ans1, "%s/%s/Init", direct, sname), 04)==0)
-		if (system(sprintf(ans1, "%s/%s/Init %s", direct,sname, level)) != 0) {
+	sprintf(ans1, "%s/%s/Init", direct, sname);
+	if (access(ans1, 04)==0) {
+		sprintf(ans1, "%s/%s/Init %s", direct,sname, level);
+		if (system(ans1) != 0) {
 			printf("Leaving learn.\n");
 			wrapup(1);
 		}
+	}
 	if (level[0] == '-')	/* no lesson names start with - */
 		ask = 1;
 	start(level);

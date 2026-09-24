@@ -21,6 +21,7 @@ char *lesson;
 	for(dp=dv; dp<dm; dp++)
 		if (dp->d_ino) {
 			n = strlen(dp->d_name);
+			if (n>sizeof(dp->d_name)) n=sizeof(dp->d_name);
 			if (dp->d_name[n-2] == '.' && dp->d_name[n-1] == 'c')
 				continue;
 			c = dp->d_name[0];
