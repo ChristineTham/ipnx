@@ -583,7 +583,7 @@ getexprs()
 			Smalloc(a * sizeof(struct REVPOL));
 
 		for (j = 0; j < a; j++)
-		{	fscanf(mb, "%d/%d: %d\n", &b, &c);
+		{	fscanf(mb, "%d: %d\n", &b, &c);
 			expr[i][j].toktyp = b;
 			expr[i][j].tokval = c;
 	}	}
