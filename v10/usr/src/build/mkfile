@@ -1386,7 +1386,7 @@ $ETC/ttys: $PREP $GEN/etc/ttys
 # takes field 3 as fs_ftype when it starts with a digit, and fmount(2) lists
 # type 2 as "Process file system, proc(4)".  /etc/shutdown needs it -- it does
 # `cd /proc' and kills what it finds.  The spec is /dev/null because fmount(2)
-# says of type 2 "Fildes is ignored", while mount.c:9 still opens the spec
+# says of type 2 "Fildes is ignored", while mount.c:119 still opens the spec
 # before calling it, so the field needs a readable path and means nothing.
 # The file cannot say any of this itself: getfsent has no comment syntax and
 # would read a # line as a fifth entry.
