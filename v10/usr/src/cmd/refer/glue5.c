@@ -216,7 +216,11 @@ if (p>nlp)
 			}
 			else {
 				ccount++;
-				p++;
+				/* ipnx: p should not be incremented at that
+				 * point -- Peter Honeyman to Brian Kernighan,
+				 * 28 Aug 1991, kept verbatim in this
+				 * directory's own mbox. Applying the fix that
+				 * report already gave. */
 			}
 			continue;
 		}
