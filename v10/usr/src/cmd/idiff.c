@@ -37,6 +37,7 @@ main(int argc, char *argv[])
 
 	progname = argv[0];
 	buf[0] = 0;
+	diffopts[0] = 0;
 	while (argc > 3 && argv[1][0] == '-') {	/* assume all flags go to diff for now */
 		strcat(diffopts, argv[1]);
 		strcat(diffopts, " ");

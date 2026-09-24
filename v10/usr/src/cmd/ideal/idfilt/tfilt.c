@@ -145,7 +145,7 @@ float x;
 float y;
 char *str;
 {
-	str == ++str;
+	str = ++str;
 	printf ("\\h'%gi'\\v'%gi'%s\\h'-\\w\\(ts%s\\(tsu'\n.sp -1\n",
 		round(xscale*(x-minx)),
 		round(yscale*(y-maxy)),

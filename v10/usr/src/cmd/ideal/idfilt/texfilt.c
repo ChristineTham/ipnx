@@ -161,7 +161,7 @@ float x;
 float y;
 char *str;
 {
-	str == ++str;
+	str = ++str;
 	printf ("    \\smash{\\rlap{\\kern%5.2fin\\raise%5.2fin\\hbox{%s}}}%%\n",
 		xadj(x-minx)/1000.,
 		yadj(maxy-y)/1000.,

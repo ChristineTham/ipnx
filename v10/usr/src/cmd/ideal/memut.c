@@ -149,7 +149,7 @@ float value;
 	register EXTLPTR newguy;
 	tryalloc(newguy,EXPREXTL);
 	newguy->leaf = TRUE;
-	newguy->leaf = TRUE;
+	newguy->used = TRUE;
 	newguy->info.const = value;
 	newguy->kind = CONST;
 	return (newguy);

@@ -109,16 +109,17 @@ OPQPTR *opqlist;
 		new->next = walk->next;
 		walk->next = new;
 	} else {
-		if (walk->code == EXT0 || walk->code == INFL0)
+		if (walk->code == EXT0 || walk->code == INFL0) {
 			if (code == EXT1 || code == INFL1) {
 				walk->code = IGNORE;
 			}
-		else if (walk->code == EXT1 || walk->code == INFL1)
+		} else if (walk->code == EXT1 || walk->code == INFL1) {
 			if (code == EXT0 || code == INFL0) {
 				walk->code = IGNORE;
 			}
-		else if (walk->code == SIMPLE && code != INHERIT)
+		} else if (walk->code == SIMPLE && code != INHERIT) {
 			walk->code = code;
+		}
 	}
 	*opqlist = head.next;
 }
