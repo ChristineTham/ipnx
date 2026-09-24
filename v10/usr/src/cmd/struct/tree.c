@@ -216,8 +216,8 @@ int length;
 		if (ptr[i] == '\0')
 			return(i + 1);
 		}
-	fprintf(2,"string %s too long to be copied by str_copy at address %d\n",
-			*s,ptr);
+	fprintf(stderr,"string %s too long to be copied by str_copy at address %d\n",
+			s,ptr);
 	exit(1);
 	}
 str_eq(s,t)

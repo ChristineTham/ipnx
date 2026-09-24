@@ -4,7 +4,7 @@
 #include "def.h"
 
 
-char (*input)(), (*unput)();
+int (*input)(), (*unput)();
 FILE *outfd	= stdout;
 
 
@@ -16,7 +16,7 @@ char *argv[];
 	int anyoutput;
 	int dexit();
 	char *getargs();
-	char input1(), unput1(), input2(), unput2();
+	int input1(), unput1(), input2(), unput2();
 	anyoutput = FALSE;
 	getargs(argc,argv);
 	if (debug == 2) debfd = stderr;
