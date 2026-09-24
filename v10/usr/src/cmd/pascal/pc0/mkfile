@@ -79,7 +79,10 @@ sources:V: ${SRCS} ${HDRS} ${OTHERS}
 ${SRCS} ${HDRS} ${OTHERS}:
 	${GET} ${target}
 
-y.tab.h: pas.y gram
+# ipnx: y.tab.c IS A TARGET OF THIS RULE TOO, matching the identical fix in
+# ../pi/mkfile (see its own comment there for the full mk-pretending account):
+# it was `y.tab.h:' alone, and the recipe plainly makes both.
+y.tab.h y.tab.c: pas.y gram
 	${RM} y.tab.h y.tab.c
 	${EYACC} pas.y > /dev/null
 	ex - y.tab.c <gram
