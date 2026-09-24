@@ -338,7 +338,7 @@ The decision may still be right — the *reason* needs replacing before anyone c
 | package | the mkfile says | the tree says |
 |---|---|---|
 | `dist` | "`SYS` is set nowhere" | `conf/mkconf.v10:1` is `SYS=v10`, reached through two `<` includes. 21 products |
-| `odist` | the same | `odist/mkconf.v10:1` likewise. Real blocker: `/usr/ape` for two of three subdirs; `odist/v10` builds with `lcc` |
+| `odist` | the same | `odist/mkconf.v10:1` likewise. Real blocker: `/usr/ape` for two of three subdirs; `odist/v10` builds with `lcc`. `pax` (a fourth `odist/` subtree — `libx`, `libodelta`, the pax/cpio/tar command, frozen as 1991 AT&T `ship` shipment archives) isn't one of those three at all: `odist/mkfile`'s own `DIRS=` never names it, and it has no `mkfile` of its own to run even if it were added — a `SYS` fix alone wouldn't reach it |
 | `dimpress` | "`ARGS` is empty" | `dimpress/makefile:100` is `ARGS=all`. Real blocker: no `TABLES/` directory |
 | `asd++` | "`$(ASD)` … the variable is empty" | `asd++/Makefile:5` is `ASD = /usr/lib/asd`. Real blocker: `CC = PTCC` |
 | `basic/basic` | "no `libPW`" | the four routines used are in `basic/basic/PW/`; `LIBLD` is empty in `all` |
