@@ -445,7 +445,9 @@ to be asked per file again.
         even have a C dialect V11 would want?
       - Until then the only ANSI VAX compiler we actually hold is `lcc`, which **is**
         buildable from source: front end `cmd/lcc/c/` (18 sources matching `gen3`'s
-        objects), VAX back end `gen3/gen.c` + `gen2/vax/`, preprocessor `cmd/lcc/ph/`.
+        objects), a VAX back end (two independent options: the proven, shipped
+        `gen2/vax/`, or lcc's own simpler `gen3/gen.c`, which a full source audit
+        found has a real, silent miscompilation bug), preprocessor `cmd/lcc/ph/`.
       - There is still **no Plan 9 compiler in the V10 tarball** — no `1c`/`2c`/`5c`/
         `8c`/`vc`/`kc`/`qc` by directory or grep; its Plan 9 lineage is `cmd/u9fs` (9P)
         and `cmd/mk`.
@@ -470,8 +472,11 @@ to be asked per file again.
         `local.c` — and `libc/sys/*.s` plus `cmd/as/instrs` fix the instruction
         encodings and calling convention exactly. So the machine description does not
         have to be rediscovered; it has to be re-expressed.
-      - `lcc`'s own VAX back end (`gen3/gen.c`, `gen2/vax/`) is a third reference, and a
-        closer structural analogue since lcc also separates front end from generator.
+      - `lcc`'s own VAX back end is a third reference, and a closer structural analogue
+        since lcc also separates front end from generator — `gen2/vax/` (proven, it's
+        what every shipped V10 disk's `rcc` already is) more so than `gen3/gen.c`
+        (simpler to read, but never built here, and known to silently miscompile at
+        least one construct).
       - Order matters: **back end first, then the port.** A converted tree with no
         compiler to check it against is unverifiable, whereas a back end can be tested
         against V10's existing binaries the moment it emits anything.

@@ -202,8 +202,14 @@ code on the tape rather than sitting unused. It also carries `cmd/gcc/` (145 fil
 
 Two candidates, and both are small enough to run on an 11/780:
 
-1. **`lcc`** — in hand, buildable from source, VAX back end at `gen3/gen.c` + `gen2/vax/`.
-   The default, because it is already here and already proven on this tree.
+1. **`lcc`** — in hand, buildable from source. Two independent VAX back ends exist:
+   `gen2/vax/` (the production generator, proven — it is what every shipped V10
+   disk's `/usr/lib/rcc` already is) and `gen3/gen.c` (lcc's own simpler
+   "demonstration" generator, never exercised by any build here — a full source
+   audit of this tree found a real, silent struct-vararg miscompilation in it).
+   The default, because `gen2/vax` is already here and already proven on this
+   tree; `gen3` would need that bug fixed, and its self-test harness actually
+   wired into a build, before it could make the same claim.
 2. **A reconstructed VAX back end for the Plan 9 compiler** (roadmap D-A4). Thompson's
    *Plan 9 C Compilers*: a shared front end plus a per-architecture generator, "which is why
    the suite carries seven of them; writing an eighth is the intended way to add a machine"
