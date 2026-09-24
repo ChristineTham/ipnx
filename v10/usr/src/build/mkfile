@@ -3839,6 +3839,13 @@ $ROOT/usr/bin/spitbol: $CMD/spitbol/newspit
 	# the product: `FILES = /usr/bin/spitbol /usr/lib/vaxspitv35.err'.  Only
 	# the first was installed.
 	cd $CMD/spitbol; cp vaxspitv35.err $ROOT/usr/lib/vaxspitv35.err || echo 'spitbol err: FAILED'
+	# AND THE HOST FILE, THE SAME WAY.  gethost.c:17 is `open( "/usr/lib/
+	# spithost", 0 )' for the no-argument HOST() builtin; the man page
+	# documents it and cmd/spitbol/samplehost is an evident template for it,
+	# but nothing ever installed one, so HOST() always returned the null
+	# string.  spithost here follows samplehost's own machine:os:site shape,
+	# using this project's own identity from etc/motd and etc/hosts.
+	cd $CMD/spitbol; cp spithost $ROOT/usr/lib/spithost || echo 'spitbol host: FAILED'
 
 P_CMD_dired_dired:V:	$PREP
 	cd $CMD/dired; mk dired || echo 'dired: FAILED'
