@@ -264,6 +264,7 @@ funcend(fp, bundle, endline)
 			putdot( filename , line );
 		    }
 #		endif PC
+		inp = 0;
 		out = 0;
 		for (p = fp->chain; p != NIL; p = p->chain) {
 			if (strcmp(p->symbol, "input") == 0) {
