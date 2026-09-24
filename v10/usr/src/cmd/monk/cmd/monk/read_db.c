@@ -198,7 +198,7 @@ int	close_delim, mesg_mode;
 /* new read_token: supertoken plus malloc
 	entry->data = read_token(database, TRUE, TRUE, NULL, NULL, close_delim);
  */
-	readncheck(database, close_delim, FALSE, TRUE, "Reading %s %s\n",
+	readncheck(database, close_delim, FALSE, "Reading %s %s\n",
 							DEFINE, name);
 	hashncheck(DEFINE_TABLE, entry, DEFINE, mesg_mode);
 }

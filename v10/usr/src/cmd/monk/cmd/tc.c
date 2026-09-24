@@ -108,6 +108,7 @@ register char *argv[];
 	nlist **sortlist();
 	void change(), doit();
 
+	name = argv[0];
 	while ((c = getopt(argc, argv, OPTIONS)) != EOF)
 		switch (c) {
 		case 'a':           /* augment table */

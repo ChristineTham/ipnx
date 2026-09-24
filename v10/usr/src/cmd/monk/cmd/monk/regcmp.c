@@ -3,7 +3,7 @@
 #define A256	02
 #define ZERO	01
 #define	NBRA	10
-#define CIRCFL	32;
+#define CIRCFL	32
 #define SLOP	5
 #define	EOF	0
 

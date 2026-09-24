@@ -35,7 +35,7 @@ function include(file,	l,m,i) { # include file handling
 	if ( i < 0 )
 		error("Cannot open: " file)
 	else {
-		close file
+		close(file)
 		pop()
 	}
 }

@@ -361,19 +361,22 @@ int	compressed, mesg_mode;
 		struct makes	*next;
 	};
 	static struct makes *makes;
-	struct makes	*m;
+	struct makes	*m, *last;
 	char	*temp;
 
 	if (doctype == NULL)
 		return;
 	/* prevents reread of the same document type `doctype';
 		ignores the db directory and the compression style */
-	for (m = makes; m != NULL; m = m->next)
+	last = NULL;
+	for (m = makes; m != NULL; last = m, m = m->next)
 		if (strcmp(doctype, m->document) == 0)
 			return;
 	m = (struct makes *) mymalloc(sizeof(struct makes));
-	if (makes == NULL)
+	if (last == NULL)
 		makes = m;
+	else
+		last->next = m;
 	m->document = mymalloc((unsigned) strlen(doctype)+1);
 	strcpy(m->document, doctype);
 	m->next = NULL;	
