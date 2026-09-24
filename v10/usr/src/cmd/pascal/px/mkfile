@@ -39,13 +39,22 @@ sources:V: ${PXHDR} ${PXSRC} ${PXUTL}
 # gets no rule.  Nothing requires it: px needs h02opcs.h, which wants OPnames.h
 # and opc.c, and the two headers come in through those.  A rule that cannot
 # work is worse than none, because mk would run it.
-OPnames.h:
+#
+# ipnx: each of these four now names its own source as a prerequisite. Without
+# one, a target with no prerequisites is up to date as soon as it exists, so
+# the recipe runs exactly once -- harmless so far for OPnames.h/objfmt.h/
+# opc.c, simply never committed, but whoami.h WAS committed (by the tape/
+# corpus rebuild, not on purpose -- it is the only one of the four) and so
+# had gone permanently stale: any future edit to pascal/pascal/whoami.h would
+# silently never reach px. It happens to read identical today; nothing would
+# have said so tomorrow.
+OPnames.h:	${PASCALDIR}/OPnames.h
 	cp ${PASCALDIR}/OPnames.h OPnames.h
-whoami.h:
+whoami.h:	${PASCALDIR}/whoami.h
 	cp ${PASCALDIR}/whoami.h whoami.h
-objfmt.h:
+objfmt.h:	${PASCALDIR}/objfmt.h
 	cp ${PASCALDIR}/objfmt.h objfmt.h
-opc.c:
+opc.c:	${PASCALDIR}/opc.c
 	cp ${PASCALDIR}/opc.c opc.c
 ${PCHDR}:
 	cp ${LIBPCDIR}/$target $target
