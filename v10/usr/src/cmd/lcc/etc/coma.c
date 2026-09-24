@@ -13,7 +13,8 @@ int option(arg) char *arg; {
 		;
 	else if (strcmp(arg, "-p") == 0) {
 		ld[3] = "/lib/mcrt0.o";
-	} else if (strcmp(arg, "-b") == 0)
+	} else if (strcmp(arg, "-b") == 0
+	&& access("/usr/lib/bbexit.o", 4) == 0)
 		ld[7] = "/usr/lib/bbexit.o";
 	else
 		return 0;
