@@ -129,7 +129,7 @@ show:
 				{ if (batch) print_layer_bnd($2, $4, $6); }
 	| SHOW FROM position TO position
 				{ if (batch) print_bnd($3, $5); }
-	| SHOW objname		{ if (batch) print_obj($2); }
+	| SHOW objname		{ if (batch) print_obj($2->o_layer, $2); }
 	| SHOW expr		{ if (batch) print_layer($2); }
 	| SHOW			{ if (batch) print(0); }
 
