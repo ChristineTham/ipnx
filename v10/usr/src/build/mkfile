@@ -2720,9 +2720,15 @@ $ROOT/usr/bin/idle: $CMD/idle
 $CMD/labmake: $PREP $CMD/labmake.c
 	cd $CMD; cc -Od2 -o labmake labmake.c || echo 'labmake: FAILED'
 
+# labmake.c:1,42 is `lablist and labmake commands' -- main() picks between
+# them by checking whether argv[0]'s basename is "lablist", so lablist has
+# to reach the disk as a link to the same binary, the same way =/==/=p/==p
+# do a few pages up.
 $ROOT/usr/bin/labmake: $CMD/labmake
 	cd $CMD; cp labmake $ROOT/usr/bin/labmake || echo 'labmake: FAILED'
 	cd $CMD; strip $ROOT/usr/bin/labmake || echo 'labmake: install FAILED'
+	cd $CMD; rm -f $ROOT/usr/bin/lablist || :
+	cd $CMD; ln $ROOT/usr/bin/labmake $ROOT/usr/bin/lablist || :
 
 $CMD/lastbin: $PREP $CMD/last.c
 	cd $CMD; cc -Od2 -o lastbin last.c || echo 'last: FAILED'
