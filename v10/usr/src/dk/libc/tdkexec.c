@@ -58,6 +58,6 @@ char * service ;
 	if (tdklogin(rem) < 0)
 		return -1 ;
 	write(rem, cmd, strlen(cmd));
-	write(rem, "\n", 2) ;
+	write(rem, "\n", 1) ;
 	return(rem);
 }
