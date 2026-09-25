@@ -13,7 +13,7 @@ CFLAGS = -DSkip_f2c_Undefs
 MISC =	Version.o main.o s_rnge.o abort_.o getarg_.o iargc_.o getenv_.o\
 	signal_.o s_stop.o s_paus.o system_.o cabs.o\
 	derf_.o derfc_.o erf_.o erfc_.o sig_die.o
-POW =	pow_ci.o pow_dd.o pow_di.o pow_hh.o pow_ii.o  pow_ri.o pow_zi.o pow_zz.o
+POW =	pow_ci.o pow_dd.o pow_di.o pow_hh.o pow_ii.o pow_qq.o pow_ri.o pow_zi.o pow_zz.o
 CX =	c_abs.o c_cos.o c_div.o c_exp.o c_log.o c_sin.o c_sqrt.o
 DCX =	z_abs.o z_cos.o z_div.o z_exp.o z_log.o z_sin.o z_sqrt.o
 REAL =	r_abs.o r_acos.o r_asin.o r_atan.o r_atn2.o r_cnjg.o r_cos.o\
