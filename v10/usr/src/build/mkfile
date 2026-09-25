@@ -3712,7 +3712,7 @@ $ROOT/usr/bin/trace: $CMD/trace/trace
 # most part dusty, since none are used actively" and points at ../d202.c
 # instead; its makefile is a stale copy of the parent's, naming n1.c through
 # suftab.c, not one of which is in that directory.
-P_CMD_troff_a_out:V:	$PREP
+P_CMD_troff_a_out:V:	$PREP $LCCOK
 	cd $CMD/troff; mk a.out CFLAGS= || echo 'troff: FAILED'
 
 $CMD/troff/a.out: P_CMD_troff_a_out
