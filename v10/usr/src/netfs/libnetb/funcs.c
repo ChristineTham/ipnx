@@ -634,7 +634,7 @@ int mlen;
 		nberrno = NBEACCES;
 	else if ((n = fswrite(f, off, (char *)sp + SWRSIZE, n)) < 0)
 		nberrno = fstonberr(fserrno);
-	tonetlong(rbuf, RNB_FSIZE, f->size);
+	tonetlong(rbuf, RNB_FSIZE, f == NULL ? 0 : f->size);
 	tonetshort(rbuf, RNB_ERRNO, nberrno);
 	_rfresp(fd, sp, rbuf, RNBSIZE);
 }
