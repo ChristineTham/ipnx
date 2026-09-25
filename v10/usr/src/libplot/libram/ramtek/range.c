@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <math.h>
 #include "ram.h"
-range(x0, y0, x1, y1) 
+range(x0, y0, x1, y1)
 double	x0, y0, x1, y1; 
 {
 	e1->xmin = x0;

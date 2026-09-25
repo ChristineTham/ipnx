@@ -1,5 +1,6 @@
+#include <math.h>
 #include "tr.h"
-range(x0, y0, x1, y1) 
+range(x0, y0, x1, y1)
 double	x0, y0, x1, y1; 
 {
 	e1->xmin = x0;

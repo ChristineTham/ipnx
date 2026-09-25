@@ -1,5 +1,6 @@
+#include <math.h>
 #include "tr.h"
-frame(xs, ys, xf, yf) 
+frame(xs, ys, xf, yf)
 double xs, ys, xf, yf;
 {
 	register double	osidex, osidey;
