@@ -633,7 +633,7 @@ kdiintr(kno)
 			c = 0;
 		if (sp->chan >= KDICHAN) {
 			printf("kdi%d stat chan is 0%o\n", kno, sp->chan);
-			printf("type: %o len: 0%o mode: 0%o\n");
+			printf("type: %o len: 0%o mode: 0%o\n", sp->type, sp->len, sp->mode);
 			continue;
 		}
 		if(sp->serno!=kdiseqno[kno]){
