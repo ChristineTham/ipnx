@@ -35,7 +35,7 @@ main(int argc, char *argv[])
 	int j;
 	Tchar i;
 	int eileenct;		/* count to test for "Eileen's loop" */
-	char buf[100];
+	char buf[100] = "";
 
 	progname = argv[0];
 	if ((p = strrchr(progname, '/')) == NULL)

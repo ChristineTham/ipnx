@@ -101,7 +101,7 @@ getfont(char *name, int pos)	/* create width tab for font */
 	ftemp->defaultwidth = ftemp->spacewidth = Inch * Unitwidth / 72 / 3; /* should be rounded */
 	while (fscanf(fin, "%s", cmd) != EOF) {
 		if (strcmp(cmd, "name") == 0)
-			fscanf(fin, "%s", ftemp->longname);
+			fscanf(fin, "%9s", ftemp->longname);
 		else if (strcmp(cmd, "special") == 0)
 			ftemp->specfont = 1;
 		else if (strcmp(cmd, "ligatures") == 0) {
