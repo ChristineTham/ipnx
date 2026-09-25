@@ -55,11 +55,14 @@ twig:	${OBJS}
 	${CC} -g -o twig ${OBJS}
 
 # generate walker from templates
-walker.c1: machcomm.h walker.h rawwalker.c1
-	cat machcomm.h walker.h rawwalker.c1 >walker.c1
+# ipnx: walker.h no longer exists -- README point 4 says its content was
+# inserted into the template files themselves; this rule's prerequisite
+# list was never updated to match.
+walker.c1: machcomm.h rawwalker.c1
+	cat machcomm.h rawwalker.c1 >walker.c1
 
-walker.ex: machcomm.h walker.h rawwalker.ex
-	cat machcomm.h walker.h rawwalker.ex >walker.ex
+walker.ex: machcomm.h rawwalker.ex
+	cat machcomm.h rawwalker.ex >walker.ex
 
 # at bell labs only
 print:
