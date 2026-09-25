@@ -214,7 +214,7 @@ int n;
 		return;
 	}
 	if ((mp = mdlook(a[1])) == NULL) {
-		fprint(STDERR, "%s: unknown swap device\n");
+		fprint(STDERR, "%s: unknown swap device\n", a[1]);
 		errs++;
 		return;
 	}

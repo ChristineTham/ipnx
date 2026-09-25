@@ -563,12 +563,12 @@ int ctl;
 	int needie;
 
 	if (ctl < 0 || ctl >= sccnt) {
-		printf("sc%d bad intr\n");
+		printf("sc%d bad intr\n", ctl);
 		return;
 	}
 	sc = &scctl[ctl];
 	if ((reg = sc->addr) == 0) {
-		printf("sc%d: stray intr\n");
+		printf("sc%d: stray intr\n", ctl);
 		return;
 	}
 	needie = 1;

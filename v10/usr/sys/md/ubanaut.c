@@ -101,7 +101,7 @@ int u;
 	if ((ub->addr = (struct ubadev *)biaddr(&ubaaddr[u])) == 0)
 		return (0);
 	if (badaddr(&ub->addr->bi.bitype, sizeof(long))) {
-		printf("ub%d absent\n");
+		printf("ub%d absent\n", u);
 		return (0);
 	}
 	rminit(ub->map, UBNMAP, NMAP-1, 1);	/* NMAP-1 because can't alloc 0 */

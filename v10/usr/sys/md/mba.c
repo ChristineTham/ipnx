@@ -76,7 +76,7 @@ int dev;
 	mp = &mba[dev];
 	if ((mp->addr = (struct mbaregs *)nxaddr(&mbaaddr[dev])) == NULL
 	||  badaddr(&mp->addr->conf, sizeof(long))) {
-		printf("mba%d absent\n");
+		printf("mba%d absent\n", dev);
 		return (0);
 	}
 	mp->addr->cr = CRINIT;
