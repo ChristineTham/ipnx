@@ -54,7 +54,7 @@ register char *s, *prm;
 		rightq = *s;
 
 	    c = bal(s, rightq);
-	    (void) strcpy(prm, s, c-s+1);
+	    (void) strncpy(prm, s, c-s+1);
 	    prm[c-s+1] = '\0';
 	    if ( *(s=c) == rightq) /* if end of string don't increment */
 		s++;
