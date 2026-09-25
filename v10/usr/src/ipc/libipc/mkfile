@@ -13,7 +13,9 @@ cyntax: $COBJS
 	cyntax $COBJS && touch cyntax
 
 $L: $OBJS
-	ar rv $L *.[oO] && rm *.[oO] && ranlib $L
+	names=`membername $prereq`
+	ar rv $L $names
+	ranlib $L
 
 %.o: %.c ../h/defs.h ../h/ipc.h
 $L(%.o):N: %.o
