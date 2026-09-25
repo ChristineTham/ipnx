@@ -407,8 +407,8 @@ register struct argnamei *flagp;
 			goto outnull;
 		}
 		cp = p->cp + used;
-		*--cp == '.';
-		*--cp == '.';
+		*--cp = '.';
+		*--cp = '.';
 		p->cp = cp;
 		goto outmore;
 	}
