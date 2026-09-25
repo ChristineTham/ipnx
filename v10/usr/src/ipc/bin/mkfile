@@ -2,7 +2,7 @@ BUILTINS=""
 IN=/usr/bin
 LIB=/usr/lib
 BIN=/usr/bin
-TARGETS=./con ./push ./pull ./rx ./nrx ./rcp ./loopback ./telnet ./qns ./rsh
+TARGETS=./con ./push ./pull ./rx ./nrx ./rcp ./loopback ./telnet ./qns ./rsh ./scriptcon
 INSTALL=$BIN/dcon $BIN/ndcon $BIN/rogin $BIN/rlogin $BIN/nogin $BIN/con\
 	$BIN/push $BIN/pull $LIB/Rpush $LIB/Rpull $BIN/rx $BIN/nrx $BIN/rcp\
 	$BIN/loopback $BIN/telnet $BIN/scriptcon $BIN/qns
