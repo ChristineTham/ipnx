@@ -4958,7 +4958,11 @@ $ROOT/usr/bin/uucp: $CMD/uucp/uucp
 	cd $ROOT/usr/lib/uucp; /etc/chown 48,4 $UULIBS $UULIBP $UUSCR Dialers && chmod 04775 $UULIBS && chmod 0775 $UULIBP $UUSCR && chmod 0644 Dialers || echo 'uucp: lib mode FAILED'
 
 # worm is the write-once optical filesystem; BIN is /usr/lib/worm.  cmd/oworm
-# is the previous copy of the same fifteen programs and is not built.
+# was the previous copy of the same fifteen programs, carried by the old
+# host-side corpus reconstruction; it did not survive the move to mkv10's
+# own byte-for-byte tape rebuild, so its four build/mkfiles rows (mkfile,
+# oscsi/mkfile, sanity/mkfile, scsi/mkfile) named a directory that no longer
+# exists and are removed.
 P_CMD_worm_wmkfs:V:	$PREP
 	# NOT `all': worm's ALL ends `jukebox scsish', and those two link the
 	# tcl 3.3 in worm/scsi, which wants sys/wait.h, O_CREAT, R_OK and X_OK
@@ -5074,8 +5078,11 @@ $ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
 #             none of the six tapes
 #   icon      its first target is `what:', a help message; the package expects
 #             to be configured for a named system first
-#   movie omovie  the install target prints three lines beginning "echo change
-#             LIB=... in movie, stills, develop" and copies nothing
+#   movie     the install target prints three lines beginning "echo change
+#             LIB=... in movie, stills, develop" and copies nothing.
+#             (omovie is a loose script beside movie's own in this directory,
+#             not a separate package -- mkfiles' phantom src/cmd/omovie/mkfile
+#             row, which named a directory that never existed, is removed.)
 #   cfront    DEFERRED TO V11, when the Plan 9 sources are used.  The reason
 #             and the search that settles it are with the dag and vsw rules
 #             below; libC, its runtime, is deferred with it
