@@ -1,6 +1,7 @@
 libtr.a: tr/*.c
 	rm -rf xplot; mkdir xplot
 	(cd xplot;cp ../tr/* .)
+	rm -f xplot/otext.c
 	(cd xplot;cc -c -O *.c)
 	(cd xplot;ar rc ../libtr.a *.o)
 	rm -r xplot
