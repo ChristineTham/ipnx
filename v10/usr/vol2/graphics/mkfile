@@ -1,7 +1,7 @@
 < ../ADM/defns
 <../index/defns
 
-all:V:	cmd.out
+all:V:	cmd.out picfile.out
 
 pg:	cmd.out
 	count cmd.ms cmd.out
@@ -23,10 +23,10 @@ index:V:
 	$PREFER xcmd.ms | tbl | troff -mpm > /dev/null 2>cmd.x
 	mkindex cmd.x
 	#rm xcmd.ms
-	#runind picfile
-	#troff -mpm xpicfile.ms > /dev/null 2>picfile.x
-	#mkindex picfile.x
-	#rm xpicfile.ms
+	runind picfile
+	troff -mpm xpicfile.ms > /dev/null 2>picfile.x
+	mkindex picfile.x
+	rm xpicfile.ms
 pindex:V:
 	mkindex cmd.x
-	#mkindex picfile.x
+	mkindex picfile.x

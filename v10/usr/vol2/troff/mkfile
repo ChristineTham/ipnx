@@ -13,7 +13,7 @@ spell:VQ:
 lp:	tut.out man.out
 	$LP $newprereq && touch $target
 
-man.out:	man.ms $REF
+man.out:D:	man.ms $REF
 	$PREFER man.ms | tbl | eqn | troff $ARG -mpm >$target
 
 tut.out:D:	tut.ms prf.awk $REF

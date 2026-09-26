@@ -18,7 +18,7 @@ mk.out:D:	mk.ms $REF
 index:V:
 	runind mk
 	$PREFER xmk.ms | pic | tbl | troff -mpm > xmk.out 2>mk.x
-	#mkindex mk.x
+	mkindex mk.x
 	rm xmk.ms
 
 pindex:V:

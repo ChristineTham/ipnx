@@ -1,15 +1,15 @@
 < ../ADM/defns
 < ../index/defns
 
-all:V:	admin.out
+all:V:	admin.out history.out
 
-pg:	admin.out
-	count admin.ms admin.out
+pg:	admin.out history.out
+	count admin.ms admin.out; count history.ms history.out
 
 spell:VQ:
-	dospell admin.ms
+	dospell admin.ms; dospell history.ms
 
-lp:	admin.out
+lp:	admin.out history.out
 	$LP $newprereq && touch $target
 
 history.out:D:	history.ms $REF
@@ -18,7 +18,7 @@ history.out:D:	history.ms $REF
 admin.out:D:	admin.ms
 	pic admin.ms | tbl | troff -mpm > $target
 
-index:V:	admin.ind
+index:V:	admin.ind history.ind
 history.ind:V:
 	runind history
 	$PREFER xhistory.ms | grap | pic | tbl | eqn | troff -mpm > /dev/null 2>history.x
@@ -32,4 +32,5 @@ admin.ind:V:
 
 pindex:V:
 	mkindex admin.x
+	mkindex history.x
 

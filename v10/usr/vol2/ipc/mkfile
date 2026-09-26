@@ -25,7 +25,7 @@ pfig3:	fig3
 	pic -D fig3 >pfig3
 
 clean:
-	rm -f out pfig* paper.refs.ig
+	rm -f ipc.out pfig* paper.refs.ig
 
 index:V:
 	runind ipc

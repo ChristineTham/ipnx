@@ -18,8 +18,8 @@ pic.out:D:	pic.ms $REF
 index:V:
 	runind pic
 	$PREFER xpic.ms | pic | eqn | troff -mpm > /dev/null 2>pic.x
-	mkindex pic pic.x
+	mkindex pic.x
 	rm xpic.ms
 pindex:V:
-	mkindex pic pic.x
+	mkindex pic.x
 
