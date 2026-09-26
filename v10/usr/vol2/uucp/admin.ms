@@ -2993,7 +2993,7 @@ The remote site has a
 file for this
 system.
 They could be trying to call us.
-If they have an older version of \(*uU, the process
+If they have an older version of \*(uU, the process
 that was talking to us may have failed, leaving the
 .fN LCK
 file.

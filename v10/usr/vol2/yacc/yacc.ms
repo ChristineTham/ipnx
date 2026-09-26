@@ -1,4 +1,4 @@
-.so /n/pipe/usr/vol2/ADM/mac
+.so ../ADM/mac
 .XX yacc 347 "Yacc: A Parser Generator"
 .ds Y \f2Yacc\fP
 .ds y \f2yacc\fP
