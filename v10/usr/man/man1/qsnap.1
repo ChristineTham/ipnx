@@ -5,55 +5,93 @@ qsnap \(mi high resolution digital film printer
 .SH SYNOPSIS
 .B qsnap
 [
-.BI -bfmrxRXY
+.BI -ncbdfmFRrs
 ]
 [
 .I N ...
 ]
-.I file
+.I file ...
 .SH DESCRIPTION
 .I Qsnap
 produces images on a QCR digital film printer.
-The input
+Each input
 .I file
 should be in the form of
 .IR picfile (5),
-3-channel for color or 1-channel for black and white.
+3-channel for color or 1-channel for black and white;
+more than one
+.I file
+may be given, and they are tiled onto the same exposure in the
+order given.
 .LP
 Option letters appear in one string.
-Certain options require a numeric argument, 
+Certain options require a numeric argument,
 .I N,
-which follows the string as a separate argument.
+which follows the string as a separate argument, in the same order
+as the option letters that need one.
+.TP
+.B n
+Read a headerless, square, black-and-white raster
+(a
+.IR picfile (5)
+with no header); the default.
+.TP
+.B c
+Interpret each
+.I file
+as a multi-channel, td-format color
+.IR picfile (5)
+image, rather than the default headerless black-and-white raster.
 .TP
 .B b N
 Set the brightness of the image to
 .I N,
-.RI 0\(<= N \(<=8;
-0 is brightest.
+.RI 0\(<= N \(<=9
+.RI ( N
+is taken mod 10).
 The default brightness value is 2 in
 high resolution mode (4K\(mu4K pixels), and 0 in
-low resolution mode (2K\(mu2K pixels) as set by option
-.BR R .
+low resolution mode (2K\(mu2K pixels).
+.RI ( N=9
+leaves the brightness calibration unchanged instead of setting it.)
+.TP
+.B d N
+Dither the image by \(+-N,
+.RI 2\(<= N \(<=255;
+the sign of
+.I N
+is ignored.
 .TP
 .B f N
-Correct the exposure for a given type of film.
-Valid film types are: 7, 8, and 0 to 5 inclusive.
+Correct the exposure for a given type of film;
+.I N
+is taken mod 8, and
+.I N=6
+is rejected as an unknown film type.
 .br
-0 = (default) Polaroid Type 52 (4\(mu5 inch).
+0 = (default) no correction.
 .br
 1 = linear correction table.
 .br
-2 = Polaroid Type 559 color pack film (4\(mu5 inch), 2K mode.
+2 = Polaroid Type 559 color pack film, 2K mode.
 .br
-3 = Ektachrome 100 color film (35mm), 2K mode.
+3 = Ektachrome 100 color film, 2K mode.
 .br
-4 = Ektachrome 100 color film (35mm), 4K mode.
+4 = Ektachrome 100 color film, 4K mode.
 .br
-5 = Polaroid Type 559 color pack film (4\(mu5 inch), 4K mode.
+5 = Polaroid Type 559 color pack film, 4K mode.
 .br
-7 = Polaroid Type 809 color film (8\(mu10 inch), 4K mode.
-.br
-8 = Tmax-100 black&white film (35mm), 2K or 4K mode.
+7 = Polaroid Type 809 color film, 4K mode.
+.LP
+Tmax-100 black & white film is defined as film type 8, but since
+.I N
+is taken mod 8 before use,
+.B "\-f 8"
+silently behaves as
+.B "\-f 0"
+instead; there is no way to select it through this option as
+.I Qsnap.c
+is currently written.
 .TP
 .B m N
 Set the enlargement factor.
@@ -64,28 +102,29 @@ for 2K resolution and
 .IR N =6
 for 4K.
 .TP
+.B F N
+Select the black-and-white exposure filter,
+.RI 0\(<= N \(<=3
+.RI ( N
+is taken mod 4): 0 = neutral, 1 = red, 2 = green, 3 = blue.
+The default is 2 (green).
+.TP
+.B R
+Rotate the image 90 degrees clockwise before exposing it.
+Takes no argument; the resolution itself is detected automatically
+from the printer hardware and is not settable by an option.
+.TP
 .B r
 Expose the red channel of a color image only (for multiple
-red overlays).
+red overlays); has no effect unless combined with
+.BR c .
 .TP
-.B x N
-Expose the image N times.
-(Useful if the maximum brightness value is not bright enough.)
-.TP
-.B R N
-Set the resolution, where
+.B s N
+When more than one
+.I file
+is given, skip the first
 .I N
-is either 2 or 4, to select low (2K\(mu2K) or high (4K\(mu4K) resolution,
-respectively.
-The default it to leave the resolution unchanged.
-.TP
-.B X N
-Offset the image along the x-coordinate by N pixels.
-The 35mm camera in 4K mode may require an X- and/or a Y-offset.
-The offset in each direction is multiplied by the enlargement factor.
-.TP
-.B Y N
-Offset the image along the y-coordinate by N pixels.
+of them.
 .LP
 The imaging resolution for 35mm film is 114 pixels/mm (2895 dots/inch)
 in high resolution mode, and 57 pixels/mm in low resolution mode.
