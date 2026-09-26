@@ -423,17 +423,35 @@ names are in `Admin/ulibfiles`.
 (`libipc libin bin mgrs internet`); the build takes four files. `/usr/ipc` is not in
 `usrtrees` at all, and `cyntax` is a hard prerequisite for the whole of it.
 
+**`pico` is not built at all, not merely missing its data.** `cmd/pico/Makefile:12` links
+`-lfb`, and `libfb` is on no tape — only the header `/usr/include/fb.h` survives.
+Holzmann's own released VAX pico (spinroot.com/pico/pico.tar.gz) is byte-for-byte this same
+tree and carries no `libfb` either; its symbol table settles it, holding `fb.h`'s declared
+symbols and nothing from `framebuffers/`. No `mk`/`make` rule anywhere produces
+`$ROOT/usr/bin/pico`. Its `defines` and `help` data (§5) are moot until the binary itself
+exists.
+
 ## 5. Data that exists nowhere, so no build work will recover it
 
 `units`' `/usr/lib/Units` — the program is installed and `units.y:375-381` makes a missing
 table fatal, so `/usr/bin/units` cannot start. `fortune`'s `fortunes`. `quiz`'s `quiz.k/`.
 `word_clout`'s `thes.packed` (760 KB), so the installed game fails on its first line.
 `hangman`'s `/usr/dict/words` — V8 has it. `docgen`'s `mmdata`, `msdata` and `wr`, so `-ms`
-and `-mm` mode have no data. `pico`'s `defines` and `help`. `town`'s entire gazetteer.
+and `-mm` mode have no data. `town`'s entire gazetteer.
 `lex`'s `nrform`, so `lex -r` cannot work. `snocone`'s `epilogue`, which the compiler copies
 onto the tail of every program it emits — and the stage-2 compiler is built by running the
 stage-1 compiler, so it is produced without one, silently, exit 0. `trek`'s `/usr/lib/a68defs`
 is the one recoverable case: `games/trek/a68.h` is the same macro set under another name.
+`/usr/lib/tmac/tmac.pm`, the `-mpm` macro package — 43 mkfiles across `vol2` pipe their final
+troff stage through `-mpm` (every paper under `eqn/`, `f77/`, `fm/`, `grap/`, `pi/`, `pic/`,
+`pico/`, `pm/`, `preface/`, and more), and `vol2/pm/pm.ms` is itself Kernighan & Van Wyk's
+paper *about* `-mpm` — but the macro file it describes, and the `pm` postprocessor named
+alongside it, are on no tape and nowhere in this tree. Unlike `pico` (§4), no comment anywhere
+records this as a known exclusion — it was never noticed, most likely because it's an implicit
+dependency buried inside `vol2`'s own mkfiles rather than its own top-level `cmd/` directory.
+Moot for `ipnxbuild` either way, since `vol2` ships wholesale via `usrtrees` and none of its
+mkfiles are ever invoked automatically — but a real dead end for anyone who tries to typeset
+one of those 43 papers by hand.
 
 ## 6. Divergences between the repository tree and the machine
 
