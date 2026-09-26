@@ -37,7 +37,7 @@ renumber:V:
 backup:V:
 	/usr/lib/backup/fcheck 512 7 /usr/vol2 | grep -v '\.out$' | /usr/lib/backup/act x
 
-PAPERS=`cd /usr/vol2; echo [a-z]*`
+PAPERS=`cd /usr/vol2; echo [a-z]* Adb Dc Mpx Ped Ucds`
 LPS=${PAPERS:%=%.lp}
 ALLS=${PAPERS:%=%.all}
 PGS=${PAPERS:%=%.pg}

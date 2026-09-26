@@ -1,4 +1,4 @@
-for i in ../[a-z]*
+for i in ../[a-z]* ../Adb ../Dc ../Mpx ../Ped ../Ucds
 	do
 	if test -s $i/*.terms
 	then
