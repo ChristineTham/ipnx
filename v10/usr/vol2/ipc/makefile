@@ -1,17 +1,3 @@
-out:	ipcpaper.rf pfig1 pfig2 pfig3
-	troff -ms ipcpaper.rf >out
-
-ipcpaper.rf:	ipcpaper paper.refs
-	refer -e -p paper.refs ipcpaper >ipcpaper.rf
-
-pfig1:	fig1
-	pic -D fig1 >pfig1
-
-pfig2:	fig2
-	pic -D fig2 >pfig2
-
-pfig3:	fig3
-	pic -D fig3 >pfig3
-
-clean:
-	rm -f out pfig* paper.refs.ig
+all:
+	echo "stale: this pre-mk make(1) file's ipcpaper.rf rule cites ipcpaper, which does not exist here (only ipcpaper.rf itself survives); use mk, not make, in this directory (see ./mkfile)." 1>&2
+	exit 1
