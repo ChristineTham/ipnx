@@ -3,10 +3,10 @@ LP='lp -ddp'
 LPFONTS='lp -dpsu'
 MLIB=/usr/lib/monk
 REF=../ADM/vol2.ref.i
-ENVIRON='count(){
+ENVIRON='count=() {
 	grep -c '^p' $2 > $1.pg && touch pg
 }
-dospell(){
+dospell=() {
 	set +e
 	echo "$@:"
 	A_SPELL=$1.sp spell "$@"

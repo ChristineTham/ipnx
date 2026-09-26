@@ -1,7 +1,7 @@
 IND=../index/tools
 ISTEX=0
 ENVIRON="$ENVIRON"'
-runind(){
+runind=() {
 F=$1
 	if test -s $1.ms
 	then
@@ -174,7 +174,7 @@ fi
 rm foo $J.lt $J.hits $J.nh
 }
 
-mkindex(){		#uses either $1.x or $2.x to make base.ind
+mkindex=() {		#uses either $1.x or $2.x to make base.ind
 	if test $# -eq 0
 	then
 		echo mkindex directory file or mkindex file
