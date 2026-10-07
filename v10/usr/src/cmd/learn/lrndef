@@ -1,5 +1,7 @@
 #include	<stdio.h>
-char	*direct	= "/crp/nlearn/lib";	/* CHANGE THIS ON YOUR SYSTEM */
+char	*direct	= "/usr/lib/learn";	/* ipnx: the tape shipped /crp/nlearn/lib
+						 * and said CHANGE THIS ON YOUR
+						 * SYSTEM; makefile:15, README:3 */
 int	more;
 char	*level;
 int	speed;

@@ -88,8 +88,8 @@ main(argc,argv)	char **argv;
 	ofile = creat(argv[2],0644);
 	if(ofile < 0)err("creat",argv[2]);
 
-	xtab.hptr = &ipsp;
-	xtab.symt = &issp;
+	xtab.hptr = ipsp;		/* ipnx &array */
+	xtab.symt = issp;		/* ipnx &array */
 	xtab.hsiz = PTRI;
 	xtab.ssiz = CHARI;
 	xtab.nsym = 0;
@@ -125,7 +125,7 @@ main(argc,argv)	char **argv;
 	if(error < 0)err("write",argv[2]);
 	error = write(ofile,xtab.symt,xtab.ssiz);
 	if(error < 0)err("write",argv[2]);
-	exit(0);tt/* ipnx exit -- see PATCHES.md */
+	exit(0);		/* ipnx exit -- see PATCHES.md */
 }
 
 err(a,b)

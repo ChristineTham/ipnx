@@ -1962,7 +1962,8 @@ $ROOT/unix: $SYS/ipnx/ipnx-v10.u
 #             correction loop, not in its configuration.  Nothing else in the
 #             build reaches it: libnm and asm.libm are the only sources with a
 #             long-mantissa 0d constant, and every other one -- cmd/pico and
-#             cmd/qsnap's fsqrt.s, libc/stdio/s.s and ostdio/doprnt.s -- is
+#             cmd/qsnap's fsqrt.s, libc/stdio/s.s and ostdio's doprnt.S and
+#             u_doprnt.s -- is
 #             0d4, 0d0.5 or 0d1.0.
 #   ncurses   System V curses and terminfo, a different package.  Its top level
 #             has no makefile, Makefile or mkfile at all -- only libcurses.mk --

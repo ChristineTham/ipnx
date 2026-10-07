@@ -119,7 +119,7 @@ char *token;
 
 	if (buffer == 0)
 		{
-		buffer = malloc(xxmaxchars);
+		buffer = (char *)malloc(xxmaxchars);
 		if (buffer == 0) error("malloc out of space","","");
 		}
 	tlen = slength(token);

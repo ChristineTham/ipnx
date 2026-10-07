@@ -42,7 +42,7 @@ char c;
 			if (counter)  return(_if1);
 			else
 				{
-				pred = remtilda(stralloc(&buffer[p1],bufptr - p1));
+				pred = (char *)remtilda(stralloc(&buffer[p1],bufptr - p1));
 				p3 = bufptr + 1;	/* p3 pts. to 1st symbol after ) */
 				flag = 1;
 				return(_if2);  }
@@ -67,7 +67,7 @@ char c;
 			r1 = bufptr;
 			return(_rwlab);
 
-		case 72:	exp = remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));  break;
+		case 72:	exp = (char *)remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));  break;
 
 		case 73:  endlab = newlab;  
 			break;
@@ -91,7 +91,7 @@ char c;
 			break;
 		/* generate nodes of all types */
 		case 111:		/* st. line code */
-			stcode = remtilda(stralloc(&buffer[p3],endbuf - p3));
+			stcode = (char *)remtilda(stralloc(&buffer[p3],endbuf - p3));
 			recognize(STLNVX,flag);
 			return(ABORT);
 
@@ -108,7 +108,7 @@ char c;
 			break;
 
 		case 125:			/* computed goto*/
-			exp = remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));
+			exp = (char *)remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));
 			recognize(COMPVX, flag);
 			return(ABORT);
 
@@ -122,12 +122,12 @@ char c;
 			break;
 
 		case 150:			/* label assignment */
-			exp = remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));
+			exp = (char *)remtilda( stralloc(&buffer[r1+1],bufptr - r1 - 1));
 			recognize(ASVX, flag);
 			break;
 
 		case 162:			/*  do node */
-			inc = remtilda(stralloc(&buffer[p1],endbuf - p1));
+			inc = (char *)remtilda(stralloc(&buffer[p1],endbuf - p1));
 			recognize(DOVX, 0);
 			break;
 
@@ -165,8 +165,8 @@ char c;
 			return(endrt);
 
 		case 500:
-			prerw = remtilda(stralloc(&buffer[p3],r1 - p3 + 1));
-			postrw = remtilda(stralloc(&buffer[r2],endbuf - r2));
+			prerw = (char *)remtilda(stralloc(&buffer[p3],r1 - p3 + 1));
+			postrw = (char *)remtilda(stralloc(&buffer[r2],endbuf - r2));
 			if (reflab || endlab || errlab)  recognize(IOVX,flag);
 			else recognize(STLNVX,flag);
 			return(ABORT);
@@ -187,7 +187,7 @@ char c;
 			recognize(FMTVX,0);  return(ABORT);
 
 		case 700:
-			stcode = remtilda(stralloc(&buffer[p3],endbuf - p3));
+			stcode = (char *)remtilda(stralloc(&buffer[p3],endbuf - p3));
 			recognize(entry,0);  return(ABORT);
 		/* error */
 		case 999:
@@ -204,7 +204,7 @@ struct lablist *makelab(x)
 long x;
 	{
 	struct lablist *p;
-	p = challoc (sizeof(*p));
+	p = (struct lablist *)challoc(sizeof(*p));
 	p->labelt = x;
 	p->nxtlab = 0;
 	return(p);
@@ -244,7 +244,7 @@ stralloc(ad,n)			/* allocate space, copy n chars from address ad, add '0' */
 int n; char *ad;
 	{
 	char *cp;
-	cp = galloc(n+1);
+	cp = (char *)galloc(n+1);
 	copycs(ad,cp,n);
 	return(cp);
 	}

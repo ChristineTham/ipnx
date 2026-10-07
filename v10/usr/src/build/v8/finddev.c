@@ -142,7 +142,7 @@ getkvars()
 cantread(what, fromwhat)
 	char *what, *fromwhat;
 {
-	fprintf(stderr, "ps: error reading %s from %s\n", what, fromwhat);
+	fprintf(stderr, "finddev: error reading %s from %s\n", what, fromwhat);
 }
 
 
@@ -160,7 +160,7 @@ getu()
 	if ((mproc->p_flag & SLOAD) == 0) {
 		lseek(swap, (long) ctob(mproc->p_swaddr), 0);
 		if (read(swap, (char *)&user.user, size) != size) {
-			fprintf(stderr, "ps: cant read u for pid %d from %s\n",
+			fprintf(stderr, "finddev: cant read u for pid %d from %s\n",
 			    mproc->p_pid, swapf);
 			return (0);
 		}
@@ -171,7 +171,7 @@ getu()
 	pteaddr = &Usrptma[btokmx(mproc->p_p0br) + mproc->p_szpt - 1];
 	KMlseek(kmem, (long)pteaddr, 0);
 	if (read(kmem, (char *)&apte, sizeof(apte)) != sizeof(apte)) {
-		printf("ps: cant read indir pte to get u for pid %d from %s\n",
+		printf("finddev: cant read indir pte to get u for pid %d from %s\n",
 		    mproc->p_pid, swapf);
 		return (0);
 	}
@@ -179,7 +179,7 @@ getu()
 	    (long) (ctob(apte.pg_pfnum+1) - (UPAGES+CLSIZE) * sizeof (struct pte)),
 	    0);
 	if (read(mem, (char *)arguutl, sizeof(arguutl)) != sizeof(arguutl)) {
-		printf("ps: cant read page table for u of pid %d from %s\n",
+		printf("finddev: cant read page table for u of pid %d from %s\n",
 		    mproc->p_pid, swapf);
 		return (0);
 	}
@@ -193,7 +193,7 @@ getu()
 		i = ncl * CLSIZE;
 		lseek(mem, (long) ctob(arguutl[CLSIZE+i].pg_pfnum), 0);
 		if (read(mem, user.upages[i], CLSIZE*NBPG) != CLSIZE*NBPG) {
-			printf("ps: cant read page %d of u of pid %d from %s\n",
+			printf("finddev: cant read page %d of u of pid %d from %s\n",
 			    arguutl[CLSIZE+i].pg_pfnum, mproc->p_pid, memf);
 			return(0);
 		}
@@ -257,7 +257,7 @@ alloc(size)
 	if (size > nleft) {
 		freebase = (char *)sbrk(i = size > 2048 ? size : 2048);
 		if (freebase == 0) {
-			fprintf(stderr, "ps: ran out of memory\n");
+			fprintf(stderr, "finddev: ran out of memory\n");
 			exit(1);
 		}
 		nleft = i - size;

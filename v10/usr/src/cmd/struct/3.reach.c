@@ -37,7 +37,7 @@ getreach()		/* obtain REACH(v) for each node v */
 	number(START);
 	for (v = START; DEFINED(v); v = RSIB(v))
 		{
-		pr = exits(v);	/* need to free the space for pr */
+		pr = (struct pair *)exits(v);	/* need to free the space for pr */
 		chfree(pr,sizeof(*pr));
 		}
 	}
@@ -50,7 +50,7 @@ VERT v;
 	struct pair *vpair, *chpair;
 	VERT w,t;
 	int i;
-	vpair = challoc(sizeof(*vpair));
+	vpair = (struct pair *)challoc(sizeof(*vpair));
 	vpair ->smallest = vpair ->second = UNDEFINED;
 	for (i = 0; i < CHILDNUM(v); ++i)
 		{
@@ -58,7 +58,7 @@ VERT v;
 		if (!DEFINED(w)) continue;
 		for (t = w; DEFINED(t); t = RSIB(t))
 			{
-			chpair = exits(t);
+			chpair = (struct pair *)exits(t);
 
 			/* set vpair->smallest,second to two smallest of vpair->smallest,second,
 				chpair->smallest,second */

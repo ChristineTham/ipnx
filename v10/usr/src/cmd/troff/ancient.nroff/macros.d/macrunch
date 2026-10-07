@@ -10,7 +10,7 @@ path=/usr
 
 
 if [ $# -lt 1 ]
-	then echo usage: macrunch [-m] [-d path] [{-n _o_r -t} "package name"] ".src name" 
+	then echo 'usage: macrunch [-m] [-d path] [{-n _o_r -t} "package name"] ".src name" '
 	exit 1
 fi
 

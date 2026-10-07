@@ -33,7 +33,7 @@ VERT *head;
 				if (!DEFINED(x)) x = adj;
 				else x = FATH(x);
 
-				inarc[x] = consls(v,inarc[x]);	/* insert v in list inarc[x] */
+				inarc[x] = (struct list *)consls(v,inarc[x]);	/* insert v in list inarc[x] */
 				}
 			}
 		}

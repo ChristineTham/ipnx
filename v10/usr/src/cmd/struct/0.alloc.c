@@ -47,7 +47,7 @@ struct coreblk **p;
 		{
 		if (!q)
 			{
-			q = morespace(n,p,size);
+			q = (struct coreblk *)morespace(n,p,size);	/* ipnx alloc */
 			break;
 			}
 		if (q-> blksize - q->nxtfree >= n)  break;
@@ -90,7 +90,7 @@ struct coreblk **p;
 	int t,i;
 
 	t = n<size?size:n;
-	q = malloc(i=t*sizeof(*(q->blk))+sizeof(*q));
+	q = (struct coreblk *)malloc(i=t*sizeof(*(q->blk))+sizeof(*q));
 	if(!q){
 		error(": alloc out of space","","");
 		fprintf(stderr,"space = %D\n",space);
@@ -102,7 +102,7 @@ struct coreblk **p;
 	*p = q;
 	q -> blksize = t;
 	q-> nxtfree = 0;
-	q->blk = q + 1;
+	q->blk = (int *)(q + 1);
 	return(q);
 	}
 

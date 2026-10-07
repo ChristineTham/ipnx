@@ -11,7 +11,7 @@ int type, ifflag;				/* do whatever is needed for this statement */
 	extern long label();
 	long *arclab;
 	if (nlabs > 3) sp = nlabs; else sp = 3;
-	arctype = challoc(sizeof(*arctype) * sp);  arclab = challoc(sizeof(*arclab) * sp);
+	arctype = (int *)challoc(sizeof(*arctype) * sp);  arclab = (long *)challoc(sizeof(*arclab) * sp);
 	for( i=0; i < endbuf; i++)  {if (buffer[i] == '~')  buffer[i] = ' ';}
 	loophead = nest = innerdo(label(0));
 	if (DEFINED(nest))
@@ -34,7 +34,7 @@ int type, ifflag;				/* do whatever is needed for this statement */
 		arctype[1] = (nest >= 0) ? nest : -2;
 		arclab[1] = implicit;
 		num1 = makenode(IFVX,TRUE,TRUE,label(0),2,arctype,arclab);
-		PRED(num1) = pred;
+		PRED(num1) = (int)pred;
 		}
 
 	arctype[0] = (nest >= 0) ? nest : -2;
@@ -106,7 +106,7 @@ int type, ifflag;				/* do whatever is needed for this statement */
 					}
 				else
 					{
-					BEGCODE(num) = stcode;
+					BEGCODE(num) = (int)stcode;
 					ONDISK(num) = FALSE;
 					CODELINES(num) = 1;
 					}
@@ -128,7 +128,7 @@ int type, ifflag;				/* do whatever is needed for this statement */
 				}
 			dostack[doptr] = label(1);
 			doloc[doptr] = num1;			/* stack link to node after loop */
-			INC(num1) = inc;
+			INC(num1) = (int)inc;
 			num = makenode(ITERVX,TRUE,FALSE,implicit,1,arctype,arclab);
 			ARC(num1,0) = num;
 			FATH(num) = UNDEFINED;	/* number of DOVX can change so leave UNDEFINED until later */
@@ -163,8 +163,8 @@ int type, ifflag;				/* do whatever is needed for this statement */
 			else
 				arctype[2] = UNDEFINED;
 			num = makenode(IOVX,!ifflag,!ifflag,label(0),3,arctype,arclab);
-			PRERW(num) = prerw;
-			POSTRW(num) = postrw;
+			PRERW(num) = (int)prerw;
+			POSTRW(num) = (int)postrw;
 			if (reflab)
 				addref(reflab->labelt, &FMTREF(num));
 			else
@@ -184,11 +184,11 @@ int type, ifflag;				/* do whatever is needed for this statement */
 				arclab[i] = label(nlabs-i-1);
 				}
 			num = makenode(type,!ifflag,!ifflag,label(0),nlabs - 1, arctype, arclab);
-			EXP(num) = exp;
+			EXP(num) = (int)exp;
 			break;
 		case ASVX:
 			num = makenode(ASVX,!ifflag,!ifflag,label(0),1,arctype,arclab);
-			EXP(num) = exp;
+			EXP(num) = (int)exp;
 			addref(label(1),&LABREF(num));
 			break;
 		case entry:
@@ -246,7 +246,7 @@ char *test;
 	arclab[0] = arc1;
 	arclab[1] = arc2;
 	num = makenode(IFVX,first,first,labe,2,arctype,arclab);
-	PRED(num) = test;
+	PRED(num) = (int)test;
 	return(num);
 	}
 
@@ -311,8 +311,8 @@ LOGICAL ifflag;
 	extern long label();
 	long *arclab;
 	char *str;
-	arctype = challoc(sizeof(*arctype) * nlabs);
-	arclab = challoc (sizeof(*arclab) * nlabs);
+	arctype = (int *)challoc(sizeof(*arctype) * nlabs);
+	arclab = (long *)challoc(sizeof(*arclab) * nlabs);
 
 	d = distinct(linelabs->nxtlab,arctype,arclab,nlabs-1);
 			/* puts distinct labels in arclab, count of each in arctype */
@@ -320,9 +320,9 @@ LOGICAL ifflag;
 	for (i = 0; i < d; ++i)
 		arctype[i] = makenode(ICASVX,FALSE,FALSE,implicit,1,&arct,&arclab[i]);
 	num = makenode(SWCHVX,!ifflag,!ifflag,label(0),d,arctype,arclab);
-	EXP(num) = exp;
+	EXP(num) = (int)exp;
 
-	str = challoc(6*nlabs);	/* 5 digits + , or \0 per label */
+	str = (char *)challoc(6*nlabs);	/* 5 digits + , or \0 per label */
 	for (i = 0; i < d; ++i)		/* construct list of values for each label */
 		EXP(arctype[i]) = stralloc(str,accum(str,linelabs->nxtlab,arclab[i]));
 	chfree(str,6*nlabs);

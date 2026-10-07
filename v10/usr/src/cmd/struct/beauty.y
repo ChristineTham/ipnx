@@ -125,7 +125,7 @@ oppred:	pred
 	|
 	;
 
-pred:	'(' expr ')'	=	{ t = checkneg($2,0);
+pred:	'(' expr ')'	=	{ t = (struct node *)checkneg($2,0);
 				yield(t,100);  freetree(t);	};
 
 expr:		'(' expr ')'	=	$$ = $2;
@@ -301,7 +301,7 @@ char *token;
 
 	if (buffer == 0)
 		{
-		buffer = malloc(xxmaxchars);
+		buffer = (char *)malloc(xxmaxchars);
 		if (buffer == 0) error("malloc out of space","","");
 		}
 	tlen = slength(token);
