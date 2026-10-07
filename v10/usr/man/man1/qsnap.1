@@ -5,93 +5,75 @@ qsnap \(mi high resolution digital film printer
 .SH SYNOPSIS
 .B qsnap
 [
-.BI -ncbdfmFRrs
+.BI -bdfmnrxFLRXY
 ]
 [
 .I N ...
 ]
-.I file ...
+.I file
 .SH DESCRIPTION
 .I Qsnap
 produces images on a QCR digital film printer.
-Each input
+The input
 .I file
 should be in the form of
 .IR picfile (5),
-3-channel for color or 1-channel for black and white;
-more than one
-.I file
-may be given, and they are tiled onto the same exposure in the
-order given.
+3-channel for color or 1-channel for black and white.
 .LP
 Option letters appear in one string.
-Certain options require a numeric argument,
+Certain options require a numeric argument, 
 .I N,
-which follows the string as a separate argument, in the same order
-as the option letters that need one.
-.TP
-.B n
-Read a headerless, square, black-and-white raster
-(a
-.IR picfile (5)
-with no header); the default.
-.TP
-.B c
-Interpret each
-.I file
-as a multi-channel, td-format color
-.IR picfile (5)
-image, rather than the default headerless black-and-white raster.
+which follows the string as a separate argument;
+the arguments are taken in the order their letters appear.
 .TP
 .B b N
 Set the brightness of the image to
 .I N,
-.RI 0\(<= N \(<=9
-.RI ( N
-is taken mod 10).
+.RI 0\(<= N \(<=8;
+0 is brightest.
+.I N
+is taken mod 9.
 The default brightness value is 2 in
 high resolution mode (4K\(mu4K pixels), and 0 in
-low resolution mode (2K\(mu2K pixels).
-.RI ( N=9
-leaves the brightness calibration unchanged instead of setting it.)
+low resolution mode (2K\(mu2K pixels) as set by option
+.BR R .
 .TP
 .B d N
-Dither the image by \(+-N,
-.RI 2\(<= N \(<=255;
-the sign of
+Dither the image: add pseudo-random noise, spread evenly between
+.RI \- N /2
+and
+.IR N /2,
+to every pixel.
+.RI 2\(<= N \(<=255
+is sensible; the sign of
 .I N
 is ignored.
 .TP
 .B f N
-Correct the exposure for a given type of film;
+Correct the exposure for a given type of film.
+Valid film types are 0 to 5 inclusive and 7;
 .I N
-is taken mod 8, and
-.I N=6
-is rejected as an unknown film type.
+is taken mod 8, and 6 is rejected.
 .br
-0 = (default) no correction.
+0 = (default) Polaroid Type 52 (4\(mu5 inch).
 .br
 1 = linear correction table.
 .br
-2 = Polaroid Type 559 color pack film, 2K mode.
+2 = Polaroid Type 559 color pack film (4\(mu5 inch), 2K mode.
 .br
-3 = Ektachrome 100 color film, 2K mode.
+3 = Ektachrome 100 color film (35mm), 2K mode.
 .br
-4 = Ektachrome 100 color film, 4K mode.
+4 = Ektachrome 100 color film (35mm), 4K mode.
 .br
-5 = Polaroid Type 559 color pack film, 4K mode.
+5 = Polaroid Type 559 color pack film (4\(mu5 inch), 4K mode.
 .br
-7 = Polaroid Type 809 color film, 4K mode.
-.LP
-Tmax-100 black & white film is defined as film type 8, but since
-.I N
-is taken mod 8 before use,
-.B "\-f 8"
-silently behaves as
-.B "\-f 0"
-instead; there is no way to select it through this option as
-.I Qsnap.c
-is currently written.
+7 = Polaroid Type 809 color film (8\(mu10 inch), 4K mode.
+.br
+Tmax-100 black&white film (35mm) is not one of them:
+.B "f 8"
+selects type 0.
+Use option
+.BR n .
 .TP
 .B m N
 Set the enlargement factor.
@@ -102,29 +84,64 @@ for 2K resolution and
 .IR N =6
 for 4K.
 .TP
-.B F N
-Select the black-and-white exposure filter,
-.RI 0\(<= N \(<=3
-.RI ( N
-is taken mod 4): 0 = neutral, 1 = red, 2 = green, 3 = blue.
-The default is 2 (green).
-.TP
-.B R
-Rotate the image 90 degrees clockwise before exposing it.
-Takes no argument; the resolution itself is detected automatically
-from the printer hardware and is not settable by an option.
+.B n
+Correct the exposure for Tmax-100 black&white film (35mm),
+2K or 4K mode.
+The brightness is fixed at 2, and options
+.B b
+and
+.B f
+have no effect.
+.I Qsnap
+refuses to run unless the printer's brightness levels have first been set with
+.BR "qbright 36 58 81 103 126 148 171 193" .
 .TP
 .B r
 Expose the red channel of a color image only (for multiple
-red overlays); has no effect unless combined with
-.BR c .
+red overlays).
 .TP
-.B s N
-When more than one
-.I file
-is given, skip the first
+.B x N
+Expose the image N times.
+(Useful if the maximum brightness value is not bright enough.)
+Not with option
+.BR L .
+.TP
+.B F N
+Select the filter for a black and white exposure:
+0 = neutral, 1 = red, 2 = (default) green, 3 = blue.
 .I N
-of them.
+is taken mod 4.
+.TP
+.B L N
+Read
+.I file
+as raw black and white pixels with no
+.IR picfile (5)
+header,
+.I N
+pixels wide and as many lines high (at most the height of a 35mm frame),
+and send it to the printer a line at a time.
+Options
+.BR m ,
+.B d
+and
+.B x
+do not apply.
+.TP
+.B R N
+Set the resolution, where
+.I N
+is either 2 or 4, to select low (2K\(mu2K) or high (4K\(mu4K) resolution,
+respectively.
+The default is to leave the resolution unchanged.
+.TP
+.B X N
+Offset the image along the x-coordinate by N pixels.
+The 35mm camera in 4K mode may require an X- and/or a Y-offset.
+The offset is in printer pixels; it is not multiplied by the enlargement factor.
+.TP
+.B Y N
+Offset the image along the y-coordinate by N pixels.
 .LP
 The imaging resolution for 35mm film is 114 pixels/mm (2895 dots/inch)
 in high resolution mode, and 57 pixels/mm in low resolution mode.
@@ -154,3 +171,13 @@ Polaroid Type 809 color film is recommended.
 .IR cscan (1),
 .IR imscan (1),
 .IR picfile (5)
+.SH BUGS
+Option
+.B n
+depends on
+.IR qbright ,
+whose source ships beside
+.IR qsnap 's
+but which is neither built nor installed.
+.br
+The usage message lists film types 0 to 2 only.
