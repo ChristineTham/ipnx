@@ -82,6 +82,7 @@ python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
 bash tools/v10-golden.sh                # V10: does the golden still boot to login
 python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
 python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
+python3 tools/v10-tree-check.py         # V10: every v10/ edit has a route to a machine (--current after a rebuild)
 bash tools/9pfs-test.sh                 # the GUEST's 9P client, driven on the host
 python3 tools/webterm-check.py           # the browser app: boot, log in, run a command
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
@@ -115,6 +116,7 @@ bash tools/v10-reset.sh                 # image/*.tar.bz2 -> run/v10, run/v10-go
 bash tools/v10-launch.sh                # boot run/v10, golden on the second drive, both shares up
 bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
 python3 tools/v10drive.py run/v10-test.img cmds   # run a script of shell commands on it
+python3 tools/v10fs.py tree run/v10-golden v10/usr   # read a disk from the host, no boot
 ```
 
 **The golden boots on anything that can build open-simh**, which includes a plain Linux
@@ -409,6 +411,14 @@ status 0.
   Regenerating a file in the repository changes nothing a guest already holding a copy will
   see, and there is no symptom: it compiles, asserts and reports against the previous
   generation. On V10 this is why `updatebuild` is the first half of every round.
+- **An edit under `v10/usr` reaches no machine by being committed.** `updatebuild` carries
+  `build/` and the `build/mkfiles` rows, and `patch` carries its own repairs; nothing else
+  leaves git. Ninety fixes — `dmesg`, `troff`, `sdb`, the kernel's `printf`s, vol2 — sat
+  there for up to three weeks while the golden built every one from the unfixed source, and
+  only reading the disk from the host (`tools/v10fs.py`) showed it. A new edit needs a
+  `build/mkfiles` row; a file `patch` copies whole must change at its `build/` source and in
+  the tree together, or the next `patch` run quietly undoes it, as it did `finddev.c`'s.
+  `tools/v10-tree-check.py` fails until both hold.
 - **"It is in the golden, it will arrive on Reset" is not shipping it.** `tools/app-check.sh`
   asserts the whole chain — repo golden → app bundle → what launches — because a fix can be
   written, proven and committed while the thing the user double-clicks still runs last

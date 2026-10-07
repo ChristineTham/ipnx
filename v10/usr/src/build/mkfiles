@@ -15,7 +15,10 @@
 # Makefiles, and the mkfiles once generated for it were removed as inventions.
 #
 # Regenerate the mkfile rows after converting more files -- and then re-add
-# the non-mkfile rows by hand, because find cannot know them:
+# the non-mkfile rows by hand, because find cannot know them: the handful
+# straight after the mkfiles, and the two sections at the end, WHOLE-FILE
+# REPAIRS and patch's copies.  tools/v10-tree-check.py fails on any edit or
+# patch copy left without a row, so a regeneration that drops one is caught:
 #   cd v10/usr && find src sys -name mkfile | grep -v '^src/build/' | sort
 src/asm.libm/mkfile
 src/cmd/2500/mkfile
@@ -444,3 +447,153 @@ src/cmd/iostat.c
 src/cmd/cfront/ooptcfront/main.c
 src/cmd/cfront/ooptcfront/template.c
 src/cmd/cfront/ooptcfront/tree_walk.c
+
+# THE TREE'S WHOLE-FILE REPAIRS.  They ride this channel for the reason the
+# rows above do: no tape and no stanza of patch puts them on a machine.  A file
+# the repository corrects in place -- a printf given its argument, a man page,
+# a vol2 mkfile, a data file restored -- exists in v10/ and nowhere else, and
+# by 7 Oct 2026 ninety such edits had no row: tools/v10fs.py read the golden
+# disk and found it still building dmesg, troff, sdb and the kernel from their
+# unfixed sources, while git said the fixes were done.  An edit under v10/usr
+# outside src/build needs a row here, and tools/v10-tree-check.py fails until
+# it has one.  A file whose only difference from the tape is patch's own
+# repairs needs none -- v10/ holds it as patch leaves it, and patch makes it --
+# but one patch edits AND this repository fixed further does: bad144.c,
+# struct/tree.c and beauty.c below are patched and then corrected.
+include/f2c.h
+man/man1/lcc.1
+man/man1/qsnap.1
+maps/115
+src/cmd/bad144.c
+src/cmd/basic/bite/src/input.c
+src/cmd/basic/bite/src/load.c
+src/cmd/basic/bite/src/pause.c
+src/cmd/bison/bison.simple
+src/cmd/cbt/btbuild.c
+src/cmd/ccom/vax/genmore.c
+src/cmd/cflow/cflow.sh
+src/cmd/cyntax/cem/Makefile
+src/cmd/cyntax/cyn/Makefile
+src/cmd/dmesg.c
+src/cmd/docgen/docgen.c
+src/cmd/f2c/names.c
+src/cmd/finddev.c
+src/cmd/getopt.c
+src/cmd/grap/misc.c
+src/cmd/gre/cw.c
+src/cmd/ideal/idfilt/texfilt.c
+src/cmd/ideal/idfilt/tfilt.c
+src/cmd/ideal/memut.c
+src/cmd/ideal/opaque.c
+src/cmd/idiff.c
+src/cmd/lcc/etc/coma.c
+src/cmd/lcomp/lcomp
+src/cmd/learn/selsub.c
+src/cmd/learn/start.c
+src/cmd/map/map.sh
+src/cmd/monk/cmd/monk/read_db.c
+src/cmd/monk/cmd/monk/read_user.c
+src/cmd/monk/cmd/monk/regcmp.c
+src/cmd/monk/cmd/tc.c
+src/cmd/monk/db/a4
+src/cmd/pascal/pascal/pc.c
+src/cmd/pascal/pc0/fend.c
+src/cmd/pcc1/pcc/UCtable.c
+src/cmd/picasso/picassoy.y
+src/cmd/postscript/devpost/devpost.mk
+src/cmd/refer/glue5.c
+src/cmd/sdb/access.c
+src/cmd/sdb/display.c
+src/cmd/spell/spell.sh
+src/cmd/spitbol/spithost
+src/cmd/struct/beauty.c
+src/cmd/struct/main.c
+src/cmd/struct/tree.c
+src/cmd/trace/trace1.c
+src/cmd/troff/ancient.nroff/macros.d/mmt.src
+src/cmd/troff/n1.c
+src/cmd/troff/t11.c
+src/cmd/twig/makefile
+src/cmd/uucp/getprm.c
+src/dk/libc/tdkexec.c
+src/libplot/libram/ramtek/range.c
+src/libplot/libtr/tr/frame.c
+src/libplot/libtr/tr/range.c
+src/netfs/libnetb/funcs.c
+sys/fs/netb.c
+sys/io/kdi.c
+sys/io/up.c
+sys/lib/conf.mfair
+sys/lib/conf.mflow
+sys/md/mba.c
+sys/md/ubanaut.c
+sys/mkconf/readconf.c
+vol2/ADM/defns
+vol2/ADM/mkfile
+vol2/anim/makefile
+vol2/auth/Makefile
+vol2/grap/makefile
+vol2/graphics/mkfile
+vol2/index/defns
+vol2/index/getsed
+vol2/index/getterms
+vol2/index/mkfile
+vol2/index/nmkfile
+vol2/index/smkfile
+vol2/ipc/makefile
+vol2/ipc/mkfile
+vol2/mk/mkfile
+vol2/pic/mkfile
+vol2/preface/mkfile
+vol2/prefer/makefile
+vol2/troff/mkfile
+vol2/uucp/admin.ms
+vol2/uucp/mkfile
+vol2/yacc/yacc.ms
+
+# AND EVERY FILE patch COPIES WHOLE FROM build/, so that an edit to one reaches
+# a machine on the next round.  patch runs only when the patch SCRIPT is newer
+# than $CMD/.patched (mkfile:254), so an edit to build/v8/finddev.c or to
+# build/src/libc/stdio/printf.c on its own waits for some unrelated edit to
+# patch -- ipnx-v10.m went stale that way until mkfile:1809 gave it a rule.
+# The row copies the TREE's copy, so the two must agree, and
+# tools/v10-tree-check.py holds them to it: finddev.c's fix went into
+# src/cmd/finddev.c alone, and patch then overwrote it on every machine.
+include/shares.h
+include/sys/lnode.h
+src/cmd/9pfs.c
+src/cmd/cc.c
+src/cmd/fsck.c
+src/cmd/fstat.c
+src/cmd/gcc/jump.c
+src/cmd/gcc/local-alloc.c
+src/cmd/install.sh
+src/cmd/login.c
+src/cmd/mkbitfs.c
+src/cmd/mv.c
+src/cmd/nafsmnt.c
+src/cmd/rp07dump.c
+src/cmd/rp07rest.c
+src/lbin/csh/sh.local.h
+src/libc/gen/atof.c
+src/libc/gen/malloc.c
+src/libc/gen/memmove.c
+src/libc/gen/qsort.c
+src/libc/stdio/_dtoa.c
+src/libc/stdio/_fconv.c
+src/libc/stdio/fconv.h
+src/libc/stdio/fgets.c
+src/libc/stdio/fprintf.c
+src/libc/stdio/fputs.c
+src/libc/stdio/fscanf.c
+src/libc/stdio/printf.c
+src/libc/stdio/rdwr.c
+src/libc/stdio/scanf.c
+src/libc/stdio/snprintf.c
+src/libc/stdio/sprintf.c
+src/libc/stdio/sscanf.c
+src/libc/stdio/strtod.c
+src/libc/stdio/vfprintf.c
+src/libc/stdio/vfscanf.c
+src/libc/stdio/vprintf.c
+sys/os/streamio.c

@@ -194,11 +194,18 @@ fi
 # the Mac.  $REPO/mkfiles is the list read here -- the repository's copy, not
 # the machine's: the machine's copy is only refreshed by the handoff at the
 # END of this script, so reading it here would apply LAST round's list and a
-# row added since would never ship.  Every entry is copied every round -- cmp
-# first would read both sides over the wire anyway, so the copy IS the cheap
-# form.  cp's effect survives the subshell that this shell forks for a
-# redirected loop; only variable assignments are lost in it, which is why
-# nothing here counts.
+# row added since would never ship.  cp's effect survives the subshell that
+# this shell forks for a redirected loop; only variable assignments are lost
+# in it, which is why nothing here counts.
+#
+# cmp BEFORE cp, and not to save the wire -- cmp reads both sides, so it costs
+# what the copy did.  It is the mtime.  Every row was copied every round while
+# the rows were mkfiles, and a re-dated mkfile rebuilds nothing.  The rows are
+# now also SOURCE -- ninety whole-file repairs and patch's own copies, six of
+# them kernel files -- and a re-dated .c is a rebuilt .o: an unconditional cp
+# would recompile those packages and relink /unix on every round, whether or
+# not anything had changed.  A row whose content matches keeps its date.  The
+# same trick mkfile:1832 plays on ipnx-v10.m.
 if test -f $REPO/mkfiles
 then
 	# Every real entry starts with a lowercase path component; a comment
@@ -216,7 +223,8 @@ then
 			# exists is still said out loud.
 			if test -d /usr/`dirname $f`
 			then
-				cp $REPO/../../$f /usr/$f || echo "updatebuild: $f: copy failed"
+				cmp -s $REPO/../../$f /usr/$f ||
+					cp $REPO/../../$f /usr/$f || echo "updatebuild: $f: copy failed"
 			fi ;;
 		esac
 	done < $REPO/mkfiles

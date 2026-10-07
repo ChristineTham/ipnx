@@ -148,6 +148,38 @@ in `ipnxbuild` exists to keep that true. Three things had to be reconciled:
 - **directories** — three empty ones (`local/lib`, `cmd/efl/efix`, `libplot/libblit/xplot`) were
   the whole remaining difference once the overwritten files were accounted for.
 
+### Checking it from the host
+
+The equation was proven once, on 2026-09-04, by tarring a live machine onto the share. Nothing
+checked it again, and by 2026-10-07 the golden disk and `v10/` disagreed on **301 paths**:
+
+- **90 repository edits had no way to reach a machine.** `updatebuild` delivers `build/` and the
+  `build/mkfiles` rows, and a source fix made in `v10/` was neither. So `dmesg`, `docgen`, `troff`,
+  `sdb`, the kernel's `printf` arguments and vol2 had all been fixed in git, and the golden still
+  built every one of them from the unfixed source. `finddev.c`'s fix was lost a second way: it
+  went into `src/cmd/finddev.c`, and `patch` copies `build/v8/finddev.c` over that file.
+- **The repository lagged the machine** on 24 files that `patch` repairs (`struct`'s casts,
+  `cref`, `stdio.h`'s `_IOFBF`, `lrndef`, `macrunch`, `install.sh`), and spelled five names in
+  the wrong case. `qsnap`'s two sources had been swapped by hand on 24 Sep in the belief that the
+  names were wrong, when the names were right and the swap moved the contents.
+- **48 build products** (`struct`'s objects, `cref`'s tables) were on the golden from a build
+  older than the before/after sweep, so no sweep ever counted them.
+
+`tools/v10fs.py` reads a V10 disk image directly, and `tools/v10-tree-check.py` holds every
+difference to a delivery route: mkbuild for `src/build`, a `build/mkfiles` row for anything else
+in `v10/usr`, and `patch` for its own repairs. Each file `patch` copies whole must equal its
+source here and have a row of its own, because `patch` runs only when the patch *script*
+changes (`mkfile:254`). `--current` additionally fails anything still waiting to be delivered,
+which is the question to ask after a rebuild. The equation's exceptions are named in the script,
+each with its reason:
+
+- `sys/ipnx/*`, `build/src`'s kernel configuration, which `patch` and `mkfile:1830` put on the
+  machine and `v10/` deliberately does not carry twice;
+- `sys/io/camac.s` and `pascal/libpc/libpc`, `preserve` rows whose copies on **both** sides are
+  build products (`camac.s`'s `.stabs` line is dated 2026), because builds before the restore
+  existed overwrote them with no copy kept. Only the tapes have the originals;
+- empty directories, which git cannot hold.
+
 ## What `ipnxbuild` does
 
 `patch` first, then a snapshot of every file and directory under `usrtrees`, then the
@@ -225,7 +257,7 @@ the rule the directory is built around.
 | `casenames` | which spelling of a **tape** path survives | `mkv10`, at extraction |
 | `casefix` | the `/usr`-relative renames that keep one name per path | `updatebuild`, `ipnxbuild /v10`, `mkv10` |
 | `arcfix` | dissolving every `ar` archive into a directory | the same three |
-| `mkfiles` | the build files the repository carries for the source tree | `updatebuild`, `mkipnx`, `ipnxbuild /v10` |
+| `mkfiles` | every file the repository carries for the tree that no tape or `patch` run puts there: the converted mkfiles, whole-file repairs, and `patch`'s own copies | `updatebuild`, `mkipnx`, `ipnxbuild /v10`; held to by `tools/v10-tree-check.py` |
 | `preserve` | tape files a rule rewrites in place | `ipnxbuild` |
 | `proto-dev` | every node `/dev` needs | `tools/v10-proto.py` → it → `tools/v10-makedev.py` → `mkdev` |
 | `mkcheck` | what a machine must already have before the mkfile will run | by hand |

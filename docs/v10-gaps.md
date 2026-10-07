@@ -286,6 +286,14 @@ tape creates it only when absent.
 `chmod`, and `cflow.sh` is 644 in the tree. Every other script install in `build/mkfile`
 carries an explicit `chmod +x`.
 
+**1.7 The root filesystem has eight free inodes** (measured 2026-10-07: `tools/v10fs.py stat
+run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and `s_tinode 8`). `mkimage:27-33`
+already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917 device nodes take
+most of the i-list — so this is not a fault yet, but a ninth new file under `/`, `/etc` or
+`/dev` makes `mkimage` fail with the disk half-built. `mkbitfs` takes no inode count —
+`mkbitfs.c:80` derives it from the size, `(size-2)/(1+ICOUNT)` — so the levers are fewer
+device nodes, a larger root partition in `ra_sizes`, or an argument added to `mkbitfs`.
+
 ## 2. Ownership, set-uid and set-gid
 
 The whole 5,219-line mkfile carries one `chown` (`sh`, :826) and two set-id installs (`ps`,
@@ -455,17 +463,38 @@ one of those 43 papers by hand.
 
 ## 6. Divergences between the repository tree and the machine
 
-**`qsnap`.** `qsnap/mkfile:14` names `Qsnap.c`; the checkout holds `qsnap.c` + `u_Qsnap.c`,
-the inverse of what `casenames` produces on the machine, and `casefix:94` is a no-op against
-it. The machine builds; a reader of `v10/` concludes it cannot. This breaks `casefix`'s own
-stated invariant that the tree, the checkout and `taripnx`'s archive agree.
+Measured on 2026-10-07 with `tools/v10-tree-check.py`, which reads the golden disk from the host
+and holds every difference to a delivery route; `docs/v10-build.md` (*Checking it from the
+host*) has the whole account. What this section recorded, and what became of it:
 
-**`cref`.** `make.c:128` and `mtab.c:177` read `exit(0);tt/* ipnx exit … */` — v10's `sed`
-rendered a `\t\t` as a literal `tt`. This is **healed at build time** by a dedicated
-expression in `build/patch:550` and `:579`, and the comment above it explains why the heal
-has to be a line rather than a note: the corruption consumed the line the original stanza was
-guarded on, and two trees already carry it. Nothing to fix; recorded because anyone reading
-`cref` cold will trip over it.
+**`qsnap`: resolved, after being made worse.** `qsnap/mkfile:14` names `Qsnap.c`, and the
+checkout held `qsnap.c` + `u_Qsnap.c` where the machine holds `Qsnap.c` + `u_qsnap.c`. The
+contents were right and only the case of the names was wrong, but a commit on 24 Sep swapped the
+*contents* to fit the names, so the checkout's `Qsnap.c` became the `<fb.h>` variant — which
+needs pico's missing `libfb` and is not what any machine builds. `qsnap.1` was then rewritten
+from that file and documented options the shipped binary does not have. Both are corrected:
+`Qsnap.c` is the `piclib.h` variant the mkfile links with `piclib.o`, byte for byte the
+machine's, and `qsnap.1` is the original page with `-d`, `-n`, `-F` and `-L` added from the code
+and its two errors fixed (`-f 8` cannot reach Tmax-100; the offsets are not scaled by `-m`).
+
+**Four more names in the wrong case**, the same case-insensitive-filesystem artefact:
+`jerq/src/lib/C` for `c`, `cfront/libstring/string.h` for `String.h`, `ooptcfront/hash.h` for
+`hash.H`, and ostdio's `doprnt.s`/`u_doprnt.S` for `doprnt.S`/`u_doprnt.s`. Contents identical to
+the machine's; renamed to match `casefix` and the rule that the build file's spelling survives.
+
+**`cref`: the checkout now carries the healed files.** `make.c:128` and `mtab.c:177` read
+`exit(0);tt/* ipnx exit … */` — v10's `sed` rendered a `\t\t` as a literal `tt` — which
+`build/patch:550` and `:579` heal at build time, and `make.c` also lacked patch's `&array`
+repair. Both now hold what patch leaves, as do `struct`'s seventeen cast-repaired sources,
+`stdio.h`, `lrndef`, `macrunch` and `install.sh`. The heal stays in patch for any tree that
+still carries `tt`.
+
+**Still open: two `preserve` rows hold build products on both sides.** `sys/io/camac.s` (its
+`.stabs` line is dated 2026 in the checkout and on the golden) and `pascal/libpc/libpc`. Builds
+before `ipnxbuild` restored what it saved overwrote them with no copy kept, so every restore since
+has faithfully put back a product. Only the tapes have the originals; `tools/v10-tree-check.py`
+names both as expected. A third, `struct/beauty.c`, was yacc's output on the golden and is the
+tape's (plus patch's one cast) in the checkout, which `build/mkfiles` now delivers.
 
 ## 7. How to read the rest
 

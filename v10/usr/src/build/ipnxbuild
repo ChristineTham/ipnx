@@ -391,14 +391,16 @@ then
 		esac
 	done < /usr/src/build/arcfix
 fi
-# 3. the tree's build files, disk to disk.
+# 3. the tree's build files, disk to disk.  cmp first: the rows include
+# sources, and a re-dated source is a rebuilt one -- updatebuild's mkfiles
+# block says why.
 if test -f /usr/src/build/mkfiles
 then
 	while read f
 	do
 		case $f in
 		[a-z]*)	if test -f /usr/$f -a -d /v10/usr/`dirname $f`
-			then cp /usr/$f /v10/usr/$f
+			then cmp -s /usr/$f /v10/usr/$f || cp /usr/$f /v10/usr/$f
 			fi ;;
 		esac
 	done < /usr/src/build/mkfiles
