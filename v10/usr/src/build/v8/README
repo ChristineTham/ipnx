@@ -1,4 +1,4 @@
-Eighth Edition source, imported because v10src carries none.
+Eighth Edition source and data, imported because v10src carries none.
 
 Admin/etcfiles names seventeen files that no v10 tape has.  Six are per-machine
 data and four cannot be recovered at all (analyze and catman are 4.3BSD's --
@@ -9,13 +9,28 @@ The rest are here, byte-identical to the v8 tree in this repository:
     finddev.c  fstat.c  rp07dump.c  rp07rest.c   from v8/usr/src/cmd
     install.sh                                   from v8/usr/src/cmd
 
-They live under mk/gen rather than in v10/usr/src so that nothing in the
+They live under build/ rather than in v10/usr/src so that nothing in the
 distribution tree pretends to be tape content.  ./patch copies them into
-/v10/usr/src/cmd before the build, the way it does the two gcc reconstructions.
+$SRC/cmd before the build (patch:122), the way it does the two gcc
+reconstructions.
+
+Data no v10 tape carries, which v10 programs read by name, came the same way
+on 8 Oct 2026 -- again byte-identical to this repository's v8/:
+
+    words      from v8/usr/dict/words        look(1), hangman
+    lib.b      from v8/usr/lib/lib.b         bc -l
+    fortunes   from v8/usr/games/lib         fortune
+    quiz.k/    from v8/usr/games/lib/quiz.k  quiz, all 34 files
+
+These are installed by the mkfile, not copied by patch: they are products,
+not sources.  The mkfile comment above their rules records what each was
+checked against in the program that reads it.
 
 ../etc holds the same for files that are shipped rather than compiled:
 
     mklost+found  shutdown  group     from v8/etc
     whoami                            ours: the machine name, ipnx-v10
+    dst                               ours: the US daylight-saving rules
+                                      since 1967, for ctime's /lib/dst
     mtab  utmp                        empty, as they are in v8 -- runtime
                                       state that mount and login write

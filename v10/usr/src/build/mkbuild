@@ -148,9 +148,22 @@ do
 	cp $B/src/libc/stdio/$f $D/usr/src/build/src/libc/stdio/$f || exit 1
 done
 
+# v8 IS LISTED BY ITS DIRECTORY TOO, and it was not: six names written down,
+# so the data imported beside them on 8 Oct 2026 -- words, fortunes, lib.b
+# and quiz.k, the Eighth Edition files no v10 tape carries -- would never have
+# left the repository.  quiz.k is the one subdirectory, copied by the loop
+# after; `test -d' keeps it out of this one, as in every loop above.
 test -d $D/usr/src/build/v8 || mkdir $D/usr/src/build/v8 || exit 1
-for f in README finddev.c fstat.c install.sh rp07dump.c rp07rest.c
+for f in `ls $B/v8`
 do
-	cp $B/v8/$f $D/usr/src/build/v8/$f || exit 1
+	if test -d $B/v8/$f
+	then	:
+	else	cp $B/v8/$f $D/usr/src/build/v8/$f || exit 1
+	fi
+done
+test -d $D/usr/src/build/v8/quiz.k || mkdir $D/usr/src/build/v8/quiz.k || exit 1
+for f in `ls $B/v8/quiz.k`
+do
+	cp $B/v8/quiz.k/$f $D/usr/src/build/v8/quiz.k/$f || exit 1
 done
 

@@ -113,6 +113,7 @@ JOBS=$SRC/lbin/libjobs
 LCC=$CMD/lcc
 LIBC=$SRC/libc
 IPC=$SRC/ipc
+OLDPLOT=$SRC/libplot/oldplot
 # GEN DOES NOT FOLLOW ROOT, and it is the one variable here that should not.
 # $CMD, $LIBC and $IPC are the SOURCE BEING COMPILED, so building /v10 means
 # compiling /v10's tree and they must follow $ROOT.  $GEN is the builder's own
@@ -466,21 +467,19 @@ $ROOT/usr/bin/strip: $CMD/strip/stab
 	cd $CMD/strip; cp strip.new $ROOT/usr/bin/strip || echo 'strip: FAILED' && cp stab $ROOT/usr/bin/stab || echo 'stab: FAILED'
 	cd $CMD/strip; strip $ROOT/usr/bin/stab || echo 'strip: install FAILED'
 
-# /usr/include, INSTALLED LIKE EVERYTHING ELSE.  mkv10 leaves r70include's 349
-# files in /usr/src/include, the source tree; this copies them where cc looks
-# and where libc/mkfile:150's absolute prerequisite points.
+# /usr/include USED TO BE INSTALLED HERE, and is not any more.  mkv10 left
+# r70include's 349 files in /usr/src/include and a rule copied them where cc
+# looks; there is no $INC or $MAN install now, because /usr/include and
+# /usr/man ARE the living trees under the tar-of-/usr shape (updatebuild merges
+# include, ipnxbuild /v10 does the same for the target).  The INC= and MAN=
+# names above survive only for the verify loop's history.
 #
-# The target is libc.h and not the directory, because ./installed is
-# `test -f "$1"' and a directory never satisfies it -- and libc.h is the file
-# that actually has to be there.  v10's cp has no -r (cp(1)), so the tree moves
-# as a tar -- through a FILE in /usr/tmp and not a pipe.  tar.c:158 accepts
-# `-', but tar.c:990 tolerates only ENOTTY from its MTIOCTOP and a pipe
-# answers otherwise: `tar: tape backspace error: No such device or address',
-# after which it has written part of the tree and reported failure.
-# There is no $INC or $MAN install any more: /usr/include and /usr/man ARE the
-# living trees under the tar-of-/usr shape, so the copy that used to run here
-# had nothing left to say.  The INC= and MAN= names above survive only for the
-# verify loop's history.
+# One thing that rule learned is still true of any tree copy on v10: cp has no
+# -r (cp(1)), so a tree moves as a tar -- through a FILE in /usr/tmp and not a
+# pipe.  tar.c:158 accepts `-', but tar.c:990 tolerates only ENOTTY from its
+# MTIOCTOP and a pipe answers otherwise: `tar: tape backspace error: No such
+# device or address', after which it has written part of the tree and
+# reported failure.
 
 # THE BUILD PATH'S OWN TOOLS.  Measured, not listed: every recipe in this file
 # and in the build files of the twenty directories it enters was scanned for the
@@ -1416,8 +1415,13 @@ $ETC/ttys: $PREP $GEN/etc/ttys
 # partition 5: mkimage:22 is `mkbitfs /dev/ra15 392528', which mkbitfs.c:45
 # documents as 4k blocks -- 392528*8 = 3140224, and ra.c:47 puts partition 5
 # at block 780264, leaving 3140226 of RA73_LBN's 3920490.  Booted as unit 0
-# that partition is ra05.  This file is only ever written to a disk that has
-# no fstab yet (installed is `test -f "$1"'), so it describes that disk.
+# that partition is ra05.  The rule compares times, so the file is rewritten
+# whenever $GEN/etc/fstab is newer -- every round, since mkbuild re-dates the
+# whole build directory -- on the builder as well as the disk being made.
+# That is safe because the two are the same RA73 layout: the golden this
+# project builds on IS such a disk.  (It used to be written only to a disk
+# with no fstab yet, under the ./installed predicate the top of this file
+# retires.)
 #
 # /proc is the fourth line, and it carries a NUMERIC type: libc/gen/fstab.c:29
 # takes field 3 as fs_ftype when it starts with a digit, and fmount(2) lists
@@ -1627,18 +1631,19 @@ $ETC/rp07rest: $CMD/rp07rest
 #	mk ROOT=/v10 verify    checks the disk being built
 # Reinstall the configuration THIS PROJECT OWNS, whatever is already there.
 #
-# The $ETCF rules cannot do this and must not: their P predicate is ./installed,
-# which exits 0 for any existing target, deliberately -- everything else in /etc
-# and /bin came off the tape and a time comparison would rebuild the lot.  The
-# cost is that editing one of our own config files here could not reach a disk
-# that already carried the old copy, and three rounds of "still not working"
-# were exactly that: a corrected ttys and rc sitting in /usr/src/build while
-# /etc kept the originals.
+# Written when the $ETCF rules carried the ./installed predicate, which exits 0
+# for any existing target: an edited config file here could not reach a disk
+# that already had the old copy, and three rounds of "still not working" were
+# exactly that -- a corrected ttys and rc sitting in /usr/src/build while /etc
+# kept the originals.  That predicate is gone (top of this file) and the $ETCF
+# rules compare times, so an edit now reaches the next build by itself; this
+# target remains as the explicit form, one command that puts every file back
+# after hand edits on a machine.  Nothing in the build calls it.
 #
 # mtab and utmp are left out: they are runtime state that rc and init rewrite,
 # not configuration.  Works against either root -- `mk ROOT=/v10 config'.
-# /etc/mkimage is here too: it is not under $GEN/etc, so the loop misses it,
-# and its own rule carries ./installed, which never replaces an existing one.
+# /etc/mkimage is here too, because it is not under $GEN/etc and the loop
+# misses it; its own rule runs every build ($PREP holds the virtual dirs).
 #
 # Both targets end in sync.  mk does not, and machdep.c:439-446's boot() calls
 # death() without syncing either, so a disk written here and then left by ^E
@@ -1763,11 +1768,12 @@ $ROOT/usr/lib/bbexit.o: $ROOT/usr/bin/lcc $LCC/etc/bbexit.c
 # EACH ARCHIVE ARRIVES HERE AS A DIRECTORY, not a file.  The checked-in tree
 # carries every ar member unpacked as a file -- which keeps every byte and
 # destroys the order -- so
-# /usr/sys/lib/os.a is 23 files and an ORDER.  ./installed is `test -f "$1"' and
-# a directory does not satisfy it, so the rule fires; `ar r' will not write into
-# a directory, so it is removed first.  After the build each is a real archive
-# and the P predicate skips it -- which is also what happens on a machine that
-# has one already.
+# /usr/sys/lib/os.a is 23 files and an ORDER.  On a tree fresh from the tapes
+# the rule fires, because the stamps in $PREP are newer than the unpacked
+# directory; `ar r' will not write into a directory, so it is removed first.
+# After the build each is a real archive and is compared by time like any
+# other target -- which is also what happens on a machine that has one
+# already.  (This read `./installed is test -f' until that predicate went.)
 #
 # WHICH IS WHY mkconf HAS A RULE AT ALL.  lib/mkconf is a prebuilt a.out on the
 # tape (37932 bytes, Feb 8 1990) so this rule is normally skipped; it exists so
@@ -1823,11 +1829,13 @@ $KLIB/star.a: $PREP
 # THE KERNEL.  Named $ROOT/unix and not by its config, because that is where
 # the boot ROM looks and what mkimage used to copy from the builder.
 #
-# ON A MACHINE THAT IS ALREADY RUNNING ONE, THIS IS SKIPPED, and that is the
-# point: ./installed is `test -f "$1"', so `mk world' with ROOT empty finds
-# /unix present and never overwrites the kernel out from under the machine
-# executing the recipe.  With ROOT=/v10 the disk is new and has none, so it is
-# built.
+# ON A RUNNING MACHINE IT IS REPLACED TOO, whenever ipnx-v10.u is newer --
+# every in-place golden rebuild of 8 Oct 2026 did it.  That is safe: the
+# running kernel is in memory and /unix is read again only at the next boot.
+# Until then the namelist readers (ps, pstat, dmesg) read the new file's
+# symbols against the old kernel, which matters only if the kernel itself
+# changed; reboot after a build that changes it.  (This rule used to be
+# skipped on a running machine by the ./installed predicate, now gone.)
 #
 # ipnx-v10.m NEEDS THE PATCHED TAB.  It declares `pt 64' and lib/tab:34 leaves
 # `# cdev 18 pt' commented, and readconf.c:73 makes a name absent from the tab a
@@ -1836,8 +1844,10 @@ $KLIB/star.a: $PREP
 # ONE CHAIN, AND THE .u IS NOT KEPT.  v10's ld writes its output even with
 # symbols undefined -- it reports them and clears the execute bits -- so an
 # `|| echo' on the link and a cp on the next line installs a kernel that did
-# not link, and ./installed being `test -f' then calls /v10/unix done and
-# never reaches $KERN again.  That is exactly what a missing _spcdev did
+# not link, and that broken /v10/unix, newer than everything it was made
+# from, is then called up to date and $KERN is never reached again (under the
+# old ./installed predicate merely existing was enough).  That is exactly
+# what a missing _spcdev did
 # here.  mk's exit status is ld's verdict, so && carries it; and the .u is
 # removed either way, because a broken one left in ipnx/ is newer than its
 # prerequisites and the next run would call THAT up to date too.
@@ -2019,7 +2029,9 @@ $ROOT/unix: $SYS/ipnx/ipnx-v10.u
 #             has no makefile, Makefile or mkfile at all -- only libcurses.mk --
 #             so `make' there finds nothing, and its libcurses.a would land on
 #             the Berkeley one Admin/ulibfiles names.
-#   libplot/oldplot   no build file.
+#   libplot/oldplot   the CLASSIC plot(3), built in place and installed
+#             nowhere: its own installs would land on the new lib4014.a and
+#             libplot.a above.  P_SRC_oldplot, before ideal's filters.
 ULIB=$ROOT/usr/lib/liby.a $ROOT/usr/lib/libl.a $ROOT/usr/lib/libln.a $ROOT/usr/lib/libnetb.a $ROOT/usr/lib/libostdio.a $ROOT/usr/lib/libm.a $ROOT/usr/lib/libmp.a $ROOT/usr/lib/libdbm.a $ROOT/usr/lib/libcbt.a $ROOT/usr/lib/libcurses.a $ROOT/usr/lib/libtermcap.a $ROOT/usr/lib/libtermlib.a $ROOT/usr/lib/libsdb.a $ROOT/usr/lib/libcc.a $ROOT/usr/lib/libj.a $ROOT/usr/lib/libpicfile.a $ROOT/usr/lib/libF77.a $ROOT/usr/lib/libI77.a $ROOT/usr/lib/libplot.a $ROOT/usr/lib/lib4014.a $ROOT/usr/lib/lib2621.a $ROOT/usr/lib/lib5620.a $ROOT/usr/lib/libblit.a $ROOT/usr/lib/libpen.a $ROOT/usr/lib/libram.a $ROOT/usr/lib/libtr.a
 ulib:V:	$ULIB
 
@@ -3403,7 +3415,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3876,6 +3888,39 @@ $ROOT/usr/lib/tmac/tmac.cs: $ROOT/usr/vol2/ms/tmac.cs
 	test -d $ROOT/usr/lib/tmac || mkdir $ROOT/usr/lib/tmac
 	cp $ROOT/usr/vol2/ms/tmac.cs $ROOT/usr/lib/tmac/tmac.cs || echo 'tmac.cs: FAILED'
 	chmod 644 $ROOT/usr/lib/tmac/tmac.cs && /etc/chown 3,4 $ROOT/usr/lib/tmac/tmac.cs || echo 'tmac.cs: mode FAILED'
+
+# DATA NO v10 TAPE CARRIES, FROM THE EIGHTH EDITION BESIDE IT.  build/v8/README
+# says why imports live there and not in the distribution tree; these four are
+# byte-identical to this repository's v8/, and each was checked against the
+# v10 program that reads it, not merely copied:
+#   words      look(1)'s DICT (look.c:4) and hangman's; sorted folded, which is
+#              the order look's fold mode searches
+#   lib.b      `bc -l' (bc.y:607); bc's own syntax, unchanged since v7
+#   fortunes   one fortune a line, the longest 159 bytes, and games/fortune.c
+#              reads one line of up to 512 and builds fortunes.index itself
+#   quiz.k     its index names /usr/games/lib/quiz.k/... exactly as quiz.c:313
+#              opens it
+# They fill holes Admin/ulibfiles (lib.b) and docs/v10-gaps.md §5 recorded.
+$ROOT/usr/dict/words: $GEN/v8/words
+	test -d $ROOT/usr/dict || mkdir $ROOT/usr/dict
+	cp $GEN/v8/words $ROOT/usr/dict/words && chmod 644 $ROOT/usr/dict/words || echo 'dict/words: FAILED'
+
+$ROOT/usr/lib/lib.b: $GEN/v8/lib.b
+	cp $GEN/v8/lib.b $ROOT/usr/lib/lib.b && chmod 644 $ROOT/usr/lib/lib.b || echo 'lib.b: FAILED'
+
+$ROOT/usr/games/lib/fortunes: $GEN/v8/fortunes
+	cp $GEN/v8/fortunes $ROOT/usr/games/lib/fortunes && chmod 644 $ROOT/usr/games/lib/fortunes || echo 'fortunes: FAILED'
+
+$ROOT/usr/games/lib/quiz.k/index: $GEN/v8/quiz.k/index
+	test -d $ROOT/usr/games/lib/quiz.k || mkdir $ROOT/usr/games/lib/quiz.k
+	cp $GEN/v8/quiz.k/* $ROOT/usr/games/lib/quiz.k && chmod 644 $ROOT/usr/games/lib/quiz.k/* || echo 'quiz.k: FAILED'
+
+# /lib/dst, THE DAYLIGHT-SAVING TABLE, AND OURS.  ctime.c:104-118 reads it when
+# the kernel's dstflag is set and, finding none, shifts nothing -- so the
+# machine kept standard time all year.  build/etc/dst carries the US rules
+# since 1967 and how they were checked.
+$ROOT/lib/dst: $GEN/etc/dst
+	cp $GEN/etc/dst $ROOT/lib/dst && chmod 644 $ROOT/lib/dst || echo 'lib/dst: FAILED'
 
 $ROOT/usr/bin/tsort: $PREP
 	cd $CMD/tsort; mk clean || :; mk install B=$ROOT/usr/bin || echo 'tsort: FAILED'
@@ -4482,6 +4527,44 @@ $ROOT/usr/bin/flex: $CMD/flex/flex
 # line, arc, box, circle, point, spline.  So `ideal -p' and `-4' wait on
 # oldplot exactly as psych does, and `ideal' and `-tex' work now.
 #
+# AND oldplot IS BUILT NOW, SO THEY DO NOT WAIT.  Its five mkfiles were the
+# make-to-mk conversion with `make' left in the recipe -- make cannot read mk's
+# `%.o: %.c', so it compiled objects and archived none -- and mk globs a
+# prerequisite (mk/src/expand.c:42), so with `mk' there they work as written.
+# The archives are built where they are and installed NOWHERE, because their
+# install targets write /usr/lib/lib4014.a and /usr/lib/libplot.a, which are
+# v10's other library; 4filt, pfilt and psych link them by path instead.
+P_SRC_oldplot:V:	$PREP
+	cd $OLDPLOT/4014; mk lib4014.a && ranlib lib4014.a || echo 'oldplot 4014: FAILED'
+	cd $OLDPLOT/plot; mk libplot.a && ranlib libplot.a || echo 'oldplot plot: FAILED'
+
+$OLDPLOT/4014/lib4014.a: P_SRC_oldplot
+	test -f $OLDPLOT/4014/lib4014.a || echo '$OLDPLOT/4014/lib4014.a: the package did not produce it'
+
+$OLDPLOT/plot/libplot.a: P_SRC_oldplot
+	test -f $OLDPLOT/plot/libplot.a || echo '$OLDPLOT/plot/libplot.a: the package did not produce it'
+
+# idfilt's own rules name -l4014 and -lplot, which are the new libraries, so
+# the two links are spelled out here against the classic archives.
+P_CMD_ideal_oldfilt:V:	$PREP $OLDPLOT/4014/lib4014.a $OLDPLOT/plot/libplot.a
+	cd $CMD/ideal/idfilt; mk idfilt.o 4014.o pout.o || echo 'ideal 4filt pfilt: FAILED'
+	cd $CMD/ideal/idfilt; cc -o 4filt 4014.o idfilt.o $OLDPLOT/4014/lib4014.a -lm || echo 'ideal 4filt: FAILED'
+	cd $CMD/ideal/idfilt; cc -o pfilt pout.o idfilt.o $OLDPLOT/plot/libplot.a -lm || echo 'ideal pfilt: FAILED'
+
+$CMD/ideal/idfilt/4filt: P_CMD_ideal_oldfilt
+	test -f $CMD/ideal/idfilt/4filt || echo '$CMD/ideal/idfilt/4filt: the package did not produce it'
+
+$CMD/ideal/idfilt/pfilt: P_CMD_ideal_oldfilt
+	test -f $CMD/ideal/idfilt/pfilt || echo '$CMD/ideal/idfilt/pfilt: the package did not produce it'
+
+# Their own targets, not a line in ideal's install below: that recipe runs
+# only when ideal itself is rebuilt, so a disk built once would never get them.
+$ROOT/usr/lib/ideal/idfilt/4filt: $CMD/ideal/idfilt/4filt $ROOT/usr/bin/ideal
+	cp $CMD/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/4filt && strip $ROOT/usr/lib/ideal/idfilt/4filt || echo 'ideal 4filt: install FAILED'
+
+$ROOT/usr/lib/ideal/idfilt/pfilt: $CMD/ideal/idfilt/pfilt $ROOT/usr/bin/ideal
+	cp $CMD/ideal/idfilt/pfilt $ROOT/usr/lib/ideal/idfilt/pfilt && strip $ROOT/usr/lib/ideal/idfilt/pfilt || echo 'ideal pfilt: install FAILED'
+
 # idsort IS NOT BUILT, BECAUSE NOTHING SAYS HOW.  idsort.c is in the directory
 # and neither build file has a rule for it, so `ideal -s' stays broken; it
 # sorts pictures into columns and nothing else uses it.
@@ -5515,8 +5598,9 @@ ARTEFACTS4=U=$CMD/tbl/tbl $CMD/tee $CMD/telno $CMD/tk \
 # beside ppt and the one on boggle and rain is in the NOT WIRED block near
 # netnews.  Both are right, and building the three on the machine reproduced
 # exactly what they say: psych is `Undefined: _cont' and rain `Undefined:
-# _gtty _stty'.  They are not repeated here, because a reason written twice is
-# a reason that will disagree with itself.  boggle has a SECOND blocker its
+# _gtty _stty'.  psych builds now, against oldplot (its note, by ppt).
+# They are not repeated here, because a reason written twice is a reason
+# that will disagree with itself.  boggle has a SECOND blocker its
 # note does not mention and this one does: boggle/makedict is
 # `sed -f sfile /usr/dict/words | uniq | comp >/usr/games/bogdict' and
 # boggle.c:50 opens that file by name, so even ported it would have nothing to
@@ -5530,7 +5614,7 @@ GAMEPROD= $GAMESRC/pacman/pacr $GAMESRC/des/encrypt \
 	$GAMESRC/crypt $GAMESRC/festoon $GAMESRC/fish $GAMESRC/fortune \
 	$GAMESRC/hangman $GAMESRC/imp $GAMESRC/morse $GAMESRC/ppt \
 	$GAMESRC/quiz $GAMESRC/rnd $GAMESRC/rot $GAMESRC/say $GAMESRC/thanks $GAMESRC/wump \
-	$GAMESRC/hanoi $GAMESRC/worm $GAMESRC/canfield
+	$GAMESRC/hanoi $GAMESRC/worm $GAMESRC/canfield $GAMESRC/psych
 GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
  $ROOT/usr/games/atc \
 	$ROOT/usr/games/sail $ROOT/usr/games/word_clout $ROOT/usr/games/rogue \
@@ -5542,7 +5626,8 @@ GAMES= $ROOT/usr/games/pacman $ROOT/usr/games/encrypt \
 	$ROOT/usr/games/ppt $ROOT/usr/games/quiz $ROOT/usr/games/rnd \
 	$ROOT/usr/games/rot $ROOT/usr/games/say $ROOT/usr/games/thanks \
 	$ROOT/usr/games/wump $ROOT/usr/games/hanoi $ROOT/usr/games/worm \
-	$ROOT/usr/games/canfield
+	$ROOT/usr/games/canfield $ROOT/usr/games/psych \
+	$ROOT/usr/games/lib/fortunes $ROOT/usr/games/lib/quiz.k/index
 
 games:V:	$GAMES
 
@@ -5785,9 +5870,16 @@ $ROOT/usr/games/ppt: $GAMESRC/ppt
 	cd $GAMESRC; cp ppt $ROOT/usr/games/ppt || echo 'ppt: FAILED'
 	cd $GAMESRC; strip $ROOT/usr/games/ppt || echo 'ppt: install FAILED'
 
-# psych draws with the CLASSIC plot(3) -- cont lives only in
-# libplot/oldplot, which the ULIB block below records as having no build
-# file.  psych waits with it.
+# psych draws with the CLASSIC plot(3) -- its header says `cc psych.c -lm
+# -l4014', and cont, space and label live only in libplot/oldplot's 4014.
+# It waited on oldplot until oldplot was built (P_SRC_oldplot); it links that
+# archive by path, because -l4014 is v10's other library.
+$GAMESRC/psych: $PREP $GAMESRC/psych.c $OLDPLOT/4014/lib4014.a
+	cd $GAMESRC; cc -O -o psych psych.c $OLDPLOT/4014/lib4014.a -lm || echo 'psych: FAILED'
+
+$ROOT/usr/games/psych: $GAMESRC/psych
+	cd $GAMESRC; cp psych $ROOT/usr/games/psych || echo 'psych: FAILED'
+	cd $GAMESRC; strip $ROOT/usr/games/psych || echo 'psych: install FAILED'
 
 
 $GAMESRC/quiz: $PREP $GAMESRC/quiz.c

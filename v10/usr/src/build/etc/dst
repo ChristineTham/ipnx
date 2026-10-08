@@ -1,0 +1,20 @@
+# /lib/dst: when daylight-saving time applies, in the form libc/gen/ctime.c
+# reads -- six numbers a line, `first-year last-year begin-day begin-offset
+# end-day end-offset' (ctime.c:276-283, dtparse).  A day is 0-based in a
+# non-leap year, and ctime's sunday() picks the first Sunday strictly AFTER it
+# (+1 for a leap year past day 57); the change is at 2:00 local time, and the
+# offset is added in days.  A line that does not start with a digit is
+# skipped (gint), which is what lets these comments be here; ctime keeps the
+# first ten that parse (NDAYTAB).
+#
+# OURS, NOT THE TAPE'S: no tape carries /lib/dst, and without it ctime applied
+# no shift at all, so the machine -- US Eastern, TZ 300 -- kept standard time
+# all year.  These are the United States rules since 1967, checked against
+# the actual transition dates of 1970, 1974, 1975, 1980, 1987, 1990, 2000,
+# 2006, 2007, 2024, 2026 and 2028 by a copy of sunday() on the host.
+1967	1973	112	0	296	0
+1974	1974	4	0	296	0
+1975	1975	52	0	296	0
+1976	1986	112	0	296	0
+1987	2006	89	0	296	0
+2007	2155	65	0	303	0

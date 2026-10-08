@@ -1,5 +1,5 @@
 lib300s.a:	*.c
-	make `ls *.c|sed 's/\.c/.o/`
+	mk `ls *.c|sed 's/\.c/.o/`
 %.o: %.c
 	cc -c -O $stem.c
 	ar r lib300s.a $target
