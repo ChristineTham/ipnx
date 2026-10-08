@@ -226,6 +226,8 @@ with `tools/v10-tree-check.py`.*
 | `pascal pc0` | 58f57bbb (24 Sep) gave `pc0` `pi`'s two-target `y.tab.h y.tab.c:` rule; `pc0`'s 1980 `gram` deletes `/^int yylval 0/` where `eyacc` writes `int yylval = 0;`, `ex` stops at the miss, and the regenerated `y.tab.c` keeps `##` at line 66 | `y.tab.h` alone again; `y.tab.c` gets `preserve` row 264 |
 | `f77` *(second build only)* | `defs: ftypes defines machdefs` has no recipe, and `preserve` restores `defs` (row 70) before `machdefs` (row 72) with `cp`'s fresh date | the objects carry the four headers; `dag` and `twig` had the same trap latent, found by checking every recipe-less rule over two `preserve` rows |
 | `spell`, `backup.old` *(first pass only)* | the swap fix of 18 Sep lives in the kernel, and the first pass runs on the old one: `pcode: Not enough memory`, `Can't find /lib/ccom` | gone on the second pass, booted on the kernel the first pass installed — `ra02` and `ra03` attach, where every earlier boot said `No such device` |
+| Pascal printed `D` *(smoke test of the rebuilt disk)* | `pi/proc.c:558-564` builds every `write` format as `"%%%d%c"`, and an integer's letter is `D`, V7's long decimal; libc's `vfprintf.c` is the tape's 1993 pANS member, which has no `D`, `O` or `U` — it prints the letter and does not take the argument, so every later conversion reads the wrong one | `D`, `O` and `U` go to the `d`, `o` and `u` converters with `LONG`; `vfscanf.c` gives `D O U E F` V7's sizes. 27 files in `cmd` use them — `dd`, `find`, `tar`, `adb`, `ex`, `struct`, `mkfs` … |
+| `spitbol/opttsts` `OVERWRITTEN AND NOT PRESERVED` *(fourth pass)* | `preserve` is restored in line order with `cp`'s fresh date, and `spitv35.serr` sat above its own input `spitv35.src`; the two copies straddled a second, the next build re-ran the translator, and its log is `opttsts` | every input above what is made from it — the spitbol chain and eight other pairs moved, none inverted now — and `opttsts` is row 265 |
 
 **And `ipnxbuild` made the first stop worse than a stop.** Every step was `|| exit 1`, so the
 failure skipped the derived list (`ipnxclean` then swept with September's 2,504 rows), the
@@ -238,6 +240,24 @@ file the build wrote was listed — 2,780 on the second attempt, with the one re
 somewhere among them. **And `pi` touched its own sources every build**: `0.h: pTree.h` hangs on
 the `${GET} $target` rule, and `mk`'s `$target` is the rule's whole target list where `make`'s
 `$@` was one. `GET = :` now.
+
+**The result, measured.** Four builds on the 18 Sep golden itself — the first on its old
+kernel, the rest on the one that build installed — then one boot that only refreshed
+`build/`. The last build printed no `FAILED` and no `did not produce it`, and its overwrite
+report named one file, `opttsts`, unchanged in content and preserved since.
+`tools/v10-tree-check.py --current` reads 27,685 files identical to `v10/usr`, 27 expected
+differences, none pending and none undelivered. A fresh copy boots with a clean `fsck` and
+runs `f77`, `struct`, `spell`, Pascal (`42`) and `tar tv`, whose sizes go through `%7D`, and
+mounts `/n/macos`.
+
+**An in-place build leaves two linkless files, and only the next boot shows them.** The build
+replaces `/bin/sh` and `/etc/init` while the login shell and `init` are running from them;
+`/etc/down` cannot release either, so the next boot's `fsck` prints `2 LINKLESS FILES
+CLEARED` and `FREE INODE COUNT 4 SHOULD BE 6`. Read off the disk from the host, they were
+inodes 1010 and 1012, byte-identical to the new `/bin/sh` and `/etc/init`, so nothing is lost
+— but the golden is booted once more after its last build so that it ships without them. A
+disk `mkimage` builds on the second drive never has them, because nothing runs from it. That
+the repair then goes unacted on is §1.8.
 
 ## 1. Defects in the build as it stands
 
@@ -318,11 +338,28 @@ tape creates it only when absent.
 `chmod`, and `cflow.sh` is 644 in the tree. Every other script install in `build/mkfile`
 carries an explicit `chmod +x`.
 
-**1.7 The root filesystem has eight free inodes** (measured 2026-10-07: `tools/v10fs.py stat
-run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and `s_tinode 8`). `mkimage:27-33`
+**1.7 The root filesystem has six free inodes** (measured 2026-10-08 on the rebuilt golden:
+`tools/v10fs.py stat run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and
+`s_tinode 6`; the 18 Sep golden had eight, and the two since are `/etc/asd` and
+`/etc/asd/asdrcv`, from 651a1ea3). `mkimage:27-33`
 already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917 device nodes take
-most of the i-list — so this is not a fault yet, but a ninth new file under `/`, `/etc` or
-`/dev` makes `mkimage` fail with the disk half-built. `mkbitfs` takes no inode count —
+most of the i-list — so this is not a fault yet, but a seventh new file under `/`, `/etc` or
+`/dev` makes `mkimage` fail with the disk half-built.
+
+**1.8 `fsck` never asks for a reboot, so `rc` cannot act on a repaired root.** Every boot
+prints `ROOT MODIFIED`, clean or not: the bit-map free check ends with
+`superblk.s_valid = 1; superblk.s_tfree = n_free;` and a dirty superblock unconditionally
+(`fsck.c:1718-1720`), any write sets `dfile.mod` (`bwrite`, `fsck.c:1997`), and
+`fsck.c:730-731` prints the line for any write to the mounted root. It then returns 0 —
+`fsck.c` has no `exit(4)` at all; its codes are 0, 8 and 12 — so `build/etc/rc:21`'s
+`4) /etc/reboot -n` arm cannot run, and a boot that really did repair the root carries on
+with the kernel's in-core superblock older than the disk's. That happens after every
+in-place build (the third status pass above has the two linkless files it leaves). V8's
+`fsck.c:686-687` is the same, so this is Bell Labs' arrangement in both editions, and the
+likeliest reason is the first sentence: an `exit(4)` on any root write would make every boot
+a reboot. Measured consequence so far: none — each boot after one that cleared two inodes
+found nothing left to fix. **Not changed**: telling a repair from the routine rewrite needs a
+flag at every fix site, and missing one makes the machine reboot forever. `mkbitfs` takes no inode count —
 `mkbitfs.c:80` derives it from the size, `(size-2)/(1+ICOUNT)` — so the levers are fewer
 device nodes, a larger root partition in `ra_sizes`, or an argument added to `mkbitfs`.
 

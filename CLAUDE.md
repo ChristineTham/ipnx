@@ -140,7 +140,7 @@ python3 tools/9pfsd.py -L -w -p 9201 "$HOME"       &   # /n/home,  read/write
 without it a link in the shared tree is visible and unreadable. `/etc/rc` mounts both at boot
 with `runfs /n/macos /etc/9pfs 10.0.2.2 9200`, so start the servers before booting.
 
-**The committed golden carries `9pfs` and mounts with `runfs`** — rebuilt 18 Sep 2026 — so
+**The committed golden carries `9pfs` and mounts with `runfs`** — rebuilt 8 Oct 2026 — so
 `tools/v10-launch.sh` starts `tools/9pfsd.py` and nothing on the V10 side wants `netfsd` any
 more. `/etc/nafsmnt` is still on the disk and still built, because a netfs share is one
 command away if it is ever wanted; nothing mounts one by default.

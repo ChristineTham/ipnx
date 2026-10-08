@@ -26,8 +26,9 @@ those three files are 132-byte pointers until `git lfs pull` fetches them. `tar`
 answers a pointer with `not a bzip2 file` — true, and no help at all about why,
 which is why `tools/v10-reset.sh` checks for the pointer and names the command.
 
-The golden is **committed in halves of 72,675,231 bytes** because GitHub refuses
-a file over 100 MB. The LFS filter matches `*.tar.bz2` and so does not take the
+The golden is **committed in halves of 72,631,364 bytes** — `split -n 2` of the
+8 Oct 2026 archive — because GitHub refuses a file over 100 MB. The LFS filter
+matches `*.tar.bz2` and so does not take the
 `.aa`/`.ab` suffixes — they are ordinary committed blobs, present in every
 clone. Join them by streaming, never on disk:
 
