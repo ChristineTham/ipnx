@@ -272,6 +272,15 @@ disk lacks found the opposite kind: **`/usr/local/lib/flex.skel` was installed b
 and deleted by every `ipnxclean`**, because `local` is a shape root, so `flex` could never
 find its skeleton. `/usr/maps/map` was the known case of a product inside a shape root,
 special-cased by hand in three places; `build/inshape` is now the one list all three read.
+The same scan, every hit traced to the program's source, found ten more of the build's own:
+**`passwd` could never work** (`passwd.sh:6` runs `/bin/passwdx`; the rule installed
+`/usr/bin/passwdx`, and not set-uid), `cref` exec'd a `/bin/sort` v10 does not have, `mm -e`
+and `mmt -e` fed eqn a `/usr/pub/eqnchar` nothing made, `-mcs` and docgen wanted a `tmac.cs`
+only `vol2/ms` held, `upchuck` exec'd an `/etc/chuck` installed in `/usr/bin`, `tbl -ms`
+and `-mm` read macro files from `/usr/lib` where v10 keeps them in `/usr/lib/tmac`, `lcc -b`
+had no `bbexit.o`, `pxp`'s help was under another name, `uustat -p` had no `uups`, and
+`lint -p` read a `llib-port.ln` installed as `llib-lport.ln`. All fixed in `build/mkfile`,
+`cref/dr.c` and `tbl/t1.c`; the tape gaps it found are §5's.
 
 ## 1. Defects in the build as it stands
 
@@ -547,6 +556,26 @@ dependency buried inside `vol2`'s own mkfiles rather than its own top-level `cmd
 Moot for `ipnxbuild` either way, since `vol2` ships wholesale via `usrtrees` and none of its
 mkfiles are ever invoked automatically — but a real dead end for anyone who tries to typeset
 one of those 43 papers by hand.
+
+**More, from reading the 8 Oct golden for paths its installed programs name** (116 missing;
+ten were the build's and are fixed, the rest are site configuration, run-time files,
+templates, or this):
+- **`hyphen.tex`, TeX's hyphenation patterns.** troff's `HYPHALG` is 1 (`tdef.h:152`), so the
+  first time a troff or nroff run hyphenates it looks for the patterns, prints `warning: can't
+  find hyphen.tex` once, and falls back to the old suffix and digram rules (`n8.c:342-354,
+  436-444`). TeX is on no tape.
+- **`/lib/dst`, the daylight-saving table.** With the kernel's `dstflag` set, `ctime.c:104-118`
+  reads it, and with no table applies no shift at all, so the machine keeps standard time all
+  year.
+- `lex -e`'s `ebcform` (beside `-r`'s `nrform` above); `/usr/dict/oaldce`, `w7full` and
+  `papers/Ind` (`ldefine`, `wdefine`, `refer`'s default index); monk's `apseqnchar`,
+  `i300eqnchar` and `im300eqnchar`; termcap's `tabset/aa`, `infoton_tabs` and `stdcrt`;
+  mcs(6)'s `tmac.rscover` (`mcs.6:141`); `/etc/dpd`, whose `spider.dpd.c:23` includes a
+  `gcos.c` on no tape.
+- **And `/bin/mail`, which is not this kind.** nupas installs `/bin/mail` and `/bin/rmail`
+  and is built; its install is deferred until its products are proven on the machine
+  (`build/mkfile`, `P_CMD_nupas_v10_all`), so until then `passwd` and `asdrcv` call a mailer
+  that is not there.
 
 ## 6. Divergences between the repository tree and the machine
 
