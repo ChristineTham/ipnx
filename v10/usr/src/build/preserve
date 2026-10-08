@@ -390,3 +390,8 @@
 260 src/cmd/pico/y.tab.h
 261 src/ipc/internet/htable/y.tab.h
 262 src/ipc/servers/y.tab.c
+
+# cyntax's third lint library.  lib/mkfile's all: and install: have named
+# libipc beside libc and libj since 20 Sep, and the lib% rule regenerates it
+# in place over the tape's 587-byte file exactly as it does rows 07 and 08.
+263 src/cmd/cyntax/lib/libipc

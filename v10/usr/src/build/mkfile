@@ -662,7 +662,11 @@ $ETC/tcpconfig: $IPC/internet/tcpconfig
 # which would overwrite dk/cmd's push/pull/rx/nrx/ndcon with its plainer
 # versions.  dcon/rogin/rlogin/nogin link to this con; rsh links to the
 # dk/cmd rx that already exists by the time this runs.
-P_IPC_bin_all:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a
+# $ROOT/usr/bin/cyntax TOO, as P_CMD_sign_verify has it: ipc/bin/mkfile makes
+# every program depend on a cyntax lint pass (`./%: %.OO %.o'), whose link
+# step needs cyntax's lint libraries installed.  It worked only because pkgs
+# happens to run after the quarter that installs cyntax.
+P_IPC_bin_all:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a $ROOT/usr/bin/cyntax
 	cd $IPC/bin; mk all || echo 'ipc/bin: FAILED'
 
 $IPC/bin/con: P_IPC_bin_all
@@ -671,16 +675,23 @@ $IPC/bin/con: P_IPC_bin_all
 $ROOT/usr/bin/con: $IPC/bin/con
 	cd $IPC/bin; cp con $ROOT/usr/bin/con && /etc/chown bin,bin $ROOT/usr/bin/con && chmod 775 $ROOT/usr/bin/con || echo 'con: FAILED'
 
+# THE LINKS SAY FAILED; THEY DO NOT STOP THE BUILD.  Every other recipe here
+# ends `|| echo ... FAILED', and these five did not: when ipc/bin built no con
+# (Oct 2026: cyntax had no -lc lint library, so `./%: %.OO' failed), the con
+# rule echoed its FAILED and counted as made, dcon's bare ln then exited 1,
+# and mk stopped the whole of `pkgs' there -- games never ran, and ipnxbuild,
+# which stopped with it, never wrote its derived list or restored a preserved
+# file.  A missing link is one missing program, not a reason to halt.
 $ROOT/usr/bin/dcon: $ROOT/usr/bin/con
-	rm -f $target; ln $ROOT/usr/bin/con $target
+	rm -f $target; ln $ROOT/usr/bin/con $target || echo 'dcon: FAILED'
 $ROOT/usr/bin/rogin: $ROOT/usr/bin/con
-	rm -f $target; ln $ROOT/usr/bin/con $target
+	rm -f $target; ln $ROOT/usr/bin/con $target || echo 'rogin: FAILED'
 $ROOT/usr/bin/rlogin: $ROOT/usr/bin/con
-	rm -f $target; ln $ROOT/usr/bin/con $target
+	rm -f $target; ln $ROOT/usr/bin/con $target || echo 'rlogin: FAILED'
 $ROOT/usr/bin/nogin: $ROOT/usr/bin/con
-	rm -f $target; ln $ROOT/usr/bin/con $target
+	rm -f $target; ln $ROOT/usr/bin/con $target || echo 'nogin: FAILED'
 $ROOT/usr/bin/rsh: $ROOT/usr/bin/rx
-	rm -f $target; ln $ROOT/usr/bin/rx $target
+	rm -f $target; ln $ROOT/usr/bin/rx $target || echo 'rsh: FAILED'
 
 $ROOT/usr/bin/rcp: $IPC/bin/con
 	cd $IPC/bin; cp rcp $ROOT/usr/bin/rcp && /etc/chown bin,bin $ROOT/usr/bin/rcp && chmod 775 $ROOT/usr/bin/rcp || echo 'rcp: FAILED'
@@ -5058,7 +5069,7 @@ $ROOT/usr/bin/WWB/proofr: $CMD/wwb/.built
 # but the wwb dispatcher script itself is unreachable by the name the page
 # tells a user to type.  rsh hard-links to rx the same way (mkfile:94).
 $ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
-	rm -f $target; ln $ROOT/usr/bin/WWB/wwb $target
+	rm -f $target; ln $ROOT/usr/bin/WWB/wwb $target || echo 'wwb: FAILED'
 
 # THE REST OF cmd/, and why each is not built:
 #   asd++     needs CC=PTCC, a C++ translator absent from all six tapes -- the

@@ -92,6 +92,25 @@ case $TARGET in
 	# redirected compound command.  Two rows sharing a number is said out
 	# loud rather than silently overwriting one with the other.
 	PD=/usr/ipnx/pres
+
+	# BUT FIRST, WHAT A BUILD THAT NEVER REACHED ITS RESTORE LEFT BEHIND.  The
+	# index below is removed by the restore at the end, so finding it here
+	# means a build stopped -- ^C, a crash, or a step failing back when one
+	# could exit before the restore -- with every preserved tape file still
+	# overwritten and the originals in $PD.  The save that follows starts
+	# with rm -rf $PD, so it would keep the BUILD PRODUCTS as the originals
+	# and the tape's files would be gone for good: the way camac.s and libpc
+	# were lost, before the restore existed.  Put them back first.  Measured:
+	# the first full rebuild of 7 Oct stopped in pkgs with 263 files saved
+	# and none restored.
+	if test -f /usr/ipnx/preserved
+	then
+		while read n f
+		do
+			test -f $PD/$n && cp $PD/$n /usr/$f
+		done < /usr/ipnx/preserved
+		echo "ipnxbuild: put back the tape files an unfinished build left overwritten"
+	fi
 	rm -rf $PD
 	mkdir $PD
 	rm -f /usr/ipnx/preserved
@@ -115,23 +134,34 @@ case $TARGET in
 	# part of the tree mkipnx archives.
 	echo stamp > /usr/tmp/ipb.st
 
-	mk -f /usr/src/build/mkfile build1 || exit 1
-	mk -f /usr/src/build/mkfile build2 || exit 1
-	mk -f /usr/src/build/mkfile build3 || exit 1
-	mk -f /usr/src/build/mkfile build4 || exit 1
+	# A FAILED STEP STOPS THE STEPS AFTER IT, AND NOTHING ELSE.  Each line
+	# was `|| exit 1', which left by the side door: no derived list (so
+	# ipnxclean swept with the LAST build's, and this one's products stayed
+	# in the tree), no consumed list, no overwrite report, and no restore of
+	# a single preserved tape file.  Measured on 7 Oct, when an unguarded ln
+	# stopped `pkgs': ipnxclean read September's 2,504-row list and cref's
+	# tables survived it.  So a failure skips the build steps still to come --
+	# they may need what failed -- and the accounting and restore below run
+	# regardless.  `{ }' and not `( )': the assignment must survive.
+	s=0
+	mk -f /usr/src/build/mkfile build1 || s=1
+	test $s = 0 && { mk -f /usr/src/build/mkfile build2 || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile build3 || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile build4 || s=1; }
 	# AND INSTALL, INTO THIS BOOT IMAGE.  The committed original had no
 	# split at all -- `Every target is an installed file carrying mk(1)'s
 	# P attribute' -- so building WAS installing, into the running
 	# system.  The quarters above are the build half of the split; these
 	# are world's members, the install half, each in its own mk for the
 	# same fork-memory reason as the quarters.
-	mk -f /usr/src/build/mkfile tools lib libs || exit 1
-	mk -f /usr/src/build/mkfile usrbin bin etc || exit 1
-	mk -f /usr/src/build/mkfile /unix /.profile || exit 1
-	mk -f /usr/src/build/mkfile ulib || exit 1
-	mk -f /usr/src/build/mkfile cmds || exit 1
-	mk -f /usr/src/build/mkfile pkgs || exit 1
-	mk -f /usr/src/build/mkfile games || exit 1
+	test $s = 0 && { mk -f /usr/src/build/mkfile tools lib libs || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile usrbin bin etc || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile /unix /.profile || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile ulib || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile cmds || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile pkgs || s=1; }
+	test $s = 0 && { mk -f /usr/src/build/mkfile games || s=1; }
+	test $s = 0 || echo "ipnxbuild: A BUILD STEP FAILED -- the steps after it were skipped; accounting and restore follow"
 
 	# AND THE LIST, WRITTEN LAST.  `sort a a b | uniq -u' leaves the lines
 	# that appear once: everything in the tree now that was not in it
@@ -269,7 +299,9 @@ case $TARGET in
 	cd /
 	echo "ipnxbuild: `wc -l < $D` derived, `wc -l < $C` consumed"
 	sync
-	exit 0
+	# the build's own answer, not the accounting's: a failed step is a
+	# failed build however tidily it was put away.
+	exit $s
 	;;
 /v10)
 	;;

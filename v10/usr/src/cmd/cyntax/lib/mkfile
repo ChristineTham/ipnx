@@ -5,7 +5,7 @@ CEM		= ${LIB}/cem
 # ipnx: :V: ON THE PHONY TARGETS.  An empty recipe on a file target is an error
 # in mk and was not one in make -- `mk: no recipe to make 'install'', from
 # mk/src/recipe.c:19-27.  sets/mkfile:16-28 carries the whole account.
-all:V:		libc libj libipc libq
+all:V:		libc libj libipc
 
 libj		: llib-lj ${CCOM} ${CEM}
 		/lib/cpp -M -I/usr/jerq/include llib-lj | ${CCOM} -llibj - out && ${CEM} -p out && mv out libj
@@ -27,7 +27,15 @@ lib%		: llib-l% var% ${CCOM} ${CEM}
 # tape content isn't available for either, so this is a genuine gap, not
 # an ipnx omission: leave both alone rather than have `mk` fail or, worse,
 # silently regenerate a wrong library once ${CCOM}/${CEM} are freshly built.
-install:V:	${LIB}/libc ${LIB}/libj ${LIB}/libipc ${LIB}/libq
+#
+# ipnx: libq stays out too, and its absence is what keeps libc IN.  It was
+# added here on 20 Sep alongside libipc, unbuilt, and the first full build
+# answered `llib-lq: 17: Can't find include file sys/utsname.h' -- this tree's
+# is include/utsname.h, so llib-lq was written for some other machine's
+# headers.  mk stops at the first failure, so libc was built and never
+# installed, and every cyntax link pass after it -- sign's, ipc/bin's for
+# con -- died with `cem: no library '-lc''.  Nothing in the tree links -lq.
+install:V:	${LIB}/libc ${LIB}/libj ${LIB}/libipc
 
 ${LIB}/lib%	: lib%
 		cp lib$stem ${LIB}/lib$stem
