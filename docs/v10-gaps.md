@@ -207,6 +207,38 @@ anywhere — but six comments still describe it as live, including the one that 
 whole `config:V:` target. Either those comments or that target's reason needs rewriting, and
 which one is a question for whoever knows why `config` was added.
 
+### Third status pass, 2026-10-08: the golden rebuilt, and three weeks of edits built
+
+*The golden was rebuilt for the first time since 18 Sep. Before it could be, the rebuild had to
+work: nine changes committed in between had never been built, the first full `ipnxbuild` in
+three weeks stopped half-way, and `ipnxbuild` itself turned that stop into damage. Every row
+below was measured on a booted machine, and the end state was read off the disk from the host
+with `tools/v10-tree-check.py`.*
+
+| Reported | Root cause | Fix |
+|---|---|---|
+| `ipnxbuild` exited 1 in `pkgs` | 1d0a864b (19 Sep) linked `dcon`, `rogin`, `rlogin` and `nogin` to `con` with a bare `ln` — the one recipe shape in `build/mkfile` with no `\|\| echo FAILED` — and `con` had not been built | the guard on all six link rules |
+| `cyntax`, `sign` ×2, `ipc/bin` | 93821ca3 (20 Sep) added `libq` to cyntax's lint libraries unbuilt; `llib-lq:17` wants `<sys/utsname.h>`, this tree's is `include/utsname.h`, and `mk` stopped before installing `libc`, so every cyntax link pass answered `cem: no library '-lc'` | `libq` out again (nothing links `-lq`); `libipc` gets `preserve` row 263 |
+| `ipc/bin` (again) | with the lint libraries installed the gate is real, and `rsh.c` fails it (`select`, `sprintf`, `exit`); `mk` stops before linking anything in the directory | the stanza asks for the six programs it installs by name; `rsh` and the rest are `dk/cmd`'s |
+| `f2c` | the `version.c` rule shells out to `Dt`, a Bell Labs tool on no tape; it fired the first time a source (`names.c`, 20 Sep) was newer than `version.c` | rule commented out; `version.c` stays the tape's |
+| `libF77.a` ×11 | 1e060705 (25 Sep) put `pow_qq.o` back; `longint` is defined in neither `f2c.h` | out again, where the tape's double space shows it was taken out |
+| `postscript` | 22d04efc (24 Sep) wrote `#` comments inside a recipe in `devpost.mk`, which `make` runs; v10's `make` execs a metacharacter-free line itself — `Make: Cannot load #` | the notes above the target |
+| `pascal pc0` | 58f57bbb (24 Sep) gave `pc0` `pi`'s two-target `y.tab.h y.tab.c:` rule; `pc0`'s 1980 `gram` deletes `/^int yylval 0/` where `eyacc` writes `int yylval = 0;`, `ex` stops at the miss, and the regenerated `y.tab.c` keeps `##` at line 66 | `y.tab.h` alone again; `y.tab.c` gets `preserve` row 264 |
+| `f77` *(second build only)* | `defs: ftypes defines machdefs` has no recipe, and `preserve` restores `defs` (row 70) before `machdefs` (row 72) with `cp`'s fresh date | the objects carry the four headers; `dag` and `twig` had the same trap latent, found by checking every recipe-less rule over two `preserve` rows |
+| `spell`, `backup.old` *(first pass only)* | the swap fix of 18 Sep lives in the kernel, and the first pass runs on the old one: `pcode: Not enough memory`, `Can't find /lib/ccom` | gone on the second pass, booted on the kernel the first pass installed — `ra02` and `ra03` attach, where every earlier boot said `No such device` |
+
+**And `ipnxbuild` made the first stop worse than a stop.** Every step was `|| exit 1`, so the
+failure skipped the derived list (`ipnxclean` then swept with September's 2,504 rows), the
+consumed list, the overwrite report and the restore of all 263 preserved tape files — which a
+second build would have saved as the "originals". A failed step now skips only the build steps
+after it, and a build that finds an unrestored index from one that never finished puts those
+originals back before saving anything. **Its overwrite report had never worked**: `$D` carries
+the `/usr/` prefix and the `find` it was subtracted from does not, both since bbe1a5a2, so every
+file the build wrote was listed — 2,780 on the second attempt, with the one real overwrite
+somewhere among them. **And `pi` touched its own sources every build**: `0.h: pTree.h` hangs on
+the `${GET} $target` rule, and `mk`'s `$target` is the rule's whole target list where `make`'s
+`$@` was one. `GET = :` now.
+
 ## 1. Defects in the build as it stands
 
 These are wrong today, independent of any missing install, and each is a small fix.
