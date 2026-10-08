@@ -166,7 +166,7 @@ case $TARGET in
 	# AND WHAT NO RULE MAKES ANY MORE.  An install puts a product where its
 	# rule says and nothing takes one away from where an older rule put it,
 	# so a disk rebuilt in place kept /usr/bin/dump beside /etc/dump for a
-	# month -- build/obsolete has the three and the evidence.  Only after a
+	# month -- build/obsolete lists each with its evidence.  Only after a
 	# build that succeeded: a failed step can mean the new copy was never
 	# installed, and the old one is then the only one there is.  Not on the
 	# /v10 side below: mkimage formats that disk, so it holds no old product.

@@ -95,7 +95,7 @@ main(argc,argv)
 /*	printf("Prep: %d  %d  %d\n",tm1,tm2,tm3);	/*INSTR*/
 
 	if(utmp)	exit();
-	fn = "/bin/sort";
+	fn = "/usr/bin/sort";	/* ipnx: v10's sort is /usr/bin's (Admin/binfiles has none) */
 	av[0] = "sort";
 	av[1] = "-d";
 	av[3] = "-o";

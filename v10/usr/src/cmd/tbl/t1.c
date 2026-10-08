@@ -9,8 +9,9 @@ extern FILE *_f[];
 # endif
 
 # ifdef unix
-# define MACROS "/usr/lib/tmac.s"
-# define PYMACS "/usr/lib/tmac.m"
+/* ipnx: v10 keeps macro packages in /usr/lib/tmac, as troff -m reads them */
+# define MACROS "/usr/lib/tmac/tmac.s"
+# define PYMACS "/usr/lib/tmac/tmac.m"
 # endif
 
 # ifdef gcos

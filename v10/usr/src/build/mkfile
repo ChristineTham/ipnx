@@ -89,9 +89,15 @@
 # is a by-product of the toolchain build.
 #
 # Not built: iostat reads ubdinit, mbdinit and the dk_* counters and v10's kernel
-# has none of them under any config; mail is Berkeley Mail, installed by its own
-# Makefile as /usr/bin/Mail; rmail hard-links to a /bin/mail the tapes carry no
-# source for; rsh hard-links to rx (ipc/bin/mkfile:78).
+# has none of them under any config; rsh hard-links to rx (ipc/bin/mkfile:78).
+# NOT YET INSTALLED, which is different: mail and rmail are nupas's --
+# nupas/misc/mkfile:23-24 writes /bin/mail and nupas/send/mkfile:41-44
+# /bin/rmail -- and nupas is built but its install is deferred (see
+# P_CMD_nupas_v10_all).  This note used to say the tapes carry no source for
+# a /bin/mail; cmd/mail is Berkeley Mail, whose own Makefile installs
+# /usr/bin/Mail, and that is the only part of the old reason that held.
+# Until nupas installs, passwd.sh:48 and asdrcv.c:121-122 call a mailer that
+# is not there.
 
 ROOT=
 DEST=$ROOT/bin
@@ -131,7 +137,7 @@ GEN=/usr/src/build
 SYS=$ROOT/usr/sys
 KLIB=$SYS/lib
 
-TOOLS=$ROOT/usr/bin/strip $ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/bin/stab
+TOOLS=$ROOT/usr/bin/strip $ROOT/usr/bin/mk $ROOT/usr/bin/membername $ROOT/usr/bin/mkconv $ROOT/usr/lib/gcc-cpp $ROOT/usr/lib/rcc $ROOT/usr/bin/lcc $ROOT/usr/bin/bprint $ROOT/usr/lib/bbexit.o $ROOT/usr/bin/stab
 LIB=$ROOT/lib/cpp $ROOT/lib/ccom $ROOT/lib/c2 $ROOT/lib/libc.a $ROOT/lib/crt0.o $ROOT/lib/mcrt0.o
 # Admin/dest ends `else echo /usr/bin', so a command in none of the four lists
 # installs there.  NOT the whole fallthrough -- only what this disk needs to
@@ -1704,6 +1710,16 @@ $LCC/etc/bprint: P_LCC_etc_bprint
 $ROOT/usr/bin/bprint: $LCC/etc/bprint
 	cd $LCC/etc; cp bprint $ROOT/usr/bin/bprint || echo 'bprint: FAILED'
 
+# AND THE OBJECT bprint's INPUT COMES FROM.  lcc -b links /usr/lib/bbexit.o
+# when it can read it (coma.c:16-18 -- this lcc is HOST=coma) and otherwise
+# says `-b ignored' (lcc.c:488-492), so without this file no program ever
+# writes the prof.out bprint reads, and the bprint above has nothing to
+# print.  install.tex:320-323 is `make bbexit.o' and a cp into place, and
+# the bprint rule built bprint alone.  Compiled with lcc, as bprint is: its
+# _bbdata records are the ones lcc -b lays out.
+$ROOT/usr/lib/bbexit.o: $ROOT/usr/bin/lcc $LCC/etc/bbexit.c
+	cd $LCC/etc; lcc -c bbexit.c && cp bbexit.o $ROOT/usr/lib/bbexit.o || echo 'bbexit.o: FAILED'
+
 # ---- the kernel -------------------------------------------------------------
 # BUILT THE TAPE'S OWN WAY.  lsys/lib/mk.star is the recipe and lsys/mkall is
 # the loop over the directories that fill lib/; nothing below invents a step.
@@ -2316,7 +2332,7 @@ $ROOT/usr/lib/libtr.a: $SRC/libplot/libtr/libtr.a
 #   prof, prof.old   prof.c:338-339 call openpl and erase, which are libplot's
 # and bc also wants /usr/lib/lib.b at run time for `bc -l' (bc.y:607), which
 # is in Admin/ulibfiles and on none of the six tapes.
-CMDS=$ROOT/usr/bin/2621 $ROOT/usr/bin/300 $ROOT/usr/bin/300s $ROOT/usr/bin/4014 $ROOT/usr/bin/450 $ROOT/usr/bin/AllCharges $ROOT/usr/bin/Charges $ROOT/usr/bin/apply $ROOT/usr/bin/arcv $ROOT/usr/bin/asa $ROOT/usr/bin/ascii $ROOT/usr/bin/bc $ROOT/usr/bin/bcd $ROOT/usr/bin/bigcore $ROOT/usr/bin/books $ROOT/usr/bin/byteyears $ROOT/usr/bin/cal $ROOT/usr/bin/calendar2 $ROOT/usr/bin/call $ROOT/usr/bin/chdate $ROOT/usr/bin/checkeq $ROOT/usr/bin/col $ROOT/usr/bin/comm $ROOT/usr/bin/coreid $ROOT/usr/bin/cpio $ROOT/usr/bin/ctags $ROOT/usr/bin/cu $ROOT/usr/bin/cut $ROOT/usr/bin/cvcrypt $ROOT/usr/bin/d202 $ROOT/usr/bin/dblbuf $ROOT/usr/bin/deroff $ROOT/usr/bin/dircmp $ROOT/usr/bin/dirname $ROOT/usr/bin/dis $ROOT/usr/bin/dkname $ROOT/usr/bin/dkstat $ROOT/usr/bin/expand $ROOT/usr/bin/fcopy $ROOT/usr/bin/fgrep $ROOT/usr/bin/file $ROOT/usr/bin/find $ROOT/usr/bin/findo $ROOT/usr/bin/flcopy $ROOT/usr/bin/fmt $ROOT/usr/bin/fold $ROOT/usr/bin/fsplit $ROOT/usr/bin/getopt $ROOT/usr/bin/getuid $ROOT/usr/bin/groups $ROOT/usr/bin/hang $ROOT/usr/bin/head $ROOT/usr/bin/hp $ROOT/usr/bin/id $ROOT/usr/bin/idiff $ROOT/usr/bin/idle $ROOT/usr/bin/labmake $ROOT/usr/bin/last $ROOT/usr/bin/limiter $ROOT/usr/bin/log $ROOT/usr/bin/logdir $ROOT/usr/bin/logtty $ROOT/usr/bin/look $ROOT/usr/bin/markbad $ROOT/usr/bin/mc $ROOT/usr/bin/mesg $ROOT/usr/bin/mips $ROOT/usr/bin/mkstr $ROOT/usr/bin/mm $ROOT/usr/bin/mmt $ROOT/usr/bin/netfsbug $ROOT/usr/bin/newer $ROOT/usr/bin/news $ROOT/usr/bin/number $ROOT/usr/bin/passwdx $ROOT/usr/bin/paste $ROOT/usr/bin/patch $ROOT/usr/bin/printenv $ROOT/usr/bin/printf $ROOT/usr/bin/procmount $ROOT/usr/bin/prof $ROOT/usr/bin/prof.old $ROOT/usr/bin/pti $ROOT/usr/bin/ptx $ROOT/usr/bin/random $ROOT/usr/bin/readslow $ROOT/usr/bin/reccp $ROOT/usr/bin/reloc $ROOT/usr/bin/rev $ROOT/usr/bin/revpag $ROOT/usr/bin/rscan $ROOT/usr/bin/seq $ROOT/usr/bin/setgid $ROOT/usr/bin/setpart $ROOT/usr/bin/settod $ROOT/usr/bin/shares $ROOT/usr/bin/sp $ROOT/usr/bin/spline $ROOT/usr/bin/split $ROOT/usr/bin/stat $ROOT/usr/bin/strings $ROOT/usr/bin/tabs $ROOT/usr/bin/tail $ROOT/usr/bin/tape $ROOT/usr/bin/tee $ROOT/usr/bin/telno $ROOT/usr/bin/tk $ROOT/usr/bin/tpr $ROOT/usr/bin/treesum $ROOT/usr/bin/tty $ROOT/usr/bin/ucds $ROOT/usr/bin/und $ROOT/usr/bin/unexpand $ROOT/usr/bin/uniq $ROOT/usr/bin/uudecode $ROOT/usr/bin/uuencode $ROOT/usr/bin/v7 $ROOT/usr/bin/v8 $ROOT/usr/bin/vis $ROOT/usr/bin/vpr $ROOT/usr/bin/wc $ROOT/usr/bin/where $ROOT/usr/bin/which $ROOT/usr/bin/wwv $ROOT/usr/bin/xargs $ROOT/usr/bin/xd $ROOT/usr/bin/yes $ROOT/usr/bin/zero $ROOT/usr/lib/makekey $ROOT/usr/bin/agh $ROOT/usr/bin/pull $ROOT/usr/bin/push $ROOT/usr/bin/rx $ROOT/usr/bin/nrx $ROOT/usr/bin/ndcon $ROOT/usr/bin/track
+CMDS=$ROOT/usr/bin/2621 $ROOT/usr/bin/300 $ROOT/usr/bin/300s $ROOT/usr/bin/4014 $ROOT/usr/bin/450 $ROOT/usr/bin/AllCharges $ROOT/usr/bin/Charges $ROOT/usr/bin/apply $ROOT/usr/bin/arcv $ROOT/usr/bin/asa $ROOT/usr/bin/ascii $ROOT/usr/bin/bc $ROOT/usr/bin/bcd $ROOT/usr/bin/bigcore $ROOT/usr/bin/books $ROOT/usr/bin/byteyears $ROOT/usr/bin/cal $ROOT/usr/bin/calendar2 $ROOT/usr/bin/call $ROOT/usr/bin/chdate $ROOT/usr/bin/checkeq $ROOT/usr/bin/col $ROOT/usr/bin/comm $ROOT/usr/bin/coreid $ROOT/usr/bin/cpio $ROOT/usr/bin/ctags $ROOT/usr/bin/cu $ROOT/usr/bin/cut $ROOT/usr/bin/cvcrypt $ROOT/usr/bin/d202 $ROOT/usr/bin/dblbuf $ROOT/usr/bin/deroff $ROOT/usr/bin/dircmp $ROOT/usr/bin/dirname $ROOT/usr/bin/dis $ROOT/usr/bin/dkname $ROOT/usr/bin/dkstat $ROOT/usr/bin/expand $ROOT/usr/bin/fcopy $ROOT/usr/bin/fgrep $ROOT/usr/bin/file $ROOT/usr/bin/find $ROOT/usr/bin/findo $ROOT/usr/bin/flcopy $ROOT/usr/bin/fmt $ROOT/usr/bin/fold $ROOT/usr/bin/fsplit $ROOT/usr/bin/getopt $ROOT/usr/bin/getuid $ROOT/usr/bin/groups $ROOT/usr/bin/hang $ROOT/usr/bin/head $ROOT/usr/bin/hp $ROOT/usr/bin/id $ROOT/usr/bin/idiff $ROOT/usr/bin/idle $ROOT/usr/bin/labmake $ROOT/usr/bin/last $ROOT/usr/bin/limiter $ROOT/usr/bin/log $ROOT/usr/bin/logdir $ROOT/usr/bin/logtty $ROOT/usr/bin/look $ROOT/usr/bin/markbad $ROOT/usr/bin/mc $ROOT/usr/bin/mesg $ROOT/usr/bin/mips $ROOT/usr/bin/mkstr $ROOT/usr/bin/mm $ROOT/usr/bin/mmt $ROOT/usr/bin/netfsbug $ROOT/usr/bin/newer $ROOT/usr/bin/news $ROOT/usr/bin/number $ROOT/bin/passwdx $ROOT/usr/bin/paste $ROOT/usr/bin/patch $ROOT/usr/bin/printenv $ROOT/usr/bin/printf $ROOT/usr/bin/procmount $ROOT/usr/bin/prof $ROOT/usr/bin/prof.old $ROOT/usr/bin/pti $ROOT/usr/bin/ptx $ROOT/usr/bin/random $ROOT/usr/bin/readslow $ROOT/usr/bin/reccp $ROOT/usr/bin/reloc $ROOT/usr/bin/rev $ROOT/usr/bin/revpag $ROOT/usr/bin/rscan $ROOT/usr/bin/seq $ROOT/usr/bin/setgid $ROOT/usr/bin/setpart $ROOT/usr/bin/settod $ROOT/usr/bin/shares $ROOT/usr/bin/sp $ROOT/usr/bin/spline $ROOT/usr/bin/split $ROOT/usr/bin/stat $ROOT/usr/bin/strings $ROOT/usr/bin/tabs $ROOT/usr/bin/tail $ROOT/usr/bin/tape $ROOT/usr/bin/tee $ROOT/usr/bin/telno $ROOT/usr/bin/tk $ROOT/usr/bin/tpr $ROOT/usr/bin/treesum $ROOT/usr/bin/tty $ROOT/usr/bin/ucds $ROOT/usr/bin/und $ROOT/usr/bin/unexpand $ROOT/usr/bin/uniq $ROOT/usr/bin/uudecode $ROOT/usr/bin/uuencode $ROOT/usr/bin/v7 $ROOT/usr/bin/v8 $ROOT/usr/bin/vis $ROOT/usr/bin/vpr $ROOT/usr/bin/wc $ROOT/usr/bin/where $ROOT/usr/bin/which $ROOT/usr/bin/wwv $ROOT/usr/bin/xargs $ROOT/usr/bin/xd $ROOT/usr/bin/yes $ROOT/usr/bin/zero $ROOT/usr/lib/makekey $ROOT/usr/bin/agh $ROOT/usr/bin/pull $ROOT/usr/bin/push $ROOT/usr/bin/rx $ROOT/usr/bin/nrx $ROOT/usr/bin/ndcon $ROOT/usr/bin/track
 cmds:V:	$CMDS
 $CMD/2621: $PREP $CMD/2621.c
 	cd $CMD; cc -Od2 -o 2621 2621.c || echo '2621: FAILED'
@@ -2869,9 +2885,18 @@ $ROOT/usr/bin/number: $CMD/number
 $CMD/passwdx: $PREP $CMD/passwdx.c
 	cd $CMD; cc -O   -o passwdx passwdx.c || echo 'passwdx: FAILED'
 
-$ROOT/usr/bin/passwdx: $CMD/passwdx
-	cd $CMD; cp passwdx $ROOT/usr/bin/passwdx || echo 'passwdx: FAILED'
-	cd $CMD; strip $ROOT/usr/bin/passwdx || echo 'passwdx: install FAILED'
+# IN /bin AND SET-UID, BECAUSE passwd IS A SCRIPT THAT RUNS IT FROM THERE.
+# /bin/passwd is cmd/passwd.sh, and its line 6 is `/bin/passwdx $*' with
+# `exit 1' on any failure, so a passwdx anywhere else is a passwd that never
+# works -- this rule put it in /usr/bin, mode 775, from the start, and every
+# golden shipped that way.  passwdx.c:2-4 says the rest: "this program should
+# be suid with owner with an owner with write permission on /etc/passwd".
+# build/obsolete takes the /usr/bin copy off a disk rebuilt in place.  Found
+# by reading the 8 Oct golden for paths installed programs name and lack.
+$ROOT/bin/passwdx: $CMD/passwdx
+	cd $CMD; cp passwdx $ROOT/bin/passwdx || echo 'passwdx: FAILED'
+	cd $CMD; strip $ROOT/bin/passwdx || echo 'passwdx: install FAILED'
+	/etc/chown 0 $ROOT/bin/passwdx && chmod u+s,og-w $ROOT/bin/passwdx || echo 'passwdx: mode FAILED'
 
 $CMD/paste: $PREP $CMD/paste.c
 	cd $CMD; cc -Od2 -o paste paste.c || echo 'paste: FAILED'
@@ -3361,7 +3386,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/usr/bin/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/usr/bin/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/bin/bundle
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3808,6 +3833,33 @@ $ROOT/usr/lib/tmac/tmac.an: $MACROSD/an
 	cd $MACROSD; cp $MACROF $ROOT/usr/lib/macros || echo 'macros: FAILED'
 	cd $ROOT/usr/lib/macros; chmod 664 $MACROF && /etc/chown 3,4 $MACROF || echo 'macros: mode FAILED'
 
+# /usr/pub/eqnchar, CUT FROM ITS OWN MANUAL PAGE.  mm -e and mmt -e (mm.sh
+# :65-68, mmt.sh:28-31) and monk's eqn options (monk.sh:76-82) hand it to eqn
+# as an input file, and eqn stops on a missing one (eqn/main.c:65-66) -- but
+# no tape carries /usr/pub, and nothing here made it.  eqnchar.6 opens with
+# the definitions themselves, .EQ at line 4 to the first .EN after it (line
+# 95), so the page typesets with its own characters; that block is the file.
+# Lines 1-3 are the page's own `delim $$' and are not part of it.  A
+# reconstruction, then, but of exactly the definitions the page documents,
+# and nothing else on any tape claims the name.
+$ROOT/usr/pub/eqnchar: $ROOT/usr/man/man6/eqnchar.6
+	test -d $ROOT/usr/pub || mkdir $ROOT/usr/pub
+	sed -n '4,/^\.EN/p' $ROOT/usr/man/man6/eqnchar.6 > $ROOT/usr/pub/eqnchar && chmod 644 $ROOT/usr/pub/eqnchar || echo 'eqnchar: FAILED'
+
+# tmac.cs, mcs(6)'s macro package, FROM vol2 -- its only copy.  mcs.6:139
+# names /usr/lib/tmac/tmac.cs, so `troff -mcs' needs it, and docgen's own
+# script writes `.so /usr/lib/tmac/tmac.cs' into what it generates
+# (docgen/mcsdata:3); the docgen rule above installs the package's helpers
+# -- cstrans, timestamp, name.sed, sendcover -- and never the package.  It
+# is in the tree at vol2/ms/tmac.cs, `coversheet to match version 8/06/87'.
+# Its own target, not a line in docgen's recipe, because that recipe runs
+# only when docgen itself is rebuilt, and a disk built once would never get
+# it.  mcs.6:141's tmac.rscover is on no tape.
+$ROOT/usr/lib/tmac/tmac.cs: $ROOT/usr/vol2/ms/tmac.cs
+	test -d $ROOT/usr/lib/tmac || mkdir $ROOT/usr/lib/tmac
+	cp $ROOT/usr/vol2/ms/tmac.cs $ROOT/usr/lib/tmac/tmac.cs || echo 'tmac.cs: FAILED'
+	chmod 644 $ROOT/usr/lib/tmac/tmac.cs && /etc/chown 3,4 $ROOT/usr/lib/tmac/tmac.cs || echo 'tmac.cs: mode FAILED'
+
 $ROOT/usr/bin/tsort: $PREP
 	cd $CMD/tsort; mk clean || :; mk install B=$ROOT/usr/bin || echo 'tsort: FAILED'
 	cd $CMD/tsort; mk clean || :
@@ -4063,6 +4115,14 @@ $CMD/lint/.built: P_CMD_lint__built
 $ROOT/usr/bin/lint: $CMD/lint/.built
 	test -d $ROOT/usr/lib/lint || mkdir $ROOT/usr/lib/lint
 	cd $CMD/lint; mk install BINDIR=$ROOT/usr/bin LINTDIR=$ROOT/usr/lib/lint || echo 'lint: FAILED'
+
+# lint -p READS llib-port.ln AND THE PACKAGE INSTALLS llib-lport.ln.
+# lint.sh:19 is `port) cat $LL/llib-port.ln >>$T', and the install names
+# the portable library the -l way, as it does llib-lc.ln -- so `lint -p'
+# ran its second pass with no library at all.  A copy under the name the
+# script reads; its own target so a disk built once gets it too.
+$ROOT/usr/lib/lint/llib-port.ln: $ROOT/usr/bin/lint
+	cp $ROOT/usr/lib/lint/llib-lport.ln $ROOT/usr/lib/lint/llib-port.ln || echo 'lint llib-port.ln: FAILED'
 
 # cflow parameterises both destinations through ROOT, so its own install runs.
 P_CMD_cflow__built:V:	$PREP
@@ -4772,6 +4832,11 @@ $ROOT/usr/bin/pascal: $PREP
 	cd $CMD/pascal/pi;     mk y.tab.h && mk && mk install DESTDIR=$ROOT || echo 'pascal pi: FAILED'
 	cd $CMD/pascal/px;     mk && mk install DESTDIR=$ROOT || echo 'pascal px: FAILED'
 	cd $CMD/pascal/pxp;    mk && mk install DESTDIR=$ROOT || echo 'pascal pxp: FAILED'
+	# pxp's help is the one how_ file read from /usr/lib itself: pxp/main.c:32
+	# is `howfile = "/usr/lib/how_pxp"', catted when pxp has no arguments,
+	# while pi and pc look in /usr/lib/pascal (objfmt.h, pc.c:67), where the
+	# install puts all four.  A copy, not a moved file: both names are read.
+	cp $CMD/pascal/pascal/how_pxp $ROOT/usr/lib/how_pxp || echo 'pascal how_pxp: FAILED'
 	# pascal/mkfile:22-25, the parent's own tail.  3,4 is bin,bin.
 	rm -f $ROOT/usr/bin/pascal || :
 	cd $CMD/pascal; cp pascal.sh $ROOT/usr/bin/pascal || echo 'pascal: FAILED'
@@ -4940,8 +5005,11 @@ $ROOT/usr/bin/u9fs: $CMD/u9fs/u9fs
 # and its neighbours, and this machine has neither.  Dialers is the exception
 # and does go in: it sits in the package root rather than samples/, it is a
 # table of dialer types rather than a description of this site, and the source
-# names /usr/lib/uucp/Dialers directly.  uups stays out -- uucp.h:221-223 wants
-# it only `#ifdef V7' and parms.h:13 leaves V7 commented out.
+# names /usr/lib/uucp/Dialers directly.  uups goes in too, by its own rule
+# below: uucp.h:221-224 wants it only `#ifdef V7', and parms.h:13 leaves V7
+# commented out -- but parms.h:15 defines V8 and uucp.h:13-15 turns V8 into
+# V7, so `uustat -p' does exec /usr/lib/uucp/uups (uustat.c:705-707).  This
+# note used to say it stayed out, reading the one line and not the other.
 #
 # One consequence reaches another file: the note on $ETC/crontab drops v8's
 # three uudemon lines "because /usr/lib/uucp exists only if the uucp package
@@ -4974,6 +5042,13 @@ $ROOT/usr/bin/uucp: $CMD/uucp/uucp
 	cd $ROOT/usr/lib/uucp; strip $UULIBS $UULIBP || echo 'uucp: lib strip FAILED'
 	cd $ROOT/usr/bin; /etc/chown 48,4 $UUBIN $UUTOOL && chmod 04775 $UUBIN && chmod 0775 $UUTOOL || echo 'uucp: bin mode FAILED'
 	cd $ROOT/usr/lib/uucp; /etc/chown 48,4 $UULIBS $UULIBP $UUSCR Dialers && chmod 04775 $UULIBS && chmod 0775 $UULIBP $UUSCR && chmod 0644 Dialers || echo 'uucp: lib mode FAILED'
+
+# uups, uustat -p's `ps $*' (the samples note above has the V7/V8 reason).
+# Its own target and not a word in UUSCR: the recipe above runs only when
+# uucp itself is rebuilt, so a disk built once would never get it.
+$ROOT/usr/lib/uucp/uups: $ROOT/usr/bin/uucp $CMD/uucp/uups
+	cp $CMD/uucp/uups $ROOT/usr/lib/uucp/uups || echo 'uups: FAILED'
+	/etc/chown 48,4 $ROOT/usr/lib/uucp/uups && chmod 0775 $ROOT/usr/lib/uucp/uups || echo 'uups: mode FAILED'
 
 # worm is the write-once optical filesystem; BIN is /usr/lib/worm.  cmd/oworm
 # was the previous copy of the same fifteen programs, carried by the old
@@ -5850,19 +5925,22 @@ P_CMD_chuck_a_out:V:	$PREP
 $CMD/chuck/a.out: P_CMD_chuck_a_out
 	test -f $CMD/chuck/a.out || echo '$CMD/chuck/a.out: the package did not produce it'
 
-$ROOT/usr/bin/chuck: $CMD/chuck/a.out
-	cd $CMD/chuck; cp a.out $ROOT/usr/bin/chuck || echo 'chuck: FAILED'
-	cd $CMD/chuck; strip $ROOT/usr/bin/chuck || echo 'chuck: install FAILED'
+# BOTH IN /etc, WHERE upchuck LOOKS.  upchuck.c:13 is `cmd = "/etc/chuck"', and
+# without -p it execs that and stops with `couldn't exec'.  These two were
+# put in /usr/bin because neither is in an Admin/*files manifest, so it
+# seemed no path was claimed -- but chuck/mkfile:15-22's own install writes
+# /etc/chuck and /etc/upchuck, and chuck.8:6,12,17 names both there.  That
+# install is gated on `whoami' being bowell, a check this build can never
+# pass, so the copies are made here.  build/obsolete takes the /usr/bin pair
+# off a disk rebuilt in place.  Found by reading the 8 Oct golden for paths
+# installed programs name and lack.
+$ROOT/etc/chuck: $CMD/chuck/a.out
+	cd $CMD/chuck; cp a.out $ROOT/etc/chuck || echo 'chuck: FAILED'
+	cd $CMD/chuck; strip $ROOT/etc/chuck || echo 'chuck: install FAILED'
 
-# upchuck is chuck/mkfile's own sibling target (its `install:' puts both at
-# /etc, gated on a check this build can never pass -- see the comment above
-# P_CMD_chuck_a_out); built by the same invocation, but never copied
-# anywhere until now.  Installed beside chuck for the same reason chuck
-# itself lands in $ROOT/usr/bin rather than /etc: it is in no Admin/*files
-# manifest, so there is no other claimed path for it.
-$ROOT/usr/bin/upchuck: $CMD/chuck/a.out
-	cd $CMD/chuck; cp upchuck $ROOT/usr/bin/upchuck || echo 'upchuck: FAILED'
-	cd $CMD/chuck; strip $ROOT/usr/bin/upchuck || echo 'upchuck: install FAILED'
+$ROOT/etc/upchuck: $CMD/chuck/a.out
+	cd $CMD/chuck; cp upchuck $ROOT/etc/upchuck || echo 'upchuck: FAILED'
+	cd $CMD/chuck; strip $ROOT/etc/upchuck || echo 'upchuck: install FAILED'
 
 P_CMD_error_error:V:	$PREP
 	cd $CMD/error; mk error CFLAGS=-O || echo 'error: FAILED'

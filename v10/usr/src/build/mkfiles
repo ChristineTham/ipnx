@@ -472,6 +472,7 @@ src/cmd/bison/bison.simple
 src/cmd/cbt/btbuild.c
 src/cmd/ccom/vax/genmore.c
 src/cmd/cflow/cflow.sh
+src/cmd/cref/dr.c
 src/cmd/cyntax/cem/Makefile
 src/cmd/cyntax/cyn/Makefile
 src/cmd/dmesg.c
@@ -509,6 +510,7 @@ src/cmd/spitbol/spithost
 src/cmd/struct/beauty.c
 src/cmd/struct/main.c
 src/cmd/struct/tree.c
+src/cmd/tbl/t1.c
 src/cmd/trace/trace1.c
 src/cmd/troff/ancient.nroff/macros.d/mmt.src
 src/cmd/troff/n1.c
