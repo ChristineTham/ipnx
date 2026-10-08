@@ -260,9 +260,14 @@ case $TARGET in
 	fi
 	# `test -f' first: with nothing saved the file is never created and
 	# `wc -l <' would answer with an error where a count belongs.
+	#
+	# TWO COUNTS, NEITHER A SUBSET OF THE OTHER.  The first is what this
+	# build changed; the second is every preserve row whose file existed,
+	# saved before anything ran.  This line used to say `N of them saved',
+	# which on 8 Oct read `27 files overwritten in place, 262 of them saved'.
 	np=0
 	test -f /usr/ipnx/preserved && np=`wc -l < /usr/ipnx/preserved`
-	echo "ipnxbuild: `wc -l < /usr/tmp/ipb.m2` files overwritten in place, $np of them saved"
+	echo "ipnxbuild: `wc -l < /usr/tmp/ipb.m2` files overwritten in place; $np tape files saved before the build"
 
 	# AND PUT THE TAPE FILES BACK, WHICH IS THE OTHER HALF OF SAVING THEM.
 	# Deleting the derived set cannot undo an OVERWRITE, and this is the only
