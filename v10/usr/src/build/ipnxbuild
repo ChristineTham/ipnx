@@ -163,6 +163,26 @@ case $TARGET in
 	test $s = 0 && { mk -f /usr/src/build/mkfile games || s=1; }
 	test $s = 0 || echo "ipnxbuild: A BUILD STEP FAILED -- the steps after it were skipped; accounting and restore follow"
 
+	# AND WHAT NO RULE MAKES ANY MORE.  An install puts a product where its
+	# rule says and nothing takes one away from where an older rule put it,
+	# so a disk rebuilt in place kept /usr/bin/dump beside /etc/dump for a
+	# month -- build/obsolete has the three and the evidence.  Only after a
+	# build that succeeded: a failed step can mean the new copy was never
+	# installed, and the old one is then the only one there is.  Not on the
+	# /v10 side below: mkimage formats that disk, so it holds no old product.
+	if test $s = 0 -a -f /usr/src/build/obsolete
+	then
+		while read f junk
+		do
+			case $f in
+			[a-z]*)	if test -f /$f
+				then
+					rm -f /$f && echo "ipnxbuild: removed /$f -- build/obsolete"
+				fi ;;
+			esac
+		done < /usr/src/build/obsolete
+	fi
+
 	# AND THE LIST, WRITTEN LAST.  `sort a a b | uniq -u' leaves the lines
 	# that appear once: everything in the tree now that was not in it
 	# before.  comm would do it too and needs both files sorted the same

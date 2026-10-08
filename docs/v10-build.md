@@ -258,7 +258,8 @@ the rule the directory is built around.
 | `casefix` | the `/usr`-relative renames that keep one name per path | `updatebuild`, `ipnxbuild /v10`, `mkv10` |
 | `arcfix` | dissolving every `ar` archive into a directory | the same three |
 | `mkfiles` | every file the repository carries for the tree that no tape or `patch` run puts there: the converted mkfiles, whole-file repairs, and `patch`'s own copies | `updatebuild`, `mkipnx`, `ipnxbuild /v10`; held to by `tools/v10-tree-check.py` |
-| `preserve` | tape files a rule rewrites in place | `ipnxbuild` |
+| `preserve` | tape files a rule rewrites in place; line order is restore order, so an input sits above what is made from it | `ipnxbuild` |
+| `obsolete` | products an older rule installed at a path no rule makes now, removed after a clean in-place build | `ipnxbuild` |
 | `proto-dev` | every node `/dev` needs | `tools/v10-proto.py` → it → `tools/v10-makedev.py` → `mkdev` |
 | `mkcheck` | what a machine must already have before the mkfile will run | by hand |
 

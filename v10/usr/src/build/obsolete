@@ -1,0 +1,20 @@
+# Products an earlier build installed at a path no rule makes any more.
+#
+# An install puts a product where its rule says, and nothing ever takes one
+# away from where an older rule put it.  A disk mkimage builds starts empty,
+# so it never has one; a disk rebuilt in place -- ipnxbuild on the machine
+# itself, which is how the 8 Oct 2026 golden was made -- keeps every product
+# that has moved, beside its new copy, for good.  Found by reading that golden
+# from the host: three files older than its last build that nothing in it
+# wrote, each a fix that changed where its rule installs, and each already on
+# the 18 Sep golden too.
+#
+# ipnxbuild removes each path listed here from the disk it is building, after
+# a build whose every step succeeded -- a failed step can mean the new copy
+# was never installed, and the old one is then the only one there is.  One
+# path per row, relative to the root of that disk; anything after it on the
+# row is a note.  A row stays after its file is gone: the next disk restored
+# from an older archive has it again.
+usr/bin/dump		/etc/dump since 51b02b9a (17 Sep 2026): dump/Makefile:34, section 8
+usr/lib/plot/hplot	hpplot since 51b02b9a: the name plot(1) looks for (man1/plot.1:66-73)
+usr/bin/asdrcv		/etc/asd/asdrcv since 651a1ea3 (19 Sep 2026), setuid root there

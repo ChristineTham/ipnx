@@ -5194,7 +5194,18 @@ $ROOT/lib/f1: $PREP $ROOT/usr/bin/yacc
 # exports the six and re-runs itself over $(TARGETS) with ACTION=install, and
 # each low-level makefile makes its own destination, so only MAN1DIR has to
 # exist first -- the file says so: "MAN1DIR must already exist - it will not be
-# created during an install".  $(ROOT)/tmp is that, and dirs makes it.
+# created during an install".
+#
+# MAN1DIR=/tmp ON THE COMMAND LINE, NOT $(ROOT)/tmp.  The package's own note
+# (postscript.mk:32-37) is that pointing MAN1DIR at /tmp means "manpages won't
+# go anywhere permanent" -- true of / only, where /tmp is the ra04 filesystem.
+# Under ROOT=/v10 it is the NEW DISK's root directory, which ra04 is later
+# mounted over: nineteen pages, buildtables.1 to trofftable.1, sat hidden there on
+# every golden since 4 Sep, holding 19 of a 1,088-inode root that had 6 free.
+# Read off the disk from the host on 8 Oct (tools/v10fs.py ls run/v10-golden:a
+# /tmp).  A command-line macro outranks postscript.mk:114, and the install
+# target exports it to every sub-make (postscript.mk:172), so this is the one
+# place to say it.
 #
 # cmd/post.src is THE SAME PACKAGE A YEAR NEWER -- its VERSION is 3.3.2 and
 # Jul 7 1992 against 3.3.1 and May 21 1991 -- and it installs the same paths,
@@ -5217,7 +5228,7 @@ P_CMD_postscript_postio:V:	$PREP
 	test -d $ROOT/usr/lib/font || mkdir $ROOT/usr/lib/font
 	test -d $ROOT/usr/lib/font/postscript || mkdir $ROOT/usr/lib/font/postscript
 	test -d $ROOT/usr/lib/tmac || mkdir $ROOT/usr/lib/tmac
-	cd $CMD/postscript; make -f postscript.mk ROOT=$ROOT install || echo 'postscript: FAILED'
+	cd $CMD/postscript; make -f postscript.mk ROOT=$ROOT MAN1DIR=/tmp install || echo 'postscript: FAILED'
 
 $ROOT/usr/bin/postscript/postio: P_CMD_postscript_postio
 	test -f $ROOT/usr/bin/postscript/postio || echo '$ROOT/usr/bin/postscript/postio: the package did not produce it'
