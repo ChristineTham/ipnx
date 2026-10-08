@@ -361,6 +361,15 @@ tape creates it only when absent.
 `chmod`, and `cflow.sh` is 644 in the tree. Every other script install in `build/mkfile`
 carries an explicit `chmod +x`.
 
+*CORRECTED 2026-10-08*: not every one — the claim held for the scripts `build/mkfile` copies
+itself, not for the ones a package's own install copies. Listing the rebuilt golden's command
+directories for files with no execute bit found three more: **`/usr/bin/lint`**
+(`lint/mkfile:19`, `cp lint.sh` and no `chmod`, so `lint` answered `lint: cannot execute` on
+every golden), `/usr/bin/WWB/gram` (`wwb/mkfile:65`; `gram.sh` alone of wwb's scripts is 644 in
+the tree) and `/etc/mkimage`, which the verbs table types by name. All three are `chmod +x`'d
+by their rules now — **FIXED** — and the same listing found `/etc/su` and `/bin/newgrp`
+without their set-uid bit (§2).
+
 **1.7 The root filesystem has 25 free inodes** (measured 2026-10-08 on the rebuilt golden:
 `tools/v10fs.py stat run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and
 `s_tinode 25`). It had six before that golden was cleaned and eight on 18 Sep: `/etc/asd` and
