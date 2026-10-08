@@ -515,7 +515,8 @@ its line on the first one. `tools/v10/sharedwrite.c` shows it without `tcpmgr`: 
 writing 4 MB and its parent writing markers through one descriptor. On the tape's kernel it
 failed three runs of three, each time 4 of the child's bytes gone under a marker and 4 NULs
 where the offset had already moved on. `read` and `write` now take the offset again
-once they hold the lock — two lines in `os/sys2.c`, delivered by a `build/mkfiles` row.
+once they hold the lock — two lines in `os/sys2.c`, delivered by a `build/mkfiles` row — and
+on the kernel the next build made, the same program kept every byte in five runs of five.
 `dirread` (`os/sys3.c:200`) takes its
 offset in the same order and is left as the tape has it: nothing here reads one directory from
 two processes at once. The golden still ships the log empty.
@@ -524,6 +525,22 @@ two processes at once. The golden still ships the log empty.
 last newline. V10's `od` reads a word at a time and prints the pad of an odd-length file —
 `echo ab | od -c` shows `a b \n \0` over `0000003` — so the 125-byte log looked one byte
 longer than it was. The last offset `od` prints is the length.
+
+**The result, measured.** On a copy of the fourth pass's golden: `cfboot`, then four full
+builds. The first stopped in `build1` — the `tee` above — and the second ended with status 2
+and named six failures, the guard's two, `tail`'s and `dag`'s three, each fixed above. The
+third built everything clean, and the fourth did again with `write` repaired: no `FAILED`,
+status 0, 3,321 files derived, 25 overwritten in place — all of them `preserve` rows — and all
+263 restored, in 21 minutes. A boot then cleared the two linkless files an in-place build
+leaves. Read from the host, `tools/v10-tree-check.py --current` finds 27,738 files identical
+to `v10/usr`, 28 expected differences, none pending and none undelivered; there is no
+linkless inode, both `/tmp`s are empty and 17 root inodes are free. The tape's manifests are
+where the fourth pass left them — `/bin` lacks 2 of 57, `/etc` 4 of 56, `/lib` its one and
+`/usr/lib` 16 of 50 — because none of them names a C++ file. A fresh copy boots with a clean
+`fsck` and both of `tcpmgr`'s lines whole, keeps every byte of `sharedwrite` in five runs of
+five, compiles and runs the static-constructor, iostream and `task` tests with `CC`, lays out
+a graph with `dag` that `pic` accepts, and halts; `tools/webterm-check.py` boots it in the
+browser. The committed halves restore it byte for byte.
 
 ## 1. Defects in the build as it stands
 

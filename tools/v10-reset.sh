@@ -33,7 +33,7 @@ lfscheck() {
 lfscheck "$IMAGE/v10.tar.bz2" || exit 1
 tar -xSjf "$IMAGE/v10.tar.bz2" -C "$OUT" || exit 1
 
-# THE GOLDEN IS COMMITTED IN HALVES, of 73,397,485 bytes each,
+# THE GOLDEN IS COMMITTED IN HALVES, of 73,199,132 bytes each,
 # because GitHub refuses a file over 100 MB and .gitattributes' LFS filter
 # matches `image/*.tar.bz2' and so does not take the .aa/.ab suffixes.
 # Joining them is part of a reset rather than a step somebody is expected to
