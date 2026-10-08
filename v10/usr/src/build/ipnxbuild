@@ -201,10 +201,12 @@ case $TARGET in
 	# were accounted for.  A directory holds no bytes, so this needs no
 	# copy aside: it is enough to know which ones were not there before.
 	# `sort -r' so a child is listed before its parent -- lexically
-	# `a/b' follows `a' -- and ipnxclean's rmdir then has a chance of
-	# succeeding on both.  rmdir refuses a directory that still holds
-	# anything, which is the whole safety: a directory the build made that
-	# a tape file now sits in stays.
+	# `a/b' follows `a'.  ipnxclean removes these rows with rm -rf, NOT
+	# rmdir, whatever this note used to say: a directory row takes its whole
+	# contents.  That is safe because nothing the build did not make can be
+	# inside a directory it made -- a preserved tape file goes back where it
+	# was, under a directory that already existed -- except a product
+	# build/inshape keeps, and ipnxclean keeps each one's directories too.
 	cd /usr
 	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
 	do

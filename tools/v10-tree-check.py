@@ -85,6 +85,16 @@ def inshape():
                 parts = ln.split(None, 1)
                 note = parts[1].strip() if len(parts) > 1 else ""
                 out["/" + parts[0]] = "build/inshape: " + note
+                # AND A DIRECTORY THAT EXISTS ONLY TO HOLD ONE.  The build
+                # makes /usr/local/lib for flex.skel and ipnxclean keeps it
+                # (its ancestors loop); the tree has no local/lib.  Only
+                # ancestors absent from v10/ -- one that is there is a tape
+                # directory and still compared like any other.
+                d = os.path.dirname(parts[0])
+                while d:
+                    if not os.path.isdir(os.path.join(USR, d)):
+                        out["/" + d] = "holds build/inshape's " + parts[0]
+                    d = os.path.dirname(d)
     return out
 
 

@@ -47,12 +47,25 @@ test -f /usr/src/build/inshape || {
 	echo "ipnxclean: no /usr/src/build/inshape -- run updatebuild; nothing removed"
 	exit 1
 }
+#
+# AND EVERY DIRECTORY ABOVE ONE.  The rows below are removed with rm -rf, so
+# a directory row is its whole contents: on a disk that starts without
+# /usr/local/lib -- every disk mkimage builds -- the build makes it, the
+# derived list names it, and its rm -rf would take flex.skel with it however
+# carefully the file's own row was kept.  So each product's ancestors are
+# kept too, up to the shape root (dirname stops at `.').
 cp /usr/ipnx/derived /usr/tmp/ipc.d
 while read k junk
 do
 	case $k in
-	[a-z0-9]*)	grep -v "^/usr/$k\$" /usr/tmp/ipc.d > /usr/tmp/ipc.k
-		mv /usr/tmp/ipc.k /usr/tmp/ipc.d ;;
+	[a-z0-9]*)
+		p=$k
+		while test "$p" != .
+		do
+			grep -v "^/usr/$p\$" /usr/tmp/ipc.d > /usr/tmp/ipc.k
+			mv /usr/tmp/ipc.k /usr/tmp/ipc.d
+			p=`dirname $p`
+		done ;;
 	esac
 done < /usr/src/build/inshape
 sed "s|^/usr/|${1-}/usr/|" /usr/tmp/ipc.d | xargs rm -rf
