@@ -80,8 +80,7 @@ tools/boot-newdisk.sh              # disk behaviour: boots alone, has mux, games
 bash tools/net-selftest.sh rp07new # real traffic: TCP to host, TCP to a web server, DNS
 python3 v8/mk/mkdep.py --check     # committed makefiles match the tree
 python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
-bash tools/v10-golden.sh                # V10: does the golden still boot to login -- you watch it;
-                                        #   the console is yours and it never exits by itself (^E, q)
+bash tools/v10-golden.sh --check        # V10: does the golden still boot, log in and halt (a throwaway copy)
 python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
 python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
 python3 tools/v10-tree-check.py         # V10: every v10/ edit has a route to a machine (--current after a rebuild)
@@ -117,7 +116,7 @@ the `rp06build` filesystem stage 1 left behind.
 bash tools/v10-tapes.sh                 # the six TUHS archives -> v10tapes/, plain tar, gitignored
 bash tools/v10-reset.sh                 # image/*.tar.bz2 -> run/v10, run/v10-golden, run/uda
 bash tools/v10-launch.sh                # boot run/v10, golden on the second drive, both shares up
-bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone
+bash tools/v10-golden.sh                # boot a throwaway copy of the golden, alone; ^E ends it
 python3 tools/v10drive.py run/v10-test.img cmds   # run a script of shell commands on it
 python3 tools/v10fs.py tree run/v10-golden v10/usr   # read a disk from the host, no boot
 ```

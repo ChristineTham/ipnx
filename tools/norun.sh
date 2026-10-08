@@ -68,10 +68,14 @@ no_other_sims() {
     found=$(pgrep -x vax750 2>/dev/null; pgrep -x vax730 2>/dev/null; \
             pgrep -x vax780 2>/dev/null; pgrep -x vax 2>/dev/null)
     if [[ -n "$found" ]]; then
-        echo "norun: a simulator is already running (pid$(echo $found | tr '\n' ' '))." >&2
+        echo "norun: a simulator is already running (pid $(echo $found))." >&2
         echo "norun: overlapping runs are how images get corrupted here." >&2
         echo "norun: let it finish -- every harness halts its guest cleanly and reaps itself." >&2
-        ps -o pid,etime,command -p $(echo $found | tr '\n' ' ') 2>/dev/null >&2
+        # >&2 BEFORE 2>/dev/null.  Redirections apply left to right, and the
+        # other order points stderr at /dev/null first and then sends stdout
+        # after it, so this listing never printed anywhere -- found 8 Oct 2026,
+        # when tools/v10-golden.sh --check became the first caller to show it.
+        ps -o pid,etime,command -p "$(echo $found | tr ' ' ',')" >&2 2>/dev/null
         return 1
     fi
     return 0
@@ -106,7 +110,7 @@ claim_images() {
         holders=$(lsof -- "$f" 2>/dev/null | awk 'NR>1 && $4 ~ /[uw]/ {print $2}' | grep -v "^$$\$")
         if [[ -n "$holders" ]]; then
             echo "norun: $f is open by another process:" >&2
-            ps -o pid,etime,command -p $(echo $holders | tr '\n' ' ') 2>/dev/null >&2
+            ps -o pid,etime,command -p "$(echo $holders | tr ' ' ',')" >&2 2>/dev/null
             rc=1
         fi
     done

@@ -48,7 +48,7 @@ reading them straight off the share if you name it. What the host does:
 | `tools/v10-tapes.sh` | fetch the six TUHS archives and decompress them to plain `tar` in `v10tapes/` |
 | `tools/v10-reset.sh` | `image/*.tar.bz2` → `run/`: both disks uncompressed, and the boot ROM beside them |
 | `tools/v10-launch.sh` | boot `run/v10` with `run/v10-golden` on the second drive and both shares up |
-| `tools/v10-golden.sh` | boot a throwaway copy of the golden, one drive, no shares |
+| `tools/v10-golden.sh` | boot a throwaway copy of the golden, one drive, no shares; `--check` does it unattended — boot, log in as root, halt — and exits 0 only if all three happen |
 | `tools/v10-proto.py` | the kernel config and `sys/lib/tab` → `build/proto-dev` |
 | `tools/v10-makedev.py` | `build/proto-dev` → `build/mkdev` |
 | *(no tool)* | **create the blank disk image file the machine formats** — see below |
@@ -533,7 +533,8 @@ cannot make a sparse file, so a fresh disk currently needs a `dd` typed by hand.
 ```bash
 bash tools/v10-reset.sh     # image/ -> run/v10, run/v10-golden, run/uda
 bash tools/v10-launch.sh    # boots run/v10, golden on the second drive, shares up
-bash tools/v10-golden.sh    # boots a throwaway copy of the golden alone
+bash tools/v10-golden.sh    # boots a throwaway copy of the golden alone; ^E ends it
+bash tools/v10-golden.sh --check   # the same unattended: boot, log in, halt, exit 0 or say why
 ```
 
 Both launchers boot the disk as an **RA73** and load the boot ROM at `FA00`, matching

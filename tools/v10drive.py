@@ -133,7 +133,7 @@ class Guest:
                 break
         return None
 
-    def close(self):
+    def close(self, at_prompt=False):
         """Halt the machine through /etc/down, never by pulling the plug.
 
         ^E-and-quit leaves every filesystem marked mounted, and the NEXT boot
@@ -143,36 +143,45 @@ class Guest:
         Measured: it cost a whole run.  /etc/down is the project's own halt --
         kill everything holding a mount, sync, umount -a, /etc/halt -- and the
         HALT drops simh back to its own prompt with the disk clean.
+
+        AT_PROMPT means the CPU has already stopped and simh is sitting at
+        `sim>': there is no guest left to halt, and `cd /' and /etc/down typed
+        there would be read as simh commands -- simh has a cd of its own.  So
+        quit is all that is sent.
         """
-        try:
-            # `cd /' FIRST, AND IT IS NOT down's JOB.  down cds itself, but THIS
-            # shell's cwd is wherever the last command left it -- /usr/src/cmd/uucp
-            # on the run that found this -- and iget.c's ifsbusy counts a cwd as a
-            # held inode, so umount -a answers `/usr: In use' and down correctly
-            # refuses to halt.  The disk is then dirty for the next boot.
-            self.send("cd /\r")
-            self.read(3)
-            self.send("/etc/down\r")
-            got = self.wait_for(r"HALT instruction|sim>|NOT halting", 240)
-            # A REFUSED HALT IS TRIED ONCE MORE, AND THEN SAID OUT LOUD.  down
-            # refuses when umount -a finds a filesystem still held, and on
-            # 8 Oct 2026 one halt in six did, with tcpmgr still exiting from
-            # down's own kill.  This used to wait out its 240 seconds, ^E and
-            # quit -- the disk left marked mounted for the next boot's fsck --
-            # and exit 0, so the run read as clean.  By the time down says so
-            # its kill has taken this login shell and init has put login: back
-            # on the console, so the retry logs in first.
-            if got == "NOT halting":
-                self.read(5)
-                self.send("root\r")
-                self.read(5)
+        halted = False
+        if not at_prompt:
+            try:
+                # `cd /' FIRST, AND IT IS NOT down's JOB.  down cds itself, but
+                # THIS shell's cwd is wherever the last command left it --
+                # /usr/src/cmd/uucp on the run that found this -- and iget.c's
+                # ifsbusy counts a cwd as a held inode, so umount -a answers
+                # `/usr: In use' and down correctly refuses to halt.  The disk
+                # is then dirty for the next boot.
                 self.send("cd /\r")
                 self.read(3)
                 self.send("/etc/down\r")
                 got = self.wait_for(r"HALT instruction|sim>|NOT halting", 240)
-            halted = bool(got) and got != "NOT halting"
-        except Exception:
-            halted = False
+                # A REFUSED HALT IS TRIED ONCE MORE, AND THEN SAID OUT LOUD.
+                # down refuses when umount -a finds a filesystem still held,
+                # and on 8 Oct 2026 one halt in six did, with tcpmgr still
+                # exiting from down's own kill.  This used to wait out its 240
+                # seconds, ^E and quit -- the disk left marked mounted for the
+                # next boot's fsck -- and exit 0, so the run read as clean.  By
+                # the time down says so its kill has taken this login shell and
+                # init has put login: back on the console, so the retry logs in
+                # first.
+                if got == "NOT halting":
+                    self.read(5)
+                    self.send("root\r")
+                    self.read(5)
+                    self.send("cd /\r")
+                    self.read(3)
+                    self.send("/etc/down\r")
+                    got = self.wait_for(r"HALT instruction|sim>|NOT halting", 240)
+                halted = bool(got) and got != "NOT halting"
+            except Exception:
+                halted = False
         self.halted = halted
 
         # ^E ONLY IF THE HALT DID NOT GET US TO THE PROMPT, AND THE TEST IS THE
@@ -186,7 +195,7 @@ class Guest:
         # prompt once, so the second wait always timed out and ^E always went.
         # It looked fixed and behaved exactly as before.
         try:
-            if not halted:
+            if not halted and not at_prompt:
                 self.send("\005")
                 self.wait_for(r"sim>", 30)
             self.send("quit\r")
@@ -290,10 +299,28 @@ run FA02
 """ % (img, tape, os.path.join(ROOT, "run", "uda")))
 
     g = Guest(conf, script + ".log")
-    ok = g.wait_for(r"ogin", 900)
-    if not ok:
-        print("NO LOGIN PROMPT -- see %s.log" % script)
-        g.close(); sys.exit(2)
+    # NO LOGIN IS COMING ONCE EITHER OF TWO THINGS HAS BEEN PRINTED, and there
+    # is no need to wait out 900 seconds to say so.  `sim>' is simh's own
+    # prompt: the CPU has stopped -- a boot block of zeros executes as HALT,
+    # and a panic ends in death()'s branch to itself, which simh stops as an
+    # infinite loop -- and nothing runs again until someone types.  `RUN fsck
+    # MANUALLY' is fsck -p's preendie() (cmd/fsck.c:775-779), which exits 8;
+    # /etc/rc answers 8 with `exit 1', and init takes a failed rc as single
+    # user: a shell on the console and no getty.  Either used to sit out the
+    # whole timeout, so a check of a broken disk took a quarter of an hour to
+    # report what its first ten seconds had shown.
+    got = g.wait_for(r"ogin|sim>|RUN fsck MANUALLY", 900)
+    if got != "ogin":
+        if got == "sim>":
+            why = "the simulator stopped before login:"
+        elif got:
+            why = "fsck -p stopped the boot, so init is single user"
+        elif g.p.poll() is not None:
+            why = "the simulator exited"
+        else:
+            why = "none in 900 s"
+        print("NO LOGIN PROMPT -- %s; see %s.log" % (why, script))
+        g.close(at_prompt=(got == "sim>")); sys.exit(2)
     print("=== reached login: ===")
     g.send("root\r")
     time.sleep(3)
