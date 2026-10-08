@@ -395,3 +395,9 @@
 # libipc beside libc and libj since 20 Sep, and the lib% rule regenerates it
 # in place over the tape's 587-byte file exactly as it does rows 07 and 08.
 263 src/cmd/cyntax/lib/libipc
+
+# pc0's own parser.  pc0/mkfile's y.tab.h rule removes and remakes BOTH files
+# when it fires, and pc0's 1980 gram cannot finish on this eyacc's output (the
+# rule's own comment), so a regenerated y.tab.c does not compile.  Saving the
+# tape's and putting it back, with a fresh date, is what keeps it compiled.
+264 src/cmd/pascal/pc0/y.tab.c

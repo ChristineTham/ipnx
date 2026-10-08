@@ -234,13 +234,22 @@ case $TARGET in
 	# `sort A A B | uniq -u' is B minus A: A's lines appear at least twice
 	# and cannot be unique, B's own appear once.  The same idiom as the two
 	# lists above, twice -- once against derived, once against the list.
+	#
+	# DERIVED WITHOUT ITS /usr/, because the find below prints paths
+	# relative to /usr and $D carries the prefix ipnxclean wants.  Both
+	# arrived in one commit (bbe1a5a2), so the subtraction never matched a
+	# line: every file the build wrote was reported here as overwritten --
+	# 2,780 on 7 Oct, with the one real overwrite, pc0's regenerated
+	# y.tab.c, somewhere among them.  A report nobody can read is a report
+	# nobody reads.
 	cd /usr
 	for d in `grep '^[a-z0-9]' /usr/src/build/usrtrees`
 	do
 		test -d /usr/$d && find $d -newer /usr/tmp/ipb.st -type f -print
 	done | sort > /usr/tmp/ipb.mod
 	grep '^[0-9]' /usr/src/build/preserve | sed 's|^[0-9]* ||' | sort > /usr/tmp/ipb.pl
-	sort $D $D /usr/tmp/ipb.mod | uniq -u > /usr/tmp/ipb.m2
+	sed 's|^/usr/||' $D | sort > /usr/tmp/ipb.dr
+	sort /usr/tmp/ipb.dr /usr/tmp/ipb.dr /usr/tmp/ipb.mod | uniq -u > /usr/tmp/ipb.m2
 	sort /usr/tmp/ipb.pl /usr/tmp/ipb.pl /usr/tmp/ipb.m2 | uniq -u > /usr/tmp/ipb.m3
 	if test -s /usr/tmp/ipb.m3
 	then
@@ -295,7 +304,7 @@ case $TARGET in
 	fi
 
 	rm -f /usr/tmp/ipb.was /usr/tmp/ipb.now /usr/tmp/ipb.st
-	rm -f /usr/tmp/ipb.mod /usr/tmp/ipb.pl /usr/tmp/ipb.m2 /usr/tmp/ipb.m3
+	rm -f /usr/tmp/ipb.mod /usr/tmp/ipb.pl /usr/tmp/ipb.m2 /usr/tmp/ipb.m3 /usr/tmp/ipb.dr
 	cd /
 	echo "ipnxbuild: `wc -l < $D` derived, `wc -l < $C` consumed"
 	sync

@@ -79,10 +79,18 @@ sources:V: ${SRCS} ${HDRS} ${OTHERS}
 ${SRCS} ${HDRS} ${OTHERS}:
 	${GET} ${target}
 
-# ipnx: y.tab.c IS A TARGET OF THIS RULE TOO, matching the identical fix in
-# ../pi/mkfile (see its own comment there for the full mk-pretending account):
-# it was `y.tab.h:' alone, and the recipe plainly makes both.
-y.tab.h y.tab.c: pas.y gram
+# ipnx: y.tab.h ALONE, AS THE TAPE HAS IT -- NOT pi's two-target fix, which
+# was copied here on 24 Sep and broke pc0 on the first build to run it.  pi
+# ships no y.tab.c, so it must make one; pc0 ships a working y.tab.c and can
+# NOT make one.  Its gram is the 1980 script: line 12 deletes
+# `/^int yylval 0/', and eyacc/ey2.c:90 writes `int yylval = 0;' -- pi's gram
+# has the newer line.  ex stops a script at its first failed command, so the
+# cut at pas.y's `##' never ran, y.tab.c kept the `##', and cpp answered
+# `y.tab.c: 66: undefined control' (7 Oct): pascal pc0: FAILED.  As one target
+# the rule only fires when y.tab.h is older than pas.y or gram, and preserve
+# restores y.tab.h (row 168) and y.tab.c (row 264) with fresh dates after
+# every build, so the tape's parser is the one compiled.
+y.tab.h: pas.y gram
 	${RM} y.tab.h y.tab.c
 	${EYACC} pas.y > /dev/null
 	ex - y.tab.c <gram

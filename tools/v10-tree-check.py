@@ -69,6 +69,11 @@ EXPECTED = {
     # them.  docs/v10-gaps.md records it.
     "/sys/io/camac.s": "preserve row 01, a build product on both sides",
     "/src/cmd/pascal/libpc/libpc": "preserve row 09, a build product on both sides",
+    # The compiled map program, installed into /usr/maps by map's own mkfile
+    # and kept there by ipnxclean:28-40 -- product inside a shape root, and a
+    # binary, so never in git.  A golden without it runs /usr/bin/map and
+    # cannot find its own program, as the 18 Sep one did.
+    "/maps/map": "the installed map binary, kept by ipnxclean",
 }
 
 

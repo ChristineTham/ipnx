@@ -675,7 +675,7 @@ case 37:
 	yyval = checkneg(yypvt[-0],0); break;
 case 40:
 # line 128 "beauty.y"
-	{ t = checkneg(yypvt[-1],0);
+	{ t = (struct node *)checkneg(yypvt[-1],0);
 				yield(t,100);  freetree(t);	} break;
 case 41:
 # line 131 "beauty.y"
