@@ -118,9 +118,9 @@ static int (*ocvt[])() = {	/* ipnx: K&R, see PATCHES.md */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  (  )  *  +  ,  -  .  / */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  0  1  2  3  4  5  6  7 */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  8  9  :  ;  <  =  >  ? */
-0,	0,	0,	0,	0,	ocvt_E,	0,	ocvt_G,	/*  @  A  B  C  D  E  F  G */
-0,	0,	0,	0,	0,	0,	0,	0,	/*  H  I  J  K  L  M  N  O */
-0,	0,	0,	0,	0,	0,	0,	0,	/*  P  Q  R  S  T  U  V  W */
+0,	0,	0,	0,	ocvt_d,	ocvt_E,	0,	ocvt_G,	/*  @  A  B  C  D  E  F  G */
+0,	0,	0,	0,	0,	0,	0,	ocvt_o,	/*  H  I  J  K  L  M  N  O */
+0,	0,	0,	0,	0,	ocvt_u,	0,	0,	/*  P  Q  R  S  T  U  V  W */
 ocvt_X,	0,	0,	0,	0,	0,	0,	0,	/*  X  Y  Z  [  \  ]  ^  _ */
 0,	0,	0,	ocvt_c,	ocvt_d,	ocvt_e,	ocvt_f,	ocvt_g,	/*  `  a  b  c  d  e  f  g */
 0,	ocvt_d,	0,	0,	0,	0,	ocvt_n,	ocvt_o,	/*  h  i  j  k  l  m  n  o */
@@ -191,6 +191,17 @@ vfprintf(f, s, args)		/* ipnx: K&R, see PATCHES.md */
 		else
 			precision = -1;
 		while(tflag[*s&_IO_CHMASK]) flags |= tflag[*s++&_IO_CHMASK];
+		/*
+		 * ipnx: %D, %O and %U ARE V7's LONG CONVERSIONS, and this tree is full
+		 * of them.  This file is the 1993 pANS member, which has no D, O or U,
+		 * so it printed the letter and left the argument on the list -- every
+		 * later conversion in the format then read the wrong one.  Pascal is
+		 * the plainest case: pi/proc.c:558-564 builds every write() format as
+		 * "%%%d%c" with 'D', so writeln(6*7) printed `D'.  So do dd, find,
+		 * tar, tp, mkfs, restor, adb, ex, refer and struct, 27 files in all
+		 * (measured on the 8 Oct 2026 golden).  They mean what they meant.
+		 */
+		if(*s=='D' || *s=='O' || *s=='U') flags |= LONG;
 		if(ocvt[*s]) nprint += (*ocvt[*s++])(f, &args, flags, width, precision);
 		else if(*s){
 			putc(*s++, f);

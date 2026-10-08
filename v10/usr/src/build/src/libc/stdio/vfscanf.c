@@ -54,9 +54,9 @@ static int (*icvt[])()={	/* ipnx: K&R, see PATCHES.md */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  (  )  *  +  ,  -  .  / */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  0  1  2  3  4  5  6  7 */
 0,	0,	0,	0,	0,	0,	0,	0,	/*  8  9  :  ;  <  =  >  ? */
-0,	0,	0,	0,	0,	icvt_f,	0,	icvt_f,	/*  @  A  B  C  D  E  F  G */
-0,	0,	0,	0,	0,	0,	0,	0,	/*  H  I  J  K  L  M  N  O */
-0,	0,	0,	0,	0,	0,	0,	0,	/*  P  Q  R  S  T  U  V  W */
+0,	0,	0,	0,	icvt_d,	icvt_f,	icvt_f,	icvt_f,	/*  @  A  B  C  D  E  F  G */
+0,	0,	0,	0,	0,	0,	0,	icvt_o,	/*  H  I  J  K  L  M  N  O */
+0,	0,	0,	0,	0,	icvt_u,	0,	0,	/*  P  Q  R  S  T  U  V  W */
 icvt_x,	0,	0,	icvt_sq,0,	0,	0,	0,	/*  X  Y  Z  [  \  ]  ^  _ */
 0,	0,	0,	icvt_c,	icvt_d,	icvt_f,	icvt_f,	icvt_f,	/*  `  a  b  c  d  e  f  g */
 0,	icvt_i,	0,	0,	0,	0,	icvt_n,	icvt_o,	/*  h  i  j  k  l  m  n  o */
@@ -135,6 +135,16 @@ int vfscanf(f, s, args)		/* ipnx: K&R, see PATCHES.md */
 		else
 			width=-1;
 		type=*fmtp=='h' || *fmtp=='l' || *fmtp=='L'?*fmtp++:'n';
+		/*
+		 * ipnx: V7's UPPER CASE IS long, OR double.  %D, %O and %U had no
+		 * meaning in this 1993 pANS member and stopped the scan; %F had none
+		 * either; and %E stored a float where V7 stored a double.  Every
+		 * user in this tree means V7 -- view2d's %E into doubles, worm's tcl
+		 * %F -- so with no h, l or L given these take V7's size.  vfprintf.c
+		 * has the printf half and the measurement.
+		 */
+		if(type=='n' && (*fmtp=='D' || *fmtp=='O' || *fmtp=='U' || *fmtp=='E' || *fmtp=='F'))
+			type='l';
 		if(!icvt[*fmtp]) goto NonSpecial;
 		if(!(*icvt[*fmtp])(f, &args, store, width, type))
 			return ncvt?ncvt:feof(f)?EOF:0;
