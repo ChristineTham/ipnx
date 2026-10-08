@@ -501,14 +501,29 @@ make 'node_t.c'`. A copy of the directory built, because a copy's dates are all 
 **The other reported items.** `trek`'s `longjmp` has its second argument. `/usr/lib/eign`
 stays cref's: no manifest names the file, so nothing says which program V10 shipped it for, and
 `mkey -c` (`mkey1.c:31-33`) already lets `refer`'s indexer name a word list. `Units.bin` stays
-mode 666, the cache `units.y:425-427` means it to be. The committed golden's `/usr/ipc/log/tcp`
-is empty: the torn line seen there earlier came from the build machine's own boots and was
-cleared before the image was made. `tcpmgr`'s log writes are `lseek` then `write`
-(`mgrs/common/log.c`) on a system with no append mode — `fcntl.h` has only the three access
-modes — so two separate opens could overwrite each other. One `tcpmgr` never makes two:
-`detach.c:21` opens the log once, after its own fork, and the dialer and listener fork from
-that (`main.c:78`), so every writer shares one offset. Only a second `tcpmgr` started beside
-the first could tear a line, and nothing here starts one.
+mode 666, the cache `units.y:425-427` means it to be.
+
+**And `tcpmgr`'s torn log line was the kernel's.** It was ` 0` on a line of its own: the
+61-byte `announced to fs as tcp` written over the 64-byte `announced to network as 0`, whose
+last three bytes stayed. The listener and the dialer write the log through one descriptor —
+`detach.c:21` opens it once and both fork from that at `main.c:78` — so their shared offset
+should have kept them apart, and the first draft of this pass said it did. It did not, because
+`write()` in `os/sys2.c` copied `fp->f_offset` a line before `plock(ip)`. When the process
+holding the lock slept in `writei` — and the first log write after a boot must read the log's
+partial last block from disk — the other took the same offset, waited for the lock, and wrote
+its line on the first one. `tools/v10/sharedwrite.c` shows it without `tcpmgr`: a child
+writing 4 MB and its parent writing markers through one descriptor. On the tape's kernel it
+failed three runs of three, each time 4 of the child's bytes gone under a marker and 4 NULs
+where the offset had already moved on. `read` and `write` now take the offset again
+once they hold the lock — two lines in `os/sys2.c`, delivered by a `build/mkfiles` row.
+`dirread` (`os/sys3.c:200`) takes its
+offset in the same order and is left as the tape has it: nothing here reads one directory from
+two processes at once. The golden still ships the log empty.
+
+**And a NUL that was not there.** Reading the log again for this showed a `\0` after its
+last newline. V10's `od` reads a word at a time and prints the pad of an odd-length file —
+`echo ab | od -c` shows `a b \n \0` over `0000003` — so the 125-byte log looked one byte
+longer than it was. The last offset `od` prints is the length.
 
 ## 1. Defects in the build as it stands
 

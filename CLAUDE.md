@@ -365,10 +365,11 @@ one process with a target parameter builds either disk — and a rule that ignor
 therefore writes the golden disk's contents onto the machine building it, which is what
 `mkimage:77`'s `mk ROOT=/v10 world` makes live. `.patched` and `.ranlib` are plain stamp
 files. Times **are** compared: the `./installed` predicate 424 rules once carried is gone
-(`mkfile:23-26`), though six comments in that file still describe it as live and one of them
-is the stated reason for the `config:V:` target — unresolved, and recorded in
-`docs/v10-gaps.md`. `docs/v10-build.md` describes the whole of it, read off the scripts
-themselves — where that document and a script disagree, the script is right.
+(`mkfile:23-26`). Six comments described it as live until 8 Oct 2026 and are history now;
+`config:V:`, which one of them justified, stays as the one command that reinstalls every
+configuration file after hand edits (`docs/v10-gaps.md`). `docs/v10-build.md` describes the
+whole of it, read off the scripts themselves — where that document and a script disagree,
+the script is right.
 
 Two invariants worth knowing before adding a rule. **`ipnxclean` needs no maintenance when
 you add one**: `/usr/ipnx/derived` is a set difference of the `build/usrtrees` roots taken
@@ -415,6 +416,9 @@ status 0.
   as end of file: `write(1, "a\n", 2); write(1, "", 0); write(1, "b\n", 2)` through `tee` or
   `cat` delivers `a` alone, and the writer dies of SIGPIPE on its next write. A whole build
   piped through `tee` stopped in `build1` with status 1 and no message. Log to a file.
+- **V10's `od` pads an odd-length file to a word**, and `od -c` prints the pad as `\0`:
+  `echo ab | od -c` shows four characters over `0000003`. The last offset is the length. A
+  clean 125-byte log read as one ending in a NUL, and was chased as a fault.
 - **The console drops anything past 256 bytes on a line and says nothing.**
   `v10/usr/sys/io/nttyld.c:28` is `#define CANBSIZ 256` and `:348` is
   `static char canonb[CANBSIZ]`. A 330-byte `chmod` typed by a harness was truncated, the

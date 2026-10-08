@@ -60,6 +60,14 @@ read()
 		u.u_offset = fp->f_offset;
 		if((ip->i_mode&(IFCHR&IFBLK)) == 0 && ip->i_sptr==NULL) {
 			plock(ip);
+			/* ipnx: the offset again, under the lock.  Taken only
+			 * before plock, a shared f_offset is stale whenever the
+			 * process holding the lock sleeps in readi or writei,
+			 * and both then use it: two processes writing one file
+			 * through one descriptor put the second write on the
+			 * first's bytes and left a hole after them.  tcpmgr's
+			 * log tore that way at boot; see docs/v10-gaps.md. */
+			u.u_offset = fp->f_offset;
 			readi(ip);
 			prele(ip);
 		} else
@@ -111,6 +119,7 @@ write()
 		u.u_offset = fp->f_offset;
 		if((ip->i_mode&(IFCHR&IFBLK)) == 0 && ip->i_sptr==0) {
 			plock(ip);
+			u.u_offset = fp->f_offset;	/* ipnx: see read() */
 			writei(ip);
 			prele(ip);
 		} else

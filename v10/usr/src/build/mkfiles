@@ -570,6 +570,7 @@ sys/lib/conf.mflow
 sys/md/mba.c
 sys/md/ubanaut.c
 sys/mkconf/readconf.c
+sys/os/sys2.c
 vol2/ADM/defns
 vol2/ADM/mkfile
 vol2/anim/makefile
