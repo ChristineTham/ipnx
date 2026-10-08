@@ -232,6 +232,13 @@ class V10FS(object):
         ip = self.lookup(start)
         if ip is None:
             raise SystemExit("v10fs: no %s on %s:%s" % (start, self.path, self.part))
+        # A FILE IS ITS OWN LISTING.  readdir parses any inode's blocks as
+        # 16-byte entries, so `ls IMAGE /usr/lib/eign' printed the file's
+        # bytes as a directory of junk names (8 Oct 2026) -- which made a file
+        # that was there read as one that was garbage.
+        if not ip.isdir:
+            yield posixpath.normpath("/" + start.lstrip("/")), ip
+            return
         seen = set()
         stack = [(start.rstrip("/") or "", ip)]
         while stack:

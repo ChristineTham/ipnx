@@ -27,7 +27,8 @@ FOUR FACTS ABOUT THIS CONSOLE, each of which cost a run:
 
 3. 256 BYTES IS THE LIMIT ON A LINE.  See cmd() below.
 
-4. THE MACHINE IS HALTED, NOT DROPPED.  See close() below.
+4. THE MACHINE IS HALTED, NOT DROPPED.  See close() below.  A halt /etc/down
+   refuses is tried once more and then reported, with exit status 4.
 """
 
 import os, pty, re, select, subprocess, sys, time
@@ -83,7 +84,9 @@ class Guest:
             m = rx.search(self.buf)
             if m:
                 self.buf = self.buf[m.end():]
-                return True
+                # The text matched, so a caller with alternatives can tell
+                # which arrived; it is never empty, so it still reads as true.
+                return m.group(0) or True
             if not self.read(min(5, end - time.time())):
                 break
         return False
@@ -150,9 +153,27 @@ class Guest:
             self.send("cd /\r")
             self.read(3)
             self.send("/etc/down\r")
-            halted = self.wait_for(r"HALT instruction|sim>", 240)
+            got = self.wait_for(r"HALT instruction|sim>|NOT halting", 240)
+            # A REFUSED HALT IS TRIED ONCE MORE, AND THEN SAID OUT LOUD.  down
+            # refuses when umount -a finds a filesystem still held, and on
+            # 8 Oct 2026 one halt in six did, with tcpmgr still exiting from
+            # down's own kill.  This used to wait out its 240 seconds, ^E and
+            # quit -- the disk left marked mounted for the next boot's fsck --
+            # and exit 0, so the run read as clean.  By the time down says so
+            # its kill has taken this login shell and init has put login: back
+            # on the console, so the retry logs in first.
+            if got == "NOT halting":
+                self.read(5)
+                self.send("root\r")
+                self.read(5)
+                self.send("cd /\r")
+                self.read(3)
+                self.send("/etc/down\r")
+                got = self.wait_for(r"HALT instruction|sim>|NOT halting", 240)
+            halted = bool(got) and got != "NOT halting"
         except Exception:
             halted = False
+        self.halted = halted
 
         # ^E ONLY IF THE HALT DID NOT GET US TO THE PROMPT, AND THE TEST IS THE
         # FLAG, NOT A SECOND WAIT.  Sending ^E at a prompt that is already
@@ -299,6 +320,11 @@ run FA02
                 print("   %s" % l)
         print()
     g.close()
+    if not g.halted:
+        print("HALT FAILED -- /etc/down refused twice or never answered; the "
+              "disk was left mounted and the next boot's fsck will repair it. "
+              "See %s.log" % script)
+        sys.exit(4)
 
 
 if __name__ == "__main__":

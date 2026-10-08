@@ -264,6 +264,15 @@ the rule the directory is built around.
 | `proto-dev` | every node `/dev` needs | `tools/v10-proto.py` → it → `tools/v10-makedev.py` → `mkdev` |
 | `mkcheck` | what a machine must already have before the mkfile will run | by hand |
 
+`build/etc` and `build/v8` are not lists but **what the build ships as it is**. `build/etc` is
+the configuration (`rc`, `fstab`, `passwd` …) and, since 8 Oct 2026, data no tape carries:
+`dst` (ours), `Units` and `Monetary.Units` (generated from the tape's own old units table by
+`tools/v10-units.py`, whose `--check` keeps them in step), `hyphen.tex` (Knuth's, from Plan 9's
+tree) and the mail system's `upas.*`. `build/v8` is byte-identical to this repository's `v8/`:
+five sources `patch` copies into the tree, and the data `words`, `lib.b`, `fortunes`, `quiz.k/`
+and `cunumber`. `mkbuild` copies both by listing them, so a new file arrives on its first
+round; `build/v8/README` says where each came from.
+
 ### Case: the survivor is what the build names
 
 Where two tape paths differ only in case, exactly one keeps its name, and **the survivor is
@@ -348,12 +357,17 @@ Each is written into more than one script because each was learned the same way.
 Four tasks finish V10. The first two are work on this tree; the third and fourth need the
 emulator and the app.
 
-**1. The data files V10 is missing, from V8.** `tools/v10-datafiles.py` asks the source rather
-than a list: every `/usr/lib` and `/usr/dict` path the tree names, against what the mkfile
-installs. **19 are in neither tree and V8 has them at the identical path** — `/usr/dict/words`,
-`eign`, `units`, `lib.b`, `cunumber`, `Mail.rc`, `lint/llib-port`, `tmac/tmac.cs`, the seven
-`macros/*` of the mm package, `upas/forwardlist`, and three uucp limits files. Bring them
-across per file, with the provenance recorded.
+**1. The data files V10 is missing, from V8 — done, 8 Oct 2026.** `tools/v10-datafiles.py`
+asks the source rather than a list: every `/usr/lib` and `/usr/dict` path the tree names,
+against what the mkfile installs. It found 19 that V8 has at the identical path. `words`,
+`lib.b` and `cunumber` are imported, under `build/v8`. `tmac.cs` and the seven `macros/*` were
+already built, and so is an `eign` — the tool reads source, so it cannot see a generated file;
+but that `eign` is cref's table and not V8's word list ([v10-gaps.md](v10-gaps.md), fourth
+status pass). The rest are wanted by nothing installed: `units` is the old program's table
+(V10's reads `Units`, translated from the tape's own), `Mail.rc` is Berkeley Mail's, which is
+not built, `lint -p` reads `llib-port.ln`, which is installed, and `upas/forwardlist` and
+uucp's `Maxuuxqts` and `Maxuuscheds` are site policy whose absence means no limit
+(`chkfwd.c:31-33`, `uuxqt.c:104-106`, `uusched.c:62-64`). `uucp/Systems` is a site's own.
 
 **2. `/usr/src`, read file by file — done, acted on, and written up in
 [v10-gaps.md](v10-gaps.md).** Every one of the 670 directories was walked in full, against
@@ -377,10 +391,11 @@ Every gap the reading claimed is real on the machine; three of the fixes for the
 said why. `ideal` builds two of its four filters. What is still unrun: the ownership installs
 and the three ROOT fixes, which need a `mk ROOT=/v10 world` against a second disk.
 
-What is still open there: the rest of §3 (fifteen packages declined for a reason the tree
-contradicts — the decision may still be right, only the reason is wrong), §5 (data no tape
-carries, which is task 1), `/usr/lib/upas`, `backup.old`'s 23, `sky`, and `ipc/`.
-`tools/v10-datafiles.py` re-runs the data-file half of the measurement at any time.
+What was still open there was closed on 8 Oct 2026 — `units`, `/lib/dst`, `hyphen.tex`,
+`trek`, mail, `ipc/`, `sky`, `sml`, `dist`, the PDP-11 tools and the rest of §3 that the tapes
+can build — and v10-gaps.md's fourth status pass lists what stays, each with its reason: C++,
+data on no tape, and a few decisions. `tools/v10-datafiles.py` re-runs the data-file half of
+the measurement at any time.
 
 **3. `/usr/jerq` or `/usr/blit` against the DMD emulator.** The host side is on the tape as a
 VAX binary; the terminal side is the open question. Nothing here has been tried yet.

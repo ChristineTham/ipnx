@@ -210,8 +210,10 @@ bin:V:	$BIN
 
 # ---- stamps ----------------------------------------------------------------
 # Nothing else makes these.  mkimage makes /v10, /v10/usr, /v10/usr/src,
-# /v10/usr/blit and /v10/unix, and mkdev makes /v10/dev, but not the seven
-# below: five are where this mkfile installs, and two are needed at boot --
+# /v10/usr/blit and /v10/unix, and mkdev makes /v10/dev, but not the
+# twenty-three below.  This said `seven' and the list outgrew it: most are
+# where this mkfile installs or where an installed program spools (at's
+# /usr/spool/at, upas's /usr/spool/mail), and two are needed at boot --
 # init.c:23 is `char wtmpf[] = "/usr/adm/wtmp"', and /tmp is where cc and lcc
 # write.  EVERY PARENT COMES BEFORE ITS CHILDREN: usr/tmp sat above usr, which
 # only ever worked because /v10/usr was a mounted filesystem and so already
@@ -736,7 +738,9 @@ $ROOT/usr/bin/qns: $IPC/bin/con
 # internet tools are the ones its mkfile names for /usr/bin (BINS); of its
 # MGRS, udpconfig goes with the managers and ipconfig, routed and
 # dkipconfig stay out -- dipconfig replaces the first here, and the other
-# two serve routing and Datakit this machine does not do.
+# two serve routing and Datakit this machine does not do.  netstat needs the
+# tape's <sys/ethernet.h>, which P_CMD_ether_all now puts back as soon as it
+# has built -- see the note there.
 P_IPC_mgrs_all:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a
 	cd $IPC/mgrs/common; mk libcommon.a || echo 'ipc libcommon: FAILED'
 	cd $IPC/mgrs/tcpmgr; mk tcpmgr || echo 'tcpmgr: FAILED'
@@ -754,7 +758,13 @@ $ROOT/usr/ipc/mgrs/tcpmgr: $IPC/mgrs/tcpmgr/tcpmgr
 	test -d $ROOT/usr/ipc || mkdir $ROOT/usr/ipc
 	test -d $ROOT/usr/ipc/mgrs || mkdir $ROOT/usr/ipc/mgrs
 	test -d $ROOT/usr/ipc/log || mkdir $ROOT/usr/ipc/log
-	cp $IPC/mgrs/tcpmgr/tcpmgr $ROOT/usr/ipc/mgrs/tcpmgr && strip $ROOT/usr/ipc/mgrs/tcpmgr || echo 'tcpmgr: install FAILED'
+	# mv, not cp, as for dipconfig and 9pfs: /etc/rc starts tcpmgr at boot, so
+	# a machine rebuilding itself is running the file this replaces, and cp
+	# onto it answers `Text file busy'.  And it IS replaced on every build
+	# after an ipnxclean, which sweeps tcpmgr's objects and binary from the
+	# source tree as derived, so the next build links a new one.  /etc/down
+	# kills the running copy before it unmounts, which frees the old text.
+	cp $IPC/mgrs/tcpmgr/tcpmgr $ROOT/usr/ipc/mgrs/tcpmgr.new && strip $ROOT/usr/ipc/mgrs/tcpmgr.new && mv $ROOT/usr/ipc/mgrs/tcpmgr.new $ROOT/usr/ipc/mgrs/tcpmgr || echo 'tcpmgr: install FAILED'
 
 $ROOT/usr/ipc/mgrs/svcmgr: $IPC/mgrs/svcmgr/svcmgr $ROOT/usr/ipc/mgrs/tcpmgr
 	cp $IPC/mgrs/svcmgr/svcmgr $ROOT/usr/ipc/mgrs/svcmgr && strip $ROOT/usr/ipc/mgrs/svcmgr || echo 'svcmgr: install FAILED'
@@ -3474,7 +3484,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices $ROOT/usr/lib/cunumber
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $ROOT/usr/lib/upas/gone.fishing $ROOT/usr/lib/upas/gone.msg $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices $ROOT/usr/lib/cunumber
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -5577,6 +5587,14 @@ P_CMD_sml_sml:V:	$PREP $ROOT/usr/bin/compress
 	cd $CMD/sml; rm -rf mo.vax; zcat mo.vax.tar.Z > /usr/tmp/mo.vax.tar && tar xf /usr/tmp/mo.vax.tar || echo 'sml mo: FAILED'
 	rm -f /usr/tmp/mo.vax.tar
 	cd $CMD/sml/src; sh makeml -vax -v9 || echo 'sml: FAILED'
+	# AND THE LINK makeml LEAVES GOES TOO.  makeml:313-317 is `rm -f mo; ln
+	# -s $MO mo' on every run, and a symlink is neither -type f nor -type d to
+	# this find (find.c:563 is an lstat, and the letter for a link is L), so
+	# ipnxbuild's derived list never sees it and ipnxclean never sweeps it.
+	# The first golden with sml in it carried src/mo pointing at a mo.vax the
+	# sweep had removed; tools/v10-tree-check.py --current reported it.
+	# Nothing else the build runs makes a link.
+	rm -f $CMD/sml/src/mo
 
 $CMD/sml/src/sml: P_CMD_sml_sml
 	test -f $CMD/sml/src/sml || echo '$CMD/sml/src/sml: the package did not produce it'
@@ -6514,14 +6532,31 @@ P_CMD_ether_all:V:	$PREP
 	# not $ROOT, as the paragraph above says -- guarded on $ROOT being empty
 	# so a /v10 build skips this whole rule instead of corrupting the
 	# builder's own header with it.
+	#
+	# AND THE SYSTEM'S HEADER GOES BACK THE MOMENT ether IS BUILT, NOT AT THE
+	# END OF THE BUILD.  The tape's copy is the real one -- it is
+	# byte-identical to the kernel's own sys/sys/ethernet.h -- and ether's is
+	# a stale private header that happens to install itself under the same
+	# name.  Left in place until ipnxbuild's restore, it is what every package
+	# compiled after this one sees, and ipc/internet's netstat.c:527 declares
+	# a `struct etherpup' in its Interlan debug table: on 8 Oct 2026 the first
+	# full build with the internet tools in it answered `unknown size' and
+	# `dhost not in this struct/union', mk stopped at netstat, and route,
+	# gettable, arp and udpconfig went unbuilt with it.  The same tools had
+	# built and run on a machine whose header the previous build had already
+	# restored.  dipconfig.c (struct etherpup) escapes only by building
+	# earlier; loopback.c includes the header and uses nothing from it.
 	if test -n "$ROOT"
 	then
 		echo 'ether: skipped, no guest-side product ('"$ROOT"' set)'
 	else
+		cp /usr/include/sys/ethernet.h /usr/tmp/ethsys.h || echo 'ether: system ethernet.h not saved'
 		cd $CMD/ether; cp ethernet.h order.h /usr/include/sys
 		# ipconfig calls tcp_addr(), a Bell library function on no tape;
 		# two of the three configs build.
 		cd $CMD/ether; mk lib netconfig arpconfig || echo 'ether: FAILED'
+		cp /usr/tmp/ethsys.h /usr/include/sys/ethernet.h || echo 'ether: system ethernet.h NOT RESTORED'
+		rm -f /usr/tmp/ethsys.h
 	fi
 
 $CMD/ether/netconfig: P_CMD_ether_all
@@ -6579,6 +6614,22 @@ $ROOT/usr/lib/upas/rewrite: $GEN/etc/upas.rewrite
 $ROOT/usr/lib/upas/namefiles: $GEN/etc/upas.namefiles $GEN/etc/upas.names
 	cp $GEN/etc/upas.namefiles $ROOT/usr/lib/upas/namefiles || echo 'upas namefiles: FAILED'
 	cp $GEN/etc/upas.names $ROOT/usr/lib/upas/names.local || echo 'upas names: FAILED'
+
+# THE VACATION RESPONDER, mail(1):264-306's `Pipe to
+# /usr/lib/upas/gone.fishing', and its default message.  misc/mkfile's
+# install.fish puts both here, the script through the sed.file /bin/mail
+# goes through -- but gone.fishing holds neither LIBDIR nor HOSTNAME, so a
+# copy is the same file -- and chowns both to bin (3).  The mail install
+# above was misc's install.mail.sh alone until 8 Oct 2026; the path scan of
+# that day's golden found mail(1) naming these.  misc's third program,
+# notify (`mail -n'), has a rule and no notify.c on any tape.
+$ROOT/usr/lib/upas/gone.fishing: $CMD/nupas/misc/gone.fishing
+	cp $CMD/nupas/misc/gone.fishing $ROOT/usr/lib/upas/gone.fishing || echo 'gone.fishing: FAILED'
+	/etc/chown 3 $ROOT/usr/lib/upas/gone.fishing && chmod 775 $ROOT/usr/lib/upas/gone.fishing || echo 'gone.fishing: mode FAILED'
+
+$ROOT/usr/lib/upas/gone.msg: $CMD/nupas/misc/gone.msg
+	cp $CMD/nupas/misc/gone.msg $ROOT/usr/lib/upas/gone.msg || echo 'gone.msg: FAILED'
+	/etc/chown 3 $ROOT/usr/lib/upas/gone.msg && chmod 644 $ROOT/usr/lib/upas/gone.msg || echo 'gone.msg: mode FAILED'
 
 
 # DATAKIT'S USERLAND.  dk/libc makes libdk.a; dk/cmd's `all' makes eleven

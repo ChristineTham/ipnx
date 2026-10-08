@@ -11,7 +11,7 @@ the `S`.
 |---|---|---|
 | `ipnx-v8-rp07.img.tar.bz2` | 10.6 MB | the Eighth Edition golden, **as this project builds it** |
 | `v10.tar.bz2` | 3.3 MB | the V10 working disk `tools/v10-reset.sh` restores to `run/v10` |
-| `v10-golden.tar.bz2.aa` + `.ab` | 138 MB | the V10 golden, in halves — see below |
+| `v10-golden.tar.bz2.aa` + `.ab` | 140 MB | the V10 golden, in halves — see below |
 
 ```bash
 git lfs pull                                            # see below
@@ -26,7 +26,7 @@ those three files are 132-byte pointers until `git lfs pull` fetches them. `tar`
 answers a pointer with `not a bzip2 file` — true, and no help at all about why,
 which is why `tools/v10-reset.sh` checks for the pointer and names the command.
 
-The golden is **committed in halves of 72,546,388 and 72,546,387 bytes** —
+The golden is **committed in halves of 73,397,485 bytes each** —
 `split -n 2` of the 8 Oct 2026 archive — because GitHub refuses a file over
 100 MB. The LFS filter matches `*.tar.bz2` and so does not take the `.aa`/`.ab`
 suffixes — they are ordinary committed blobs, present in every clone. Join them
@@ -36,7 +36,7 @@ by streaming, never on disk:
 cat v10-golden.tar.bz2.a? | tar -xSjf - -C ../run
 ```
 
-`cat ... > v10-golden.tar.bz2` leaves a 138 MB file that `.gitignore`'s
+`cat ... > v10-golden.tar.bz2` leaves a 140 MB file that `.gitignore`'s
 `!image/*.tar.bz2` exception does **not** ignore, so it shows up untracked and
 invites exactly the commit the halves exist to prevent.
 

@@ -150,6 +150,12 @@ A boot with **no** server listening is fine: `/etc/rc` backgrounds both mounts a
 them, so the machine reaches `login:` with `/n/macos` and `/n/home` simply empty. That is
 checked, not assumed.
 
+**`/etc/rc` also starts `tcpmgr`**, after a five-second sleep, so `telnet`, `con` and `rcp`
+dial out through `/cs/tcp` (`telnet 10.0.2.2 PORT` reaches the host). Its two `announced to`
+lines reach `/dev/console` before `login:` whatever `rc` redirects, and `/etc/down` kills it
+before unmounting — retrying `umount -a`, because one halt in six once met a `tcpmgr` that
+had not finished exiting. `tools/v10drive.py` exits 4 when a halt is refused twice.
+
 `image/` holds the **committed compressed** archives; `run/` holds the **uncompressed
 working** disks restored from them. Two directories, on purpose.
 
@@ -191,13 +197,14 @@ must exist before the mkfile will run.
 
 **V10 is not a complete distribution, and the measure is the tape's own.**
 `v10/usr/src/cmd/Admin/{binfiles,etcfiles,libfiles,ulibfiles}` are the manifests of what a
-V10 machine holds. Against them: 4 of `/bin`'s 57 and 4 of `/etc`'s 56 are not built (each
-with a reason), and **23 of `/usr/lib`'s 50 are missing** — 27 were, before `macros`, `uucp`,
-`Rpull` and `Rpush` went in. Counting a name present is weaker than it sounds: `tmac` counted
-before, because two unrelated rules made the directory, and it held no macro package, which
-is why `man(1)` could not format a page; `spell` counted while `/usr/lib/spell/brspell` was
-**zero bytes** on the shipped disk, because the rule that writes it died and `mv` created the
-name anyway. Check a claim about completeness against those
+V10 machine holds. Against them: 2 of `/bin`'s 57 and 4 of `/etc`'s 56 are not built (each
+with a reason), and **16 of `/usr/lib`'s 50 are missing** — 27 were, before `macros`, `uucp`,
+`Rpull` and `Rpush` went in, and 23 before the PDP-11 cross tools, `lib.b` and `cunumber`;
+`docs/v10-gaps.md` says why each that remains stays. Counting a name present is weaker than
+it sounds: `tmac` counted before, because two unrelated rules made the directory, and it held
+no macro package, which is why `man(1)` could not format a page; `spell` counted while
+`/usr/lib/spell/brspell` was **zero bytes** on the shipped disk, because the rule that writes
+it died and `mv` created the name anyway. Check a claim about completeness against those
 lists, never against a pattern over the source tree — and check what is *in* a directory the
 list names, not that it exists, and that what is in it is not empty.
 

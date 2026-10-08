@@ -32,7 +32,18 @@ kill -9 `ls | egrep -v '^0*([012]|'$$')$'` > /dev/null 2>&1
 cd /
 sync
 sync
-if /etc/umount -a
+
+# AND AGAIN, BECAUSE A KILL IS NOT AN EXIT.  kill -9 only posts the signal;
+# each process still has to run, and its exit closes its files -- for
+# tcpmgr, which /etc/rc starts, that includes a TCP stream, and closing one
+# can wait.  On 8 Oct 2026 one halt in six with tcpmgr running answered
+# `/usr: In use' and refused; the same command sequence run again halted, and
+# a ps three seconds before its halt showed nothing on /usr but tcpmgr's two
+# processes, which this kill takes.  umount -a clears each entry it manages
+# to unmount from /etc/mtab (umount.c:42-52), so a second pass tries only
+# what is left.  sleep is /usr/bin's, which is still mounted in exactly the
+# case this is for.  Only the last attempt may complain.
+if /etc/umount -a 2>/dev/null || { sleep 5; /etc/umount -a 2>/dev/null; } || { sleep 15; /etc/umount -a; }
 then
     sync
     /etc/halt

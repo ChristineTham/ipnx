@@ -47,9 +47,11 @@ disk.*
 **Done.** All of §1. In §2, every product the build actually installs. In §4: the macro
 packages, uucp's destinations and set-uid bits, `/usr/lib/tabset`, `grap.defines`, matlab's
 help database, spitbol's error text, atc's flow files, dict's ten helpers, worm's six,
-ideal's four filters, `lcomp`, learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`,
-`psych` and `rain`. In §3: the reasons recorded for `ancient.nroff`, `learn` and `dk`'s four
-`/etc` programs have been replaced with ones the tree supports.
+ideal's four filters, `lcomp`, learn's whole lesson tree, `Rpull`/`Rpush`, and `canfield`.
+*CORRECTED*: this paragraph also said `psych` and `rain`, and neither was built — `psych`
+wanted the classic `plot(3)` and `rain` the `gtty`/`stty` this libc deleted; both are built
+since 8 Oct 2026 (the fourth status pass). In §3: the reasons recorded for `ancient.nroff`,
+`learn` and `dk`'s four `/etc` programs have been replaced with ones the tree supports.
 
 **Four claims in the reading below were wrong and are corrected in place**, each marked
 *CORRECTED*: cyntax's leak is real but one level lower than stated; `ex`, `struct` and
@@ -60,10 +62,8 @@ V10 commands at all.
 **Three more `strip` defects** of the same shape as §1.1 were found by a better detector and
 fixed with it.
 
-**Still open**, and each needs a decision rather than a patch: the rest of §3 (fifteen
-packages declined for a reason the tree contradicts — the decision may still be right), §5
-(data no tape carries, which is the `/usr/dict` import), §6, and `ipc/`, which is essentially
-unbuilt.
+**Still open** when this was written: the rest of §3, §5, §6 and `ipc/`. The fourth status
+pass below closes most of it and lists what remains, each with the reason it stays.
 
 ### Second status pass, 2026-09-18: the failures a full `ipnxbuild` reported
 
@@ -111,7 +111,9 @@ thirds of the stripes belonged to areas nothing had freed. Declaring the minors 
 and `0103` fixes it; the bit is invisible to the driver (`UNIT()` masks it with `027`,
 `PART()` with `07`) and a swap area has no filesystem to read it. Measured after: all three
 `swapon` calls answer `In use`, `backup.old` builds, and `spell` builds with the tape's own
-array sizes.
+array sizes. *CORRECTED 8 Oct 2026, from every boot log since*: only `ra01` answers `In use` —
+it is index 0, which `sw.c` frees at boot itself — and `ra02` and `ra03` attach and say
+nothing, which is what success looks like.
 
 **And a delivery gap that would have made that fix dead code.** `$SYS/ipnx/ipnx-v10.m` and
 `$SYS/ipnx/mkfile` reached a machine by one route only — `build/patch:2244,2255` — and
@@ -201,11 +203,12 @@ The tape-drive panic measurement of 17 Sep was only in that one; the RA81/RA73 s
 newer in the shipping one. `ipnx.mkfile` had the same duplicate, byte-identical only by
 luck. The note is merged into the shipping copy and both duplicates are gone.
 
-**One inconsistency found while working and not yet resolved:** `build/mkfile:23-26` says the
+**One inconsistency found while working — RESOLVED 8 Oct 2026:** `build/mkfile:23-26` says the
 `./installed` predicate "is gone", and there is no `:P` attribute and no `installed` script
-anywhere — but six comments still describe it as live, including the one that justifies the
-whole `config:V:` target. Either those comments or that target's reason needs rewriting, and
-which one is a question for whoever knows why `config` was added.
+anywhere — but six comments still described it as live, including the one that justifies the
+whole `config:V:` target. The comments were the stale half; they are rewritten as history, and
+`config:V:` stays for the reason that still holds: one command that reinstalls every
+configuration file after hand edits on a machine. Nothing in the build calls it.
 
 ### Third status pass, 2026-10-08: the golden rebuilt, and three weeks of edits built
 
@@ -288,6 +291,150 @@ and `-mm` read macro files from `/usr/lib` where v10 keeps them in `/usr/lib/tma
 had no `bbexit.o`, `pxp`'s help was under another name, `uustat -p` had no `uups`, and
 `lint -p` read a `llib-port.ln` installed as `llib-lport.ln`. All fixed in `build/mkfile`,
 `cref/dr.c` and `tbl/t1.c`; the tape gaps it found are §5's.
+
+### Fourth status pass, 2026-10-08: the gaps closed
+
+*Asked to close every gap this document lists. Each row was built and run on a booted copy of
+the golden with `tools/v10drive.py` — six rounds — before the golden was rebuilt with all of
+it; "measured" means that machine said so.*
+
+| Gap | What was in the way | Fix | Measured |
+|---|---|---|---|
+| `units` could not start (§5) | no tape carries `/usr/lib/Units`; the one table on the tapes, `cmd/units/old/usr.lib.units`, is in the old program's syntax, which `units.y` rejects line by line | `tools/v10-units.py` translates it and proves the translation with ports of both readers: 484 of 484 units agree to 1e-12, and the C programs compiled on the host agree too. The money goes to `Monetary.Units`, `units.y`'s second file. Five are carried as comments, each with its reason: two zero exchange rates, their two aliases, and the roofer's `square`, which `units.y` lexes as its operator | `15 pounds force/sq in` in `atm` is `1.02069`; the second run reads `Units.bin` |
+| the machine kept standard time all year (§5) | `ctime.c:104-118` reads `/lib/dst`, on no tape | `build/etc/dst`, ours: the US rules since 1967 | 1215000000 prints 08:00 (EDT), 1200000000 16:20 (EST); `date` says EDT |
+| `look`, `hangman`, `bc -l`, `fortune`, `quiz` and `cu` read data no tape carries (§5) | — | `words`, `lib.b`, `fortunes`, `quiz.k/` and `cunumber` (empty in v8 too), byte-identical from `v8/`, under `build/v8` | `look`, `bc -l`, `fortune` and `quiz` answer |
+| `troff` and `nroff` warned `can't find hyphen.tex` (§5) | TeX is on no tape | Knuth's patterns, unmodified, from Plan 9's tree, at troff's own `ALTHYPHENS`: 4,447 patterns, 44,298 of `n8.c`'s 50,000 bytes | `interna-tional-ization`, and no warning |
+| `trek` (§4's games) | PDP-11 C: V6's global member names, initialisers without `=`, `1e50` past the VAX float, untyped `schedule`/`bmove`/`ctime`, `a68.h`'s indented directives, a private `printf` stepping at PDP-11 sizes, `gtty`/`stty`, and a save that wrote memory from address 0 and read it back over ZMAGIC text | ported in the tree, each file with a `build/mkfiles` row; the save names the game's objects | plays, `dump`s, `restart`s from the dump with the game intact, `quit`s |
+| `ideal -s` (§4) | `idsort` had no rule, and tested `cmd` before setting it | a rule, and `cmd` set as `idfilt.c:104` does | works |
+| `ideal -4`, `-p`; `psych` (§4) | the classic `plot(3)` in `libplot/oldplot` was never built | built in place, linked by path | `4filt`, `pfilt`, `psych` run |
+| `sky` (§3) | `gets`, gone from this libc | patch bounds it to `startab`'s 20 bytes | prints the sky for 1 Jan 1990 |
+| `cfront/demangle` (§3) | `lorder`, on no tape | the archive made by name | `dem __ct__1AFv` is `A::A()` |
+| `movie` (§3) | its install only prints advice | the host half: `stills`, `develop`, `fdevelop`, `newer`, `stills.awk`; the 5620 half has no loader or compiler here | `fdevelop` and `stills` run |
+| `ncurses` (§3) | its libcurses would land on the Berkeley one | `tic` and the terminfo database only | the database is compiled; nothing on this disk reads terminfo yet |
+| `basic/basic` (§3) | `-lPW`, and four names only `junkdefs.c` defines | `PW/`'s four routines and `junkdefs.o`, driven with `make` | `print sqr(2)` is `1.4142135623731` |
+| `boggle`, `rain` (§4) | `gtty`/`stty`; `boggle`'s `setbuf(fileno(stdin))` passed 0 for a `FILE *`; no dictionary | patch appends the pair as `TIOCGETP`/`TIOCSETP`; `setbuf(stdin)`; `bogdict` packed from the imported words | `boggle appl epie moth erhd` lists the board's words |
+| mail (§4, §5) | `nupas` was built and its install deferred | installed by name — `send` and `rmail` set-uid root, `edmail`, `translate`, `/bin/mail`, and `mail(1)`'s vacation responder `gone.fishing` with its `gone.msg`, which the path scan of the rebuilt disk found named and absent — with a local-only `rewrite`, `namefiles` and `postmaster` → `root` (`build/etc/upas.*`) | `mail root` and `mail postmaster` deliver; `mail -p` reads; `gone.fishing` answers a sender once |
+| `ipc/` (§4) | nothing answered under `/cs`, so `con`, `rcp` and `telnet` were inert; the internet tools and managers were unbuilt | `netstat`, `route`, `arp`, `gettable`; `tcpmgr`, `svcmgr`, `udpconfig`; `inservices`; `/etc/rc` starts `tcpmgr` | `telnet 10.0.2.2 7777` reached a port on the host through `/cs/tcp`, with the 9P shares unaffected |
+| PDP-11 cross tools (§3) | the Makefile's `11as: .force1` meets the tape's own `.force1` and answers "up to date" | made in their own directories | `11cc -c`, `11cc -S`, `11nm` |
+| `dist` (§3) | `ENOMEM` (lcc's `errno.h` is ANSI's two names), `-DDOPRNT` (`_doprnt` went with the old stdio), `lcc -g` | the tree's `ftwlk.c` and `conf/mkrules.v10` | builds, and asks for its site's destinations |
+| `sml` (§3) | nothing drove `makeml`, and `zcat \| tar xf -` stops after two members | unpacked from a file, then `makeml -vax -v9` | `1 + 41;` is `val it = 42 : int` |
+| `units(7)` | said `cube` where `units.y:231` takes `cubic`, and named td's file on alice | corrected, and `filnam` and `filref` with it | — |
+
+**Two things the harness got wrong, recorded so nobody chases them.** `mail nobody@nowhere`
+"failed" with `nowhere: not found` for two rounds: the console's line-kill character is `@`,
+the seventh-edition default, so the tty erased everything typed before it and `sh` ran
+`nowhere`. And `compress` was blamed for SML's unpack: `zcat` gives the same 1,331,200 bytes
+whichever way it is built, and the failure was `tar` reading a pipe.
+
+**And the golden rebuild found five of its own**, none of which a round on one package could
+show:
+
+- **`netstat` would not compile inside a full build.** `cmd/ether`'s rule copies its own
+  `<sys/ethernet.h>` over the system's, and the tape's copy — byte-identical to the kernel's
+  `sys/sys/ethernet.h` — came back only at the end of the build, so `netstat.c`, compiled
+  later, had no `struct etherpup` (`netstat.c:527`), and `mk` stopped before `route`,
+  `gettable`, `arp` and `udpconfig`. On the gap round it had built against a header the
+  previous build had restored. `P_CMD_ether_all` now puts the tape's copy back as soon as
+  `ether` is built; the next build made all five and left the header the tape's.
+- **`tcpmgr` is replaced under itself.** With `/etc/rc` starting it, a machine rebuilding
+  itself is running the file that every build after a clean relinks and reinstalls, and `cp`
+  onto a running text answers `Text file busy`. The install is copy-then-`mv`, as
+  `dipconfig`'s and `9pfs`'s are, and the second build replaced it under the running manager.
+- **Its start-up lines landed under `login:`.** `logconsole()` (`mgrs/common/log.c`) opens
+  `/dev/console` itself, so `rc`'s redirection cannot quiet `announced to network` and
+  `announced to fs`, and the backgrounded `(sleep 5; tcpmgr) &` printed both five seconds
+  after the prompt. `rc` now sleeps and starts it in the foreground, as `rc(8)`'s sample does;
+  `detach()` forks, so the foreground costs nothing but the sleep.
+- **SML's build leaves a symlink no sweep can see.** `makeml` makes `src/mo -> ../mo.vax` on
+  every run, and `ipnxbuild`'s snapshots are `find -type f` and `-type d`, which a link is
+  neither, so `ipnxclean` left it pointing at a `mo.vax` it had removed;
+  `tools/v10-tree-check.py --current` reported it. The rule removes it after `makeml`.
+- **One halt in six refused, and the harness called it a pass.** With `tcpmgr` running,
+  `/etc/down`'s single `umount -a` once answered `/usr: In use` and would not halt; the same
+  sequence again halted, and a `ps` before that halt showed nothing on `/usr` but `tcpmgr`'s
+  two processes, which `down`'s `kill -9` takes — so a killed process had not finished
+  exiting. `down` now tries `umount -a` three times, five and fifteen seconds apart; the
+  machine's `sh` runs that form, and every halt since has gone through at the first try, so
+  the retry itself is still unexercised. `tools/v10drive.py` had waited out its 240 seconds,
+  quit simh with the disk marked mounted and exited 0; it now logs in again and retries a
+  refused halt once, and exits 4 if the machine still will not stop.
+
+**What remains, and why it stays.** None of it can be built from what the tapes carry:
+
+- C++. `cfront` has no C bootstrap on any tape, so `asd++`, `dag`, `vsw`, the name server
+  `ipc/mgrs/ns` — addresses are numeric without it — and `libC` wait with it. One route is
+  untried, and it is a binary: V8's golden carries Bell's VAX `cfront` and `munch`
+  (`v8/mk/gen/carry.txt:67,81`), and whether that 1985 compiler can translate any of the
+  tape's seven cfront trees is the first question of the work §3 defers to V11. The working
+  disk `run/v10` holds `vsw` and `dag` binaries, but no compiler.
+- On no tape, and not in `v8/` either: `pico`'s `libfb`, `odist`'s APE, `dimpress`'s
+  `TABLES/`, `weather`'s `bopen` library, `tmac.pm`, TeX, `snocone`'s epilogue, `lex`'s
+  `nrform` and `ebcform`, `word_clout`'s `thes.packed`, `docgen`'s `mmdata`, `msdata` and
+  `wr`, `town`'s gazetteer, `dict`'s `oaldce` and `w7full`, `refer`'s `papers/Ind`, the
+  `-mcs` cover macros, the `lp` command `lp(1)` describes (its daemon half, `lpdaemon` and
+  `lpsend`, is built), `notify` for `mail -n` (`nupas/misc/makefile:35` has a rule and no
+  `notify.c`), and the `aed` and `ubell` tab-stop files two terminfo entries name.
+- `/usr/lib`'s own manifest, `Admin/ulibfiles`, still lacks 16 of its 50. Thirteen have no
+  source anywhere in the tree: `ikeya.term`, `ikeya.tmac`, `libbt.a`, `libg.a`, `libnew.a`,
+  `libport.a`, `libr.a`, `libsa.a`, `libtc.a`, `lisp`, `man`, `manprog` and `tel`. `suftab`
+  has one (`ancient.nroff/makefile:50`), but only the ancient nroff reads it, and the troff
+  installed compiles `suftab.c` in; `ex3.6preserve` and `ex3.6recover` are stale names for
+  the `ex3.7` pair `/etc/rc` runs.
+- Decided, not blocked: `backup.old`'s administrator half and five user programs (Bell's WORM
+  jukebox service), `svcmgr` installed and not started (its `serv` and `auth` files are on no
+  tape), `dkmgr` (no Datakit), ncurses' own `libcurses.a`, and the PDP-11 `fpp` behind
+  `11cc -F`, which the tape's own `PDP11/README:31-40` says only a PDP-11/03-class machine
+  without floating point needs.
+- §6's two `preserve` originals, which only the TUHS tapes hold and this environment cannot
+  reach.
+
+**Found while closing these, and left as they are**, each with the reason.
+- **`ipnxbuild` counts no recipe failure.** Every recipe ends `|| echo '…: FAILED'`, so `mk`
+  carries on and `ipnxbuild`'s status sees only `mk` itself failing; the `FAILED` lines are in
+  the console log and nowhere else. And an install rule copies whatever a failed link left:
+  while `trek` still lacked `gtty`, `ld` left a `trek` of mode 664, and the rule's `cp` and
+  `chmod 711` installed it as a program — which answered `Illegal instruction - core dumped`
+  before printing anything. Grep the log, and leave out the recipe echoes
+  (`grep FAILED | grep -v '|| echo'`), or the count is of recipe text. Not changed: counting
+  means capturing `mk`'s output through a pipe, which loses its exit status in this `sh`.
+- **`Units.bin` is world-writable on purpose.** `units.y:425-427` is `umask(0);
+  creat(buf, 0666)`, a cache any user's run may refresh; it holds the binary's own pointers,
+  and `:359` refuses one older than the binary's compile date (`mkcdate.c`), so a rebuilt
+  `units` cannot read a stale one.
+- **`trek`'s `longjmp(errjmp)` passes one argument of two** (`play.c:94`). Harmless:
+  `main.c:77` ignores what `setjmp` returns.
+- **`c++filt` and `dem` disagree, by design.** `c++filt.c:22-24` drops a leading `_` on the
+  VAX because it reads `nm` output, so it wants `___ct__1AFv` where `dem` wants `__ct__1AFv`.
+- **`/usr/lib/eign` is two programs' file.** `cref -e` reads a hash table there
+  (`cref/dr.c:365`), which the build makes from `esym` with cref's own `make.c`; `refer` and
+  its `mkey` read a word list there (`mkey3.c:2,23-31`, linked into both by
+  `refer/makefile:6,25-28`), which V8 ships and no V10 tape carries. The build installs
+  cref's, so `refer` takes binary for its list of common words and in effect ignores none.
+  V8 never met it: the same `cref` is in `v8/` with the same path and no build file, so V8's
+  `/usr/lib/eign` is the word list. Both claims are Bell's and neither failure stops
+  anything, so neither is moved.
+
+**The result, measured.** Three full builds on a copy of that morning's golden — the first
+stopped short of the internet tools, the second and third built everything and derived the
+same 3,197 files — then a boot that cleared the two linkless files an in-place build leaves,
+and two short rounds that installed the vacation responder and the retrying `/etc/down`. The
+last build printed no `FAILED` and no `did not produce it`; it overwrote 25 files in place,
+all of them `preserve` rows, and restored all 263. Read from the host,
+`tools/v10-tree-check.py --current` finds 27,733 files identical to `v10/usr`, 28 expected
+differences, none pending and none undelivered; there is no linkless inode, root's `/tmp` is
+empty and 17 root inodes are free (§1.7). Against the tape's manifests `/bin` lacks 2 of its
+57 (`iostat`, `rsh`), `/etc` 4 of 56, `/lib` its one (`dknames`) and `/usr/lib` 16 of 50.
+The path scan of installed programs finds 108 absent paths against the morning's 109: ten
+fixed — `/bin/mail`, `/lib/dst`, `words`, `fortunes`, `quiz.k`, both units tables, `lib.b`,
+`cunumber`, `hyphen.tex` — and nine new from the programs this pass installed, of which
+`boglog` and `/lib/names` are optional by design (`boggle.c:501` logs only to a file that
+exists; `names` is `$HOME/lib/names`), `/usr/lib/11` is `11cc`'s prefix, quiz's `areas` is
+prose inside a data file, and `notify`, `lp`, `fpp` and two tab-stop files are listed above. A
+fresh copy boots with a clean `fsck` and `tcpmgr` announcing itself before `login:`, runs
+every row of the table above — `telnet` to the host through `/cs/tcp` among them — and the
+morning's own list (`f77`, Pascal's `42`, `struct`, `spell`, `tar tv`, `lint -p`, `mm -e`),
+and halts; `tools/webterm-check.py` boots it in the browser. The committed halves restore it
+byte for byte.
 
 ## 1. Defects in the build as it stands
 
@@ -377,18 +524,21 @@ the tree) and `/etc/mkimage`, which the verbs table types by name. All three are
 by their rules now — **FIXED** — and the same listing found `/etc/su` and `/bin/newgrp`
 without their set-uid bit (§2).
 
-**1.7 The root filesystem has 22 free inodes** (measured 2026-10-08 on the rebuilt golden:
-`tools/v10fs.py stat run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and
-`s_tinode 22`). It had eight on 18 Sep. `/etc/asd` and `/etc/asd/asdrcv` (651a1ea3) took two,
-`/bin/passwdx`, `/etc/chuck` and `/etc/upchuck` three more — each moved to where the program
-that runs it looks — and nineteen were never the system's at all —
-postscript's man pages, written into the new disk's own `/tmp` by `MAN1DIR=$(ROOT)/tmp` under
-`ROOT=/v10` and hidden there by the `ra04` mount since 4 Sep (§0, third status pass).
-`mkimage:27-33` already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917
-device nodes take most of the i-list — so this is not a fault, but it is a budget, and the
-first new file past it under `/`, `/etc` or `/dev` makes `mkimage` fail with the disk
-half-built. (25 is the in-place golden's count; a disk `mkimage` builds has not been measured
-since the `MAN1DIR` fix, and should not differ.)
+**1.7 The root filesystem has 17 free inodes** (measured 2026-10-08 on the golden of the
+fourth status pass: `fsck` counts 1,071 files of `s_isize 19 blocks (1088 inodes)`). It had
+22 that morning, and the fourth pass took five: `/lib/dst`, `/bin/mail`, `/bin/rmail`, `/cs`,
+and `/cs/tcp`, the file `tcpmgr` creates to mount on (`libipc/ipccreat.c:47-53`), which
+outlives every halt and is reused at the next boot. It had eight on 18 Sep. `/etc/asd` and
+`/etc/asd/asdrcv` (651a1ea3) took two, `/bin/passwdx`, `/etc/chuck` and `/etc/upchuck` three
+more — each moved to where the program that runs it looks — and nineteen were never the
+system's at all — postscript's man pages, written into the new disk's own `/tmp` by
+`MAN1DIR=$(ROOT)/tmp` under `ROOT=/v10` and hidden there by the `ra04` mount since 4 Sep (§0,
+third status pass). `mkimage:27-33` already explains the 1,088 — root is 1,280 4K blocks and
+`proto-dev`'s 917 device nodes take most of the i-list — so this is not a fault, but it is a
+budget, and the first new file past it under `/`, `/etc` or `/dev` makes `mkimage` fail with
+the disk half-built. (The count is the in-place golden's. A disk `mkimage` builds has not been
+measured since the `MAN1DIR` fix; it should hold the same files, less `/cs/tcp` until it first
+boots.)
 
 **1.8 `fsck` never asks for a reboot, so `rc` cannot act on a repaired root.** Every boot
 prints `ROOT MODIFIED`, clean or not: the bit-map free check ends with
@@ -403,7 +553,14 @@ in-place build (the third status pass above has the two linkless files it leaves
 likeliest reason is the first sentence: an `exit(4)` on any root write would make every boot
 a reboot. Measured consequence so far: none — each boot after one that cleared two inodes
 found nothing left to fix. **Not changed**: telling a repair from the routine rewrite needs a
-flag at every fix site, and missing one makes the machine reboot forever. `mkbitfs` takes no inode count —
+flag at every fix site, and missing one makes the machine reboot forever. **And measured since
+(8 Oct 2026): the right exit would stop the machine.** `/etc/reboot -n` on this simulator does
+not reboot — simh's 780 answers the console restart by halting at `sim>` unless a BOOT command
+was saved, and this project's launchers boot with `load -o uda FA00; run FA02` and save none
+— so an `exit(4)` would turn every repaired boot into a halted simulator. What `fsck -p` repairs
+on this root is only ever freeing — linkless inodes and the free counts — so the in-core state
+it leaves stale can hold a block or an inode back until the next boot, and never hands one out
+twice. `mkbitfs` takes no inode count —
 `mkbitfs.c:80` derives it from the size, `(size-2)/(1+ICOUNT)` — so the levers are fewer
 device nodes, a larger root partition in `ra_sizes`, or an argument added to `mkbitfs`.
 
@@ -435,6 +592,8 @@ The whole 5,219-line mkfile carries one `chown` (`sh`, :826) and two set-id inst
 | `/bin/passwdx` | set-uid root, **in `/bin`** | `passwdx.c:2-4`; `passwd.sh:6` runs it from `/bin` — added 8 Oct 2026; it was in `/usr/bin`, 775 |
 | `/etc/su` | set-uid root | `su.c:32-45` setuid()s to the target — added 8 Oct 2026; no makefile says so, because `Admin/Mk`'s `strip && cp` onto an existing file kept a bit set by hand |
 | `/bin/newgrp` | set-uid root | `newgrp.c:41,54`, the same reason — added 8 Oct 2026 |
+| `/usr/lib/upas/send`, `/bin/rmail` | set-uid root, 4755 | `nupas/send/mkfile:41-47`; `send` creates a recipient's mailbox and chowns it to them (`libc/genopen.c:76-77`) — added 8 Oct 2026 with the mail install |
+| `/bin/mail` | owner bin, 775 | `nupas/misc/mkfile:23-26` — added 8 Oct 2026 |
 
 **Blocker — RESOLVED for the products the build installs.** `uucp` (uid 48, gid 1) is the
 tape's own number, from `parms.h:24-25` and again from `v8/etc/passwd`, which ships the
@@ -461,22 +620,22 @@ The decision may still be right — the *reason* needs replacing before anyone c
 
 | package | the mkfile says | the tree says |
 |---|---|---|
-| `dist` | "`SYS` is set nowhere" | `conf/mkconf.v10:1` is `SYS=v10`, reached through two `<` includes. 21 products |
-| `odist` | the same | `odist/mkconf.v10:1` likewise. Real blocker: `/usr/ape` for two of three subdirs; `odist/v10` builds with `lcc`. `pax` (a fourth `odist/` subtree — `libx`, `libodelta`, the pax/cpio/tar command, frozen as 1991 AT&T `ship` shipment archives) isn't one of those three at all: `odist/mkfile`'s own `DIRS=` never names it, and it has no `mkfile` of its own to run even if it were added — a `SYS` fix alone wouldn't reach it |
-| `dimpress` | "`ARGS` is empty" | `dimpress/makefile:100` is `ARGS=all`. Real blocker: no `TABLES/` directory |
-| `asd++` | "`$(ASD)` … the variable is empty" | `asd++/Makefile:5` is `ASD = /usr/lib/asd`. Real blocker: `CC = PTCC` |
-| `basic/basic` | "no `libPW`" | the four routines used are in `basic/basic/PW/`; `LIBLD` is empty in `all` |
-| `sky` | "`all:` with an empty recipe" | `sky/mkfile:1-4` has a four-line recipe producing `sky` |
-| `sml` | "no build file at the top level" | `sml/src/makeml` is a 372-line driver with its own man page; `cd src; makeml -vax -v9` |
-| `PDP11` | "only half of it is here" | `11as/` and `11c/` are both present; only the archiver is absent, which `README:19-28` says is not needed |
-| `cfront` | "C++, deferred to V11" | scoped to seven named dirs; `cfront/demangle/` is plain C (`makefile:7` is `CC = cc`) |
+| `dist` — **BUILT 8 Oct 2026** | "`SYS` is set nowhere" | `conf/mkconf.v10:1` is `SYS=v10`, reached through two `<` includes. 21 products |
+| `odist` — **still out, for the real blocker** | the same | `odist/mkconf.v10:1` likewise. Real blocker: `/usr/ape` for two of three subdirs; `odist/v10` builds with `lcc`. `pax` (a fourth `odist/` subtree — `libx`, `libodelta`, the pax/cpio/tar command, frozen as 1991 AT&T `ship` shipment archives) isn't one of those three at all: `odist/mkfile`'s own `DIRS=` never names it, and it has no `mkfile` of its own to run even if it were added — a `SYS` fix alone wouldn't reach it |
+| `dimpress` — **still out, for the real blocker** | "`ARGS` is empty" | `dimpress/makefile:100` is `ARGS=all`. Real blocker: no `TABLES/` directory |
+| `asd++` — **still out, for the real blocker** | "`$(ASD)` … the variable is empty" | `asd++/Makefile:5` is `ASD = /usr/lib/asd`. Real blocker: `CC = PTCC` |
+| `basic/basic` — **BUILT 8 Oct 2026** | "no `libPW`" | the four routines used are in `basic/basic/PW/`; `LIBLD` is empty in `all` |
+| `sky` — **BUILT 8 Oct 2026** | "`all:` with an empty recipe" | `sky/mkfile:1-4` has a four-line recipe producing `sky` |
+| `sml` — **BUILT 8 Oct 2026** | "no build file at the top level" | `sml/src/makeml` is a 372-line driver with its own man page; `cd src; makeml -vax -v9` |
+| `PDP11` — **BUILT 8 Oct 2026** | "only half of it is here" | `11as/` and `11c/` are both present; only the archiver is absent, which `README:19-28` says is not needed |
+| `cfront` — **`demangle` BUILT 8 Oct 2026** | "C++, deferred to V11" | scoped to seven named dirs; `cfront/demangle/` is plain C (`makefile:7` is `CC = cc`) |
 | `learn` — **REASON REPLACED, PACKAGE NOW BUILT** | "nothing on the tape says where the lesson tree goes" | three files say it: `makefile:15` `LLIB = /usr/lib/learn`, `lib/src/README:3-4`, and `makefile:64-69`, the `check` target, which is a manifest of what `LLIB` must hold. 542 files in `lib/lib/`, not 519 |
 | `dk`'s four `/etc` programs — **REASON REPLACED, DECISION KEPT** | "installed nowhere, exactly as the tape has it" | `dk/cmd/Makefile:49-51` installs all four and set-uids one. The reason that holds: none of the four is in any Admin list, and all four drive Datakit hardware this machine does not have. `Rpull`/`Rpush` from the same install **are** in `ulibfiles` and are now made |
 | `libj`'s `jerq.h` | "the include tree already carries it" | `v10/usr/include/jerq.h` does not exist; the three other copies all differ |
-| `chuck` | listed as not built at :3056 | and built at :5029 — to `/usr/bin`, where the package and `man8/chuck.8` say `/etc`. `upchuck`, which `rc(8)` invokes, is never built |
+| `chuck` — **FIXED** | listed as not built at :3056 | and built at :5029 — to `/usr/bin`, where the package and `man8/chuck.8` say `/etc`. `upchuck`, which `rc(8)` invokes, is never built |
 | `ancient.nroff` — **`macros.d` NOW BUILT** | "its install is `mv nroff /usr/bin`, over the link made here" | true of the parent; `macros.d/makefile:12-15,44-47` writes only `/usr/lib/tmac` and `/usr/lib/macros` and builds no binary but the `ntar` filter its own pipeline uses |
-| `ncurses` | "its `libcurses.a` would land on the Berkeley one" | true of the library; `tic` and the terminfo database are a separate install and collide with nothing |
-| `movie` | "the install target … copies nothing" | true of `movie/mkfile`; `blit.make:43-45` is a real install, and seven of the eight products need only `cc` |
+| `ncurses` — **`tic` AND THE DATABASE BUILT 8 Oct 2026** | "its `libcurses.a` would land on the Berkeley one" | true of the library; `tic` and the terminfo database are a separate install and collide with nothing |
+| `movie` — **HOST HALF BUILT 8 Oct 2026** | "the install target … copies nothing" | true of `movie/mkfile`; `blit.make:43-45` is a real install, and seven of the eight products need only `cc` |
 
 ## 4. Missing installs, with the sources present
 
@@ -510,34 +669,39 @@ install: there is no `Systems` in the tree at all and the other four are in `sam
 as samples, which `uucp/mkfile`'s `cp` target does not copy. They describe a site's modems
 and neighbours. What *was* missing is now in: the destination of six binaries, three
 commands (`uulog`, `uupick`, `uuto`), eight scripts, `Dialers`, and the set-uid bits.
-`learn`, `dict` and `tabset` are also done. `/usr/lib/upas` remains open.
+`learn`, `dict` and `tabset` are also done. `/usr/lib/upas` is done too since 8 Oct 2026: the
+mail system installed, with a routing file for local mail (fourth status pass).
 
-**Programs whose data was never installed — ALL FIXED but `sky`:** `grap` without
+**Programs whose data was never installed — ALL FIXED** (`sky` on 8 Oct 2026): `grap` without
 `/usr/lib/grap.defines`, so every `bullet` and `star` is an undefined name. `matlab` without
 its whole HELP database, both pre-built and present — *CORRECTED*: the two halves of the tape
 disagree about where it lives, `src/helper.f:10-11` (the reader) saying `/usr/lib` and
 `helpset.f:6-7` (the generator) `/usr/local/lib`, and the reader is the one that runs.
 `spitbol` without `vaxspitv35.err`, so every diagnostic is numeric. `sky` without
-`/usr/lib/startab` — still open, `sky` is not built. `atc` without its flow files —
+`/usr/lib/startab` — *FIXED 8 Oct 2026*, with `sky` itself. `atc` without its flow files —
 *CORRECTED*: a missing flow file is **not** an error, `aread.c:115-132` falls through and the
 game plays with no traffic flow, which is not the game but is not a failure either. `rogue`
 cannot record a score at all — `rip.c:107` opens the file `O_RDWR` with no `O_CREAT`.
 
-**Binaries built and then dropped — FIXED but `backup.old`:** `worm` builds fifteen and
+**Binaries built and then dropped — FIXED, and `backup.old`'s remainder decided:** `worm` builds fifteen and
 installs nine (`wdir wreset wmv wtmpdir wmount wcopy` missing). `ideal`'s output filters —
 *CORRECTED*: there are **five** names in `ideal.cmd` (`tfilt`, `pfilt`, `4filt`, `texfilt`,
 `idsort`) and `t` is the **default** (`ideal.cmd:5`), so plain `ideal file` was broken too,
 not merely `-p` and `-tex`; `idfilt/makefile:24` is `install: 4filt tfilt pfilt texfilt`
-*with no recipe*, so the tape builds four and installs none. `idsort` has no build rule
-anywhere, so `-s` stays broken. `learn`'s `tee` and `lcount`. `lcomp`'s driver script,
+*with no recipe*, so the tape builds four and installs none. `idsort` had no build rule
+anywhere, so `-s` stayed broken — *FIXED 8 Oct 2026*. `learn`'s `tee` and `lcount`. `lcomp`'s driver script,
 leaving `/usr/bin/lprint` with nothing to drive it. `refer`'s `lookbib` and `pubindex` —
 *CORRECTED*: these are **not** V10 commands. Neither has a manual page in `v10/usr/man`,
 neither is in any Admin list, and `refer`'s own install target names neither; the tape's
-decision to leave them stands and they are not installed. `backup.old`'s 23 — still open.
+decision to leave them stands and they are not installed. `backup.old`'s 23 — *CORRECTED*:
+all 29 of its programs build, and the golden's `/usr/ipnx/derived` lists every one; nine plus
+`act`, `recover` and `/usr/bin/backup` are installed, and the administrator half and five user
+programs are left out on purpose, as `build/mkfile` records — Bell's WORM jukebox service,
+with its machine names, and no hardware here for it.
 `canfield`, 1,145 lines of buildable curses game that appears **nowhere** in the mkfile while
 every other unbuilt game carries a recorded reason — and `psych` and `rain` were the same,
-all three now built. `boggle` stays out and now says why: `boggle/makedict` reads
-`/usr/dict/words` and no tape carries `/usr/dict`.
+all three now built. `boggle` stayed out because `boggle/makedict` reads `/usr/dict/words`
+and no tape carries `/usr/dict` — built 8 Oct 2026, with the words imported from `v8/`.
 
 **Links never made — FIXED:** `/usr/lib/Rpull` and `/usr/lib/Rpush` — `pull.c:10` and
 `push.c:11` hardcode them as their server, so both installed binaries were inert, and both
@@ -545,7 +709,10 @@ names are in `Admin/ulibfiles`.
 
 **`ipc/` is essentially unbuilt.** The tape's driver names five directories
 (`libipc libin bin mgrs internet`); the build takes four files. `/usr/ipc` is not in
-`usrtrees` at all, and `cyntax` is a hard prerequisite for the whole of it.
+`usrtrees` at all, and `cyntax` is a hard prerequisite for the whole of it. *FIXED 8 Oct
+2026, all but the C++*: `libipc`, `libin` and `bin` were already in; the internet tools,
+`tcpmgr`, `svcmgr` and `udpconfig` are now, `/etc/rc` starts `tcpmgr`, and a dial through
+`/cs/tcp` reaches the host. The name server `ns` is C++ and waits for `cfront`.
 
 **`pico` is not built at all, not merely missing its data.** `cmd/pico/Makefile:12` links
 `-lfb`, and `libfb` is on no tape — only the header `/usr/include/fb.h` survives.
@@ -557,15 +724,22 @@ exists.
 
 ## 5. Data that exists nowhere, so no build work will recover it
 
+*8 Oct 2026: of this list, `units`' tables, `fortunes`, `quiz.k/`, `/usr/dict/words`, `trek`'s
+`a68defs`, `hyphen.tex`, `/lib/dst` and `/bin/mail` are FIXED — translated, imported from
+`v8/` or Plan 9, written, ported or installed, each recorded in the fourth status pass. The
+rest is as described.*
+
 `units`' `/usr/lib/Units` — the program is installed and `units.y:375-381` makes a missing
-table fatal, so `/usr/bin/units` cannot start. `fortune`'s `fortunes`. `quiz`'s `quiz.k/`.
-`word_clout`'s `thes.packed` (760 KB), so the installed game fails on its first line.
-`hangman`'s `/usr/dict/words` — V8 has it. `docgen`'s `mmdata`, `msdata` and `wr`, so `-ms`
+table fatal, so `/usr/bin/units` cannot start. *FIXED: translated from the tape's own old
+table, `cmd/units/old/usr.lib.units`, which is not nowhere after all.* `fortune`'s
+`fortunes`. `quiz`'s `quiz.k/`. `word_clout`'s `thes.packed` (760 KB), so the installed game
+fails on its first line. `hangman`'s `/usr/dict/words` — V8 has it. `docgen`'s `mmdata`, `msdata` and `wr`, so `-ms`
 and `-mm` mode have no data. `town`'s entire gazetteer.
 `lex`'s `nrform`, so `lex -r` cannot work. `snocone`'s `epilogue`, which the compiler copies
 onto the tail of every program it emits — and the stage-2 compiler is built by running the
 stage-1 compiler, so it is produced without one, silently, exit 0. `trek`'s `/usr/lib/a68defs`
-is the one recoverable case: `games/trek/a68.h` is the same macro set under another name.
+is the one recoverable case: `games/trek/a68.h` is the same macro set under another name —
+*FIXED: `trek` includes `a68.h`, and is ported and built.*
 `/usr/lib/tmac/tmac.pm`, the `-mpm` macro package — 43 mkfiles across `vol2` pipe their final
 troff stage through `-mpm` (every paper under `eqn/`, `f77/`, `fm/`, `grap/`, `pi/`, `pic/`,
 `pico/`, `pm/`, `preface/`, and more), and `vol2/pm/pm.ms` is itself Kernighan & Van Wyk's
@@ -583,10 +757,10 @@ templates, or this):
 - **`hyphen.tex`, TeX's hyphenation patterns.** troff's `HYPHALG` is 1 (`tdef.h:152`), so the
   first time a troff or nroff run hyphenates it looks for the patterns, prints `warning: can't
   find hyphen.tex` once, and falls back to the old suffix and digram rules (`n8.c:342-354,
-  436-444`). TeX is on no tape.
+  436-444`). TeX is on no tape. *FIXED 8 Oct 2026: Knuth's patterns, from Plan 9's tree.*
 - **`/lib/dst`, the daylight-saving table.** With the kernel's `dstflag` set, `ctime.c:104-118`
   reads it, and with no table applies no shift at all, so the machine keeps standard time all
-  year.
+  year. *FIXED 8 Oct 2026: `build/etc/dst`, ours.*
 - `lex -e`'s `ebcform` (beside `-r`'s `nrform` above); `/usr/dict/oaldce`, `w7full` and
   `papers/Ind` (`ldefine`, `wdefine`, `refer`'s default index); monk's `apseqnchar`,
   `i300eqnchar` and `im300eqnchar`; termcap's `tabset/aa`, `infoton_tabs` and `stdcrt`;
@@ -595,9 +769,9 @@ templates, or this):
   register `ST` is 1, `tmac.cs:1048-1049`) and `complet.1127` and `cover.1127` (read only
   when a macro is given a `y`, `:475`, `:500`) — so `-mcs` works on its common path.
 - **And `/bin/mail`, which is not this kind.** nupas installs `/bin/mail` and `/bin/rmail`
-  and is built; its install is deferred until its products are proven on the machine
-  (`build/mkfile`, `P_CMD_nupas_v10_all`), so until then `passwd` and `asdrcv` call a mailer
-  that is not there.
+  and is built; its install was deferred until its products were proven on the machine
+  (`build/mkfile`, `P_CMD_nupas_v10_all`), so `passwd` and `asdrcv` called a mailer that was
+  not there. *FIXED 8 Oct 2026: proven, and installed.*
 
 ## 6. Divergences between the repository tree and the machine
 

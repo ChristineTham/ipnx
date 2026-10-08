@@ -89,10 +89,12 @@
 # netfs's header replaces the tape's /usr/include copy.
 18 include/rf.h
 
-# ether installs itself (mkfile:5051-5057): its own rules put ethernet.h and
-# order.h into /usr/include/sys, and the header it installs declares
-# `struct ether_in' where the tape's /usr/include copy declares
-# `struct etherpup'.
+# ether installs itself (mkfile, P_CMD_ether_all): its own rules put
+# ethernet.h and order.h into /usr/include/sys, and the header it installs
+# declares `struct ether_in' where the tape's /usr/include copy declares
+# `struct etherpup'.  That rule now puts the tape's copy back itself as soon
+# as ether is built, because netstat, compiled later in the same build, needs
+# it; this row stays for a build interrupted inside ether's own mk.
 19 include/sys/ethernet.h
 
 # --- TOUCHED, NOT REWRITTEN ----------------------------------------------

@@ -180,13 +180,14 @@ inner loop is two commands — `updatebuild; ipnxbuild`. Every deviation from th
 idempotent block in `patch` with the evidence beside it, and `PATCHES.md` is the long form.
 
 **What is not done is the distribution's completeness.** The tapes carry their own manifests
-of what a V10 machine holds, and against them four of `/bin`'s 57 files are not built (each
-with a reason), four of `/etc`'s 56 have no source on any tape, and **27 of `/usr/lib`'s 50
-are missing** — the PDP-11 cross-toolchain, seven libraries, and troff and man data files,
-some of which V8 carries and V10's tapes do not. Nobody has yet read `/usr/src` through
-against those lists one directory at a time, and that is the next piece of work.
-[docs/v10-build.md](docs/v10-build.md) is the whole of the build, read off the scripts
-themselves.
+of what a V10 machine holds, and against them two of `/bin`'s 57 files are not built (each
+with a reason), four of `/etc`'s 56 have no source on any tape, and **16 of `/usr/lib`'s 50
+are missing** — seven libraries and six other names with no source in the tree, `suftab`,
+which only the uninstalled ancient nroff reads, and two stale `ex3.6` names. 27 were missing
+before the macro packages, uucp, the PDP-11 cross-toolchain and V8's data went in.
+[docs/v10-gaps.md](docs/v10-gaps.md) is `/usr/src` read through against those lists, with
+what was fixed and why the rest stays; [docs/v10-build.md](docs/v10-build.md) is the whole of
+the build, read off the scripts themselves.
 
 **And there was never a pure Tenth Edition to restore.** This is the track's most
 important finding (2026-08-17), and it came out of the tape's own `ar` headers rather than

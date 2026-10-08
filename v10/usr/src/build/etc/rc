@@ -100,14 +100,24 @@ then
 	# creates /cs/tcp and places calls through the TCP the line above pushes
 	# onto ip6 -- its own tcpconfig() wants a /dev/iptcp this machine does
 	# not have, and it carries on without.  rc(8)'s sample starts its
-	# managers here too.  Delayed and backgrounded because tcpconfig is
-	# itself in the background and a boot must not wait on either.
-	# Measured 8 Oct 2026: telnet 10.0.2.2 reached a port on the host
-	# through it, and the 9P shares below were unaffected.  /etc/down's
-	# kill takes it with everything else before umount.
+	# managers here too.  Measured 8 Oct 2026: telnet 10.0.2.2 reached a
+	# port on the host through it, and the 9P shares below were unaffected.
+	# /etc/down's kill takes it with everything else before umount.
+	#
+	# IN THE FOREGROUND, AFTER A SLEEP, THE WAY rc(8)'s SAMPLE DOES IT
+	# (`/usr/ipc/mgrs/dkhup; sleep 10').  The sleep gives the tcpconfig
+	# above, which is in the background, time to push TCP: dialin.c:62-75
+	# retries a failed announce only once a minute, complaining on the
+	# console each time.  And the foreground costs nothing, because
+	# common/detach.c forks and the parent exits -- but it matters for the
+	# console: logconsole() (common/log.c) opens /dev/console itself, so no
+	# redirection here can quiet `announced to network' and `announced to
+	# fs', and this was first a backgrounded `(sleep 5; tcpmgr) &' whose two
+	# lines then arrived five seconds after login:, under the prompt.
 	if test -x /usr/ipc/mgrs/tcpmgr
 	then
-		(sleep 5; /usr/ipc/mgrs/tcpmgr) >/dev/null 2>&1 &
+		sleep 5
+		/usr/ipc/mgrs/tcpmgr
 	fi
 
 	# The host's two shares.  FileShare.swift:46,49 give .macos port 9200
