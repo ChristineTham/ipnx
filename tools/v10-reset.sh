@@ -33,11 +33,12 @@ lfscheck() {
 lfscheck "$IMAGE/v10.tar.bz2" || exit 1
 tar -xSjf "$IMAGE/v10.tar.bz2" -C "$OUT" || exit 1
 
-# THE GOLDEN IS COMMITTED IN HALVES of 72,631,364 bytes, because GitHub refuses
-# a file over 100 MB and .gitattributes' LFS filter matches `image/*.tar.bz2'
-# and so does not take the .aa/.ab suffixes.  Joining them is part of a reset
-# rather than a step somebody is expected to remember -- this script used to
-# name a v10-golden.tar.bz2 that has never existed in a fresh clone.
+# THE GOLDEN IS COMMITTED IN HALVES, of 72,546,388 and 72,546,387 bytes,
+# because GitHub refuses a file over 100 MB and .gitattributes' LFS filter
+# matches `image/*.tar.bz2' and so does not take the .aa/.ab suffixes.
+# Joining them is part of a reset rather than a step somebody is expected to
+# remember -- this script used to name a v10-golden.tar.bz2 that has never
+# existed in a fresh clone.
 #
 # PIPED, NOT JOINED ON DISK.  `cat ... > image/v10-golden.tar.bz2' leaves a
 # 145 MB file that .gitignore's `!image/*.tar.bz2' exception does NOT ignore,

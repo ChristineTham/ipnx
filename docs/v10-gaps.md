@@ -244,11 +244,18 @@ the `${GET} $target` rule, and `mk`'s `$target` is the rule's whole target list 
 **The result, measured.** Four builds on the 18 Sep golden itself — the first on its old
 kernel, the rest on the one that build installed — then one boot that only refreshed
 `build/`. The last build printed no `FAILED` and no `did not produce it`, and its overwrite
-report named one file, `opttsts`, unchanged in content and preserved since.
-`tools/v10-tree-check.py --current` reads 27,685 files identical to `v10/usr`, 27 expected
+report named one file, `opttsts`, unchanged in content and preserved since. That disk was
+committed (4dd60b2e) and then read from the host, which found the leftovers, the swept
+product and the misplaced installs described below; four more builds on it, each followed by a
+clean boot, removed and fixed them (e7208eef to 6da349b3), and the cleaned disk replaced it the same
+day. Its last build printed no `FAILED`, `ipnxclean` kept `flex.skel`, and
+`tools/v10-tree-check.py --current` reads 27,687 files identical to `v10/usr`, 28 expected
 differences, none pending and none undelivered. A fresh copy boots with a clean `fsck` and
-runs `f77`, `struct`, `spell`, Pascal (`42`) and `tar tv`, whose sizes go through `%7D`, and
-mounts `/n/macos`.
+runs `f77`, `struct`, `spell`, Pascal (`42`), `tar tv` (whose sizes go through `%7D`),
+`flex`, `lcc -b` with `bprint`, `cref -c`, `tbl -ms`, `mm -e`, `gram`, `pxp` and `lint -p`, and
+mounts `/n/macos`; 109 paths installed programs name are still absent, every one of them site
+configuration, a run-time file, a template, a fallback whose other choice exists, or data on
+no tape (§5).
 
 **An in-place build leaves two linkless files, and only the next boot shows them.** The build
 replaces `/bin/sh` and `/etc/init` while the login shell and `init` are running from them;
@@ -370,10 +377,11 @@ the tree) and `/etc/mkimage`, which the verbs table types by name. All three are
 by their rules now — **FIXED** — and the same listing found `/etc/su` and `/bin/newgrp`
 without their set-uid bit (§2).
 
-**1.7 The root filesystem has 25 free inodes** (measured 2026-10-08 on the rebuilt golden:
+**1.7 The root filesystem has 22 free inodes** (measured 2026-10-08 on the rebuilt golden:
 `tools/v10fs.py stat run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and
-`s_tinode 25`). It had six before that golden was cleaned and eight on 18 Sep: `/etc/asd` and
-`/etc/asd/asdrcv` (651a1ea3) took two, and nineteen were never the system's at all —
+`s_tinode 22`). It had eight on 18 Sep. `/etc/asd` and `/etc/asd/asdrcv` (651a1ea3) took two,
+`/bin/passwdx`, `/etc/chuck` and `/etc/upchuck` three more — each moved to where the program
+that runs it looks — and nineteen were never the system's at all —
 postscript's man pages, written into the new disk's own `/tmp` by `MAN1DIR=$(ROOT)/tmp` under
 `ROOT=/v10` and hidden there by the `ra04` mount since 4 Sep (§0, third status pass).
 `mkimage:27-33` already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917
@@ -582,8 +590,10 @@ templates, or this):
 - `lex -e`'s `ebcform` (beside `-r`'s `nrform` above); `/usr/dict/oaldce`, `w7full` and
   `papers/Ind` (`ldefine`, `wdefine`, `refer`'s default index); monk's `apseqnchar`,
   `i300eqnchar` and `im300eqnchar`; termcap's `tabset/aa`, `infoton_tabs` and `stdcrt`;
-  mcs(6)'s `tmac.rscover` (`mcs.6:141`); `/etc/dpd`, whose `spider.dpd.c:23` includes a
-  `gcos.c` on no tape.
+  `/etc/dpd`, whose `spider.dpd.c:23` includes a `gcos.c` on no tape. And three that
+  `tmac.cs` sources, now that it is installed — `tmac.rscover` (`mcs.6:141`; read only when
+  register `ST` is 1, `tmac.cs:1048-1049`) and `complet.1127` and `cover.1127` (read only
+  when a macro is given a `y`, `:475`, `:500`) — so `-mcs` works on its common path.
 - **And `/bin/mail`, which is not this kind.** nupas installs `/bin/mail` and `/bin/rmail`
   and is built; its install is deferred until its products are proven on the machine
   (`build/mkfile`, `P_CMD_nupas_v10_all`), so until then `passwd` and `asdrcv` call a mailer
