@@ -5,7 +5,14 @@
 # and is rewritten in place by a rule that is the tape's own, so deleting them
 # would be wrong, and leaving them rewritten is what makes a tree that has
 # built and cleaned stop matching the archive it came from.  ipnxbuild copies
-# each aside before it builds anything; ipnxclean copies it back.
+# each aside before it builds anything and copies it back when it is done.
+#
+# LINE ORDER IS RESTORE ORDER, AND AN INPUT GOES ABOVE WHAT IS MADE FROM IT.
+# The copy back runs down this file and cp dates each file as it lands, so a
+# row restored after a file made from it reads newer than its own product.
+# With a recipe, the next build quietly makes the product again (spitbol's
+# translator, rewriting opttsts); without one, mk stops (f77's defs: FAILED).
+# Measured on 8 Oct 2026, and every pair moved; the numbers stay as labels.
 #
 # NOT ONE ROW WAS GUESSED.  The first seven came from diffing a machine that
 # had run ipnxbuild and ipnxclean against an archive extracted straight from
@@ -180,17 +187,17 @@
 60 src/cmd/ex/tags
 61 src/cmd/f2c/doc/appB.x
 62 src/cmd/f2c/f2c.1
+66 src/cmd/f2c/tokdefs.h
 63 src/cmd/f2c/gram.c
 64 src/cmd/f2c/lt
 65 src/cmd/f2c/output.h
-66 src/cmd/f2c/tokdefs.h
 67 src/cmd/f2c/version.c
 68 src/cmd/f2c/xsum.out
 69 src/cmd/f2c/zap
 70 src/cmd/f77/defs
+73 src/cmd/f77/tokdefs
 71 src/cmd/f77/gram.c
 72 src/cmd/f77/machdefs
-73 src/cmd/f77/tokdefs
 74 src/cmd/gcc/cexp.c
 75 src/cmd/gcc/expr.h
 76 src/cmd/gcc/gnulib
@@ -201,8 +208,8 @@
 81 src/cmd/lint/cgram.c
 82 src/cmd/monk/cmd/monk/cdb_manage.c
 83 src/cmd/monk/db/acm
-84 src/cmd/monk/db/acm.comp
 85 src/cmd/monk/db/attrib
+84 src/cmd/monk/db/acm.comp
 86 src/cmd/monk/db/centerpb
 87 src/cmd/monk/db/centerpb.comp
 88 src/cmd/monk/db/cspress
@@ -210,6 +217,7 @@
 90 src/cmd/monk/db/form1
 91 src/cmd/monk/db/form1.comp
 92 src/cmd/monk/db/global
+100 src/cmd/monk/db/macro
 93 src/cmd/monk/db/global.comp
 94 src/cmd/monk/db/im
 95 src/cmd/monk/db/im.comp
@@ -217,7 +225,6 @@
 97 src/cmd/monk/db/kluwer.comp
 98 src/cmd/monk/db/letter
 99 src/cmd/monk/db/letter.comp
-100 src/cmd/monk/db/macro
 101 src/cmd/monk/db/memo
 102 src/cmd/monk/db/memo.comp
 103 src/cmd/monk/db/model
@@ -234,8 +241,8 @@
 114 src/cmd/monk/db/tm
 115 src/cmd/monk/db/tm.comp
 116 src/cmd/monk/o.db/acm
-117 src/cmd/monk/o.db/acm.comp
 118 src/cmd/monk/o.db/attrib
+117 src/cmd/monk/o.db/acm.comp
 119 src/cmd/monk/o.db/centerpb
 120 src/cmd/monk/o.db/centerpb.comp
 121 src/cmd/monk/o.db/cspress
@@ -243,6 +250,7 @@
 123 src/cmd/monk/o.db/form1
 124 src/cmd/monk/o.db/form1.comp
 125 src/cmd/monk/o.db/global
+133 src/cmd/monk/o.db/macro
 126 src/cmd/monk/o.db/global.comp
 127 src/cmd/monk/o.db/im
 128 src/cmd/monk/o.db/im.comp
@@ -250,7 +258,6 @@
 130 src/cmd/monk/o.db/kluwer.comp
 131 src/cmd/monk/o.db/letter
 132 src/cmd/monk/o.db/letter.comp
-133 src/cmd/monk/o.db/macro
 134 src/cmd/monk/o.db/memo
 135 src/cmd/monk/o.db/memo.comp
 136 src/cmd/monk/o.db/model
@@ -290,10 +297,11 @@
 170 src/cmd/pascal/pi/0.h
 171 src/cmd/pascal/px/Version.c
 172 src/cmd/picasso/prevy.tab.h
+260 src/cmd/pico/y.tab.h
 173 src/cmd/pico/x.tab.h
 174 src/cmd/prefer/misc/pbib
-175 src/cmd/prefer/misc/pconvert
 176 src/cmd/prefer/misc/pdoc
+175 src/cmd/prefer/misc/pconvert
 177 src/cmd/prefer/prefawk/prevy.tab.h
 178 src/cmd/prefer/styles/acm
 179 src/cmd/prefer/styles/apa
@@ -313,11 +321,18 @@
 193 src/cmd/sml/src/mips/all
 194 src/cmd/sml/src/mips/mipsdecode.sml
 195 src/cmd/sml/src/mips/opcodes.sml
+# spitbol's five, IN THE ORDER THE MKFILE MAKES THEM -- ppmin, tok, src, serr,
+# s (spitbol/mkfile:32-46) -- because the restore runs in this file's line
+# order and cp dates each file as it lands.  In row order serr went back just
+# before src, its own input; when the two cps straddled a second, the next
+# build found src newer, re-ran the translator (vaxpo1.spt), and its log
+# rewrote opttsts, unprotected -- the one OVERWRITTEN line on 8 Oct.  Inputs
+# first means every product reads newer than what made it.
 196 src/cmd/spitbol/spitv35.ppmin
-197 src/cmd/spitbol/spitv35.s
-198 src/cmd/spitbol/spitv35.serr
-199 src/cmd/spitbol/spitv35.src
 200 src/cmd/spitbol/spitv35.tok
+199 src/cmd/spitbol/spitv35.src
+198 src/cmd/spitbol/spitv35.serr
+197 src/cmd/spitbol/spitv35.s
 201 src/cmd/sum/sum.bundle
 202 src/cmd/troff/Old/devcat/update
 203 src/cmd/troff/ancient.nroff/nrtab.dt
@@ -387,7 +402,6 @@
 257 src/cmd/pico/y.debug
 258 src/cmd/pico/y.output
 259 src/cmd/pico/y.tab.c
-260 src/cmd/pico/y.tab.h
 261 src/ipc/internet/htable/y.tab.h
 262 src/ipc/servers/y.tab.c
 
@@ -401,3 +415,7 @@
 # rule's own comment), so a regenerated y.tab.c does not compile.  Saving the
 # tape's and putting it back, with a fresh date, is what keeps it compiled.
 264 src/cmd/pascal/pc0/y.tab.c
+
+# The spitbol translator's log.  If the chain above ever does fire,
+# vaxpo1.spt writes this tape file afresh; put it back with the rest.
+265 src/cmd/spitbol/opttsts
