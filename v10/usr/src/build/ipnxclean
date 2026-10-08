@@ -25,16 +25,35 @@
 # `rm -rf' rather than `rm -f' because the directory rows are in the same list,
 # and sed re-roots every path for the /v10 case.
 #
-# usr/maps/map IS THE ONE EXCEPTION.  build/usrtrees calls maps shape because
-# every file in it is, except this one: map's own mkfile has always installed
-# the compiled binary into /usr/maps (map.sh's MAPPROG default agrees, and so
-# does every man page), so it is product sitting inside a shape root, same as
-# bin/lib are product sitting outside one.  It cannot be in the tree before a
-# build (binaries never enter git), so ipnxbuild's before/after walk always
-# calls it derived, and world's own install (build/mkfile:4402-4414) gets
+# THE PRODUCTS build/inshape NAMES ARE THE EXCEPTION.  usrtrees calls maps
+# shape because every file in it is, except /usr/maps/map: map's own mkfile
+# has always installed the compiled binary there (map.sh's MAPPROG default
+# agrees, and so does every man page), so it is product sitting inside a
+# shape root, same as bin/lib are product sitting outside one.  It cannot be
+# in the tree before a build (binaries never enter git), so ipnxbuild's
+# before/after walk always calls it derived, and world's own install gets
 # swept the moment mkimage runs this script against /v10 -- measured: a
 # from-scratch golden disk shipped map.sh and libmap.a but no /usr/maps/map,
-# so /usr/bin/map ran and failed to find its own binary.  Excluded here,
-# not from the walk itself, because that walk also drives mkipnx's `consumed'
+# so /usr/bin/map ran and failed to find its own binary.  Excluded here, not
+# from the walk itself, because that walk also drives mkipnx's `consumed'
 # accounting and this is the only line ipnxclean owns.
-grep -v '^/usr/maps/map$' /usr/ipnx/derived | sed "s|^/usr/|${1-}/usr/|" | xargs rm -rf
+#
+# A LIST, BECAUSE THERE WAS A SECOND ONE.  map was one grep here, and
+# /usr/local/lib/flex.skel -- where flex compiles in its skeleton -- was swept
+# by every build until 8 Oct 2026, so the installed flex answered every input
+# with `can't open skeleton file'.  Found by reading the disk from the host
+# for paths installed programs name that are not there.
+test -f /usr/src/build/inshape || {
+	echo "ipnxclean: no /usr/src/build/inshape -- run updatebuild; nothing removed"
+	exit 1
+}
+cp /usr/ipnx/derived /usr/tmp/ipc.d
+while read k junk
+do
+	case $k in
+	[a-z0-9]*)	grep -v "^/usr/$k\$" /usr/tmp/ipc.d > /usr/tmp/ipc.k
+		mv /usr/tmp/ipc.k /usr/tmp/ipc.d ;;
+	esac
+done < /usr/src/build/inshape
+sed "s|^/usr/|${1-}/usr/|" /usr/tmp/ipc.d | xargs rm -rf
+rm -f /usr/tmp/ipc.d

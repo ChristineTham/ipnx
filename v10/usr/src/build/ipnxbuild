@@ -270,9 +270,17 @@ case $TARGET in
 	grep '^[0-9]' /usr/src/build/preserve | sed 's|^[0-9]* ||' | sort > /usr/tmp/ipb.pl
 	sed 's|^/usr/||' $D | sort > /usr/tmp/ipb.dr
 	sort /usr/tmp/ipb.dr /usr/tmp/ipb.dr /usr/tmp/ipb.mod | uniq -u > /usr/tmp/ipb.m2
-	# maps/map is the one product inside a shape root, kept by ipnxclean:40,
-	# so the build rewriting it is expected and not a tape file at risk.
-	sort /usr/tmp/ipb.pl /usr/tmp/ipb.pl /usr/tmp/ipb.m2 | uniq -u | grep -v '^maps/map$' > /usr/tmp/ipb.m3
+	# build/inshape names the products inside a shape root, which ipnxclean
+	# keeps, so the build rewriting one is expected and not a tape file at
+	# risk.  Subtracted the same way as preserve, `sort A A ...', so both
+	# lists drop out of the remainder; read the way ipnxclean reads it.
+	while read k junk
+	do
+		case $k in
+		[a-z0-9]*)	echo $k ;;
+		esac
+	done < /usr/src/build/inshape | sort > /usr/tmp/ipb.in
+	sort /usr/tmp/ipb.pl /usr/tmp/ipb.pl /usr/tmp/ipb.in /usr/tmp/ipb.in /usr/tmp/ipb.m2 | uniq -u > /usr/tmp/ipb.m3
 	if test -s /usr/tmp/ipb.m3
 	then
 		echo "ipnxbuild: OVERWRITTEN AND NOT PRESERVED -- add these to build/preserve:"
@@ -331,7 +339,7 @@ case $TARGET in
 	fi
 
 	rm -f /usr/tmp/ipb.was /usr/tmp/ipb.now /usr/tmp/ipb.st
-	rm -f /usr/tmp/ipb.mod /usr/tmp/ipb.pl /usr/tmp/ipb.m2 /usr/tmp/ipb.m3 /usr/tmp/ipb.dr
+	rm -f /usr/tmp/ipb.mod /usr/tmp/ipb.pl /usr/tmp/ipb.m2 /usr/tmp/ipb.m3 /usr/tmp/ipb.dr /usr/tmp/ipb.in
 	cd /
 	echo "ipnxbuild: `wc -l < $D` derived, `wc -l < $C` consumed"
 	sync

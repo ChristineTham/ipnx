@@ -1,0 +1,17 @@
+# Products the build installs INSIDE a build/usrtrees root.
+#
+# usrtrees names the directories that are shape -- the tree as the tapes have
+# it -- and ipnxbuild calls every file that appears in them during a build
+# derived, for ipnxclean to sweep.  That is right for an object file and wrong
+# for an installed program's own data, which a package puts where the program
+# looks, whatever usrtrees says about the directory.  A product swept is a
+# program broken in a way no build reports: the install succeeds, the clean
+# succeeds, and the program fails the first time somebody runs it.
+#
+# Each row is one such product.  ipnxclean keeps it, ipnxbuild's overwrite
+# report expects the build to rewrite it, and tools/v10-tree-check.py expects
+# it on the disk and not in git.  ONE LIST FOR ALL THREE: maps/map used to be
+# written into each of them by hand, and the second product was missed by all
+# three.  One path per row, /usr-relative; anything after it is a note.
+maps/map		map's mkfile installs the program here; map.sh's MAPPROG and every man page agree
+local/lib/flex.skel	flex compiles in /usr/local/lib/flex.skel (flex/Makefile:21-23); swept by every build until 8 Oct 2026

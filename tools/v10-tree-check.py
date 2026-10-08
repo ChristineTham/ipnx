@@ -69,12 +69,26 @@ EXPECTED = {
     # them.  docs/v10-gaps.md records it.
     "/sys/io/camac.s": "preserve row 01, a build product on both sides",
     "/src/cmd/pascal/libpc/libpc": "preserve row 09, a build product on both sides",
-    # The compiled map program, installed into /usr/maps by map's own mkfile
-    # and kept there by ipnxclean:28-40 -- product inside a shape root, and a
-    # binary, so never in git.  A golden without it runs /usr/bin/map and
-    # cannot find its own program, as the 18 Sep one did.
-    "/maps/map": "the installed map binary, kept by ipnxclean",
 }
+
+
+def inshape():
+    """build/inshape's rows: products installed INSIDE a shape root, kept by
+    ipnxclean, and -- being build products -- never in git.  Read from the
+    one list rather than written here: /maps/map used to be, and when
+    flex.skel turned out to be the second such product, it was in none of
+    the three places that special-cased the first."""
+    out = {}
+    with open(os.path.join(BUILD, "inshape")) as f:
+        for ln in f:
+            if re.match(r"[a-z0-9]", ln):
+                parts = ln.split(None, 1)
+                note = parts[1].strip() if len(parts) > 1 else ""
+                out["/" + parts[0]] = "build/inshape: " + note
+    return out
+
+
+EXPECTED.update(inshape())
 
 
 def rows():

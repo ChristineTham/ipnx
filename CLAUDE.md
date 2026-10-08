@@ -355,8 +355,10 @@ Two invariants worth knowing before adding a rule. **`ipnxclean` needs no mainte
 you add one**: `/usr/ipnx/derived` is a set difference of the `build/usrtrees` roots taken
 before and after the build, so anything a new rule leaves in the source tree is swept
 already. **But it sweeps nothing outside those roots** — `usrtrees` omits `bin` and `lib` as
-"product, not shape", so installed binaries are not its business — and it cannot undo an
-**overwrite**, which is what `build/preserve` is for. A rule that starts rewriting a tape
+"product, not shape", so installed binaries are not its business. The converse needs a row:
+a product a rule installs *inside* one of those roots is swept unless `build/inshape` names
+it — flex's skeleton in `/usr/local/lib` was, after every build, so flex could not run. And it
+cannot undo an **overwrite**, which is what `build/preserve` is for. A rule that starts rewriting a tape
 file is reported by ipnxbuild as `OVERWRITTEN AND NOT PRESERVED`, not cleaned. And
 `preserve`'s **line order is restore order**: an input goes above what is made from it, or
 the restore re-dates it newer than its product and the next build re-runs the rule. **A rule
