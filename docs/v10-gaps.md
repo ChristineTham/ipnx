@@ -259,6 +259,20 @@ inodes 1010 and 1012, byte-identical to the new `/bin/sh` and `/etc/init`, so no
 disk `mkimage` builds on the second drive never has them, because nothing runs from it. That
 the repair then goes unacted on is §1.8.
 
+**And what the build left, or took away, that no build report shows.** Reading the committed
+golden from the host for files its last build did not write found leftovers already on the
+18 Sep golden. Three products sat at paths their rules had since left: `/usr/bin/dump` (now
+`/etc/dump`), `/usr/lib/plot/hplot` (now `hpplot`) and `/usr/bin/asdrcv` (now the setuid
+`/etc/asd/asdrcv`). An install never removes an old one, so `build/obsolete` names them and
+`ipnxbuild` deletes them after a clean build. Nineteen postscript man pages sat in the root
+filesystem's own `/tmp`, under the `ra04` mount: `postscript.mk:114` is `MAN1DIR=$(ROOT)/tmp`,
+meant as "nowhere permanent", which under `ROOT=/v10` is the new disk's root; `MAN1DIR=/tmp`
+on the command line now. Then a scan for absolute paths that installed programs name and the
+disk lacks found the opposite kind: **`/usr/local/lib/flex.skel` was installed by every build
+and deleted by every `ipnxclean`**, because `local` is a shape root, so `flex` could never
+find its skeleton. `/usr/maps/map` was the known case of a product inside a shape root,
+special-cased by hand in three places; `build/inshape` is now the one list all three read.
+
 ## 1. Defects in the build as it stands
 
 These are wrong today, independent of any missing install, and each is a small fix.
@@ -338,13 +352,17 @@ tape creates it only when absent.
 `chmod`, and `cflow.sh` is 644 in the tree. Every other script install in `build/mkfile`
 carries an explicit `chmod +x`.
 
-**1.7 The root filesystem has six free inodes** (measured 2026-10-08 on the rebuilt golden:
+**1.7 The root filesystem has 25 free inodes** (measured 2026-10-08 on the rebuilt golden:
 `tools/v10fs.py stat run/v10-golden:a` reports `s_isize 19 blocks (1088 inodes)` and
-`s_tinode 6`; the 18 Sep golden had eight, and the two since are `/etc/asd` and
-`/etc/asd/asdrcv`, from 651a1ea3). `mkimage:27-33`
-already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917 device nodes take
-most of the i-list — so this is not a fault yet, but a seventh new file under `/`, `/etc` or
-`/dev` makes `mkimage` fail with the disk half-built.
+`s_tinode 25`). It had six before that golden was cleaned and eight on 18 Sep: `/etc/asd` and
+`/etc/asd/asdrcv` (651a1ea3) took two, and nineteen were never the system's at all —
+postscript's man pages, written into the new disk's own `/tmp` by `MAN1DIR=$(ROOT)/tmp` under
+`ROOT=/v10` and hidden there by the `ra04` mount since 4 Sep (§0, third status pass).
+`mkimage:27-33` already explains the 1,088 — root is 1,280 4K blocks and `proto-dev`'s 917
+device nodes take most of the i-list — so this is not a fault, but it is a budget, and the
+first new file past it under `/`, `/etc` or `/dev` makes `mkimage` fail with the disk
+half-built. (25 is the in-place golden's count; a disk `mkimage` builds has not been measured
+since the `MAN1DIR` fix, and should not differ.)
 
 **1.8 `fsck` never asks for a reboot, so `rc` cannot act on a repaired root.** Every boot
 prints `ROOT MODIFIED`, clean or not: the bit-map free check ends with
