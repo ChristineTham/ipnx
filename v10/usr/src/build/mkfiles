@@ -485,6 +485,8 @@ src/cmd/cfront/munch.c
 src/cmd/cref/dr.c
 src/cmd/cyntax/cem/Makefile
 src/cmd/cyntax/cyn/Makefile
+src/cmd/dag/dag_ranks.c
+src/cmd/dag/draw_dag.h
 src/cmd/dist/conf/mkrules.v10
 src/cmd/dist/lib/ftwlk.c
 src/cmd/dmesg.c
@@ -554,6 +556,8 @@ src/games/trek/setup.c
 src/games/trek/shield.c
 src/games/trek/trek.h
 src/games/trek/warp.c
+src/ipc/mgrs/ns/parsefiles.c
+src/ipc/mgrs/ns/set.c
 src/libplot/libram/ramtek/range.c
 src/libplot/libtr/tr/frame.c
 src/libplot/libtr/tr/range.c

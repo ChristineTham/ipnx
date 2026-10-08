@@ -7,7 +7,7 @@
 
 #define		Maxint	(((unsigned) 1 << 31) - 1)
 
-typedef int (*qsortcmpfun)(void*,void*);
+typedef int (*qsortcmpfun)(const void*,const void*);	// ipnx: CC/libc.h:30's qsort; mkfile sets QSORTDCL, as README:21 says to
 #ifndef QSORTDCL
 #ifdef MICC
 extern "C" {

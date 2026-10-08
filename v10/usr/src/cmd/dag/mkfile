@@ -1,5 +1,6 @@
 CC = nCC
-CFLAGS = -O -DV9 -DMICC
+# ipnx: QSORTDCL, because V10's CC/libc.h declares qsort -- README:21-23 says to.
+CFLAGS = -O -DV9 -DMICC -DQSORTDCL
 
 INTEROBJS = parsedag.h parsedag.c
 CPIO_SRC = parsedag.y dag.c draw_dag.c dag_start.c dag_levels.c dag_misc.c \
@@ -38,7 +39,10 @@ dag.o : TrieFA.ins.c
 dag.o trie.o : TrieFA.h 
 dag.o emit_gd.o emit_pic.o emit_ps.o : parsedag.y
 emit_pic.o emit_ps.o util.o : paths.h
-edge_t.c node_t.c util.c : defaults.h
+# ipnx: .o, not .c.  The .c files were the targets here, harmless to make
+# but fatal to mk -- `no recipe to make node_t.c' once defaults.h is the newer,
+# as it is on the tape; measured, in the first full build that reached dag.
+edge_t.o node_t.o util.o : defaults.h
 dag_edge.o dag_levels.o dag_misc.o dag_pos.o dag_ranks.o dag_simplex.o \
  dag_spline.o dag_stem.o dag_start.o draw_dag.o : draw_dag.h
 
@@ -60,5 +64,7 @@ cpio :
 parsedag.c y.tab.h: parsedag.y
 	yacc -d parsedag.y && mv y.tab.c parsedag.c
 
+# ipnx: ${CC}, not cc.  parsedag.y is C++ -- delete, // comments -- and
+# makefile:1 compiles everything with $(CC); this rule had cc.
 parsedag.o: parsedag.c
-	cc ${CFLAGS} -c parsedag.c
+	${CC} ${CFLAGS} -c parsedag.c

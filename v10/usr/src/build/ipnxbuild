@@ -162,15 +162,26 @@ case $TARGET in
 	# package not stop three hundred others -- so mk's status sees only mk
 	# itself failing, and until 8 Oct 2026 the FAILED lines were in the console
 	# log and nowhere else: a build could finish with status 0 and a broken
-	# package in it.  So each step goes through tee into $L, and the count
-	# below reads it.  mk flushes its own echo before every fork
-	# (mk/src/run.c:74, Fexit(0)), so the log is in the console's order.
+	# package in it.  So each step writes into $L, the count below reads it,
+	# and a `tail +1f' in the background puts the same lines on the console.
+	# mk flushes its own echo before every fork (mk/src/run.c:74, Fexit(0)),
+	# so the log is in the order the console always showed.
 	#
-	# THE STATUS SURVIVES THE PIPE THROUGH A FILE.  A pipeline's status in
-	# this sh is its last command's, tee's, so `mk ... | tee || s=1' would
-	# never see mk fail -- which is the reason given, until this, for there
-	# being no count at all.  `{ }' and not `( )' around the assignment to s:
-	# it must survive.
+	# A FILE, NOT A PIPE THROUGH tee -- and not for the reason that looks
+	# likely.  A pipeline's status in this sh is its last command's, and that
+	# could be carried round through a file; what cannot be carried round is
+	# that a v10 pipe is a stream, and a ZERO-LENGTH write into it reads at the
+	# other end as end of file.  tee.c stops at a read of 0, and mk, writing on
+	# into a pipe nobody reads, dies of SIGPIPE without a word.  Measured: the
+	# first build that went through tee stopped in build1 after efl, status 1,
+	# the log ending on four ordinary lines; `write(1, "a\n", 2); write(1, "",
+	# 0); write(1, "b\n", 2)' through tee keeps `a' alone, and through cat as
+	# well.  A write of nothing into a file is nothing.  tail polls, every five
+	# seconds (tail.c:88), so the console trails by up to that, and the sleep
+	# after the last step lets it catch up before it is stopped.  A COPY of
+	# tail, in $G beside the guard: the build installs /usr/bin/tail, and cp
+	# onto the running one answered `Text file busy' -- measured, `tail: FAILED'
+	# in the first build that mirrored with it.
 	#
 	# AND A FAILED LINK'S OUTPUT IS NEVER COPIED: around the steps, cp is
 	# build/src/guardcp, which refuses a program ld(1) left unexecutable and
@@ -185,15 +196,18 @@ case $TARGET in
 	export PATH
 
 	L=/usr/ipnx/build.log
-	rm -f $L
+	: > $L
+	/bin/cp /usr/bin/tail $G/ipbtail
+	$G/ipbtail +1f $L &
+	T=$!
 	s=0
 	for step in build1 build2 build3 build4 'tools lib libs' 'usrbin bin etc' '/unix /.profile' ulib cmds pkgs games
 	do
 		test $s = 0 || break
-		{ mk -f /usr/src/build/mkfile $step 2>&1; echo $? > /usr/tmp/ipb.rc; } | tee -a $L
-		test "`cat /usr/tmp/ipb.rc`" = 0 || { s=1; echo "ipnxbuild: step \`$step' failed" | tee -a $L; }
+		mk -f /usr/src/build/mkfile $step >> $L 2>&1 || { s=1; echo "ipnxbuild: step \`$step' failed" >> $L; }
 	done
-	rm -f /usr/tmp/ipb.rc
+	sleep 6
+	kill $T
 	PATH=$OPATH
 	export PATH
 	rm -rf $G
@@ -574,10 +588,10 @@ then
 	done
 fi
 
-# The quarters, as this machine's own build runs them above: through tee into
-# a log, mk's status through a file, cp guarded, and the recipe failures
-# counted afterwards.  The log and list are the other target's, so their own
-# names -- 14 bytes at most, sys/dir.h:2.
+# The quarters, as this machine's own build runs them above: into a log file
+# that tail mirrors -- never through a pipe, which a zero-length write ends --
+# cp guarded, and the recipe failures counted afterwards.  The log and list are
+# the other target's, so their own names -- 14 bytes at most, sys/dir.h:2.
 G=/usr/tmp/ipb.bin
 rm -rf $G
 mkdir $G
@@ -586,15 +600,18 @@ OPATH=$PATH
 PATH=$G:$PATH
 export PATH
 L=/usr/ipnx/build.v10.log
-rm -f $L
+: > $L
+/bin/cp /usr/bin/tail $G/ipbtail
+$G/ipbtail +1f $L &
+T=$!
 s=0
 for step in build1 build2 build3 build4
 do
 	test $s = 0 || break
-	{ mk -f /usr/src/build/mkfile ROOT=/v10 $step 2>&1; echo $? > /usr/tmp/ipb.rc; } | tee -a $L
-	test "`cat /usr/tmp/ipb.rc`" = 0 || { s=1; echo "ipnxbuild: step \`$step' failed" | tee -a $L; }
+	mk -f /usr/src/build/mkfile ROOT=/v10 $step >> $L 2>&1 || { s=1; echo "ipnxbuild: step \`$step' failed" >> $L; }
 done
-rm -f /usr/tmp/ipb.rc
+sleep 6
+kill $T
 PATH=$OPATH
 export PATH
 rm -rf $G

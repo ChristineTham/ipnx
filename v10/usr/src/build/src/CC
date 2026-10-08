@@ -12,6 +12,10 @@
 #   - V8's own slips: `$P="-p"' assigned nothing (so -p never reached cc),
 #     the relink dropped $P, and the status reported after a relink was the
 #     following rm's rather than cc's.
+#   - __err and __ctdt.c carry the process number.  V8 named them alone, in
+#     the current directory, so two CC's in one directory -- mk with NPROC,
+#     which vsw/mkfile:3 sets to 3 -- removed each other's: measured, `rm:
+#     __err: No such file or directory' in the middle of vsw's build.
 # install: build/mkfile, as /usr/bin/CC.
 PATH=/bin:/usr/bin
 C= EE=0 FON= O= PON= R= SUF= X= Y="-Dc_plusplus=1 -D__cplusplus=1"	# ipnx: c++(1)'s 2.x names
@@ -134,27 +138,27 @@ done
 case $G in
 0)	;;
 *)	echo "$ccC $P $CF $X -lC" 1>&2
-	$ccC $P $CF $X -lC >__err			# generate code
+	$ccC $P $CF $X -lC >__err$$			# generate code
 	EE=$?
 	if test -n "$CF"
 	then						# -c: skip link edit
 		dummy=""
-	elif test -s __err
+	elif test -s __err$$
 	then						# error: skip link edit
-		cat __err
+		cat __err$$
 	else
 		case $EE in
-		0)	nm -gp $OO | $munchC >__ctdt.c	# find ctors/dtors
+		0)	nm -gp $OO | $munchC >__ctdt$$.c	# find ctors/dtors
 			case $? in
-			1)	$ccC -c __ctdt.c >/dev/null
-				$ccC $P $X __ctdt.o -lC	# in essense: cc *.o
+			1)	$ccC -c __ctdt$$.c >/dev/null
+				$ccC $P $X __ctdt$$.o -lC	# in essense: cc *.o
 				EE=$?			# ipnx: cc's status, not rm's
-				rm __ctdt.o
+				rm __ctdt$$.o
 			esac
-			rm __ctdt.c
+			rm __ctdt$$.c
 		esac
 	fi
-	rm __err
+	rm __err$$
 esac
 
 if	test $R

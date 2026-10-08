@@ -148,7 +148,8 @@ marker, and `:V:` would invert their meaning; nothing requires either of them to
 
 **One more of the same shape, not fixed:** `cmd/cfront/mkfile:2-3` shells out to `make`,
 exactly as `cmd/cyntax/mkfile` did until this round. `cfront` is in no build list, so it
-costs nothing today.
+costs nothing today. *Still so since cfront is built (fifth pass): `build/mkfile`'s own rules
+build it and never call that mkfile.*
 
 **Two properties of `mk` that this round had to learn the hard way**, both of which make a
 dependency silently not happen:
@@ -361,12 +362,12 @@ show:
 
 **What remains, and why it stays.** None of it can be built from what the tapes carry:
 
-- C++. `cfront` has no C bootstrap on any tape, so `asd++`, `dag`, `vsw`, the name server
-  `ipc/mgrs/ns` — addresses are numeric without it — and `libC` wait with it. One route is
-  untried, and it is a binary: V8's golden carries Bell's VAX `cfront` and `munch`
-  (`v8/mk/gen/carry.txt:67,81`), and whether that 1985 compiler can translate any of the
-  tape's seven cfront trees is the first question of the work §3 defers to V11. The working
-  disk `run/v10` holds `vsw` and `dag` binaries, but no compiler.
+- C++ — **done, fifth status pass below.** `cfront` has no C bootstrap on any tape, so
+  `asd++`, `dag`, `vsw`, the name server `ipc/mgrs/ns` and `libC` waited with it. The one
+  untried route was a binary — V8's golden carries Bell's VAX `cfront` and `munch`
+  (`v8/mk/gen/carry.txt:67,81`) — and that 1985 compiler, three of its bugs worked around,
+  translated cfront 2.00, which translated V10's cfront 2.1. `asd++` still waits, on cfront
+  3.0's `PTCC`.
 - On no tape, and not in `v8/` either: `pico`'s `libfb`, `odist`'s APE, `dimpress`'s
   `TABLES/`, `weather`'s `bopen` library, `tmac.pm`, TeX, `snocone`'s epilogue, `lex`'s
   `nrform` and `ebcform`, `word_clout`'s `thes.packed`, `docgen`'s `mmdata`, `msdata` and
@@ -389,7 +390,8 @@ show:
   reach.
 
 **Found while closing these, and left as they are**, each with the reason.
-- **`ipnxbuild` counts no recipe failure.** Every recipe ends `|| echo '…: FAILED'`, so `mk`
+- **`ipnxbuild` counts no recipe failure** — *resolved in the fifth pass: it counts them, and a
+  failed link's output is never copied.* Every recipe ends `|| echo '…: FAILED'`, so `mk`
   carries on and `ipnxbuild`'s status sees only `mk` itself failing; the `FAILED` lines are in
   the console log and nowhere else. And an install rule copies whatever a failed link left:
   while `trek` still lacked `gtty`, `ld` left a `trek` of mode 664, and the rule's `cp` and
@@ -402,7 +404,7 @@ show:
   and `:359` refuses one older than the binary's compile date (`mkcdate.c`), so a rebuilt
   `units` cannot read a stale one.
 - **`trek`'s `longjmp(errjmp)` passes one argument of two** (`play.c:94`). Harmless:
-  `main.c:77` ignores what `setjmp` returns.
+  `main.c:77` ignores what `setjmp` returns. *Given its second argument in the fifth pass.*
 - **`c++filt` and `dem` disagree, by design.** `c++filt.c:22-24` drops a leading `_` on the
   VAX because it reads `nm` output, so it wants `___ct__1AFv` where `dem` wants `__ct__1AFv`.
 - **`/usr/lib/eign` is two programs' file.** `cref -e` reads a hash table there
@@ -435,6 +437,78 @@ every row of the table above — `telnet` to the host through `/cs/tcp` among th
 morning's own list (`f77`, Pascal's `42`, `struct`, `spell`, `tar tv`, `lint -p`, `mm -e`),
 and halts; `tools/webterm-check.py` boots it in the browser. The committed halves restore it
 byte for byte.
+
+### Fifth status pass, 2026-10-08: C++, and a build that says what failed
+
+**C++ is built.** No tape carries a `cfront` binary and `cfront` is written in C++, so V10's
+seven cfront trees had no first link — until V8's golden supplied one: Bell's VAX `cfront` of
+7/04/85. With three of its bugs worked around it translates cfront 2.00, which translates V10's
+cfront 2.1, and two generations of that agree on every file. `build/cfboot` runs the chain once,
+from a seed `tools/v10-cfseed.py` lifts off the V8 disk; from then on `build/mkfile` rebuilds
+`CC`, `cfront`, `munch` and `libC` with the machine's own `CC`. The whole account — the stages,
+the three bugs and how each was measured, the fixed point — is
+[v10-build.md, C++](v10-build.md#c).
+
+| | what it needed | measured |
+|---|---|---|
+| `cfront`, `libC`, `munch`, `CC` | six whole-file repairs: `CC/memory.h` and `CC/string.h` use `size_t` undeclared; `generic.c`, `task/obj.c` and `munch.c` call `abort` or `exit` undeclared; `oldformat.c`'s `max` is V10's `CC/libc.h:67` function. `CC` itself is ours — V8's driver, adjusted | iostream, `complex`, `strstream`, the `task` library's coroutines, a virtual base, static constructors through `munch` |
+| `vsw` | nothing: it compiles as the tape left it | builds; drives hardware nobody here has |
+| `dag` | `QSORTDCL`, as its README says where `libc.h` declares `qsort`; its comparator typedef made `const`; `inversion()` declared `static` where it is defined so; `parsedag.c`, yacc's C++, compiled with `$CC` and not `cc` | lays out a four-node graph for `pic` |
+| `ns` | `set.c`'s own `qsort` and `parsefiles.c`'s own `memset` removed — V10's headers declare both now, and 2.1 refuses a second C-linkage function | builds; installed and not started, as `svcmgr` is: `ns(8)` reads `/usr/ipc/lib/ns.db`, and the tape's is Murray Hill's astro department |
+| `asd++` | `PTCC` — cfront 3.0, templates. `ptcfront` and `xptcfront` are on the tape as C++ source, so 2.1 is the next link if it can translate one | untried |
+
+**What V8's `CC` brought with it.** `build/src/CC` is V8's driver, and V8's named its two
+temporary files alone in the current directory. `vsw`'s mkfile sets `NPROC=3`, and three `CC`s
+in one directory removed each other's `__err` mid-build; they carry the process number now.
+
+**`ipnxbuild` counts what failed.** A recipe that fails says `FAILED` and `mk` carries on, so
+until this pass a build could end with status 0 and a broken package in it — the `FAILED` lines
+were in the console log and nowhere else. Every step now writes into `/usr/ipnx/build.log`,
+the failures are counted from it into `/usr/ipnx/failed` with the recipe echoes left out (every
+one has `echo` in it; a full build's console log held 1,266 lines with `FAILED` in them and not
+one failure), and the status is 2 when any recipe failed, 1 when a step did. **And a failed
+link's output is never copied**: around the steps `cp` is `build/src/guardcp`, which refuses a
+non-executable VAX a.out not named `.o` — what `ld(1)` leaves when a load fails.
+
+**Four of this pass's own first attempts were wrong, and the machine said each time.**
+
+- The log went through `tee`, and the first build stopped in `build1` with status 1 and no
+  message. **A V10 pipe is a stream, and a zero-length write into it reads as end of file**:
+  `tee.c` stops at a read of 0, and `mk`, writing on into a pipe nobody reads, dies of SIGPIPE.
+  Measured with `write(1, "a\n", 2); write(1, "", 0); write(1, "b\n", 2)`, which through `tee`
+  or `cat` delivers `a` alone. The log is a file now, and a background `tail +1f` mirrors it.
+- That `tail` was `/usr/bin/tail`, which the build installs, and the next build said
+  `cp: /usr/bin/tail: Text file busy` — `tail: FAILED`, the build's own count catching the
+  build's own tooling. The mirror runs a private copy.
+- The guard looked for `ld`'s default `0413`, and a real failed link went straight through it:
+  an undefined symbol makes `ld` keep the relocation bits and write `0407` (`ld.c:847-858`),
+  the format of an object file — 637 bytes, where the program linked is 3,408. It refuses by
+  mode, magic and name now, and a test on the machine refuses the failed link, leaves the old
+  target whole, and passes a program, an object, a data file and a two-file copy.
+- And by name it exempted `.o` alone, so the first full build under it refused `libdbm.a` and
+  `libsdb.a`, which are bare objects named as libraries (`mv dbm.o libdbm.a`). Every refusal
+  is in the log, so those two were the complete list of what it matched; `.a` is exempt too.
+
+**And one the tree had all along:** `dag/mkfile:42` made the `.c` files depend on
+`defaults.h` where the objects were meant — harmless to `make`, but `mk` will not leave an
+out-of-date target with no recipe, and on the tape `defaults.h` is the newer: `no recipe to
+make 'node_t.c'`. A copy of the directory built, because a copy's dates are all the same.
+
+**And a repair that had been undoing itself:** `patch`'s `_IOFBF` stanza tested
+`$IDIR/stdio.h` and rewrote `/usr/include/stdio.h`, so a run against `/v10` added a second
+`_IOFBF` to the builder's header and none to the target's. Both sides are `$IDIR` now.
+
+**The other reported items.** `trek`'s `longjmp` has its second argument. `/usr/lib/eign`
+stays cref's: no manifest names the file, so nothing says which program V10 shipped it for, and
+`mkey -c` (`mkey1.c:31-33`) already lets `refer`'s indexer name a word list. `Units.bin` stays
+mode 666, the cache `units.y:425-427` means it to be. The committed golden's `/usr/ipc/log/tcp`
+is empty: the torn line seen there earlier came from the build machine's own boots and was
+cleared before the image was made. `tcpmgr`'s log writes are `lseek` then `write`
+(`mgrs/common/log.c`) on a system with no append mode — `fcntl.h` has only the three access
+modes — so two separate opens could overwrite each other. One `tcpmgr` never makes two:
+`detach.c:21` opens the log once, after its own fork, and the dialer and listener fork from
+that (`main.c:78`), so every writer shares one offset. Only a second `tcpmgr` started beside
+the first could tear a line, and nothing here starts one.
 
 ## 1. Defects in the build as it stands
 

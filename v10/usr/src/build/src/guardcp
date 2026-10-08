@@ -20,9 +20,13 @@
 # where the same program linked is 3,408 bytes of 0413.  So what is refused is
 # a source with NO execute bit, a VAX a.out magic -- 0407, 0410 or 0413 in the
 # low half of the first long and 0 in the high half; a PDP-11 image's second
-# word is its text size -- and a name that does not end in .o, because every
-# object this build copies is so named.  The tree holds no other VAX image
-# (checked from the host, 8 Oct 2026), so nothing else can match.  The rule's
+# word is its text size -- and a name that ends in neither .o nor .a.  Every
+# object this build copies is a .o but two, which are bare objects named as
+# libraries: libdbm.a (`mv dbm.o libdbm.a', libdbm/mkfile:4) and libsdb.a.
+# The first version of this guard exempted .o alone and refused those two, the
+# only things it matched in a full build -- every refusal is in build.log, so
+# that is a complete list.  The tree holds no other VAX image (checked from the
+# host, 8 Oct 2026), so nothing else can match.  The rule's
 # own `|| echo' then says FAILED, ipnxbuild's count has it, and the old target
 # is left whole.  The mode comes from ls, not `test -x': v10 answers yes for
 # root whatever the bits say -- measured, a 664 copy of /bin/ls.
@@ -35,7 +39,7 @@ do
 	if test -n "$p" -a -f "$p"
 	then
 		case $p in
-		*.o)	;;
+		*.o|*.a)	;;
 		*)	case `ls -l "$p"` in
 			???[xs]*|??????[xs]*|?????????[xt]*)	;;
 			*)	case `od -o "$p" | sed 1q` in

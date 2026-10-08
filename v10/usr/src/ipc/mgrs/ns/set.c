@@ -2,7 +2,8 @@
 #include <fio.h>
 #include <string.h>
 #include "dbtypes.h"
-extern "C" qsort(Tuple **, int, int, int (*)(Tuple **, Tuple **));
+/* ipnx: no qsort of ns's own here.  CC/libc.h:30 declares the ANSI one, and
+   cfront 2.1 refuses two C-linkage qsorts; the call below casts to it. */
 
 /*
  *  add a tuple to a set
@@ -86,7 +87,7 @@ Set::sort(Tuple *origin)
 	/*
 	 *  sort the easy way
 	 */
-	qsort(array, tuples, sizeof(Tuple *), comparetuples);
+	qsort((void*)array, tuples, sizeof(Tuple *), (int (*)(const void*, const void*))comparetuples);
 
 	/*
 	 *  rethread

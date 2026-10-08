@@ -28,7 +28,7 @@ static void	decompose(),
 		installstem(int**,int);
 static int	cross_stat(int**), rcross(int*,int*),
 		buildrank(int**,int**,int);
-extern void	inversion(int**);
+static void	inversion(int**);	// ipnx: defined static below (:419), which 2.1 will not take after extern
 
 void dag_ranks()
 {

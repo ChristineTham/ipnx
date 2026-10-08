@@ -734,7 +734,8 @@ $ROOT/usr/bin/qns: $IPC/bin/con
 # tcpconfig has already pushed it onto /dev/ip6.  svcmgr, the listener that
 # runs services for calls coming in, is built and installed beside it and
 # not started -- its serv and auth files are on no tape.  ns, the name
-# server, is C++ (mgrs/ns/mkfile:3), so addresses are numeric.  The four
+# server, is C++ (mgrs/ns/mkfile:3): built since cfront was, below, and
+# installed and not started like svcmgr, so addresses are still numeric.  The four
 # internet tools are the ones its mkfile names for /usr/bin (BINS); of its
 # MGRS, udpconfig goes with the managers and ipconfig, routed and
 # dkipconfig stay out -- dipconfig replaces the first here, and the other
@@ -768,6 +769,28 @@ $ROOT/usr/ipc/mgrs/tcpmgr: $IPC/mgrs/tcpmgr/tcpmgr
 
 $ROOT/usr/ipc/mgrs/svcmgr: $IPC/mgrs/svcmgr/svcmgr $ROOT/usr/ipc/mgrs/tcpmgr
 	cp $IPC/mgrs/svcmgr/svcmgr $ROOT/usr/ipc/mgrs/svcmgr && strip $ROOT/usr/ipc/mgrs/svcmgr || echo 'svcmgr: install FAILED'
+
+# ns, THE NAME SERVER, is C++ and waited on cfront; its mkfile names CC.  Two
+# repairs, both a declaration of its own that V10's CC headers now make for
+# it: set.c's qsort and parsefiles.c's memset, each refused by cfront 2.1 as a
+# second C-linkage function of the name.  INSTALLED, NOT STARTED, as svcmgr
+# is: ns(8) has rc start it over /usr/ipc/lib/ns.db, and the tape's ns.db is a
+# site's own -- Murray Hill's astro department, 192.11.84.x -- so it is not
+# installed, and without a database nothing on this machine has a name to ask.
+P_IPC_mgrs_ns:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a
+	if test -x /usr/bin/CC
+	then
+		cd $IPC/mgrs/common; mk libcommon.a || echo 'ipc libcommon: FAILED'
+		cd $IPC/mgrs/ns; mk ns || echo 'ns: FAILED'
+	else
+		echo 'ns: no C++ on this machine, sh /usr/src/build/cfboot: FAILED'
+	fi
+
+$IPC/mgrs/ns/ns: P_IPC_mgrs_ns
+	test -f $IPC/mgrs/ns/ns || echo '$IPC/mgrs/ns/ns: the package did not produce it'
+
+$ROOT/usr/ipc/mgrs/ns: $IPC/mgrs/ns/ns $ROOT/usr/ipc/mgrs/tcpmgr
+	cp $IPC/mgrs/ns/ns $ROOT/usr/ipc/mgrs/ns && strip $ROOT/usr/ipc/mgrs/ns && chmod 775 $ROOT/usr/ipc/mgrs/ns && /etc/chown bin,bin $ROOT/usr/ipc/mgrs/ns || echo 'ns: install FAILED'
 
 # inservices is libin's table of port names (libin/in_service.c), the shape of
 # /etc/services exactly -- `name port/proto' -- and without it every dial
@@ -3432,15 +3455,12 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                into /usr/spool/ap; apnews is the reader over that spool.
 #                Nothing here has the wire.  cmd/apsend is a different
 #                directory and is still built
-#   dag vsw      C++, and no cfront to translate it.  The bootstrap AT&T
-#                shipped -- cfront's own output for its own source, which a
-#                native cc compiles into a translator -- is on none of the six
-#                tapes, and Cpre before it is not here either.  Both were being
-#                put through lcc so the build would say what it hit; the answer
-#                is `//' comments, which lcc/c/lex.c:297-315 lexes as two
-#                divisions, and X::f members in vsw's crossbar.c, dynasty.c,
-#                line.c and switch.c and dag's edge_t.c, node_t.c and util.c,
-#                with a class in dag_start.c
+#   dag vsw      BUILT since 8 Oct 2026, by the machine's CC -- see the C++
+#                rules.  They waited on cfront: put through lcc instead, the
+#                answer was `//' comments, which lcc/c/lex.c:297-315 lexes as
+#                two divisions, and X::f members in vsw's crossbar.c,
+#                dynasty.c, line.c and switch.c and dag's edge_t.c, node_t.c
+#                and util.c, with a class in dag_start.c
 #   weather      alice's, and a research service rather than a command:
 #                weather(7) "reports current weather conditions and a forecast
 #                for towns in the contiguous United States" from an index this
@@ -3484,7 +3504,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/CC $ROOT/usr/bin/cfront $ROOT/usr/lib/munch $ROOT/usr/lib/libC.a $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $ROOT/usr/lib/upas/gone.fishing $ROOT/usr/lib/upas/gone.msg $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices $ROOT/usr/lib/cunumber
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/CC $ROOT/usr/bin/cfront $ROOT/usr/lib/munch $ROOT/usr/lib/libC.a $ROOT/usr/bin/dag $ROOT/usr/bin/vsw $ROOT/usr/ipc/mgrs/ns $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $ROOT/usr/lib/upas/gone.fishing $ROOT/usr/lib/upas/gone.msg $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices $ROOT/usr/lib/cunumber
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -5379,9 +5399,10 @@ $ROOT/usr/bin/wwb: $ROOT/usr/bin/WWB/proofr
 	rm -f $target; ln $ROOT/usr/bin/WWB/wwb $target || echo 'wwb: FAILED'
 
 # THE REST OF cmd/, and why each is not built:
-#   asd++     needs CC=PTCC, a C++ translator absent from all six tapes -- the
-#             same cfront/C++ deferral this file documents elsewhere for dag
-#             and vsw.  asd++/mkfile DOES define ASD=/usr/lib/asd correctly;
+#   asd++     needs CC=PTCC, cfront 3.0's driver -- templates -- and the
+#             machine's cfront is 2.1.  ptcfront and xptcfront are on the tape
+#             as C++ source, so 2.1 is the next link if it can translate one;
+#             untried.  asd++/mkfile DOES define ASD=/usr/lib/asd correctly;
 #             the blocker is the compiler, not the install path.
 #             (oasd++ never existed in this tree -- removed from mkfiles.)
 #   asd       IS built, below (`mk all` then per-program cp+strip), but
@@ -5538,6 +5559,50 @@ $ROOT/usr/lib/libC.a: $CMD/cfront/libC/libC.a
 # V8's with what c++(1) and cfront 2.1 need, its header says which.
 $ROOT/usr/bin/CC: $GEN/src/CC
 	cp $GEN/src/CC $ROOT/usr/bin/CC && chmod 775 $ROOT/usr/bin/CC || echo 'CC: install FAILED'
+
+# dag AND vsw, THE C++ COMMANDS, built by the machine's CC like cfront.
+#
+# dag lays out directed graphs for pic (dag.1, the installed page: .GD and .GE;
+# the older copy beside the source says .GS, which dag.c:233 does not take).
+# Its mkfile is `CC = nCC' and is given CC here.  Two repairs and a flag: its
+# README:21-23 says to add QSORTDCL where libc.h declares qsort, which V10's
+# CC/libc.h:30 does, and its qsortcmpfun typedef takes const void* to match;
+# dag_ranks.c declared inversion() extern and defined it static, which 2.1
+# refuses; and the mkfile compiled parsedag.c, yacc's C++, with cc.  It reads
+# daglib.pic and daglib.ps from /usr/lib (paths.h:1).
+P_CMD_dag:V:	$PREP
+	if test -x /usr/bin/CC
+	then
+		cd $CMD/dag; mk CC=/usr/bin/CC dag || echo 'dag: FAILED'
+	else
+		echo 'dag: no C++ on this machine, sh /usr/src/build/cfboot: FAILED'
+	fi
+
+$CMD/dag/dag: P_CMD_dag
+	test -f $CMD/dag/dag || echo '$CMD/dag/dag: the package did not produce it'
+
+$ROOT/usr/bin/dag: $CMD/dag/dag
+	cp $CMD/dag/dag $ROOT/usr/bin/dag && strip $ROOT/usr/bin/dag || echo 'dag: install FAILED'
+	cd $CMD/dag; cp daglib.pic daglib.ps $ROOT/usr/lib && chmod 644 $ROOT/usr/lib/daglib.pic $ROOT/usr/lib/daglib.ps || echo 'dag: lib FAILED'
+
+# vsw drives a video crossbar switch over a serial line -- hardware nobody
+# here has, built and installed because its mkfile's install says so
+# (vsw/mkfile:9-12) and it compiles as the tape left it.  Its mkfile names CC
+# and sets NPROC=3, which is what found two CC's in one directory removing
+# each other's temporary files -- build/src/CC's header.
+P_CMD_vsw:V:	$PREP
+	if test -x /usr/bin/CC
+	then
+		cd $CMD/vsw; mk vsw || echo 'vsw: FAILED'
+	else
+		echo 'vsw: no C++ on this machine, sh /usr/src/build/cfboot: FAILED'
+	fi
+
+$CMD/vsw/vsw: P_CMD_vsw
+	test -f $CMD/vsw/vsw || echo '$CMD/vsw/vsw: the package did not produce it'
+
+$ROOT/usr/bin/vsw: $CMD/vsw/vsw
+	cp $CMD/vsw/vsw $ROOT/usr/bin/vsw && strip $ROOT/usr/bin/vsw && chmod 775 $ROOT/usr/bin/vsw || echo 'vsw: install FAILED'
 
 # movie's HOST HALF.  stills, a pic preprocessor, and develop are scripts,
 # stills.awk is data, and fdevelop and newer are C; all of them live in

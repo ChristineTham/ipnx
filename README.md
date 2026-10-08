@@ -34,7 +34,7 @@ on hardware you already carry.
 > on the Eighth Edition machine, and V10 has since built its own libc, its own `/bin`, and
 > **its own kernel** — the first V10 kernel anyone has compiled. A golden boots to a login
 > prompt and halts cleanly. It is **not a complete Tenth Edition**: measured against the
-> tape's own manifests, 27 of the 50 files `/usr/lib` should hold are not built, and
+> tape's own manifests, 16 of the 50 files `/usr/lib` should hold are not built, and
 > finishing that is the current work — [docs/v10-build.md](docs/v10-build.md),
 > [docs/roadmap.md](docs/roadmap.md).
 >
@@ -311,7 +311,12 @@ program that plays it.
 The languages tell the same story. Berkeley Pascal is already complete in V10
 (`pi`, `px`, `pxp`, `libpc`, and Berkeley's own error-recovering `eyacc`); Fortran is there
 as Feldman's `f77` with `libF77`/`libI77`; so are `hoc`, `icon`, `sml`, `spitbol` and
-`matlab`. None of those is a port — they are builds. **Franz Lisp** is the genuine one:
+`matlab`. None of those is a port — they are builds. **C++ is a build too, with a V8
+ancestor**: no tape carries a `cfront` binary, and `cfront` is written in C++, so the Eighth
+Edition's own 1985 `cfront` — three of its bugs worked around — translated cfront 2.00, which
+translated V10's cfront 2.1, until two generations agreed on every file. V10 now rebuilds its
+C++ with itself, `libC` and the `task` library included
+([docs/v10-build.md](docs/v10-build.md#c)). **Franz Lisp** is the genuine one:
 `man/mana/lisp.1` documents `lisp`, `liszt` and `lxref` running on *alice*, a real Bell Labs
 machine, but the source is not in the tree — and being VAX-native, it fits this hardware
 better than almost anything else from its decade. **S** is the painful one. Chambers,

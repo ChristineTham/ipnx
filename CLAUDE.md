@@ -184,6 +184,12 @@ ipnxbuild [/v10]       # build a complete system from /usr/src into ROOT (defaul
 ipnxclean [/v10]       # remove exactly what ipnxbuild wrote, from the list it wrote
 ```
 
+**`ipnxbuild`'s status is the build's, recipes included**: 0 clean; 1 a step (`mk` itself)
+failed; 2 every step ran and some recipe printed `FAILED` — `/usr/ipnx/failed` lists them,
+`/usr/ipnx/build.log` is the whole build. Around its steps `cp` is `build/src/guardcp`, which
+refuses a failed link's output (`ld` leaves it unexecutable, and an undefined symbol makes it
+a relocatable `0407`), so a broken program is never installed over a working one.
+
 Everything the build does is `v10/usr/src/build/mkfile` (one rule per product; `world` is
 the whole distribution) and `v10/usr/src/build/patch` (idempotent source repairs run before
 anything compiles). Both are edited **here**, in the repository, and reach the machine only
@@ -192,7 +198,11 @@ builds, so a bad edit must be *repaired*, not merely reverted.
 
 The rarely-typed verbs: `mkv10` (the six tapes → `v10.tar`, pristine), `mkipnx`
 (`v10.tar` + build system + repairs → `ipnxorig.tar`), `taripnx` (a live `/usr` →
-`ipnx.tar`), `mkimage` (format the second drive and build a disk into it).
+`ipnx.tar`), `mkimage` (format the second drive and build a disk into it), and `cfboot`
+(C++ for a machine that has none: `python3 tools/v10-cfseed.py` on the host, then
+`sh /usr/src/build/cfboot /n/macos/work/cfseed` — V8's 1985 cfront → cfront 2.00 → cfront
+2.1, to a fixed point; `docs/v10-build.md`, *C++*). After `cfboot`, the mkfile's C++ rules
+rebuild `CC`, `cfront`, `munch` and `libC` with the machine's own `CC`.
 `build/usrtrees` is the single statement of what `/usr` carries; `build/mkcheck` lists what
 must exist before the mkfile will run.
 
@@ -401,6 +411,10 @@ status 0.
   `tools/v8drive.exp`, or `tools/v10drive.py` where there is no expect. The tty echoes what
   you type into whatever is already printing, a prompt repeats, and `login:` arrives with
   mark parity. Three harnesses each grew their own prompt matcher and all three hung.
+- **A V10 pipe ends at a zero-length write.** Pipes are streams, and an empty message reads
+  as end of file: `write(1, "a\n", 2); write(1, "", 0); write(1, "b\n", 2)` through `tee` or
+  `cat` delivers `a` alone, and the writer dies of SIGPIPE on its next write. A whole build
+  piped through `tee` stopped in `build1` with status 1 and no message. Log to a file.
 - **The console drops anything past 256 bytes on a line and says nothing.**
   `v10/usr/sys/io/nttyld.c:28` is `#define CANBSIZ 256` and `:348` is
   `static char canonb[CANBSIZ]`. A 330-byte `chmod` typed by a harness was truncated, the

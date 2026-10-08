@@ -216,9 +216,12 @@ it` — and `mk` carries on, which is what lets one broken package not stop thre
 Until 8 Oct 2026 those lines were in the console log and nowhere else, so a build could finish
 with status 0 and a broken package in it. Now:
 
-- **Every step's output goes through `tee` into `/usr/ipnx/build.log`**, and `mk`'s own status
-  comes back through a file, because a pipeline's status in this `sh` is `tee`'s. `mk` flushes
-  its echo before every fork (`mk/src/run.c:74`), so the log is in the console's order.
+- **Every step's output goes into `/usr/ipnx/build.log`**, and a background `tail +1f` puts it
+  on the console. A file and not a pipe through `tee`, because **a V10 pipe is a stream and a
+  zero-length write into it reads as end of file**: `tee` stops, and `mk`, writing on, dies of
+  SIGPIPE without a word — the first build that went through `tee` stopped that way in
+  `build1`. `mk` flushes its echo before every fork (`mk/src/run.c:74`), so the log is in the
+  console's order.
 - **The failures are counted from it** into `/usr/ipnx/failed`. Every marker is also in the log
   as recipe *text*, because `mk` echoes a recipe before running it, and every such line has
   `echo` in it, which no message has. A full build's console log on 8 Oct held 1,266 lines with
@@ -314,6 +317,15 @@ program with a static constructor and destructor through the installed `CC`. **A
 is never needed again**: `build/mkfile`'s C++ rules rebuild all four with the machine's own
 `CC`, and a new cfront is installed only if it can translate a line of C++ first, because it
 replaces the only translator the machine has.
+
+**What it builds besides itself**: the three C++ programs that waited on it. `vsw` compiles as
+the tape left it; `dag` needs `QSORTDCL` (its own README says so where `libc.h` declares
+`qsort`, which V10's does) and three small repairs; `ns` needs two, each a declaration of its
+own that V10's headers now make. `ns` is installed and not started, as `svcmgr` is — its
+database is a site's own. `asd++` still waits: it wants `PTCC`, cfront 3.0 with templates,
+and `ptcfront` is on the tape only as C++ source. And V8's `CC` named its temporary files
+alone in the current directory, so `vsw`'s `NPROC=3` had three `CC`s removing each other's
+`__err`; they carry the process number now.
 
 ## What the build does not reach
 
@@ -500,8 +512,9 @@ and the three ROOT fixes, which need a `mk ROOT=/v10 world` against a second dis
 
 What was still open there was closed on 8 Oct 2026 — `units`, `/lib/dst`, `hyphen.tex`,
 `trek`, mail, `ipc/`, `sky`, `sml`, `dist`, the PDP-11 tools and the rest of §3 that the tapes
-can build — and v10-gaps.md's fourth status pass lists what stays, each with its reason: C++,
-data on no tape, and a few decisions. `tools/v10-datafiles.py` re-runs the data-file half of
+can build — and C++ followed the same day ([C++](#c)), with `dag`, `vsw` and `ns` behind it.
+v10-gaps.md's fourth and fifth status passes list what stays, each with its reason: data on no
+tape, `asd++`'s cfront 3.0, and a few decisions. `tools/v10-datafiles.py` re-runs the data-file half of
 the measurement at any time.
 
 **3. `/usr/jerq` or `/usr/blit` against the DMD emulator.** The host side is on the tape as a

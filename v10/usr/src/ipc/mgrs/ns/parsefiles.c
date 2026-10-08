@@ -7,7 +7,8 @@
 extern "C" int stat (const char*, struct stat*);	/* added by pg so that
 							 * this could compile
 							 */
-extern "C" char *memset(char*, int, int);
+/* ipnx: no memset of its own -- <string.h> brings CC/memory.h's ANSI one, and
+   cfront 2.1 refuses two C-linkage memsets and calls the call ambiguous. */
 extern "C" long time(long *);
 extern "C" long in_aton(char *);
 extern "C" char *in_ntoa(long);
