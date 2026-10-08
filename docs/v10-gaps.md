@@ -415,6 +415,9 @@ The whole 5,219-line mkfile carries one `chown` (`sh`, :826) and two set-id inst
 | `/usr/lib/struct` the **directory** | `chown bin,bin`, `chmod 775` | `struct/mkfile:23-26` — *CORRECTED*: the two binaries under it are only stripped and copied |
 | `apsend` | nothing beyond `chmod +x` | *CORRECTED*: `apsend/mkfile:9` is the whole of it, and `build/mkfile` already did it |
 | `/usr/games/lib/atc` | `chown bin,bin`, `chmod o-w,g+w` | `atc/Makefile:6-11` — not in the original reading |
+| `/bin/passwdx` | set-uid root, **in `/bin`** | `passwdx.c:2-4`; `passwd.sh:6` runs it from `/bin` — added 8 Oct 2026; it was in `/usr/bin`, 775 |
+| `/etc/su` | set-uid root | `su.c:32-45` setuid()s to the target — added 8 Oct 2026; no makefile says so, because `Admin/Mk`'s `strip && cp` onto an existing file kept a bit set by hand |
+| `/bin/newgrp` | set-uid root | `newgrp.c:41,54`, the same reason — added 8 Oct 2026 |
 
 **Blocker — RESOLVED for the products the build installs.** `uucp` (uid 48, gid 1) is the
 tape's own number, from `parms.h:24-25` and again from `v8/etc/passwd`, which ships the

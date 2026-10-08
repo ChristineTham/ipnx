@@ -850,9 +850,14 @@ $DEST/mv: $PREP $CMD/mv.c
 	cd $CMD; cc -Od2 -o mv mv.c && strip mv && cp mv $DEST/mv || echo 'mv: FAILED'
 	cd $CMD; rm -f mv mv.o || :
 
+# SET-UID ROOT, su's case (see $ETC/su): newgrp.c:41 is setgid() to the new
+# group and :54 setuid(getuid()) to drop back, which only means anything
+# when it runs as root.  Installed 775, `newgrp' failed for everyone but root
+# with `setgid: Not owner'.  Measured on 8 Oct: /bin/newgrp 0775.
 $DEST/newgrp: $PREP $CMD/newgrp.c
 	cd $CMD; cc -Od2 -o newgrp newgrp.c && strip newgrp && cp newgrp $DEST/newgrp || echo 'newgrp: FAILED'
 	cd $CMD; rm -f newgrp newgrp.o || :
+	/etc/chown 0 $DEST/newgrp && chmod u+s,og-w $DEST/newgrp || echo 'newgrp: mode FAILED'
 
 $DEST/nice: $PREP $CMD/nice.c
 	cd $CMD; cc -Od2 -o nice nice.c && strip nice && cp nice $DEST/nice || echo 'nice: FAILED'
@@ -1248,9 +1253,18 @@ $ETC/showq: $CMD/showq
 $CMD/su: $PREP $CMD/su.c
 	cd $CMD; cc -O   -o su su.c || echo 'su: FAILED'
 
+# SET-UID ROOT, OR su CHANGES NOBODY INTO ANYBODY.  su.c:32-45 asks for the
+# target's password only when getuid() != 0, then setgid()s and setuid()s to
+# the target -- calls a process not running as root can make only if su is
+# set-uid root.  Neither tape's install sets it -- v8's su/Makefile is `mv su
+# /etc', and v10's Admin/Mk installs with `strip $1 && cp $1 $2', which onto
+# an existing file keeps whatever mode the machine had already given it.  The
+# bit was set by hand, once, and a build that makes the file anew drops it.
+# Measured on 8 Oct: /etc/su 0775.
 $ETC/su: $CMD/su
 	cd $CMD; cp su $ETC/su || echo 'su: FAILED'
 	cd $CMD; strip $ETC/su || echo 'su: install FAILED'
+	/etc/chown 0 $ETC/su && chmod u+s,og-w $ETC/su || echo 'su: mode FAILED'
 
 
 $CMD/smash: $PREP $CMD/smash.c
@@ -1550,9 +1564,11 @@ $ETC/runfs: $SRC/netfs/libnetb/runfs
 	cd $SRC/netfs/libnetb; cp runfs $ETC/runfs || echo 'runfs: FAILED'
 	cd $SRC/netfs/libnetb; strip $ETC/runfs || echo 'runfs: install FAILED'
 
-# The one file this project adds to root.
+# The one file this project adds to root.  Executable, like down, rc and
+# shutdown in config: below -- docs/v10-build.md's verbs table has `mkimage'
+# typed by name, and /etc/mkimage shipped 644 until 8 Oct 2026.
 $ETC/mkimage: $PREP
-	cp $GEN/mkimage $ETC/mkimage
+	cp $GEN/mkimage $ETC/mkimage && chmod +x $ETC/mkimage || echo 'mkimage: FAILED'
 
 $CMD/512restor: $PREP $CMD/512restor.c
 	cd $CMD; cc -O   -o 512restor 512restor.c || echo '512restor: FAILED'
@@ -1634,6 +1650,7 @@ config:V:
 	done
 	chmod +x $ETC/down $ETC/mklost+found $ETC/rc $ETC/shutdown
 	cp $GEN/mkimage $ETC/mkimage
+	chmod +x $ETC/mkimage
 	cp $GEN/etc/profile $ROOT/.profile
 	chmod 644 $ROOT/.profile
 	sync
@@ -4115,6 +4132,11 @@ $CMD/lint/.built: P_CMD_lint__built
 $ROOT/usr/bin/lint: $CMD/lint/.built
 	test -d $ROOT/usr/lib/lint || mkdir $ROOT/usr/lib/lint
 	cd $CMD/lint; mk install BINDIR=$ROOT/usr/bin LINTDIR=$ROOT/usr/lib/lint || echo 'lint: FAILED'
+	# AND THE MODE, WHICH THE PACKAGE'S INSTALL DOES NOT SET -- cflow's case
+	# below exactly.  lint/mkfile:19 is `cp lint.sh ${BINDIR}/${NAME}', lint.sh
+	# is 644 in the tree, and every golden shipped a /usr/bin/lint that
+	# answered `lint: cannot execute'.  Found on 8 Oct running `lint -p'.
+	chmod +x $ROOT/usr/bin/lint || echo 'lint: mode FAILED'
 
 # lint -p READS llib-port.ln AND THE PACKAGE INSTALLS llib-lport.ln.
 # lint.sh:19 is `port) cat $LL/llib-port.ln >>$T', and the install names
@@ -5143,6 +5165,12 @@ $CMD/wwb/.built: P_CMD_wwb__built
 $ROOT/usr/bin/WWB/proofr: $CMD/wwb/.built
 	test -d $ROOT/usr/bin/WWB || mkdir $ROOT/usr/bin/WWB; test -d $ROOT/usr/lib/style || mkdir $ROOT/usr/lib/style
 	cd $CMD/wwb; mk install BIN=$ROOT/usr/bin/WWB LIB=$ROOT/usr/lib/style || echo 'wwb: FAILED'
+	# AND gram's MODE.  wwb/mkfile:65 is `cp gram.sh ${BIN}/gram' with no chmod,
+	# like every script in that install, and cp keeps the source's mode --
+	# gram.sh alone is 644 in the tree, so gram alone shipped unrunnable:
+	# `gram: cannot execute'.  Found by listing the command directories of the
+	# 8 Oct golden for files without an execute bit.
+	chmod +x $ROOT/usr/bin/WWB/gram || echo 'wwb gram: mode FAILED'
 
 # wwb.1's own SYNOPSIS says `wwb style file` etc, but wwb's BIN (above) is
 # /usr/bin/WWB, which is off the default PATH (:/bin:/usr/bin) -- style,
