@@ -12,6 +12,22 @@ FONTFILES=DESC ? ?? [A-Z]??* shell.lib u_Hb u_Hi u_Hx
 
 all :
 
+# ipnx: THE TWO RENAMES AT THE END OF install, and why these notes are up
+# here.  u_Hb/u_Hi/u_Hx are casefix's names for Hb/Hi/Hx (their own "name"
+# lines still say Hb/Hi/Hx) -- extracted that way because the real names
+# collide case-insensitively with HB/HI/HX, already matched by the glob in
+# FONTFILES.  Restored the same way troff/devaps restores u_Cw (build/mkfile,
+# near its devaps install line).  Without it, dpost's mapfont() silently
+# substitutes Times-Roman for all three Helvetica-Narrow weights.  The same
+# rename for the charlib glyphs whose real names (LH, rH, lH, RC) collide with
+# lh/rh/rc: \(LH (the AT&T logo, charlib/LH.example), \(lH and \(rH
+# otherwise render as nothing at all.
+#
+# NOT AS COMMENTS INSIDE THE RECIPE, where they were.  This file is run by
+# make, not mk, and v10's make execs a recipe line itself when it has no shell
+# metacharacter: `# real names collide case-insensitively with HB/HI/HX,
+# already' went to exec as a program named `#', and the 7 Oct rebuild stopped
+# with `Make: Cannot load #.' -- postscript: FAILED, and no font installed.
 install : all
 	@rm -f $(FONTDIR)/devpost/*.out
 	@if [ ! -d $(FONTDIR) ]; then \
@@ -38,14 +54,6 @@ install : all
 	    : $(GROUP) $(FONTDIR)/devpost/$$i; \
 	    : $(OWNER) $(FONTDIR)/devpost/$$i; \
 	done
-	# ipnx: u_Hb/u_Hi/u_Hx are casefix's names for Hb/Hi/Hx (their own
-	# "name" lines still say Hb/Hi/Hx) -- extracted that way because the
-	# real names collide case-insensitively with HB/HI/HX, already
-	# matched by the glob above.  Restored here the same way troff/
-	# devaps restores u_Cw (build/mkfile, near its devaps install line).
-	# Without this, dpost's mapfont() silently substitutes Times-Roman
-	# for all three Helvetica-Narrow weights -- a missing font is not a
-	# build failure.
 	cd $(FONTDIR)/devpost; test -f u_Hb && mv u_Hb Hb || :; test -f u_Hi && mv u_Hi Hi || :; test -f u_Hx && mv u_Hx Hx || :
 	cp charlib/* $(FONTDIR)/devpost/charlib
 	@for i in charlib/*; do \
@@ -53,10 +61,6 @@ install : all
 	    : $(GROUP) $(FONTDIR)/devpost/$$i; \
 	    : $(OWNER) $(FONTDIR)/devpost/$$i; \
 	done
-	# ipnx: same rename, for the charlib glyphs whose real names (LH, rH,
-	# lH, RC) collide case-insensitively with lh/rh/rc.  \(LH (the AT&T
-	# logo, see charlib/LH.example's own header), \(lH and \(rH
-	# otherwise render as nothing at all, silently.
 	cd $(FONTDIR)/devpost/charlib; test -f u_LH && mv u_LH LH || :; test -f u_rH && mv u_rH rH || :; test -f u_u_lH && mv u_u_lH lH || :; test -f u_RC && mv u_RC RC || :
 
 clean :

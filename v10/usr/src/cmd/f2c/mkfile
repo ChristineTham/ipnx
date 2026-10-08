@@ -70,9 +70,15 @@ B = cds.c data.c defines.h defs.h equiv.c error.c exec.c expr.c \
 	putpcc.c sysdep.c sysdep.h tokens usignal.h vax.c
 bx = f2c.1 f2c.1t f2c.h makefile mkfile version.c xsum.c xsum0.out Notice README.f2c
 
-version.c: $B
-	x=`Dt -d -t $B`
-	echo -e "char F2C_version[] = \"$x\";\nchar xxxvers[] = \"\\\\n@(#) FORTRAN 77 to C Translator, VERSION $x\\\\n\";" >version.c
+# ipnx: NOT A RULE HERE.  version.c is the tape's, stamped by f2c's
+# maintainers with `Dt' -- their own tool for the newest date among a set of
+# files, on no tape and not on this machine.  As a rule it fired the first time
+# any f2c source was newer than version.c (names.c, 20 Sep), answered
+# `sh: Dt: not found', and took f2c down: the 7 Oct rebuild's `f2c: FAILED'.
+# All it could do was re-date the version string, so it stays the tape's.
+#version.c: $B
+#	x=`Dt -d -t $B`
+#	echo -e "char F2C_version[] = \"$x\";\nchar xxxvers[] = \"\\\\n@(#) FORTRAN 77 to C Translator, VERSION $x\\\\n\";" >version.c
 
 bundle:V: /tmp/t/f2c.st
 /tmp/t/f2c.st: $B $bx
