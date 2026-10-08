@@ -357,7 +357,12 @@ before and after the build, so anything a new rule leaves in the source tree is 
 already. **But it sweeps nothing outside those roots** — `usrtrees` omits `bin` and `lib` as
 "product, not shape", so installed binaries are not its business — and it cannot undo an
 **overwrite**, which is what `build/preserve` is for. A rule that starts rewriting a tape
-file is reported by ipnxbuild as `OVERWRITTEN AND NOT PRESERVED`, not cleaned.
+file is reported by ipnxbuild as `OVERWRITTEN AND NOT PRESERVED`, not cleaned. And
+`preserve`'s **line order is restore order**: an input goes above what is made from it, or
+the restore re-dates it newer than its product and the next build re-runs the rule. **A rule
+whose install path changes** leaves the old product on any disk rebuilt in place —
+`/usr/bin/dump` sat beside `/etc/dump` for a month — so the old path goes in
+`build/obsolete`, which ipnxbuild removes after a clean build.
 
 V10 is a **reconstruction and labelled as one**: there was never a pure Tenth Edition to
 restore. The tape is one machine's working tree caught mid-upgrade from V9 — `libc.a`'s 261
