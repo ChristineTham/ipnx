@@ -33,8 +33,14 @@ gram.c:	gram.head gram.dcl gram.expr gram.exec gram.io defs tokdefs
 	mv y.tab.c gram.c
 	rm gram.in
 
-$OBJECTSd: defs
-defs: ftypes defines machdefs
+# ipnx: THE OBJECTS DEPEND ON WHAT defs INCLUDES, NOT defs ON THEM.  The tape's
+# `defs: ftypes defines machdefs' is make's spelling of that -- a target with
+# no commands, which make counts as remade -- and in mk it is a file target
+# with no recipe, which is fatal the moment one of the three reads newer:
+# `mk: no recipe to make 'defs''.  build/preserve restores defs (row 70)
+# before machdefs (row 72), each with cp's fresh date, so after one build the
+# next always failed -- f77: FAILED on the 7 Oct golden rebuild's third pass.
+$OBJECTSd: defs ftypes defines machdefs
 
 tokdefs: tokens
 	grep -n . <tokens | sed "s/\([^:]*\):\(.*\)/#define \2 \1/" >tokdefs

@@ -22,7 +22,11 @@ parsedag.h : parsedag.y
 	mv y.tab.c parsedag.c
 	mv y.tab.h parsedag.h
 
-parsedag.c : parsedag.h
+# ipnx: no `parsedag.c : parsedag.h' line.  The rule above makes both files,
+# and that line was make's way of saying so -- a target with no commands -- but
+# in mk it is a file with no recipe, fatal whenever parsedag.h reads newer.
+# build/preserve restores parsedag.c (row 58) and then parsedag.h (59), each with
+# cp's fresh date, which is exactly that.  f77's `defs:' failed the same way.
 
 kpvmalloc.o : kpvmalloc.c
 	cc ${CFLAGS} -c kpvmalloc.c

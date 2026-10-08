@@ -9,7 +9,13 @@ EYACC = /usr/bin/eyacc
 # `-rm' and answers `sh: -rm: not found' -- exit 1, and the package fails.
 # Nothing is lost by dropping it: `rm -f' of a file that is not there succeeds.
 RM = rm -f
-GET = touch
+# ipnx: GET IS A NO-OP, NOT touch.  It fetched a missing source from SCCS
+# (`sccs get' upstream; the tape already had touch).  But `0.h: pTree.h' below
+# hangs 0.h on the same rule, so whenever pTree.h reads newer mk runs it -- and
+# mk's $target is every target of that rule, where make's $@ was one.  Every
+# build re-dated all 71 sources: the overwrite report's whole pi list on 7 Oct.
+# ipnx has every source and no SCCS, so there is nothing for GET to do.
+GET = :
 
 CFLAGS = -O
 LDFLAGS = -z

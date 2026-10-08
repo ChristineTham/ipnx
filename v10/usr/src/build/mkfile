@@ -666,8 +666,14 @@ $ETC/tcpconfig: $IPC/internet/tcpconfig
 # every program depend on a cyntax lint pass (`./%: %.OO %.o'), whose link
 # step needs cyntax's lint libraries installed.  It worked only because pkgs
 # happens to run after the quarter that installs cyntax.
+# THE SIX IT INSTALLS, NOT `all'.  Each program's lint pass is a gate, and
+# with cyntax's libraries in place the lint is real: rsh.c fails it --
+# select()'s third argument an int, sprintf declared char *, exit implicitly
+# int -- and mk stops there, so no program in the directory is linked, con
+# included.  rsh is dk/cmd's rx under another name (the link below); push,
+# pull, rx and nrx are dk/cmd's too.  Measured on the 7 Oct golden rebuild.
 P_IPC_bin_all:V:	$PREP $ROOT/usr/lib/libipc.a $ROOT/usr/lib/libin.a $ROOT/usr/bin/cyntax
-	cd $IPC/bin; mk all || echo 'ipc/bin: FAILED'
+	cd $IPC/bin; mk ./con ./rcp ./loopback ./telnet ./qns ./scriptcon || echo 'ipc/bin: FAILED'
 
 $IPC/bin/con: P_IPC_bin_all
 	test -f $IPC/bin/con || echo '$IPC/bin/con: the package did not produce it'

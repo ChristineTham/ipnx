@@ -29,8 +29,12 @@ path.o: common.h sym.h path.c
 y.tab.h: common.h  sym.h twig.y
 	yacc -d twig.y
 
-y.tab.c: y.tab.h common.h sym.h twig.y
-y.tab.o: y.tab.c
+# ipnx: no recipe-less `y.tab.c: y.tab.h common.h sym.h twig.y'.  yacc -d
+# above writes y.tab.c with y.tab.h, and in mk a file target with no recipe is
+# fatal whenever a prerequisite reads newer -- which build/preserve's restore
+# order makes true, y.tab.c being put back just before y.tab.h.  What that
+# line meant -- recompile when the headers change -- belongs to the object.
+y.tab.o: y.tab.c y.tab.h common.h sym.h
 	${CC} -DPREFIX_BASE=${PREFIX} -g -c y.tab.c
 
 sym.o: common.h sym.h y.tab.h sym.c
