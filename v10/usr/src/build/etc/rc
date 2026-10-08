@@ -95,6 +95,21 @@ then
 	/etc/tcpconfig /dev/ip6 >/dev/null 2>&1 &
 	echo "network: il0 10.0.2.15, gateway 10.0.2.2"
 
+	# THE CONNECTION SERVER.  con, rcp, telnet and dist dial through /cs
+	# (libipc/ipcpath.c), and tcpmgr is what answers there for TCP: it
+	# creates /cs/tcp and places calls through the TCP the line above pushes
+	# onto ip6 -- its own tcpconfig() wants a /dev/iptcp this machine does
+	# not have, and it carries on without.  rc(8)'s sample starts its
+	# managers here too.  Delayed and backgrounded because tcpconfig is
+	# itself in the background and a boot must not wait on either.
+	# Measured 8 Oct 2026: telnet 10.0.2.2 reached a port on the host
+	# through it, and the 9P shares below were unaffected.  /etc/down's
+	# kill takes it with everything else before umount.
+	if test -x /usr/ipc/mgrs/tcpmgr
+	then
+		(sleep 5; /usr/ipc/mgrs/tcpmgr) >/dev/null 2>&1 &
+	fi
+
 	# The host's two shares.  FileShare.swift:46,49 give .macos port 9200
 	# and .home 9201, and the host now serves 9P2000.u on both -- so these
 	# are runfs, not nafsmnt: runfs pipes /etc/9pfs onto the mount point

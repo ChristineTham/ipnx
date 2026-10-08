@@ -479,6 +479,7 @@ src/cmd/cflow/cflow.sh
 src/cmd/cref/dr.c
 src/cmd/cyntax/cem/Makefile
 src/cmd/cyntax/cyn/Makefile
+src/cmd/dist/conf/mkrules.v10
 src/cmd/dist/lib/ftwlk.c
 src/cmd/dmesg.c
 src/cmd/docgen/docgen.c

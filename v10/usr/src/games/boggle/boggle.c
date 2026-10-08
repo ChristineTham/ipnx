@@ -492,7 +492,7 @@ char **argv;
 	register int i, c;
 
 	gtty (fileno(stdin), &origttyb);
-	setbuf(fileno(stdin), NULL);
+	setbuf(stdin, NULL);	/* ipnx: was setbuf(fileno(stdin), NULL) -- 0, a null FILE * */
 	tempttyb = origttyb;
 	if (setjmp(&env) != 0)
 		goodbye(0);

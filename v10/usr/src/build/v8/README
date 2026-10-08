@@ -21,6 +21,7 @@ on 8 Oct 2026 -- again byte-identical to this repository's v8/:
     lib.b      from v8/usr/lib/lib.b         bc -l
     fortunes   from v8/usr/games/lib         fortune
     quiz.k/    from v8/usr/games/lib/quiz.k  quiz, all 34 files
+    cunumber   from v8/usr/lib/cunumber      cu; empty in v8 too
 
 These are installed by the mkfile, not copied by patch: they are products,
 not sources.  The mkfile comment above their rules records what each was

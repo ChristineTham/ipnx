@@ -3474,7 +3474,7 @@ $ROOT/usr/bin/zero: $CMD/zero
 #                which "should always be taken as the master copy".
 #                lost+found is fsck's.  docsubmit, udemon and uudiff are loose
 #                source with no build file anywhere
-PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices
+PKG=$ROOT/usr/bin/2500 $ROOT/usr/bin/awk $ROOT/usr/bin/cb $ROOT/usr/bin/clear $ROOT/usr/bin/dc $ROOT/usr/bin/efl $ROOT/usr/bin/eqn $ROOT/usr/bin/neqn $ROOT/usr/bin/factor $ROOT/usr/bin/graph $ROOT/usr/bin/hoc $ROOT/usr/bin/join $ROOT/usr/bin/m4 $ROOT/usr/bin/numdate $ROOT/usr/bin/p $ROOT/usr/bin/pfort $ROOT/usr/bin/pic $ROOT/usr/bin/pp $ROOT/usr/bin/pret $ROOT/usr/bin/primes $ROOT/usr/bin/ratfor $ROOT/usr/bin/sno $ROOT/usr/bin/snocone $ROOT/usr/bin/sum $ROOT/usr/bin/tbl $ROOT/usr/bin/trace $ROOT/usr/bin/troff $ROOT/usr/bin/tsort $ROOT/usr/bin/ul $ROOT/usr/bin/units $ROOT/usr/bin/visi $ROOT/usr/bin/spitbol $ROOT/usr/bin/dired $ROOT/usr/bin/load $ROOT/usr/bin/ct $ROOT/usr/bin/oops $ROOT/usr/bin/= $ROOT/usr/bin/pack $ROOT/usr/bin/compress $ROOT/usr/bin/encrypt $ROOT/usr/bin/diff3 $ROOT/usr/bin/at $ROOT/usr/bin/calendar $ROOT/usr/bin/bcp $ROOT/usr/bin/twig $ROOT/usr/bin/usgmake $ROOT/usr/bin/lex $ROOT/usr/bin/sdb $ROOT/usr/bin/compact $ROOT/usr/bin/compat $ROOT/usr/bin/man $ROOT/usr/bin/lint $ROOT/usr/lib/lint/llib-port.ln $ROOT/usr/bin/cflow $ROOT/usr/bin/xrefa $ROOT/usr/bin/punct $ROOT/usr/bin/gre $ROOT/usr/bin/kasb $ROOT/usr/bin/apsend $ROOT/usr/bin/dict $ROOT/usr/bin/diction $ROOT/usr/bin/style $ROOT/usr/bin/struct $ROOT/usr/bin/spell $ROOT/usr/bin/learn $ROOT/usr/bin/refer $ROOT/usr/bin/f2c $ROOT/usr/bin/f77 $ROOT/usr/bin/bison $ROOT/usr/bin/flex $ROOT/usr/bin/ideal $ROOT/usr/lib/ideal/idfilt/4filt $ROOT/usr/lib/ideal/idfilt/pfilt $ROOT/usr/bin/ipa $ROOT/usr/bin/lprint $ROOT/usr/bin/map $ROOT/usr/lib/print2621/paper $ROOT/etc/config $ROOT/bin/tp $ROOT/usr/lib/lp0 $ROOT/usr/bin/lp1 $ROOT/usr/lib/plot/tek $ROOT/usr/bin/cbt $ROOT/usr/bin/cyntax $ROOT/usr/bin/docgen $ROOT/usr/bin/ex $ROOT/usr/bin/faces $ROOT/usr/bin/grap $ROOT/usr/bin/imscan $ROOT/usr/bin/library $ROOT/usr/spool/lp/bin/lpdaemon $ROOT/usr/bin/matlab $ROOT/usr/bin/monk $ROOT/usr/bin/pascal $ROOT/usr/bin/picasso $ROOT/usr/bin/post $ROOT/usr/bin/prefer $ROOT/usr/bin/qsnap $ROOT/etc/rarct $ROOT/usr/bin/sign $ROOT/usr/bin/town $ROOT/usr/bin/u9fs $ROOT/usr/bin/uucp $ROOT/usr/lib/uucp/uups $ROOT/usr/lib/worm/wmkfs $ROOT/usr/lib/backup/bpush $ROOT/usr/bin/backup $ROOT/usr/bin/WWB/proofr $ROOT/usr/bin/wwb $ROOT/usr/bin/con $ROOT/usr/bin/dcon $ROOT/usr/bin/rogin $ROOT/usr/bin/rlogin $ROOT/usr/bin/nogin $ROOT/usr/bin/rsh $ROOT/usr/bin/rcp $ROOT/usr/bin/loopback $ROOT/usr/bin/telnet $ROOT/usr/bin/scriptcon $ROOT/usr/bin/qns $ROOT/etc/upchuck $ROOT/usr/lib/libview2d.a $ROOT/usr/bin/worm $ROOT/usr/bin/bas $ROOT/usr/bin/bite $ROOT/lib/f1 $ROOT/usr/bin/postscript/postio $ROOT/usr/bin/cref $ROOT/usr/bin/lfactor $ROOT/usr/bin/seal $ROOT/usr/bin/unseal $ROOT/usr/bin/mkpkg $ROOT/usr/bin/inspkg $ROOT/etc/asd/asdrcv $ROOT/usr/bin/uuship $ROOT/etc/chuck $ROOT/usr/bin/error $ROOT/usr/bin/server $ROOT/etc/dump $ROOT/usr/lib/tmac/tmac.an $ROOT/usr/pub/eqnchar $ROOT/usr/lib/tmac/tmac.cs $ROOT/usr/bin/bundle $ROOT/usr/dict/words $ROOT/usr/lib/lib.b $ROOT/lib/dst $ROOT/usr/lib/Units $ROOT/usr/lib/Monetary.Units $ROOT/usr/lib/tmac/hyphen.tex $ROOT/usr/lib/ideal/idfilt/idsort $ROOT/usr/bin/sky $ROOT/usr/lib/startab $ROOT/usr/bin/c++filt $ROOT/usr/bin/stills $ROOT/usr/bin/tic $ROOT/usr/lib/terminfo/v/vt100 $ROOT/usr/bin/basic $ROOT/usr/lib/upas/send $ROOT/usr/lib/upas/edmail $ROOT/usr/lib/upas/translate $ROOT/usr/lib/upas/rewrite $ROOT/usr/lib/upas/namefiles $DEST/mail $DEST/rmail $ROOT/usr/ipc/mgrs/tcpmgr $ROOT/usr/ipc/mgrs/svcmgr $ROOT/usr/ipc/mgrs/udpconfig $ROOT/usr/bin/netstat $ROOT/usr/bin/11cc $ROOT/usr/lib/11as2 $ROOT/usr/lib/11crt0.o $ROOT/usr/bin/dist $ROOT/usr/bin/sml $ROOT/usr/ipc/lib/inservices $ROOT/usr/lib/cunumber
 pkgs:V:	$PKG
 
 # 2500 is the 2500-series terminal handler and its mkfile sets CC=lcc itself.
@@ -3989,6 +3989,12 @@ $ROOT/usr/games/lib/quiz.k/index: $GEN/v8/quiz.k/index
 	test -d $ROOT/usr/games/lib/quiz.k || mkdir $ROOT/usr/games/lib/quiz.k
 	cp $GEN/v8/quiz.k/* $ROOT/usr/games/lib/quiz.k && chmod 644 $ROOT/usr/games/lib/quiz.k/* || echo 'quiz.k: FAILED'
 
+# cunumber is cu's directory of symbolic numbers (cu.c:579), named in
+# Admin/ulibfiles, and v8's is empty -- which is what a machine with no modem
+# and no numbers to name ships, so it is carried as v8 had it.
+$ROOT/usr/lib/cunumber: $GEN/v8/cunumber
+	cp $GEN/v8/cunumber $ROOT/usr/lib/cunumber && chmod 644 $ROOT/usr/lib/cunumber || echo 'cunumber: FAILED'
+
 # /lib/dst, THE DAYLIGHT-SAVING TABLE, AND OURS.  ctime.c:104-118 reads it when
 # the kernel's dstflag is set and, finding none, shifts nothing -- so the
 # machine kept standard time all year.  build/etc/dst carries the US rules
@@ -4115,14 +4121,9 @@ $ROOT/usr/bin/pack: $CMD/pack/pack
 	cd $CMD/pack; strip $ROOT/usr/bin/pack $ROOT/usr/bin/unpack || echo 'pack: install FAILED'
 
 # compress's BIN is a make variable, so its own install target runs; uncompress
-# and zcat are links it makes itself.  USERMEM IS WRITTEN, NOT ASKED FOR: the
-# package's usermem script asks adb for maxmem out of /unix, gets nothing on
-# this kernel, and writes 0, so compress was built for 12-bit codes and could
-# not read the 16-bit .Z every other compress writes -- sml's mo.vax.tar.Z
-# came out as `directory checksum error', measured 8 Oct 2026.  450000 is
-# compress.c:23's own default, and it is above :50's 433484, which is 16 bits.
+# and zcat are links it makes itself.
 $ROOT/usr/bin/compress: $PREP
-	cd $CMD/compress; mk clean || :; echo 450000 > USERMEM; mk install BIN=$ROOT/usr/bin || echo 'compress: FAILED'
+	cd $CMD/compress; mk clean || :; mk install BIN=$ROOT/usr/bin || echo 'compress: FAILED'
 	cd $CMD/compress; mk clean || :
 
 # descrypt builds one binary and installs it twice; decrypt is the same file.
@@ -5540,6 +5541,10 @@ $ROOT/usr/lib/11crt0.o: $ROOT/usr/lib/11as2 $ROOT/usr/bin/11cc
 # CC is plain lcc.  lib/ftwlk.c wants ENOMEM, which lcc's errno.h -- ANSI's
 # two names -- does not define; the tree's copy defines it as
 # /usr/include/errno.h does (measured: `undeclared identifier', 8 Oct 2026).
+# And mkrules.v10 compiled with -DDOPRNT, which makes lib/print.c call
+# _doprnt, the old stdio's internal; this libc's stdio is vfprintf, so every
+# program failed `Undefined: __doprnt' (measured) and the tree's mkrules.v10
+# drops the flag.
 # It installs as its own mkfiles say: dist in /usr/bin and
 # everything else in /usr/lib/dist, spooling under /usr/spool/dist
 # (conf/mkconf.v10).  It talks to other machines' dist through the
@@ -5562,10 +5567,15 @@ $ROOT/usr/bin/dist: $CMD/dist/cmd/dist
 # STANDARD ML OF NEW JERSEY 0.44, sml(1).  The compiler is shipped compiled,
 # as VAX machine objects in mo.vax.tar.Z, and makeml links them into its C
 # and assembler runtime (runtime/Makefile's VAX and V9 stanzas) and exports
-# the image as src/sml -- an ordinary executable.  The archive is
-# compress's 16-bit format, so this needs a compress built to read it.
+# the image as src/sml -- an ordinary executable.  THE ARCHIVE IS UNPACKED
+# FROM A FILE, NOT A PIPE: `zcat | tar xf -' stopped after two members with
+# `directory checksum error' -- this tar takes a short read from a pipe for
+# a whole record -- and makeml then linked an allmo.o with nothing in it
+# (`ld: allmo.o: too small').  zcat itself was right: 1,331,200 bytes,
+# measured 8 Oct 2026.
 P_CMD_sml_sml:V:	$PREP $ROOT/usr/bin/compress
-	cd $CMD/sml; test -d mo.vax || zcat mo.vax.tar.Z | tar xf - || echo 'sml mo: FAILED'
+	cd $CMD/sml; rm -rf mo.vax; zcat mo.vax.tar.Z > /usr/tmp/mo.vax.tar && tar xf /usr/tmp/mo.vax.tar || echo 'sml mo: FAILED'
+	rm -f /usr/tmp/mo.vax.tar
 	cd $CMD/sml/src; sh makeml -vax -v9 || echo 'sml: FAILED'
 
 $CMD/sml/src/sml: P_CMD_sml_sml

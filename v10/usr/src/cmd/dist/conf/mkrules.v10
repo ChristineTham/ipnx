@@ -6,5 +6,5 @@ RL=ranlib
 O=o
 OS=o
 %.$O: %.c
-	$CC -I../v10/lcc-incl -DDOPRNT -c $stem.c
+	$CC -I../v10/lcc-incl -c $stem.c
 LIBV=
