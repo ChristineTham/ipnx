@@ -1,0 +1,14 @@
+# /usr/lib/upas/rewrite: how upas's send turns an address into a delivery,
+# one rule a line -- pattern, type, argument -- tried in order (upas(8)).
+#
+# OURS, NOT THE TAPE'S.  config/research/rewrite is Bell's own, and every
+# rule past the local ones hands mail to route, uux, tosmtp, qns or Datakit,
+# none of which this machine has.  This is upas.8's sample for local mail
+# (EXAMPLES), with research's two folds of `user@host' and `user%host' into
+# `host!user'.  An address that is not this machine's then matches nothing,
+# and send answers it `Invalid address' (send/main.c:266) in a bounce.
+[^!@%]+			translate	"exec translate '&'"
+local!([^!@%]+)		>>		/usr/spool/mail/\1
+\l!(.+)			alias		\1
+([^!]+)@([^!@]+)	alias		\2!\1
+([^!]+)%([^!%]+)	alias		\2!\1

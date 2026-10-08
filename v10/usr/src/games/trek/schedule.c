@@ -4,6 +4,7 @@
  **	schedule an event
  **/
 
+EVENT *
 schedule(type, delta, x, y, z)
 int	type;
 float	delta;
@@ -29,7 +30,7 @@ char	z;
 		return(e);
 	}
 	syserr("Cannot schedule event %d parm %d %d %d", type, x, y, z);
-	return(-1);
+	return((EVENT *) -1);
 }
 
 
@@ -55,7 +56,7 @@ EVENT		*e;
 {
 	if (e->evcode < 64)
 		Etc.eventptr[e->evcode] = 0;
-	e->date = 1e50;
+	e->date = 1e30;	/* was 1e50: past the VAX float's 1.7e38, and the compiler stops */
 	e->evcode = -1;
 	return;
 }

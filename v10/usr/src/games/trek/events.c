@@ -37,6 +37,7 @@ events()
 	register QUAD		*q;
 	register EVENT		*e;
 	int			evnum;
+	char			*sp;
 
 	if (Move.delta <= 0.0)
 	{
@@ -260,13 +261,13 @@ events()
 
 		  case E_SNAP:
 			reschedule(e, logdly(E_SNAP));
-			i = &Snapshot;
-			i = bmove(&Status.bases, i, 2);
-			i = bmove(&Status.date, i, 12);
-			i = bmove(&Quad, i, sizeof Quad);
-			i = bmove(&Event, i, sizeof Event);
-			i = bmove(&Base, i, sizeof Base);
-			i = bmove(&Etc, i, sizeof Etc);
+			sp = Snapshot;
+			sp = bmove(&Status.bases, sp, 2);
+			sp = bmove(&Status.date, sp, 12);
+			sp = bmove(&Quad, sp, sizeof Quad);
+			sp = bmove(&Event, sp, sizeof Event);
+			sp = bmove(&Base, sp, sizeof Base);
+			sp = bmove(&Etc, sp, sizeof Etc);
 			Game.snap = 1;
 			break;
 

@@ -1,8 +1,8 @@
-#include "/usr/lib/a68defs"
+#include "a68.h"	/* was /usr/lib/a68defs, on no tape: a68.h is it */
 
 int	mkfault;
-int	stdout 1;
-char printbuf[255]; char *printptr printbuf, *digitptr;
+int	stdout = 1;
+char printbuf[255]; char *printptr = printbuf, *digitptr;
 
 long itol(x,y)
 {
@@ -37,9 +37,18 @@ char *fmat, **a1;
 	double real, rnd;
 	int x, decpt, n; long lx;
 	int width, prec; char c, adj; char flush;
-	char digits[64];
+	char digits[64]; char *ecvt();
 
-	fptr=fmat; vptr = &a1;
+	/* THE ARGUMENTS ARE WALKED BY HAND, and this walk was the PDP-11's:
+	 * there a long was two ints and a double four, so %D and its kin took
+	 * an extra vptr++ and %f a vptr += 3.  On the VAX an int, a long and a
+	 * pointer are all one slot and a double is two, so the long cases
+	 * take no extra step, %f takes one, and the PDP-11's habit of passing
+	 * a long as an (int, int) pair to printdbl and printoct is undone:
+	 * printdbl(lx,c,10) for the score table's %D bound the format letter
+	 * to the number's low half and 10 to the format, and printoct(0,x,0)
+	 * for %o printed zero. */
+	fptr=fmat; vptr = (int *)&a1;
 
 	WHILE c = *fptr++
 	DO  IF c!='%'
@@ -48,7 +57,7 @@ char *fmat, **a1;
 		 width=convert(&fptr);
 		 IF *fptr=='.' THEN fptr++; prec=convert(&fptr); ELSE prec = -1; FI
 		 digitptr=digits;
-		 dptr=rptr=vptr; lx = *dptr; x = *vptr++;
+		 dptr=(long *)vptr; rptr=(double *)vptr; lx = *dptr; x = *vptr++;
 		 s=0; flush=0;
 		 switch (c = *fptr++) {
 
@@ -58,29 +67,29 @@ char *fmat, **a1;
 		    case 'u':
 			printnum(x,c,10); break;
 		    case 'o':
-			printoct(0,x,0); break;
+			printoct((long)x,0); break;
 		    case 'q':
 			lx=x; printoct(lx,-1); break;
 		    case 'x':
 			printdbl(0,x,c,16); break;
 		    case 'Y':
-			printdate(lx); vptr++; break;
+			printdate(lx); break;
 		    case 'D':
 		    case 'U':
-			printdbl(lx,c,10); vptr++; break;
+			printnum(x,c=='D'?'d':'u',10); break;
 		    case 'O':
-			printoct(lx,0); vptr++; break;
+			printoct(lx,0); break;
 		    case 'Q':
-			printoct(lx,-1); vptr++; break;
+			printoct(lx,-1); break;
 		    case 'X':
-			printdbl(lx,'x',16); vptr++; break;
+			printdbl(0,x,'x',16); break;
 		    case 'c':
 			printc(x); break;
 		    case 's':
-			s=x; break;
+			s=(char *)x; break;
 		    case 'f':
 		    case 'F':
-			vptr += 3;
+			vptr++;
 			rnd=1.0;
 			for(n=prec;n>=0;n--)
 				rnd *= 10;
@@ -132,7 +141,7 @@ char *fmat, **a1;
 printdate(tvec)
 long tvec;
 {
-	STRING timeptr; REG INT i;
+	STRING timeptr; REG INT i; char *ctime();
 	timeptr = ctime(&tvec);
 	FOR i=20; i<24; i++ DO *digitptr++ = *(timeptr+i); OD
 	FOR i=3; i<19; i++ DO *digitptr++ = *(timeptr+i); OD
@@ -182,7 +191,7 @@ printoct(o,s) long o; int s;
 	     FI
 	FI
 	FOR i=0;i<=11;i++
-	DO digs[i] = po&7; po =>> 3; OD
+	DO digs[i] = po&7; po >>= 3; OD
 	digs[10] &= 03; digs[11]=0;
 	FOR i=11;i>=0;i--
 	DO IF digs[i] THEN EXITFOR; FI OD

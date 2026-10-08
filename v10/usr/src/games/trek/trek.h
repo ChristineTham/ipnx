@@ -133,6 +133,8 @@ EVENT
 # define	MAXEVENTS	25	/* max number of concurrently pending events */
 
 EVENT		Event[MAXEVENTS];	/* dynamic event list; one entry per pending event */
+EVENT		*schedule();
+char		*bmove();
 
 /*****************************  KLINGONS  *******************************/
 

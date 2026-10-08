@@ -298,6 +298,30 @@ do
 	fi
 done
 
+# gtty AND stty ARE GONE FROM THIS LIBC TOO, and boggle and rain call them
+# (`Undefined: _gtty _stty' for rain, measured) through V7's struct sgttyb,
+# which is this machine's (sys/ttyio.h).  Each gets the pair as the ioctls they
+# became -- TIOCGETP and TIOCSETP, what atc calls -- on the gets wrappers'
+# rule above: the only callers in their own binaries.
+cd $SRC/games || exit 1
+for f in boggle/boggle.c rain/rain.c
+do
+	if grep 'ipnx gtty' $f > /dev/null
+	then	:
+	else
+		echo '/* ipnx gtty -- gtty and stty are gone from libc; see build/patch */' >> $f
+		echo 'gtty(f, b) struct sgttyb *b; { return ioctl(f, TIOCGETP, b); }' >> $f
+		echo 'stty(f, b) struct sgttyb *b; { return ioctl(f, TIOCSETP, b); }' >> $f
+	fi
+done
+
+# sky's one gets reads a star catalogue's name into startab, which is twenty
+# bytes (sky.h:18), so it gets the bounded fgets idiom of the netnews stanza
+# below rather than the 1024-byte wrapper above.  Without it sky does not link
+# at all: `_gets' undefined, gets being gone from this libc.
+cd $SRC/cmd/sky || exit 1
+sed 's|^	gets(p);$|	*p = 0; fgets(p, sizeof startab, stdin); p[strcspn(p, "\\n")] = 0;|' main.c > g$$ && mv g$$ main.c
+
 # wwb/dictadd.c:17 is `while(gets(phrase) != EOF)' and EOF is -1, so once gets
 # is declared char * -- which it has to be, for the wrapper's definition to
 # match -- pcc answers "illegal pointer/integer combination, op !=".  It was

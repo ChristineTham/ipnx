@@ -60,7 +60,7 @@ extern int abandon();
 extern int dumpgame();
 extern int eventpr();
 
-int (*comfn[])()
+int (*comfn[])() =
 {
 	&shell,
 	&move,

@@ -4,7 +4,7 @@
  **	global variable definitions
  **/
 
-DEVICE		Device[NDEV]
+DEVICE		Device[NDEV] =
 {
 	"warp drive",		"Scotty",
 	"S.R. scanners",	"Scotty",
@@ -24,7 +24,7 @@ DEVICE		Device[NDEV]
 	"*** ERROR 15 ***",	"Nobody"
 };
 
-char	*Systemname[NINHAB]
+char	*Systemname[NINHAB] =
 {
 	"*** STARTREK SYSTEM ERROR ***",
 	"Talos IV",

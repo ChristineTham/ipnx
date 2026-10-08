@@ -40,7 +40,7 @@ setup(two)
 	EVENT			*e;
 	char			base_sq[NQUADS][NQUADS];
 
-	time(timevec); srand(timevec[1]);
+	time(timevec); srand(timevec[0]);	/* [1] was the PDP-11's low word; here time() leaves it unset */
 	if(repflg==0 && (Game.length=getcodpar("What length game", Lentab))<0) return(0);
 	if(Game.length==0) {
 		return(restart());
@@ -133,7 +133,7 @@ setup(two)
 	for (i = 0; i < MAXEVENTS; i++)
 	{
 		e = &Event[i];
-		e->date = 1e50;
+		e->date = 1e30;	/* was 1e50: past the VAX float's 1.7e38, and the compiler stops */
 		e->evcode = -1;
 	}
 	schedule(E_SNOVA, logdly(E_SNOVA), 0, 0, 0);
@@ -149,7 +149,7 @@ setup(two)
 	Game.deaths = Game.negenbar = 0;
 	Game.captives = 0;
 	Game.killinhab = 0;
-	Game.distresses = 0;
+	Status.distressed = 0;	/* was Game.distresses, which no trek.h on the tape declares */
 	Game.helps = 0;
 	Game.killed = 0;
 	Game.snap = 0;

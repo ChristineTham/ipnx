@@ -619,3 +619,6 @@ char **argv;
 		goodbye(0);
 	}
 }
+/* ipnx gtty -- gtty and stty are gone from libc; see build/patch */
+gtty(f, b) struct sgttyb *b; { return ioctl(f, TIOCGETP, b); }
+stty(f, b) struct sgttyb *b; { return ioctl(f, TIOCSETP, b); }

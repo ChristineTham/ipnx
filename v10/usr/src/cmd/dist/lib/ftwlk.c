@@ -121,6 +121,9 @@
 #ifndef ENOMEM
 #include <errno.h>
 #endif
+#ifndef ENOMEM
+#define ENOMEM	12	/* ipnx: lcc's errno.h holds ANSI's two names; 12 is /usr/include/errno.h:16 */
+#endif
 
 	extern int errno;
 

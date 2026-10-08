@@ -4,7 +4,7 @@
  **	call starbase for help
  **/
 
-char	*Cntvect[3]
+char	*Cntvect[3] =
 {"first", "second", "third"};
 
 help()
@@ -78,7 +78,7 @@ double *d;
 	double dist, x;
 
 	/* find the closest base */
-	dist = 1e50;
+	dist = 1e30;	/* was 1e50: past the VAX float's 1.7e38, and the compiler stops */
 	if (Quad[Quadx][Quady].bases <= 0)
 	{
 		for (i = 0; i < Status.bases; i++)

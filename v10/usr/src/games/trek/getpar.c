@@ -1,5 +1,5 @@
 # include	"trek.h"
-# define	ECHO 010
+# include	<sgtty.h>	/* its ECHO is 010, as trek's own define was */
 
 /**
  **	get integer parameter
@@ -131,12 +131,13 @@ char buf[];
 {
 	int s, m;
 	register char c; register int ptr;
-	struct{	int junk[2];
-		int mode;
-	} b;
+	struct sgttyb b;
 
+	/* gtty and stty are gone from this libc -- rain fails on the same two
+	 * names -- and the struct was V6's, two ints and then the mode, where
+	 * this sgttyb keeps sg_flags at byte 4.  TIOCGETP is what atc uses. */
 	s=signal(SIGINT,1);
-	gtty(0,&b); m=b.mode; b.mode &= ~ECHO; stty(0,&b);
+	ioctl(0,TIOCGETP,&b); m=b.sg_flags; b.sg_flags &= ~ECHO; ioctl(0,TIOCSETP,&b);
 	flushin();
 	printf("Enter password: %n");
 	
@@ -145,7 +146,7 @@ char buf[];
 		if(ptr<PWDLEN) buf[ptr++]=c;
 	}
 	while(ptr<PWDLEN) buf[ptr++]=0;
-	b.mode = m; stty(0,&b);
+	b.sg_flags = m; ioctl(0,TIOCSETP,&b);
 	printf("\n");
 	signal(SIGINT,s);
 	flushin();

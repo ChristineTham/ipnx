@@ -1,4 +1,4 @@
-#include "/usr/lib/a68defs"
+#include "a68.h"	/* was /usr/lib/a68defs, on no tape: a68.h is it */
 
 
 int	mkfault;

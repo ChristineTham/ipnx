@@ -77,6 +77,7 @@ register FILE *infile;
 					indots = FALSE;
 				}
 				fputs (buf, stdout);
+				sscanf (buf, "%s", cmd);	/* as idfilt.c:104; cmd was read unset */
 				if (!boundset) {
 					if (strcmp (cmd, "...maxx") == 0) {
 						sscanf (buf, "%s %f", cmd, &f[0]);

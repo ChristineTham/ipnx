@@ -4,7 +4,7 @@
 	** get status info
 	**/
 
-char *Color[4]
+char *Color[4] =
 {
 	"GREEN",
 	"DOCKED",

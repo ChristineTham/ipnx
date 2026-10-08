@@ -33,7 +33,7 @@ int	sw;
 	{
 		/* cloaking device */
 		if (Status.ship == QUEENE) {
-			error("Ye Faire Queene does not have the cloaking device.\n");
+			error("Ye Faire Queene does not have the cloaking device.\n", "");	/* error() prints two */
 			return;
 		}
 		device = "Cloaking device";

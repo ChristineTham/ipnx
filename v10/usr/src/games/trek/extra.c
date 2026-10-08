@@ -5,6 +5,7 @@ tTf()
 }
 #endif
 
+char *
 bmove(f, t, n)
 register char *f, *t;
 register int n;

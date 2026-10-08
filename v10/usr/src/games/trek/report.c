@@ -36,16 +36,16 @@ dcrept()
 		}
 		x = e->date - Status.date;
 		printf("%-24s%7.2f  %7.2f\n",
-			Device[e->systemname].name, x * m1 + 0.005, x * m2 + 0.005);
-		if (!Damage[e->systemname])
+			Device[e->evdata].name, x * m1 + 0.005, x * m2 + 0.005);
+		if (!Damage[e->evdata])
 			syserr("Damage discrepancy device %d",
-				e->systemname);
+				e->evdata);
 	}
 	if (f)
 		printf("all devices functional\n");
 }
 
-char *eout[] {
+char *eout[] = {
 	"snova",
 	"lrtb",
 	"katsb",

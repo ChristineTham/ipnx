@@ -141,7 +141,7 @@ computer()
 		for (i = 0; i < MAXEVENTS; i++)
 		{
 			e = &Event[i];
-			if ((e->systemname&E_NREPORT)==0)
+			if ((e->evdata&E_NREPORT)==0)
 				j |= report(e);
 		}
 		if (j==0)

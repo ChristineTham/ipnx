@@ -119,3 +119,6 @@ char c;
 float ranf() {
     return((float)lrand()/2147483647.);
 }
+/* ipnx gtty -- gtty and stty are gone from libc; see build/patch */
+gtty(f, b) struct sgttyb *b; { return ioctl(f, TIOCGETP, b); }
+stty(f, b) struct sgttyb *b; { return ioctl(f, TIOCSETP, b); }

@@ -209,7 +209,7 @@ readcat()
 
 	printf("Enter name of star catalog: ");
 	p = startab;
-	gets(p);
+	*p = 0; fgets(p, sizeof startab, stdin); p[strcspn(p, "\n")] = 0;
 }
 
 init()

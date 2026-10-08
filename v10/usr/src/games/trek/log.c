@@ -10,7 +10,7 @@ extern long	score();
 extern CVNTAB	Skitab[];
 extern CVNTAB	Lentab[];
 
-char *reason[] {
+char *reason[] = {
 	"win......",
 	"time.....",
 	"energy...",
@@ -36,6 +36,7 @@ int	n;
 	register int		f, uid;
 	long			s;
 	char			*date;
+	char			*ctime();
 
 	s=score();
 	if(Game.tourn && (f=open(LOGFILE,1))>=0) {

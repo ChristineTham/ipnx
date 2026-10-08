@@ -26,7 +26,7 @@ float	dam;		/* time to repair */
 	for (i = 0;  i  < MAXEVENTS; i++)
 	{
 		e = &Event[i];
-		if (e->evcode != E_FIXDV || e->systemname != dev)
+		if (e->evcode != E_FIXDV || e->evdata != dev)
 			continue;
 		reschedule(e, dam);
 		return;

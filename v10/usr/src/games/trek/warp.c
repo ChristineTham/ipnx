@@ -46,6 +46,7 @@ double	d;
 	double			frac;
 	register int		percent;
 	register int		i;
+	char			*sp;
 	extern char		Snapshot[];
 
 	if (Damage[WARP])
@@ -115,12 +116,12 @@ double	d;
 					reschedule(&Event[i], time);
 		} else {
 			time = Status.date;
-			bmove(i=Snapshot, &Status.bases, 2);
-			bmove(i += 2, &Status.date, 12);
-			bmove(i += 12, &Quad, sizeof Quad);
-			bmove(i += sizeof Quad, &Event, sizeof Event);
-			bmove(i += sizeof Event, &Base, sizeof Base);
-			bmove(i += sizeof Base, &Etc, sizeof Etc);
+			bmove(sp=Snapshot, &Status.bases, 2);
+			bmove(sp += 2, &Status.date, 12);
+			bmove(sp += 12, &Quad, sizeof Quad);
+			bmove(sp += sizeof Quad, &Event, sizeof Event);
+			bmove(sp += sizeof Event, &Base, sizeof Base);
+			bmove(sp += sizeof Base, &Etc, sizeof Etc);
 			printf("Negative time portal entered -- it is now Stardate %.2f\n",
 				Status.date);
 			for (i = 0; i < MAXEVENTS; i++)
