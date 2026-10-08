@@ -461,8 +461,12 @@ src/cmd/cfront/ooptcfront/tree_walk.c
 # but one patch edits AND this repository fixed further does: bad144.c,
 # struct/tree.c and beauty.c below are patched and then corrected.
 include/f2c.h
+man/adm/man7/units.7
+man/filnam
+man/filref
 man/man1/lcc.1
 man/man1/qsnap.1
+man/man7/units.7
 maps/115
 src/cmd/bad144.c
 src/cmd/basic/bite/src/input.c

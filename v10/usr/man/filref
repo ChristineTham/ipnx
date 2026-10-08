@@ -240,7 +240,6 @@ $TOOLS/daglib.ps dag.1
 /n/alice/usr/spool/lab/* lab.1
 /n/alice/usr/spool/news postnews.7
 /n/alice/usr/spool/town/ustown* town.7
-/n/alice/usr/td/Monetary.units units.7
 /n/bowell/n/bowell/pap papers.7
 /n/bowell/n/bowell/pap/*org papers.7
 /n/bowell/n/bowell/pap/Titles papers.7
@@ -408,6 +407,7 @@ $TOOLS/daglib.ps dag.1
 /usr/jerq/lib/vismon vismon.9
 /usr/jerq/mbin intro.9
 /usr/jerq/mbin/sysmon.m vismon.9
+/usr/lib/Monetary.Units units.7
 /usr/lib/Rpull push.1
 /usr/lib/Rpush push.1
 /usr/lib/Units units.7

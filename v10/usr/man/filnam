@@ -157,7 +157,6 @@ $TOOLS/daglib.ps
 /n/alice/usr/spool/lab/*
 /n/alice/usr/spool/news
 /n/alice/usr/spool/town/ustown*
-/n/alice/usr/td/Monetary.units
 /n/bowell/n/bowell/pap
 /n/bowell/n/bowell/pap/*org
 /n/bowell/n/bowell/pap/Titles
@@ -292,6 +291,7 @@ $TOOLS/daglib.ps
 /usr/jerq/lib/vismon
 /usr/jerq/mbin
 /usr/jerq/mbin/sysmon.m
+/usr/lib/Monetary.Units
 /usr/lib/Rpull
 /usr/lib/Rpush
 /usr/lib/Units

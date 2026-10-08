@@ -83,6 +83,7 @@ bash tools/v10-golden.sh                # V10: does the golden still boot to log
 python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
 python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
 python3 tools/v10-tree-check.py         # V10: every v10/ edit has a route to a machine (--current after a rebuild)
+python3 tools/v10-units.py --check      # V10: /usr/lib/Units still says what the tape's old table says
 bash tools/9pfs-test.sh                 # the GUEST's 9P client, driven on the host
 python3 tools/webterm-check.py           # the browser app: boot, log in, run a command
 tools/check-md-links.sh            # relative markdown links resolve (no args = every .md of ours)
@@ -431,8 +432,8 @@ status 0.
   written, proven and committed while the thing the user double-clicks still runs last
   week's system.
 - **Generated files stay in step with their source** — `mkdep.py --check`,
-  `ipnx-release.py --check`, `mkcarry.py --check`. A stale makefile is the one failure that
-  looks like a source bug.
+  `ipnx-release.py --check`, `mkcarry.py --check`, `v10-units.py --check`. A stale
+  makefile is the one failure that looks like a source bug.
 - **Generated output must not depend on which filesystem generated it.** `mkdep.py` used to
   test `os.path.exists(<dir>/makefile)`, which macOS answers for a directory holding
   `Makefile` — 66 of the command directories spell it that way — so a regeneration on any
