@@ -12,6 +12,8 @@
 */
 
 #include <stdio.h>
+#include <libc.h>	/* ipnx: exit() is called below and nothing declared it;
+			   cfront 2.x refuses an undeclared function */
 //extern int strcpy(char*, char*);
 //extern char * strtok(char*, char*);
 

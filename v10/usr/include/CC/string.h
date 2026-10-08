@@ -1,3 +1,6 @@
+/* ipnx: size_t is used below and nothing this file includes declares it;
+   new.h, malloc.h and stddef.h say the same, and cfront takes it twice. */
+typedef unsigned size_t;
 // <string.h>: the C string functions, UNIX Programmers Manual vol 1 section 3
 
 extern "C" {

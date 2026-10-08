@@ -1,0 +1,259 @@
+# C++ for a machine that has none, from V8's cfront.  Rarely typed: once
+# on a machine without /usr/bin/cfront, and every disk built since the first
+# golden to carry C++ has one.  After it, build/mkfile's C++ rules keep the
+# toolchain, built by itself, as cc is.
+#
+#	sh /usr/src/build/cfboot [SEED]
+#
+# SEED is the directory tools/v10-cfseed.py writes on the host, work/cfseed in
+# the repository: /n/macos/work/cfseed where /n/macos is the repository
+# (tools/ipnx, tools/v10-launch.sh), and the default below where the
+# repository is ~/Repositories/Unix/ipnx under /n/home, updatebuild's
+# assumption.  This reads the share once, to copy the seed, and then not again.
+#
+# WHY.  cfront is written in C++, and no V10 tape carries a cfront binary, so
+# none of the tape's seven cfront trees can be built from the tapes alone.
+# V8's golden carries Bell's VAX cfront, <<cfront 7/04/85>>, with its munch and
+# libC.a, and the chain from there is:
+#
+#   1   cfront 2.00 (cmd/cfront/cfront2.00, 06/30/89), translated by V8's
+#       cfront with build/src/cf85fix.c either side of it -- three bugs in the
+#       1985 translator, each of which cost stage 1 a crash; that file says
+#       what each is -- and linked with V8's libC.a and munch.
+#   rt  libC's new/ and misc/ (operator new, __vec_new, _main, the constructor
+#       tables) and munch.c, by stage 1.  cfront 2.00 and 2.1 call the same
+#       entry points, so one runtime links either.
+#   2   cfront 2.1 (cmd/cfront/cfront, <<2.1++ 08/24/90>>) by stage 1.
+#   3   cfront 2.1 by stage 2.
+#   4   cfront 2.1 by stage 3.
+#   5   cfront 2.1 by stage 4, built for one reason: each stage's directory
+#       keeps the translations the stage BEFORE it made, so stage 3's are in
+#       s4 and stage 4's in s5, and those two must agree on all 27 files --
+#       the fixed point -- or nothing is installed.  Stage 2's (in s3) are not
+#       the comparison: stage 2 puts a `# line' directive before some empty
+#       statements where 3 does not, whitespace and nothing else, measured
+#       8 Oct 2026, and a version of this script that compared s3 with s4
+#       refused on exactly those 17 files.
+#   then libC whole and munch.c by stage 4, and the install: stage 4's
+#   cfront as /usr/bin/cfront, /usr/lib/munch, /usr/lib/libC.a, and
+#   /usr/bin/CC from build/src/CC.
+#
+# Measured 8 Oct 2026: stages 3 and 4 translate all 27 files identically, so
+# stage 5 is stage 4 again -- their binaries differ only in the 28 compile
+# times the symbol table carries.  A run takes about five minutes.
+SEED=${1-/n/home/Repositories/Unix/ipnx/work/cfseed}
+W=/usr/tmp/cfboot
+B=/usr/src/build
+CF=/usr/src/cmd/cfront
+F200="alloc dcl dcl2 dcl3 dcl4 del error expand expr expr2 expr3 find lalex lex main norm norm2 print print2 repr simpl simpl2 size table typ typ2 y.tab"
+F21="$F200"
+
+test -f $SEED/ORIGIN || {
+	echo "cfboot: no $SEED/ORIGIN -- run tools/v10-cfseed.py on the host"
+	exit 1
+}
+test "`sed 1q $SEED/ORIGIN`" = "cfseed 1" || {
+	echo "cfboot: $SEED is not a seed this script was written for:"
+	sed 1q $SEED/ORIGIN
+	exit 1
+}
+sed 1,2d $SEED/ORIGIN
+
+# THE TREE'S REPAIRS FIRST.  libC and munch.c do not compile as the tape left
+# them -- six cfront 2.x errors, each a whole-file repair this repository
+# carries and build/mkfiles delivers -- and ipnxbuild settles the patch stamp
+# the same way before it builds anything.
+mk -f $B/mkfile /usr/src/cmd/.patched || exit 1
+for f in /usr/include/CC/memory.h /usr/include/CC/string.h $CF/munch.c $CF/libC/generic/generic.c $CF/libC/task/obj.c $CF/libC/iostream/oldformat.c
+do
+	grep 'ipnx:' $f > /dev/null 2>&1 || {
+		echo "cfboot: $f lacks this repository's repair -- run updatebuild first"
+		exit 1
+	}
+done
+
+# ---- the seed, copied off the share --------------------------------------
+rm -rf $W
+mkdir $W $W/s0 $W/s0/bin $W/s0/lib $W/s0/include || exit 1
+cp $SEED/bin/cfront $SEED/bin/munch $W/s0/bin || exit 1
+chmod 775 $W/s0/bin/cfront $W/s0/bin/munch
+cp $SEED/lib/libC.a $W/s0/lib || exit 1
+ranlib $W/s0/lib/libC.a
+for d in . common sys
+do
+	test -d $W/s0/include/$d || mkdir $W/s0/include/$d || exit 1
+	for f in `ls $SEED/include/$d`
+	do
+		test -f $SEED/include/$d/$f && cp $SEED/include/$d/$f $W/s0/include/$d/$f
+	done
+done
+cc -o $W/cf85fix $B/src/cf85fix.c || exit 1
+
+# V8's cfront with cf85fix either side.  Through files, not a pipe, so the
+# status that comes back is cfront's.
+cat > $W/cfront85 <<EOF
+T=/usr/tmp/cf85.\$\$
+$W/cf85fix -i > \$T.i 2>> $W/moved || exit 1
+$W/s0/bin/cfront "\$@" < \$T.i > \$T.o
+e=\$?
+$W/cf85fix -o < \$T.o
+rm -f \$T.i \$T.o
+exit \$e
+EOF
+
+# ---- stage 1: cfront 2.00 by V8's cfront ---------------------------------
+mkdir $W/s1 || exit 1
+cd $CF/cfront2.00 || exit 1
+for f in *
+do
+	test -f $f && cp $f $W/s1
+done
+cd $W/s1
+cfrontC="sh $W/cfront85"
+munchC=$W/s0/bin/munch
+libC=$W/s0/lib/libC.a
+CCinc=$W/s0/include
+CCdef=
+export cfrontC munchC libC CCinc CCdef
+O= bad=
+for f in $F200
+do
+	G=
+	test $f = y.tab && G=-DGRAM
+	sh $B/src/CCB $G -c $f.c > $f.log 2>&1
+	test -f $f.o || { echo "cfboot: stage 1: $f.c did not build"; sed 10q $f.log; bad=1; }
+	O="$O $f.o"
+done
+test -z "$bad" || exit 1
+sh $B/src/CCB -o cfront $O > link.log 2>&1 || { echo "cfboot: stage 1 did not link"; sed 20q link.log; exit 1; }
+echo "cfboot: stage 1, cfront 2.00 by V8's cfront: `grep -c moved $W/moved` for-inits moved"
+
+# ---- the runtime and munch, by stage 1 -----------------------------------
+mkdir $W/rt || exit 1
+cd $W/rt
+cfrontC=$W/s1/cfront
+CCinc=/usr/include/CC
+CCdef="-D__cplusplus=1 -Dc_plusplus=1"
+export cfrontC CCinc CCdef
+for f in new/_new new/_delete new/_vec new/_handler new/place new/_arr_map misc/_ctor misc/_dtor misc/_main misc/dtors misc/pure
+do
+	b=`basename $f`
+	sh $B/src/CCB -c $CF/libC/$f.c > $b.log 2>&1
+	test -f $b.o || { echo "cfboot: runtime: $f.c did not build"; sed 10q $b.log; bad=1; }
+done
+test -z "$bad" || exit 1
+ar qc libC0.a *.o && ranlib libC0.a || exit 1
+libC=$W/rt/libC0.a
+munchC=none
+export libC munchC
+sh $B/src/CCB -o munch $CF/munch.c > munch.log 2>&1 || { echo "cfboot: munch did not build"; sed 10q munch.log; exit 1; }
+echo "cfboot: the runtime and munch, by stage 1"
+
+# ---- stages 2 to 5: cfront 2.1, each by the one before -------------------
+munchC=$W/rt/munch
+export munchC
+P=$W/s1/cfront
+for s in s2 s3 s4 s5
+do
+	mkdir $W/$s || exit 1
+	cd $CF/cfront || exit 1
+	for f in *
+	do
+		test -f $f && cp $f $W/$s
+	done
+	cd $W/$s
+	cfrontC=$P
+	export cfrontC
+	O=
+	for f in $F21
+	do
+		G=
+		test $f = y.tab && G=-DGRAM
+		test $f = main && G=-DMUNCH
+		sh $B/src/CCB -k $G -c $f.c > $f.log 2>&1
+		test -f $f.o || { echo "cfboot: $s: $f.c did not build"; sed 10q $f.log; bad=1; }
+		O="$O $f.o"
+	done
+	test -z "$bad" || exit 1
+	cc -c malloc.c || exit 1
+	sh $B/src/CCB -o cfront $O malloc.o > link.log 2>&1 || { echo "cfboot: $s did not link"; sed 20q link.log; exit 1; }
+	echo "cfboot: $s, cfront 2.1 by `echo $P | sed 's|.*/\(s[0-9]\)/cfront|\1|'`"
+	P=$W/$s/cfront
+done
+
+# ---- the fixed point: stage 3's translations (in s4) against stage 4's (s5) --
+n=0
+for f in $F21
+do
+	cmp -s $W/s4/$f.i $W/s5/$f.i || { echo "cfboot: stages 3 and 4 translate $f.c differently"; n=1; }
+done
+test $n = 0 || { echo "cfboot: NO FIXED POINT -- nothing installed; $W is kept"; exit 1; }
+echo "cfboot: stages 3 and 4 translate all of cfront 2.1 identically"
+
+# ---- libC whole, and munch, by stage 4 ----------------------------------
+# Each directory copied and compiled where it stands, as its own build ran:
+# <task.h> is CC's, not task/'s older copy, and only iostream.mk adds -I.
+cfrontC=$W/s4/cfront
+export cfrontC
+mkdir $W/libC $W/libC/obj || exit 1
+for d in bignum complex generic misc new task iostream
+do
+	mkdir $W/libC/$d || exit 1
+	cd $CF/libC/$d || exit 1
+	for f in *
+	do
+		test -f $f && cp $f $W/libC/$d
+	done
+	cd $W/libC/$d
+	I=
+	test $d = iostream && I=-I.
+	for f in *.c
+	do
+		b=`basename $f .c`
+		sh $B/src/CCB -O $I -c $f > $b.log 2>&1
+		if test -f $b.o
+		then mv $b.o ../obj
+		else echo "cfboot: libC: $d/$f did not build"; sed 10q $b.log; bad=1
+		fi
+	done
+done
+as -o $W/libC/obj/swap.o $CF/libC/task/swap.s || bad=1
+test -z "$bad" || exit 1
+cd $W/libC/obj
+ar qc ../libC.a *.o && ranlib ../libC.a || exit 1
+echo "cfboot: libC, `ls | wc -l` objects, by stage 4"
+cd $W/s4
+libC=$W/libC/libC.a
+export libC
+sh $B/src/CCB -O -o munch $CF/munch.c > munch.log 2>&1 || { echo "cfboot: munch did not build"; sed 10q munch.log; exit 1; }
+
+# ---- install --------------------------------------------------------------
+# Copy, then mv: the old file stays whole until the new one is.
+cp $W/s4/cfront /usr/bin/cfront.new && strip /usr/bin/cfront.new && mv /usr/bin/cfront.new /usr/bin/cfront || exit 1
+cp $W/s4/munch /usr/lib/munch.new && strip /usr/lib/munch.new && mv /usr/lib/munch.new /usr/lib/munch || exit 1
+cp $W/libC/libC.a /usr/lib/libC.a && ranlib /usr/lib/libC.a || exit 1
+cp $B/src/CC /usr/bin/CC && chmod 775 /usr/bin/CC || exit 1
+
+# ---- and the proof that it is a C++ compiler -----------------------------
+cd $W
+cat > hello.c <<'EOF'
+#include <iostream.h>
+struct G { G() { cout << "constructed\n"; } ~G() { cout << "destroyed\n"; } } g;
+int main() { cout << "hello, world " << 6*7 << "\n"; return 0; }
+EOF
+# The installed passes, named: cfrontC and munchC are still exported from the
+# stages above, and CC takes both from the environment (c++(1)'s FILES).
+cfrontC=/usr/bin/cfront munchC=/usr/lib/munch CC -o hello hello.c > hello.log 2>&1 && ./hello > hello.out
+echo 'constructed
+hello, world 42
+destroyed' > hello.want
+if cmp -s hello.out hello.want
+then
+	echo "cfboot: installed: /usr/bin/CC, /usr/bin/cfront, /usr/lib/munch, /usr/lib/libC.a"
+	cd /
+	rm -rf $W
+	exit 0
+fi
+echo "cfboot: INSTALLED, BUT CC DOES NOT BUILD A WORKING PROGRAM -- $W is kept"
+cat hello.log hello.out
+exit 1

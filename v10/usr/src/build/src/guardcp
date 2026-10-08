@@ -1,0 +1,54 @@
+# cp, as ipnxbuild's build steps see it: /bin/cp, except that a failed
+# link's output is never copied.  ipnxbuild puts this first on PATH, named cp,
+# around its steps and nowhere else; every rule gets it without being edited.
+#
+# WHY.  ld(1): `This file is made executable only if no errors occurred during
+# the load.'  A program whose link failed is therefore still there, mode 664,
+# and an install rule's cp put it in place.  Over a working binary it arrived
+# executable, because cp keeps an existing target's mode (cp/cp.c:88 is
+# creat(to, mode), and only a NEW file takes that mode), and a rule that
+# chmods afterwards makes even a new one runnable.  Measured: the trek a
+# missing gtty left answered `Illegal instruction - core dumped' before
+# printing anything (docs/v10-gaps.md).
+#
+# WHAT A FAILED LINK LOOKS LIKE, measured rather than assumed -- the first
+# version of this guard looked for ld's default 0413 and passed every failed
+# link it was shown.  An undefined symbol makes ld keep the relocation bits
+# and write OMAGIC (ld.c:847-858: `rflag++' then `sflag = zflag = 0'), so a
+# failed link is a 0407 image, the format of an object file: `cc -o bad' over
+# one undefined name left 637 bytes of 0407 with 72 bytes of text relocation,
+# where the same program linked is 3,408 bytes of 0413.  So what is refused is
+# a source with NO execute bit, a VAX a.out magic -- 0407, 0410 or 0413 in the
+# low half of the first long and 0 in the high half; a PDP-11 image's second
+# word is its text size -- and a name that does not end in .o, because every
+# object this build copies is so named.  The tree holds no other VAX image
+# (checked from the host, 8 Oct 2026), so nothing else can match.  The rule's
+# own `|| echo' then says FAILED, ipnxbuild's count has it, and the old target
+# is left whole.  The mode comes from ls, not `test -x': v10 answers yes for
+# root whatever the bits say -- measured, a 664 copy of /bin/ls.
+#
+# The last argument is the destination and is never inspected; an option
+# (cp(1) has only -z) is not a source.
+p=
+for a
+do
+	if test -n "$p" -a -f "$p"
+	then
+		case $p in
+		*.o)	;;
+		*)	case `ls -l "$p"` in
+			???[xs]*|??????[xs]*|?????????[xt]*)	;;
+			*)	case `od -o "$p" | sed 1q` in
+				'0000000 000407 000000 '*|'0000000 000410 000000 '*|'0000000 000413 000000 '*)
+					echo "cp: $p: a failed link's output -- ld(1) left it unexecutable -- not copied" 1>&2
+					exit 1 ;;
+				esac ;;
+			esac ;;
+		esac
+	fi
+	case $a in
+	-*)	p= ;;
+	*)	p=$a ;;
+	esac
+done
+exec /bin/cp "$@"

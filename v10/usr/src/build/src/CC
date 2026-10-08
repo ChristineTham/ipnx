@@ -1,0 +1,169 @@
+#!/bin/sh
+# CC -- the C++ compiler driver c++(1) describes.  No tape carries V10's
+# own, so this is V8's /usr/bin/CC (v8/usr/bin/CC) with what c++(1) and
+# cfront 2.1 need, each change marked `ipnx:' where it is made:
+#   - cpp is given -Dc_plusplus=1 -D__cplusplus=1.  cfront 2.1's own sources
+#     choose 2.0 syntax under __cplusplus (cfront/norm2.c:220), and so do
+#     libC's (new/_vec.c:17); V8's translator predates both names.
+#   - munch is $munchC, /usr/lib/munch as c++(1) has it, where V8's was
+#     /usr/bin/munch and found on PATH.  It is cmd/cfront/munch.c, Research's,
+#     which takes V8's _STI names and 2.x's __sti__ alike and exits 1 when it
+#     wrote a table, as V8's did -- so the relink below is V8's unchanged.
+#   - V8's own slips: `$P="-p"' assigned nothing (so -p never reached cc),
+#     the relink dropped $P, and the status reported after a relink was the
+#     following rm's rather than cc's.
+# install: build/mkfile, as /usr/bin/CC.
+PATH=/bin:/usr/bin
+C= EE=0 FON= O= PON= R= SUF= X= Y="-Dc_plusplus=1 -D__cplusplus=1"	# ipnx: c++(1)'s 2.x names
+Z=
+E=0
+CF=
+P=
+OO="a.out"
+I="/usr/include/CC"
+ISUF=".i"
+ccC=${ccC-/bin/cc}
+cfrontC=${cfrontC-/usr/bin/cfront}
+cppC=${cppC-/lib/cpp}
+munchC=${munchC-/usr/lib/munch}		# ipnx: c++(1)'s FILES
+G=0
+for A do
+	case $A in
+	+V)	I="/usr/include"
+		O="$O $A"
+		;;
+	+*)	O="$O $A"
+		;;
+	-E)	PON=1
+		;;
+	-F)	FON=1
+		;;
+	-Fc)	FON=1
+		O="$O +L"
+		;;
+	-C)	Y="$Y $A"
+		O="$O +C"
+		;;
+	-I*)	Y="$Y $A"
+		;;
+	-D*)	Y="$Y $A"
+		;;
+	-U*)	Y="$Y $A"
+		;;
+	-p)	P="-p"			# ipnx: V8 had $P="-p"
+		;;
+	-c)	CF="-c"
+		;;
+	-o)	X="$X $A"
+		Z="$Z $A"
+		OX=1
+		;;
+	-.c)	echo "bad suffix option: -.c" 1>&2
+		;;
+	-.*)	SUF=`expr "$A" : '-\(.*\)'`
+		;;
+	*.c)	if	test -f $A
+		then
+			B=`basename $A .c`
+			if	test $PON
+			then
+				if test $SUF
+				then
+					echo "$cppC $O < $A > $B$SUF:" 1>&2
+					$cppC $Y -I$I < $A >$B$SUF
+					E=$?
+				else
+					$cppC $Y -I$I < $A
+					E=$?
+					case $E in
+					0)	;;
+					*)	break
+						;;
+					esac
+				fi
+			elif	test $FON
+			then
+				if test $SUF
+				then
+					echo "$cfrontC $O < $A > $B$SUF:" 1>&2
+					$cppC -C $Y -I$I < $A | $cfrontC +f$A $O > $B$SUF
+					E=$?
+				else
+					$cppC -C $Y -I$I < $A | $cfrontC +f$A $O
+					E=$?
+					case $E in
+					0)	;;
+					*)	break
+						;;
+					esac
+				fi
+			else
+				echo "CC $O $A:" 1>&2
+				$cppC -C -I$I $Y < $A | $cfrontC +f$A $O > $B$ISUF
+				E=$?
+				R=1
+				C="$C $B$ISUF"
+				case $E in
+				0)	X="$X $B$ISUF"
+					Z="$Z $B.o"
+					G=1
+					;;
+				1)	echo "1 error" 1>&2
+					;;
+				*)	echo "$E errors" 1>&2
+					;;
+				esac
+			fi
+		else
+			echo "$A not found" 1>&2
+		fi
+		;;
+	*)	X="$X $A"
+		Z="$Z $A"
+		if test $OX
+		then
+			OO=$A
+			OX=""
+		else
+			G=1
+		fi
+		;;
+	esac
+done
+
+case $G in
+0)	;;
+*)	echo "$ccC $P $CF $X -lC" 1>&2
+	$ccC $P $CF $X -lC >__err			# generate code
+	EE=$?
+	if test -n "$CF"
+	then						# -c: skip link edit
+		dummy=""
+	elif test -s __err
+	then						# error: skip link edit
+		cat __err
+	else
+		case $EE in
+		0)	nm -gp $OO | $munchC >__ctdt.c	# find ctors/dtors
+			case $? in
+			1)	$ccC -c __ctdt.c >/dev/null
+				$ccC $P $X __ctdt.o -lC	# in essense: cc *.o
+				EE=$?			# ipnx: cc's status, not rm's
+				rm __ctdt.o
+			esac
+			rm __ctdt.c
+		esac
+	fi
+	rm __err
+esac
+
+if	test $R
+then
+	rm $C
+fi
+
+case $E in
+0)	exit $EE
+	;;
+*)	exit $E
+esac

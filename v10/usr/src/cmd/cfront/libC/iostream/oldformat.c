@@ -30,7 +30,8 @@ static const int fld_size = 256 ;
 /* a circular formating buffer */
 static char	formbuf[cb_size];	// some slob for form overflow
 static char*	bfree=formbuf;
-static char*	max = &formbuf[cb_size-1];
+static char*	cbmax = &formbuf[cb_size-1];	// ipnx: was max, which V10's CC/libc.h:67
+						// declares as max(int, int)
 
 char* chr(register i, register int w)	/* note: chr(0) is "" */
 {
@@ -38,7 +39,7 @@ char* chr(register i, register int w)	/* note: chr(0) is "" */
 
 	if (w<=0 || fld_size<w) w = 1;
 	w++;				/* space for trailing 0 */
-	if (max < buf+w) buf = formbuf;
+	if (cbmax < buf+w) buf = formbuf;
 	bfree = buf+w;
 	char * res = buf;
 
@@ -57,7 +58,7 @@ char* str(const char* s, register int w)
 	if (w<=0 || fld_size<w) w = ll;
 	if (w < ll) ll = w;
 	w++;				/* space for traling 0 */
-	if (max < buf+w) buf = formbuf;
+	if (cbmax < buf+w) buf = formbuf;
 	bfree = buf+w;
 	char* res = buf;
 
@@ -71,7 +72,7 @@ char* str(const char* s, register int w)
 char* form(const char* format ...)
 {
 	register char* buf = bfree;
-	if (max < buf+fld_size) buf = formbuf;
+	if (cbmax < buf+fld_size) buf = formbuf;
 
 #	ifdef VSPRINTF
 		va_list args ;
@@ -111,7 +112,7 @@ char* hex(long ii, register w)
 	if (w<0 || fld_size<w) w = 0;
 	int sz = (w?w:m)+1;
 	register char* buf = bfree;
-	if (max < buf+sz) buf = formbuf;
+	if (cbmax < buf+sz) buf = formbuf;
 	register char* p = buf+sz;
 	bfree = p+1;
 	*p-- = 0;			// trailing 0
@@ -139,7 +140,7 @@ char* oct(long ii, int w)
 	if (w<0 || fld_size<w) w = 0;
 	int sz = (w?w:m)+1;
 	register char* buf = bfree;
-	if (max < buf+sz) buf = formbuf;
+	if (cbmax < buf+sz) buf = formbuf;
 	register char* p = buf+sz;
 	bfree = p+1;
 	*p-- = 0;			// trailing 0
@@ -173,7 +174,7 @@ char* dec(long i, int w)
 	if (w<0 || fld_size<w) w = 0;
 	int sz = (w?w:m)+1;
 	register char* buf = bfree;
-	if (max < buf+sz) buf = formbuf;
+	if (cbmax < buf+sz) buf = formbuf;
 	register char* p = buf+sz;
 	bfree = p+1;
 	*p-- = 0;			/* trailing 0 */

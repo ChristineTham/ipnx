@@ -1,0 +1,71 @@
+# CCB -- the bootstrap's C++ driver, used by build/cfboot and by nothing
+# else; once a machine has C++, /usr/bin/CC is the driver.  cpp, a cfront, cc
+# and munch, the passes V10's c++(1) names, each taken from the environment
+# so that one driver serves every stage:
+#	cfrontC	the translator				(required)
+#	libC	the C++ library to link with		(required to link)
+#	munchC	a munch, or `none'			(required to link)
+#	CCinc	the C++ headers				(default /usr/include/CC)
+#	CCdef	cpp's definitions	(default -D__cplusplus=1 -Dc_plusplus=1)
+# Options: -c, -o name, -I -D -U for cpp, -O -g for cc, +x for cfront,
+# -k to keep each .i.  Anything else is handed to the link.
+#
+# CCdef IS EMPTY FOR STAGE 1.  A 2.x CC defines __cplusplus, and cfront 2.1's
+# sources pick 2.0 syntax under it (cfront/norm2.c:220); the 1985 translator
+# cannot parse that syntax, and cfront 2.00 must be read without it.
+# munch exits 1 when it wrote a table and 0 when there was nothing to write:
+# V8's does, and so does cmd/cfront/munch.c, Research's own, which takes both
+# V8's _STI names and 2.x's __sti__ (munch.c:57-63).  munch2.1.c, AT&T's, is
+# the other way round, and nothing here uses it.
+cppC=${cppC-/lib/cpp}
+ccC=${ccC-/bin/cc}
+CCinc=${CCinc-/usr/include/CC}
+# Not ${CCdef-...}: this sh stops that word at its first blank and answers
+# `}' unexpected.  Set-but-empty must stay empty, which is stage 1's case.
+case ${CCdef+set} in
+set)	;;
+*)	CCdef="-D__cplusplus=1 -Dc_plusplus=1" ;;
+esac
+Y= O= CO= CF= L= OUT=a.out OX= KEEP= E=0
+for A
+do
+	if test -n "$OX"
+	then
+		OUT=$A
+		OX=
+		continue
+	fi
+	case $A in
+	+*)	O="$O $A" ;;
+	-c)	CF=-c ;;
+	-o)	OX=1 ;;
+	-I*|-D*|-U*)	Y="$Y $A" ;;
+	-O|-g)	CO="$CO $A" ;;
+	-k)	KEEP=1 ;;
+	*.c)	B=`basename $A .c`
+		rm -f $B.i $B.o
+		$cppC -C $CCdef $Y -I$CCinc < $A | $cfrontC +f$A $O > $B.i
+		if test $? != 0
+		then
+			echo "CCB: $A: cfront failed" 1>&2
+			E=1
+			continue
+		fi
+		$ccC $CO -c $B.i || E=1
+		test -n "$KEEP" || rm -f $B.i
+		L="$L $B.o" ;;
+	*)	L="$L $A" ;;
+	esac
+done
+test -n "$CF" && exit $E
+test $E = 0 || exit $E
+rm -f $OUT
+$ccC $CO -o $OUT $L $libC || exit 1
+test "$munchC" = none && exit 0
+nm -gp $OUT | $munchC > __ctdt.c
+if test $? = 1
+then
+	$ccC -c __ctdt.c && $ccC $CO -o $OUT $L __ctdt.o $libC || E=1
+fi
+rm -f __ctdt.c __ctdt.o
+exit $E

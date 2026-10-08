@@ -45,7 +45,8 @@ The repository is four things at once, and confusing them is the main way to get
 The committed disks are LFS pointers in a fresh clone — `git lfs pull` before unpacking.
 
 ```bash
-tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8   # -> work/myv8/rp07new
+tar -xSjf image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8   # -> work/myv8/ipnx-v8-rp07.img
+mv work/myv8/ipnx-v8-rp07.img work/myv8/rp07new          # the name the V8 tools and the Xcode build read
 tar -cjf  image/ipnx-v8-rp07.img.tar.bz2 -C work/myv8 rp07new   # repack
 ```
 

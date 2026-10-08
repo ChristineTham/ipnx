@@ -2151,11 +2151,15 @@ sed -e 's|^char \*strerror(int errno);$|char *strerror();|' \
 # The pANS members want _IOFBF, and /usr/include/stdio.h has _IONBF 04 and
 # _IOLBF 0200 but not it.  lcc/stdio.h:4 is `#define _IOFBF 0', which is
 # consistent with those two: zero means neither unbuffered nor line-buffered.
+# $IDIR on BOTH sides of the sed.  The test read $IDIR and the edit wrote
+# /usr/include, the thirteenth of the stanzas the IDIR note above describes and
+# the one that survived it: run against /v10 it found no _IOFBF there, added a
+# second one to the BUILDER's stdio.h, and left /v10's without.
 if grep _IOFBF $IDIR/stdio.h > /dev/null
 then	:
 else
 	sed 's|^#define	_IONBF	04$|#define	_IOFBF	0\
-#define	_IONBF	04|' /usr/include/stdio.h > s$$ && mv s$$ /usr/include/stdio.h
+#define	_IONBF	04|' $IDIR/stdio.h > s$$ && mv s$$ $IDIR/stdio.h
 fi
 
 # dipconfig.c and tcpconfig.c reach for ioctl names that v10 moved out of

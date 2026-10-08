@@ -460,6 +460,8 @@ src/cmd/cfront/ooptcfront/tree_walk.c
 # repairs needs none -- v10/ holds it as patch leaves it, and patch makes it --
 # but one patch edits AND this repository fixed further does: bad144.c,
 # struct/tree.c and beauty.c below are patched and then corrected.
+include/CC/memory.h
+include/CC/string.h
 include/f2c.h
 man/adm/man7/units.7
 man/filnam
@@ -476,6 +478,10 @@ src/cmd/bison/bison.simple
 src/cmd/cbt/btbuild.c
 src/cmd/ccom/vax/genmore.c
 src/cmd/cflow/cflow.sh
+src/cmd/cfront/libC/generic/generic.c
+src/cmd/cfront/libC/iostream/oldformat.c
+src/cmd/cfront/libC/task/obj.c
+src/cmd/cfront/munch.c
 src/cmd/cref/dr.c
 src/cmd/cyntax/cem/Makefile
 src/cmd/cyntax/cyn/Makefile

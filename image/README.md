@@ -15,7 +15,8 @@ the `S`.
 
 ```bash
 git lfs pull                                            # see below
-tar -xSjf ipnx-v8-rp07.img.tar.bz2 -C ../work/myv8      # -> work/myv8/rp07new
+tar -xSjf ipnx-v8-rp07.img.tar.bz2 -C ../work/myv8      # -> work/myv8/ipnx-v8-rp07.img
+mv ../work/myv8/ipnx-v8-rp07.img ../work/myv8/rp07new  # the name the V8 tools and the Xcode build read
 bash ../tools/v10-reset.sh                              # both V10 disks + the boot ROM
 ```
 

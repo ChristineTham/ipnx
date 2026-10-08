@@ -10,6 +10,8 @@
 
 *****************************************************************************/
 #include <task.h>
+#include <libc.h>	/* ipnx: exit() is called below and nothing declared it;
+			   cfront 2.1 refuses an undeclared function */
 
 object::~object()
 {

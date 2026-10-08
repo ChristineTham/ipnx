@@ -3,6 +3,11 @@
 #	ipnxbuild              this machine
 #	ipnxbuild /v10         the disk on ra1
 #
+# Status 0: built, and no recipe said it failed.  1: a step -- mk itself --
+# failed, and the steps after it were skipped.  2: every step ran and some
+# recipe failed; /usr/ipnx/failed lists them and /usr/ipnx/build.log is the
+# whole build (failed.v10 and build.v10.log for /v10).
+#
 # One process with a target parameter, not two procedures.  The toolchain is
 # always THIS machine's -- the same compiler, assembler and libc build both
 # disks -- so $ROOT means only where output goes.  That is why the mkfile is
@@ -142,26 +147,82 @@ case $TARGET in
 	# stopped `pkgs': ipnxclean read September's 2,504-row list and cref's
 	# tables survived it.  So a failure skips the build steps still to come --
 	# they may need what failed -- and the accounting and restore below run
-	# regardless.  `{ }' and not `( )': the assignment must survive.
+	# regardless.
+	#
+	# The four quarters first, then -- AND INSTALL, INTO THIS BOOT IMAGE --
+	# world's members.  The committed original had no split at all -- `Every
+	# target is an installed file carrying mk(1)'s P attribute' -- so
+	# building WAS installing, into the running system.  The quarters are the
+	# build half of the split; the rest are world's members, the install
+	# half, each in its own mk for the same fork-memory reason as the
+	# quarters.  A quoted step is one mk with several targets.
+	#
+	# EVERY STEP'S OUTPUT IS KEPT, AND READ AFTERWARDS.  A recipe that fails
+	# says `NAME: FAILED' and mk carries on -- which is what lets one broken
+	# package not stop three hundred others -- so mk's status sees only mk
+	# itself failing, and until 8 Oct 2026 the FAILED lines were in the console
+	# log and nowhere else: a build could finish with status 0 and a broken
+	# package in it.  So each step goes through tee into $L, and the count
+	# below reads it.  mk flushes its own echo before every fork
+	# (mk/src/run.c:74, Fexit(0)), so the log is in the console's order.
+	#
+	# THE STATUS SURVIVES THE PIPE THROUGH A FILE.  A pipeline's status in
+	# this sh is its last command's, tee's, so `mk ... | tee || s=1' would
+	# never see mk fail -- which is the reason given, until this, for there
+	# being no count at all.  `{ }' and not `( )' around the assignment to s:
+	# it must survive.
+	#
+	# AND A FAILED LINK'S OUTPUT IS NEVER COPIED: around the steps, cp is
+	# build/src/guardcp, which refuses a program ld(1) left unexecutable and
+	# says why at length.  Not for the accounting and restore after the steps,
+	# which copy tape files back and are not ld's.
+	G=/usr/tmp/ipb.bin
+	rm -rf $G
+	mkdir $G
+	/bin/cp /usr/src/build/src/guardcp $G/cp && chmod 775 $G/cp || exit 1
+	OPATH=$PATH
+	PATH=$G:$PATH
+	export PATH
+
+	L=/usr/ipnx/build.log
+	rm -f $L
 	s=0
-	mk -f /usr/src/build/mkfile build1 || s=1
-	test $s = 0 && { mk -f /usr/src/build/mkfile build2 || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile build3 || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile build4 || s=1; }
-	# AND INSTALL, INTO THIS BOOT IMAGE.  The committed original had no
-	# split at all -- `Every target is an installed file carrying mk(1)'s
-	# P attribute' -- so building WAS installing, into the running
-	# system.  The quarters above are the build half of the split; these
-	# are world's members, the install half, each in its own mk for the
-	# same fork-memory reason as the quarters.
-	test $s = 0 && { mk -f /usr/src/build/mkfile tools lib libs || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile usrbin bin etc || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile /unix /.profile || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile ulib || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile cmds || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile pkgs || s=1; }
-	test $s = 0 && { mk -f /usr/src/build/mkfile games || s=1; }
+	for step in build1 build2 build3 build4 'tools lib libs' 'usrbin bin etc' '/unix /.profile' ulib cmds pkgs games
+	do
+		test $s = 0 || break
+		{ mk -f /usr/src/build/mkfile $step 2>&1; echo $? > /usr/tmp/ipb.rc; } | tee -a $L
+		test "`cat /usr/tmp/ipb.rc`" = 0 || { s=1; echo "ipnxbuild: step \`$step' failed" | tee -a $L; }
+	done
+	rm -f /usr/tmp/ipb.rc
+	PATH=$OPATH
+	export PATH
+	rm -rf $G
 	test $s = 0 || echo "ipnxbuild: A BUILD STEP FAILED -- the steps after it were skipped; accounting and restore follow"
+
+	# AND WHAT FAILED INSIDE THE STEPS, COUNTED.  The markers are the build's
+	# own: every recipe ends `|| echo 'NAME: FAILED'' -- or `install FAILED',
+	# `mode FAILED', `strip FAILED' -- an artefact rule says `the package did
+	# not produce it', ether's header save says `not saved' or `NOT RESTORED',
+	# and the check rule says MISSING.  mk echoes each recipe before running
+	# it, so every marker is also in the log as recipe TEXT, and every such
+	# line has `echo' in it, which no message has: a full build's console log
+	# on 8 Oct held 1,266 lines with FAILED in them, and not one was a failure.
+	#
+	# A RECIPE FAILURE IS A FAILED BUILD, status 2 where a failed step is 1,
+	# and it holds back the obsolete removal below for the same reason a
+	# failed step does: an `install FAILED' can mean the new copy never
+	# arrived.  The list is /usr/ipnx/failed; the log it came from stays.
+	F=/usr/ipnx/failed
+	egrep 'FAILED$|the package did not produce it$|NOT RESTORED$|not saved$|^MISSING' $L | grep -v echo > $F
+	nf=`wc -l < $F`
+	if test $nf != 0
+	then
+		echo "ipnxbuild: $nf RECIPES FAILED -- $F lists them, $L holds the whole build:"
+		sed 's|^|ipnxbuild:     |' $F
+		test $s = 0 && s=2
+	else
+		echo "ipnxbuild: no recipe failed"
+	fi
 
 	# AND WHAT NO RULE MAKES ANY MORE.  An install puts a product where its
 	# rule says and nothing takes one away from where an older rule put it,
@@ -513,11 +574,41 @@ then
 	done
 fi
 
-mk -f /usr/src/build/mkfile ROOT=/v10 build1 &&
-	mk -f /usr/src/build/mkfile ROOT=/v10 build2 &&
-	mk -f /usr/src/build/mkfile ROOT=/v10 build3 &&
-	mk -f /usr/src/build/mkfile ROOT=/v10 build4
-s=$?
+# The quarters, as this machine's own build runs them above: through tee into
+# a log, mk's status through a file, cp guarded, and the recipe failures
+# counted afterwards.  The log and list are the other target's, so their own
+# names -- 14 bytes at most, sys/dir.h:2.
+G=/usr/tmp/ipb.bin
+rm -rf $G
+mkdir $G
+/bin/cp /usr/src/build/src/guardcp $G/cp && chmod 775 $G/cp || exit 1
+OPATH=$PATH
+PATH=$G:$PATH
+export PATH
+L=/usr/ipnx/build.v10.log
+rm -f $L
+s=0
+for step in build1 build2 build3 build4
+do
+	test $s = 0 || break
+	{ mk -f /usr/src/build/mkfile ROOT=/v10 $step 2>&1; echo $? > /usr/tmp/ipb.rc; } | tee -a $L
+	test "`cat /usr/tmp/ipb.rc`" = 0 || { s=1; echo "ipnxbuild: step \`$step' failed" | tee -a $L; }
+done
+rm -f /usr/tmp/ipb.rc
+PATH=$OPATH
+export PATH
+rm -rf $G
+F=/usr/ipnx/failed.v10
+egrep 'FAILED$|the package did not produce it$|NOT RESTORED$|not saved$|^MISSING' $L | grep -v echo > $F
+nf=`wc -l < $F`
+if test $nf != 0
+then
+	echo "ipnxbuild: $nf RECIPES FAILED -- $F lists them, $L holds the whole build:"
+	sed 's|^|ipnxbuild:     |' $F
+	test $s = 0 && s=2
+else
+	echo "ipnxbuild: no recipe failed"
+fi
 
 # NOT `&&' BETWEEN THE TWO UNMOUNTS.  /v10/usr can fail to unmount for its own
 # reasons and /v10 would then stay mounted too, which is the state this whole

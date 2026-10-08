@@ -91,7 +91,7 @@ int (*comfn[])() =
 
 reset()
 {
-	longjmp(errjmp);
+	longjmp(errjmp, 1);	/* ipnx: longjmp(3) takes the value setjmp returns; main.c:77 ignores it */
 }
 
 play()

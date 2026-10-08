@@ -96,7 +96,7 @@ reason.
 
 ## The verbs
 
-Five do the work. Everything else in the directory serves them.
+Five do the work, and `cfboot` once. Everything else in the directory serves them.
 
 | | what it does | how often |
 |---|---|---|
@@ -106,6 +106,7 @@ Five do the work. Everything else in the directory serves them.
 | `mkv10 [dir]` | the six tapes → `v10.tar`, pristine. `/usr/tmp` unless told otherwise; the share works too, and costs the disk nothing | once, ever |
 | `mkipnx [repo]` | `v10.tar` + the build system + the repairs → `ipnxorig.tar` | when the repairs change |
 | `taripnx` | this machine's live `/usr` → `/usr/ipnx/ipnx.tar` | when a machine is worth preserving |
+| `cfboot [seed]` | C++ for a machine that has none, from V8's cfront — see [C++](#c) | once, on a disk without `/usr/bin/cfront` |
 
 `updatebuild` is the sixth and is not part of a build: it refreshes `/usr/src/build` from the
 repository over the share, and it is **the only script here that touches `/n`**. The inner
@@ -207,6 +208,112 @@ with it.
 **`$ROOT` means only where output goes** — not where the toolchain is, not where the build system
 is. `$GEN` is pinned to `/usr/src/build` and does not follow `$ROOT`, so the builder's kit is
 what runs whichever disk is being filled, and there is no copy on the target that can go stale.
+
+### What a failed recipe does, and what `ipnxbuild` says about it
+
+A recipe that fails says so — `NAME: FAILED`, `install FAILED`, `the package did not produce
+it` — and `mk` carries on, which is what lets one broken package not stop three hundred others.
+Until 8 Oct 2026 those lines were in the console log and nowhere else, so a build could finish
+with status 0 and a broken package in it. Now:
+
+- **Every step's output goes through `tee` into `/usr/ipnx/build.log`**, and `mk`'s own status
+  comes back through a file, because a pipeline's status in this `sh` is `tee`'s. `mk` flushes
+  its echo before every fork (`mk/src/run.c:74`), so the log is in the console's order.
+- **The failures are counted from it** into `/usr/ipnx/failed`. Every marker is also in the log
+  as recipe *text*, because `mk` echoes a recipe before running it, and every such line has
+  `echo` in it, which no message has. A full build's console log on 8 Oct held 1,266 lines with
+  `FAILED` in them and not one failure.
+- **Status 0** is a build with no failed recipe; **1**, a step — `mk` itself — failed and the
+  steps after it were skipped; **2**, every step ran and some recipe failed. A 2 holds back
+  `obsolete`'s removals, as a 1 does. `ipnxbuild /v10` does the same into `build.v10.log` and
+  `failed.v10`.
+- **A failed link's output is never copied.** `ld(1)`: *"This file is made executable only if
+  no errors occurred during the load."* So a program whose link failed is still there, mode
+  664, and an install's `cp` put it in place — over a working binary it arrived executable,
+  because `cp` keeps an existing target's mode. Around the steps, `cp` is
+  `build/src/guardcp`, which refuses a source with no execute bit, a VAX a.out magic and a name
+  not ending in `.o`. An undefined symbol makes `ld` keep the relocation bits and write `0407`
+  (`ld.c:847-858`), the format of an object file — the guard's first version looked for `ld`'s
+  default `0413` and passed every failed link it was shown. Every rule gets it without being
+  edited, the rule's own `|| echo` says `FAILED`, and the old target stays whole.
+
+## C++
+
+V10 has C++ — cfront 2.1 (`<<2.1++ 08/24/90>>`), `libC`, `munch` and `CC` — and **builds it
+with itself**, as `cc` builds `cc`. Getting the first one took V8.
+
+**No tape carries a cfront binary**, and cfront is written in C++. AT&T shipped a
+half-translated C version beside the source so a native `cc` could start the chain; that set is
+on none of the six tapes (`build/mkfile` records the search), and neither is `Cpre`. V8's
+golden, though, carries Bell's VAX `cfront` (`<<cfront 7/04/85>>`), its `munch` and its
+`libC.a` — three of the files V8 shipped without source (`v8/mk/gen/carry.txt:67,81,1117`) —
+and the chain from there to V10's own translator is four links long:
+
+| stage | what | translated by |
+|---|---|---|
+| 1 | cfront 2.00 (`cmd/cfront/cfront2.00`, 06/30/89) | V8's 1985 cfront, through `build/src/cf85fix.c` |
+| rt | `libC`'s `new/` and `misc/`, and `munch.c` | stage 1 |
+| 2 | cfront 2.1 (`cmd/cfront/cfront`) | stage 1 |
+| 3, 4, 5 | cfront 2.1 | stage 2, then 3, then 4 |
+
+**The 1985 translator has three bugs that cfront 2.00's source walks into**, each of which
+cost stage 1 a crash, and each measured on the translator's own output before it was worked
+around:
+
+- `sizeof(type)` followed by an operator groups everything to its right first: `n*sizeof(int)+2`
+  is `n*6`, `n-sizeof(S)-2` is `n-14`, `new char[n*sizeof(S)+1]` allocates `n*17` bytes.
+  `norm2.c` sized its free-list chunks that way and overran them into `malloc`'s next block.
+  `(sizeof(S))` is right, and so are casts and `sizeof x`.
+- A `for`-init with two declarators — `for (Pname nx, nn=n; nn; nn=nx)` — loses every
+  initialiser unless the `for` opens an inner block, so the loop walks stack garbage;
+  `classdef::dcl` crashed on every class with a base. A declaration statement in front of the
+  `for` keeps them, and 2.0 scopes a `for`-init to the enclosing block anyway.
+- A reference parameter's default argument — `const ea& = *ea0` in `cfront.h` — comes out as a
+  cast of a struct to a pointer, which `cc` rejects 190 times.
+
+`cf85fix -i` rewrites the first two on `cpp`'s output and `cf85fix -o` the third on the
+translator's; nothing in the tree is edited for them. All 53 struct layouts the 1985 translator
+computes match `pcc`'s, which ruled size out before the bugs were found.
+
+**The fixed point.** Stages 3 and 4 translate all 27 files of cfront 2.1 identically, so a
+fifth stage built from stage 4's translations is stage 4 again: the two binaries differ only in
+the 28 compile times the symbol table carries, and stripped they are the same bytes. Stage 2
+does not match stage 3 — it puts a `# line` directive before some empty statements where 3 does
+not, whitespace and nothing else — which is why 3 and 4 are the comparison. `cfboot` builds
+stage 5 to make it: each stage's directory keeps the translations the stage before it made. With that in hand the rest is ordinary: `libC` whole, 57 objects, runs iostream,
+`complex`, `strstream` and the `task` library's coroutines.
+
+**What V10's tree needed**, six whole-file repairs (`build/mkfiles`): `CC/memory.h` and
+`CC/string.h` use `size_t` and nothing they include declares it, so no program that includes
+`<iostream.h>` compiled; `libC/generic/generic.c`, `libC/task/obj.c` and `munch.c` call
+`abort` or `exit` with nothing declaring it, which 2.x refuses; and `libC/iostream/oldformat.c`
+names a buffer `max`, which V10's own `CC/libc.h:67` declares as a function — Research libc
+has `max` and `min`.
+
+**`CC` is ours**: no tape carries V10's driver. `build/src/CC` is V8's `/usr/bin/CC` with what
+`c++(1)` and cfront 2.1 need — `cpp` given `-D__cplusplus=1 -Dc_plusplus=1`, which 2.1's own
+sources test, and `munch` taken from `/usr/lib/munch` as `c++(1)` says — and three of V8's own
+slips fixed, each marked. **`munch` is `munch.c`**, Research's own, as `cmd/cfront/mkfile:6` has
+it: it takes V8's `_STI` names and 2.x's `__sti__` alike and exits 1 when it wrote a table,
+which is the convention V8's `CC` relinks on. `munch2.1.c` beside it is AT&T's, and exits the
+other way round.
+
+**To give a machine C++ for the first time**, on the host and then on the guest:
+
+```bash
+python3 tools/v10-cfseed.py        # V8's three files + V8's CC headers -> work/cfseed
+```
+```sh
+sh /usr/src/build/cfboot /n/macos/work/cfseed     # after updatebuild; about five minutes
+```
+
+`cfboot` checks the seed's `ORIGIN`, refuses a tree without this repository's repairs, runs the
+four stages, stops without installing anything if 3 and 4 disagree, installs `/usr/bin/CC`,
+`/usr/bin/cfront`, `/usr/lib/munch` and `/usr/lib/libC.a`, and proves them by compiling a
+program with a static constructor and destructor through the installed `CC`. **After that it
+is never needed again**: `build/mkfile`'s C++ rules rebuild all four with the machine's own
+`CC`, and a new cfront is installed only if it can translate a line of C++ first, because it
+replaces the only translator the machine has.
 
 ## What the build does not reach
 
