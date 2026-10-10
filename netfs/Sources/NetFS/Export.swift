@@ -152,7 +152,7 @@ final class Export {
     // MARK: - The synthetic inode namespace
 
     private static func hostKey(_ st: stat) -> UInt64 {
-        UInt64(UInt32(bitPattern: st.st_dev)) << 32 | UInt64(st.st_ino & 0xffff_ffff)
+        UInt64(UInt32(truncatingIfNeeded: st.st_dev)) << 32 | UInt64(st.st_ino & 0xffff_ffff)
     }
 
     /// Allocate (or recall) the 16-bit number this host object is known by.
@@ -470,8 +470,8 @@ final class Export {
     /// **1926** until this was flipped -- a century out, and visible in Finder.
     func update(_ h: Handle, mode: Int32, ta: Int32, tm: Int32,
                 dtime: Int32, byRoot: Bool) -> UInt8 {
-        let atime = ta == 0 ? Int(clamping: h.st.st_atimespec.tv_sec) : Int(ta - dtime)
-        let mtime = tm == 0 ? Int(clamping: h.st.st_mtimespec.tv_sec) : Int(tm - dtime)
+        let atime = ta == 0 ? h.st.atimeSeconds : Int(ta - dtime)
+        let mtime = tm == 0 ? h.st.mtimeSeconds : Int(tm - dtime)
         var ts = [timespec](repeating: timespec(), count: 2)
         ts[0].tv_sec = atime
         ts[1].tv_sec = mtime

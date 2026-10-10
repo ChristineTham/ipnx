@@ -45,8 +45,13 @@ for d in ro rw; do
 	ln -s hello "$T/$d/link"
 done
 
-python3 "$ROOT/tools/9pfsd.py"    -p 15700 "$T/ro" >/dev/null 2>&1 & RO=$!
-python3 "$ROOT/tools/9pfsd.py" -w -p 15701 "$T/rw" >/dev/null 2>&1 & RW=$!
+# NINEPFSD names another server to drive, with 9pfsd.py's flags -- the Swift
+# one is `NINEPFSD="netfs/.build/debug/ninepfsd" tools/9pfs-test.sh', and with
+# `-N' appended it is the app's own arrangement, netfs and 9P on one port.
+# Word-split on purpose, so the flag rides along.
+SERVER=${NINEPFSD:-python3 $ROOT/tools/9pfsd.py}
+$SERVER    -p 15700 "$T/ro" >/dev/null 2>&1 & RO=$!
+$SERVER -w -p 15701 "$T/rw" >/dev/null 2>&1 & RW=$!
 i=0
 while [ $i -lt 100 ]; do
 	if "$T/t9" 127.0.0.1 15700 >/dev/null 2>&1; then break; fi

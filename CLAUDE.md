@@ -27,7 +27,7 @@ The repository is four things at once, and confusing them is the main way to get
 | `app/ipnx/` | One Swift/SwiftUI source folder, two targets: `ipnx` (iPadOS) and `ipnxMac`. Every file is shared. |
 | `libsimh/` | CMake wrapper turning an open-simh checkout into `SimhVAX.xcframework`. `patches/` adds the Interlan NI1010 driver and three `UNIT_IDLE` flags. Deliberately built **without** `SIM_ASYNCH_IO`. |
 | `libdmd/` | dmd_core (Rust) → `DmdCore.xcframework`. Patches live in `tools/dmdbridge/patches/`. |
-| `netfs/` | **V8's share.** SwiftPM host half of Weinberger's netfs. The `NetFS` target compiles into *both* `netfsd` and the app (`FileShare.swift`), so it may never grow a Mac-only dependency — and builds on Linux, which is what that rule was for. `tools/netfsd.py` is the same server in python3, for a host with no Swift. |
+| `netfs/` | **Both editions' shares.** SwiftPM host half of Weinberger's netfs (V8) and, beside it in the same `NetFS` target, a 9P2000.u server for V10 (`Nine*.swift`) and `ShareServer`, which answers both on one port. The target compiles into `netfsd`, `ninepfsd` *and* the app (`FileShare.swift`), so it may never grow a Mac-only dependency — and `swift build` on Linux is how that is checked: it had quietly stopped compiling there until 10 Oct 2026. `tools/netfsd.py` and `tools/9pfsd.py` are the same servers in python3, for a host with no Swift. |
 | `v8/` | Our V8 tree, laid out as the guest filesystem (`v8/usr/src/cmd/ls.c` is `/usr/src/cmd/ls.c`). `v8/mk/` is ours — V8 never had a world build. |
 | `v10/` | The V10 working tree: the machine's own `/usr`, guest-shaped. The build system is `v10/usr/src/build/`. The six TUHS tapes and any tree reconstructed from them are **not** committed — the machine assembles them itself (`mkv10`). |
 | `mk/mkgen.py` | The edition-agnostic half of the makefile generator. The per-edition knowledge (component tables, install layout, exceptions) stays in `v8/mk/mkdep.py`. |
@@ -83,6 +83,7 @@ python3 tools/ipnx-release.py --check   # ipnx.h and newvers.sh match v8/RELEASE
 bash tools/v10-golden.sh --check        # V10: does the golden still boot, log in and halt (a throwaway copy)
 python3 tools/netfsd-selftest.py        # the netfs wire, without a simulator (V8)
 python3 tools/9pfsd-selftest.py         # the 9P wire, without a simulator (V10)
+python3 tools/9pfsd-selftest.py --server netfs/.build/debug/ninepfsd   # the same wire, the app's Swift server
 python3 tools/v10-tree-check.py         # V10: every v10/ edit has a route to a machine (--current after a rebuild)
 python3 tools/v10-units.py --check      # V10: /usr/lib/Units still says what the tape's old table says
 bash tools/9pfs-test.sh                 # the GUEST's 9P client, driven on the host
@@ -137,6 +138,9 @@ below.
 python3 tools/9pfsd.py -L    -p 9200 /path/to/ipnx &   # /n/macos, read-only
 python3 tools/9pfsd.py -L -w -p 9201 "$HOME"       &   # /n/home,  read/write
 ```
+
+`netfs/.build/debug/ninepfsd` takes the same flags, plus `-N` to answer netfs on the same port
+as the app does — the app's own server, after `( cd netfs && swift build )`.
 
 `-L` matters: 9P2000.u can describe a symlink and netb's `<rf.h>` has nowhere to put one, so
 without it a link in the shared tree is visible and unreadable. `/etc/rc` mounts both at boot
@@ -338,10 +342,18 @@ link fails with `EXDEV` (checked — every `ln` in `build/mkfile` is on a local 
 `updatebuild` uses `cp`, so nothing in the workflow needs one); and a **symlink needs `-L`**,
 because `<rf.h>` gives an `Rfile` exactly two types and neither is a link.
 
-**The app still serves netfs and only netfs.** `FileShare.swift` compiles the Swift `NetFS`
-target in-process and cannot shell out to a server, so shipping 9P to V10 means writing a
-Swift 9P2000.u server beside the netfs one — not replacing it, since V8 needs netfs from the
-same app.
+**The app serves both, one port per share.** `FileShare.swift` compiles the `NetFS` target
+in-process and cannot shell out to a server, so V10's share is a Swift 9P2000.u server beside
+the netfs one (`netfs/Sources/NetFS/Nine*.swift`), and `ShareServer` listens once per share
+and picks the protocol from a connection's first byte: netfs opens with a lone version byte
+of 1, 9P with `Tversion`, whose first byte is its size (21). Both editions' `/etc/rc` dial
+9200 and 9201, so the server never needs to know which edition is running; `MachineSpec.shares`
+is only what the app *types* around a snapshot — V8's `nmount`, V10's `umount` and `runfs`.
+Until 10 Oct 2026 the app served netfs alone and V10's mounts came up empty. `ninepfsd -N` is
+the app's arrangement on a desktop, and `tools/9pfsd-selftest.py --server` holds it and
+`tools/9pfsd.py` to one wire, 94 checks each, because the two share no code — writing the
+second one found four faults in the first, among them a `Twstat` that, without `-L`, chmodded
+and truncated a file outside the share through a symlink.
 
 ### The V8 build
 

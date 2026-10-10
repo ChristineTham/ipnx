@@ -549,13 +549,15 @@ final class SessionStore: ObservableObject {
     /// points forever, and the instant-on that is meant to put you exactly
     /// where you were quietly does not. Only shares that are actually serving
     /// are attempted: a folder the user never granted has nothing listening,
-    /// and nmount would sit there failing.
+    /// and the mount would sit there failing.  The command is the edition's
+    /// (`MachineSpec.shares`): V8's nmount, V10's runfs.
     func mountShares(_ shares: [FileShare]) async {
         let live = shares.filter { $0.running }
         guard !live.isEmpty else { return }
         await onSpareLine { link in
             for share in live {
-                link.send("/etc/nmount 10.0.2.2 \(share.port) \(share.role.mountID) \(share.role.mountPoint)\r")
+                link.send(machine.spec.shares.mount(port: share.port, id: share.role.mountID,
+                                                    at: share.role.mountPoint) + "\r")
                 _ = await link.waitFor("#", timeout: 60)
             }
             self.log("remounted \(live.count) share(s) after resume")
@@ -573,8 +575,11 @@ final class SessionStore: ObservableObject {
             // a LIVE mount. Unmounting by id needs neither the connection nor
             // the mount point, which is exactly why it still works when the far
             // end has gone.
+            // On V10 it is umount(8) on the mount point instead: funmount(2)
+            // ends the runfs mount, 9pfs reads end-of-file on its netb pipe
+            // and exits, and its connection to ShareServer closes with it.
             for role in FileShare.Role.allCases {
-                link.send("/etc/nmount -u \(role.mountID)\r")
+                link.send(machine.spec.shares.unmount(id: role.mountID, at: role.mountPoint) + "\r")
                 _ = await link.waitFor("#", timeout: 12)
             }
             self.log("shares unmounted before snapshot")

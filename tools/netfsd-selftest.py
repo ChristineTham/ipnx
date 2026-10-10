@@ -2,6 +2,12 @@
 """Exercise tools/netfsd.py the way a V8 kernel would, without a VAX.
 
     tools/netfsd-selftest.py            # exits 0 if every check passes
+    tools/netfsd-selftest.py --server 'netfs/.build/debug/netfsd'
+
+--server runs the same checks against another implementation: anything that
+takes netfsd.py's -p and -w.  The Swift netfsd, and the app's ShareServer
+through `ninepfsd -N', are both checked this way -- which is the whole point of
+a wire-level test, since the two servers share no code to agree through.
 
 WHY THIS EXISTS.  There are two servers for one protocol -- the Swift package
 that ships in the app and tools/netfsd.py for hosts with no Swift -- and
@@ -18,6 +24,7 @@ got wrong, which is the one thing it needs to be unable to do.
 """
 
 import os
+import shlex
 import shutil
 import socket
 import struct
@@ -28,6 +35,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NETFSD = os.path.join(HERE, "netfsd.py")
+SERVER_CMD = [sys.executable, NETFSD]
+if "--server" in sys.argv[1:]:
+    SERVER_CMD = shlex.split(sys.argv[sys.argv.index("--server") + 1])
 
 NETVERSION = 1
 NSTAT, NWRT, NREAD, NFREE, NTRUNC, NUPDAT, NGET, NNAMI, NPUT = range(1, 10)
@@ -157,7 +167,7 @@ def main():
         os.mkfifo(os.path.join(root, "fifo"))   # a type V8 cannot use
 
         port = 9377
-        srv = subprocess.Popen([sys.executable, NETFSD, "-p", str(port), root],
+        srv = subprocess.Popen(SERVER_CMD + ["-p", str(port), root],
                                stderr=subprocess.DEVNULL)
         try:
             c = Client(port)
@@ -260,7 +270,7 @@ def main():
         # -- and the same again with -w, which is the only difference
         print("read/write mode")
         port += 1
-        srv = subprocess.Popen([sys.executable, NETFSD, "-w", "-p", str(port), root],
+        srv = subprocess.Popen(SERVER_CMD + ["-w", "-p", str(port), root],
                                stderr=subprocess.DEVNULL)
         try:
             c = Client(port)

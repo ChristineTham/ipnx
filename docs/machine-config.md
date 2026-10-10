@@ -153,6 +153,11 @@ Both read-only first. Write access to a real home directory from a 1985 kernel
 with 14-byte filenames deserves its own decision, taken once the read path has
 been living for a while.
 
+**V10's route is 9P2000.u, not netfs** — its `fmount(2)` takes a file descriptor, so `runfs`
+puts a user process (`/etc/9pfs`) behind the mount and no kernel client is needed. Both
+editions dial the same two ports, and the app's `ShareServer` answers each with whichever
+protocol the connection opens with; `CLAUDE.md`, *Two share protocols*, has the reasons.
+
 On iOS the same server runs in-process against the app's own documents
 directory, which is what makes "Files integration" and "the host share" the
 same feature rather than two.

@@ -11,6 +11,13 @@
 // the emulated VAX can mount a folder chosen in Files, and when it does, it
 // compiles these same source files. Nothing here may grow a Mac-only
 // dependency without breaking that.
+//
+// AND V10's 9P SERVER LIVES IN THE SAME TARGET, for the same reason.  The app
+// compiles Sources/NetFS as a synchronised folder, so a file added there is in
+// both app targets with no project edit; `ninepfsd' is its main(), as netfsd
+// is netfs's.  ShareServer is what the app listens with: one port per share,
+// netfs or 9P chosen by the connection's first byte.  `swift build' works on
+// Linux, which is how the selftests and a booted V10 check it without a Mac.
 import PackageDescription
 
 let package = Package(
@@ -19,5 +26,6 @@ let package = Package(
     targets: [
         .target(name: "NetFS"),
         .executableTarget(name: "netfsd", dependencies: ["NetFS"]),
+        .executableTarget(name: "ninepfsd", dependencies: ["NetFS"]),
     ]
 )

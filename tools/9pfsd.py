@@ -25,6 +25,12 @@ with a 563-line specification standing between them to keep the two honest.
 check ours against, which earned its keep on the first run: 9fans.net/go/plan9
 found a dialect bug here that neither of our own test suites could see.
 
+THE APP'S SERVER IS THE SWIFT ONE, and this is its specification.  The app
+cannot shell out, so netfs/Sources/NetFS/Nine*.swift is the same server in
+Swift, and ShareServer answers it and netfs on one port.  The two share no
+code, so tools/9pfsd-selftest.py --server holds them to one wire; writing the
+second found four faults in this one, each fixed here with its reason.
+
 THIS SERVES V10 ONLY, AND netfs IS NOT RETIRED.  V8 has only `neta', the first
 of the two netfs protocols, and no tape carries a libneta -- so the trick V10
 uses is not available there and V8 would need a kernel 9P client for no gain.
@@ -321,9 +327,7 @@ class Export(object):
             raise NineError(E.EACCES, "outside the export")
         try:
             os.lstat(new)
-            if self.follow and not self.inside(new):
-                raise NineError(E.EACCES, "symlink leaves the export")
-            return new
+            return self.admit(new)
         except OSError as exc:
             if exc.errno != E.ENOENT:
                 raise oserror(exc)
@@ -341,7 +345,17 @@ class Export(object):
             raise oserror(exc)
         if len(hits) != 1:
             raise NineError(E.ENOENT, "no such file")
-        return os.path.join(path, hits[0])
+        return self.admit(os.path.join(path, hits[0]))
+
+    def admit(self, path):
+        """The -L check, on WHATEVER a walk found.  It was on the direct hit
+        alone, so a link out of the tree with a name longer than 14 bytes was
+        followed when walked by its first 14 -- the fallback above handed it
+        back unchecked.  The Swift server (netfs/Sources/NetFS/NineExport.swift)
+        found it; tools/9pfsd-selftest.py asks both now."""
+        if self.follow and not self.inside(path):
+            raise NineError(E.EACCES, "symlink leaves the export")
+        return path
 
     # -- attributes -------------------------------------------------------
     def lstat(self, path):
@@ -747,6 +761,17 @@ class Conn(object):
                 st = os.lstat(full)
             except OSError:
                 continue            # vanished between listdir and lstat
+            # UNDER -L A LISTING AGREES WITH A WALK.  9pfs.c builds V10's
+            # dirread record from this entry's qid.path, so a link listed by
+            # lstat and stat'ed through gave one name two i-numbers.  A link
+            # that stays inside is described as its target, as a walk of it
+            # is; one that leaves is described as the link, because stat'ing
+            # through it would report a file outside the share.
+            if self.ex.follow and S.S_ISLNK(st.st_mode) and self.ex.inside(full):
+                try:
+                    st = os.stat(full)
+                except OSError:
+                    pass            # dangling: the link is all there is
             sb = self.ex.stat_bytes(full, st, name, self.dotu)
             ents.append(sb)
             pos += len(sb)
@@ -942,29 +967,41 @@ class Conn(object):
             if not self.ex.contains(new):
                 raise NineError(E.EACCES, "outside the export")
             if new != f.path:
-                if os.path.exists(new):
+                # lexists, not exists: exists() follows a link and answers
+                # False for a dangling one, which was then renamed over.
+                if os.path.lexists(new):
                     raise NineError(E.EEXIST, "name exists")
                 try:
                     os.rename(f.path, new)
                 except OSError as exc:
                     raise oserror(exc)
                 f.path = new
+        # A LINK IS NEVER CHANGED THROUGH WITHOUT -L.  A walk admits a link
+        # whatever it points at -- 9P describes it and never follows it -- but
+        # chmod and truncate DO follow, so a Twstat on a link to a file outside
+        # the share changed that file.  Measured by the selftest: mode 0644
+        # became 0600 and the contents went.
+        through = not self.ex.follow and os.path.islink(f.path)
         if mode != NOTOUCH4:
+            if through:
+                raise NineError(E.EINVAL, "not through a symlink")
             try:
                 os.chmod(f.path, mode & 0o777)
             except OSError as exc:
                 raise oserror(exc)
         if atime != NOTOUCH4 or mtime != NOTOUCH4:
-            st = self.ex.lstat(f.path)
+            st = os.lstat(f.path) if through else self.ex.lstat(f.path)
             a = st.st_atime if atime == NOTOUCH4 else atime
             m = st.st_mtime if mtime == NOTOUCH4 else mtime
             try:
-                os.utime(f.path, (a, m))
+                os.utime(f.path, (a, m), follow_symlinks=not through)
             except OSError as exc:
                 raise oserror(exc)
         if length != NOTOUCH8:
             # TRUNCATE IS A wstat, not a message of its own.  This is the one
             # the V10 client's t_trunc lands on.
+            if through:
+                raise NineError(E.EINVAL, "not through a symlink")
             try:
                 if f.f is not None:
                     f.f.truncate(length)

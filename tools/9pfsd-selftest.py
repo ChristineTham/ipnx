@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Exercise tools/9pfsd.py over a real socket, without a simulator.
 
-    python3 tools/9pfsd-selftest.py [-v]
+    python3 tools/9pfsd-selftest.py [-v] [--server CMD]
+
+--server runs every check against another implementation: anything that takes
+9pfsd.py's -p, -w, -T and -L.  The Swift server is checked this way, alone
+(`netfs/.build/debug/ninepfsd') and as the app runs it, sharing its port with
+netfs (`ninepfsd -N').  The two servers share no code, so a wire-level test is
+the only thing that can hold them to one protocol.
 
 Every check here is a message on the wire and a reply parsed back, against a
 server started on a scratch directory in a temporary tree.  Nothing is mocked:
@@ -16,6 +22,7 @@ way that reads like a compiler problem.
 
 import errno as E
 import os
+import shlex
 import shutil
 import socket
 import struct
@@ -26,6 +33,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVER = os.path.join(HERE, "9pfsd.py")
+SERVER_CMD = [sys.executable, SERVER]
+if "--server" in sys.argv[1:]:
+    SERVER_CMD = shlex.split(sys.argv[sys.argv.index("--server") + 1])
 
 Tversion, Rversion = 100, 101
 Tauth = 102
@@ -199,10 +209,12 @@ def make_tree(root):
     open(os.path.join(root, "a_very_long_filename"), "w").write("long\n")
     os.symlink("hello", os.path.join(root, "link"))
     os.symlink("/etc/passwd", os.path.join(root, "escape"))
+    # Out of the tree AND longer than 14 bytes, so the fallback can reach it.
+    os.symlink("/etc/passwd", os.path.join(root, "escape_link_long_name"))
 
 
 def start(root, port, extra=()):
-    args = [sys.executable, SERVER, "-p", str(port)] + list(extra) + [root]
+    args = SERVER_CMD + ["-p", str(port)] + list(extra) + [root]
     p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     for _ in range(200):
         try:
@@ -402,7 +414,7 @@ def test_readdir(port):
         off += n
     check("directory read lists every entry",
           sorted(names) == sorted(["sub", "hello", "a_very_long_filename",
-                                   "link", "escape"]), names)
+                                   "link", "escape", "escape_link_long_name"]), names)
     check("directory read needed more than one Tread", len(offs) > 1, offs)
     check("no . or .. in a 9P directory read",
           "." not in names and ".." not in names, names)
@@ -460,6 +472,41 @@ def test_follow(port):
 
     fserr = c.walk(0, 9, ["escape"])
     check("-L: a link out of the tree is refused", fserr[0] == Rerror, fserr[0])
+
+    # The 14-byte fallback is a second way to reach a name, and it must not be
+    # a way round the check above.  tools/9pfsd.py returned the fallback's
+    # match unchecked, so this link to /etc/passwd was followed when walked by
+    # its first 14 bytes.
+    t, _, b = c.walk(0, 10, ["escape_link_lo"])
+    check("-L: the 14-byte fallback does not follow a link out of the tree",
+          t == Rerror and rerror(b)[1] == E.EACCES, rerror(b) if t == Rerror else t)
+
+    # A LISTING MUST AGREE WITH A WALK.  The guest builds V10's dirread record
+    # from the listing's qid.path (9pfs.c's fsdirread), so a link listed by
+    # lstat but stat'ed through gave one name two i-numbers.
+    c.walk(0, 11, [])
+    c.open(11)
+    listed = {}
+    off = 0
+    while True:
+        t, _, b = c.read(11, off, 4096)
+        n = struct.unpack("<I", b[:4])[0] if t == Rread else 0
+        if n == 0:
+            break
+        data, i = b[4:4 + n], 0
+        while i < len(data):
+            st, i = unstat(data, i)
+            listed[st["name"]] = st
+        off += n
+    check("-L: a listed link carries its target's qid.path",
+          "link" in listed and listed["link"]["qid"][2] == qidof(c, "hello"),
+          listed.get("link", {}).get("qid"))
+    check("-L: and is not listed as a symlink",
+          "link" in listed and (listed["link"]["mode"] & DMSYMLINK) == 0,
+          hex(listed.get("link", {}).get("mode", 0)))
+    check("-L: a link out of the tree is listed as the link, not its target",
+          "escape" in listed and (listed["escape"]["mode"] & DMSYMLINK) != 0,
+          hex(listed.get("escape", {}).get("mode", 0)))
     c.close()
 
 
@@ -518,6 +565,35 @@ def test_write(root, port):
     t, _, b = c.rpc(Twstat, struct.pack("<I", 4) + struct.pack("<H", len(body)) + body)
     check("Twstat truncates", t == Rwstat, rerror(b) if t == Rerror else t)
     check("length took", os.stat(os.path.join(root, "renamed")).st_size == 3)
+
+    # NEVER CHANGED THROUGH A LINK without -L.  The walk admits a link
+    # whatever it points at -- 9P describes it, never follows it -- but chmod
+    # and truncate follow, so a Twstat on it changed a file outside the share.
+    outside = os.path.join(os.path.dirname(root), "outside")
+    open(outside, "w").write("not yours\n")
+    os.chmod(outside, 0o644)
+    os.symlink(outside, os.path.join(root, "out"))
+    c.walk(0, 7, ["out"])
+    body = wstat_entry(mode=0o600)
+    t, _, b = c.rpc(Twstat, struct.pack("<I", 7) + struct.pack("<H", len(body)) + body)
+    check("Twstat will not chmod through a link out of the share", t == Rerror, t)
+    check("and the file outside kept its mode",
+          (os.stat(outside).st_mode & 0o777) == 0o644, oct(os.stat(outside).st_mode))
+    body = wstat_entry(length=0)
+    t, _, b = c.rpc(Twstat, struct.pack("<I", 7) + struct.pack("<H", len(body)) + body)
+    check("Twstat will not truncate through it either", t == Rerror, t)
+    check("and the file outside kept its contents",
+          open(outside).read() == "not yours\n", open(outside).read())
+    c.clunk(7)
+
+    # A rename onto ANY existing name is refused, a dangling link included:
+    # os.path.exists() follows the link and says no, so it was replaced.
+    os.symlink("nowhere", os.path.join(root, "dangle"))
+    body = wstat_entry(name="dangle")
+    t, _, b = c.rpc(Twstat, struct.pack("<I", 4) + struct.pack("<H", len(body)) + body)
+    check("Twstat will not rename onto a dangling link",
+          t == Rerror and rerror(b)[1] == E.EEXIST, rerror(b) if t == Rerror else t)
+    check("and the link is still there", os.path.islink(os.path.join(root, "dangle")))
 
     t, _, b = c.remove(4)
     check("Tremove", t == Rremove, t)

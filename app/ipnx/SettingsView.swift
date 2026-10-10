@@ -294,7 +294,7 @@ struct SettingsView: View {
                         .font(.caption).foregroundStyle(share.running ? .green : .secondary)
                 }
                 LabeledContent("Mount with") {
-                    Text(share.mountCommand)
+                    Text(share.mountCommand(for: machine.spec))
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                 }

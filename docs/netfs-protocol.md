@@ -1,6 +1,7 @@
 # The Research Unix netfs wire protocol
 
-> **This is V8's protocol.** V10's share is 9P — `tools/9pfsd.py` on the host and
+> **This is V8's protocol.** V10's share is 9P — `tools/9pfsd.py` or the Swift `ninepfsd` on
+> the host (the app answers both protocols on one port per share, `ShareServer`) and
 > `v10/usr/src/build/src/9pfs.c` on the guest — and moved there because V10's `fmount(2)`
 > takes a file descriptor, so a user process on a pipe can serve a mount. V8 cannot follow:
 > it has only `neta`, no tape carries a `libneta`, and moving it would mean writing a kernel

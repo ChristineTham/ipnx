@@ -179,6 +179,13 @@ removes exactly what that wrote, and `taripnx` archives a live machine as `ipnx.
 inner loop is two commands — `updatebuild; ipnxbuild`. Every deviation from the tape is an
 idempotent block in `patch` with the evidence beside it, and `PATCHES.md` is the long form.
 
+**And it mounts the host's folders, over 9P.** V10 has no netfs client to give a server to,
+but its `fmount(2)` takes a file descriptor, so a user process can serve a mount: `/etc/9pfs`
+speaks the kernel's own netb on one side and 9P2000.u on the other, and `/etc/rc` mounts
+`/n/macos` and `/n/home` with it at boot. The app answers both editions on the same two
+ports — netfs or 9P, chosen by a connection's first byte — and `tools/9pfsd.py` is the same
+9P server for a host with no Swift.
+
 **What is not done is the distribution's completeness.** The tapes carry their own manifests
 of what a V10 machine holds, and against them two of `/bin`'s 57 files are not built (each
 with a reason), four of `/etc`'s 56 have no source on any tape, and **16 of `/usr/lib`'s 50

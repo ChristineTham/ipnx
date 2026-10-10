@@ -104,7 +104,9 @@ struct Wire {
 
 // MARK: - One mounted connection
 
-final class Connection {
+/// `@unchecked Sendable` because the thread that runs it is the only one that
+/// ever touches it -- which Swift 6 cannot see through `Thread`'s block.
+final class Connection: @unchecked Sendable {
     let wire: Wire
     let export: Export
     let cfg: NetFSConfig
@@ -314,9 +316,9 @@ final class Connection {
         var st = stat()
         if lstat(h.path, &st) == 0 { h.st = st }
         export.describe(h, into: &y)
-        y.tm = (Int32(clamping: h.st.st_atimespec.tv_sec),
-                Int32(clamping: h.st.st_mtimespec.tv_sec),
-                Int32(clamping: h.st.st_ctimespec.tv_sec))
+        y.tm = (Int32(clamping: h.st.atimeSeconds),
+                Int32(clamping: h.st.mtimeSeconds),
+                Int32(clamping: h.st.ctimeSeconds))
         return respond(&y, 0)
     }
 
@@ -486,7 +488,7 @@ public final class NetFSServer {
     /// the iOS sandbox, where an app may talk to its own loopback and nothing
     /// else.
     public func start() throws {
-        listenFD = socket(AF_INET, SOCK_STREAM, 0)
+        listenFD = socket(AF_INET, hostSockStream, 0)
         guard listenFD >= 0 else { throw StartError.socket("socket: \(errnoText())") }
         var yes: Int32 = 1
         setsockopt(listenFD, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
@@ -523,7 +525,7 @@ public final class NetFSServer {
             // -- but a 40 ms delay on every one of the n round trips a path
             // costs is the difference between usable and not.
             var yes: Int32 = 1
-            setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, socklen_t(MemoryLayout<Int32>.size))
+            setsockopt(fd, hostIPProtoTCP, TCP_NODELAY, &yes, socklen_t(MemoryLayout<Int32>.size))
             log("connection accepted")
             let conn = Connection(fd: fd, cfg: cfg)
             let t = Thread { conn.run() }

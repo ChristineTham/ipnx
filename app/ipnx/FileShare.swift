@@ -3,9 +3,18 @@
 //
 //  Phase N7. The server itself is netfs/Sources/NetFS/, compiled straight into
 //  this target rather than vendored or duplicated: it was written for this from
-//  the start and depends on nothing a phone lacks. `netfsd` on the desktop and
-//  this object run the same code, so anything proven by tools/drive-netfs.sh is
-//  proven here too.
+//  the start and depends on nothing a phone lacks. `netfsd` and `ninepfsd` on a
+//  desktop run the same code, so anything proven against them is proven here.
+//
+//  ONE PORT, BOTH PROTOCOLS.  V8 mounts a share with netfs and V10 with 9P2000.u
+//  (through runfs and /etc/9pfs), and both editions' /etc/rc dial the same two
+//  ports.  `ShareServer` listens once per share and tells the two apart by a
+//  connection's first byte, so this object never needs to know which edition is
+//  running, and a V10 machine gets its shares from the app as V8 does.  Until
+//  10 Oct 2026 this served netfs alone, and V10's /n/macos and /n/home came up
+//  empty in the app: 9pfs's Tversion met a netfs handshake and gave up.
+//  tools/9pfsd-selftest.py --server and a booted V10 check the 9P half on a
+//  desktop (`ninepfsd -N` is exactly this arrangement).
 //
 //  HOW THE GUEST REACHES IT, and why this works on iOS at all. SIMH's SLiRP
 //  rewrites any address inside its virtual network to the host's loopback
@@ -14,9 +23,9 @@
 //  forwarding, no host interface, no entitlement -- an app may always talk to
 //  its own loopback, which is the same reason the DZ terminal lines work.
 //
-//  WHAT IS STILL MISSING, stated plainly: the bundled disk image has no
-//  Ethernet-configured kernel and no netfs-over-TCP fix, so nothing in the
-//  guest can mount this yet. Both exist and are proven on work/myv8/rp07v8.net
+//  WHAT IS STILL MISSING ON V8, stated plainly: its bundled disk image has no
+//  Ethernet-configured kernel and no netfs-over-TCP fix, so nothing in that
+//  guest can mount this yet.  V10's golden mounts both shares at boot. Both exist and are proven on work/myv8/rp07v8.net
 //  (tools/n3-ilkernel.sh, tools/drive-streamfix.sh); folding them into the
 //  shipped image is B0.6 image work with an App Store size decision attached,
 //  not part of this file. Until then the share is off by default and the
@@ -72,7 +81,7 @@ final class FileShare: ObservableObject {
 
     var port: UInt16 { role.port }
 
-    private var server: NetFSServer?
+    private var server: ShareServer?
     private let store: UserDefaults
 
     private struct Keys {
@@ -196,7 +205,16 @@ final class FileShare: ObservableObject {
                               readOnly: !allowWrites,
                               mapUID: Provisioner.guestUID,
                               mapGID: Provisioner.guestGID, verbose: false)
-        let s = NetFSServer(cfg)
+        // The same folder, owners and write permission for V10.  `follow' is
+        // tools/9pfsd.py's -L, which every launcher passes: netb's <rf.h> has
+        // two file types and neither is a link, so a link the guest is shown
+        // undescribed is a file it can see and not open.  Followed, it is the
+        // file it points at -- and one that leaves the folder is refused at the
+        // walk, because following is the one way out.
+        let nine = NineConfig(root: folder.path, readOnly: !allowWrites,
+                              uid: UInt32(Provisioner.guestUID),
+                              gid: UInt32(Provisioner.guestGID), follow: true)
+        let s = ShareServer(port: port, netfs: cfg, nine: nine)
         do {
             try s.start()
         } catch {
@@ -208,10 +226,10 @@ final class FileShare: ObservableObject {
         lastError = nil
         store.set(true, forKey: keys.enabled)
         // serveForever() blocks on accept(), so it gets a thread of its own.
-        // One connection is one mount and the protocol is strictly serialised,
-        // so there is no concurrency here worth a queue.
+        // One connection is one mount and both protocols are strictly
+        // serialised, so there is no concurrency here worth a queue.
         let t = Thread { s.serveForever() }
-        t.name = "netfs-server"
+        t.name = "share-server"
         t.stackSize = 512 * 1024
         t.start()
     }
@@ -225,18 +243,18 @@ final class FileShare: ObservableObject {
 
     private func restart() { stop(); start() }
 
-    /// What to type in the guest, shown in Settings so it can be copied rather
-    /// than remembered. The unique id is netfs's mount identity; 64 is the
-    /// bottom of the range netfs(8) documents.
-    /// What to type in the guest to mount this share by hand. /etc/rc does it
-    /// at boot, so this is for when someone has unmounted it or wants a
-    /// second look — and it has to follow the role, or the Home section would
-    /// tell you to mount it over /n/macos.
+    /// What to type in the guest to mount this share by hand, shown in
+    /// Settings so it can be copied rather than remembered. /etc/rc does it at
+    /// boot, so this is for when someone has unmounted it or wants a second
+    /// look — and it has to follow the role, or the Home section would tell
+    /// you to mount it over /n/macos, and the EDITION, because V8 mounts with
+    /// nmount and V10 with runfs.  The unique id is netfs's mount identity; 64
+    /// is the bottom of the range netfs(8) documents.  V10 has no such thing.
     ///
     /// 10.0.2.2 is the host: SLiRP rewrites every address inside its virtual
     /// network to the host's loopback, so this works unchanged in the iOS
     /// sandbox with nothing forwarded.
-    var mountCommand: String {
-        "/etc/nmount 10.0.2.2 \(port) \(role.mountID) \(role.mountPoint)"
+    func mountCommand(for spec: MachineSpec) -> String {
+        spec.shares.mount(port: port, id: role.mountID, at: role.mountPoint)
     }
 }

@@ -96,6 +96,14 @@ struct MachineSpec: Identifiable, Hashable {
     /// `umount -a` walks mtab backwards, so nothing has to be named.
     let shutdown: [String]
 
+    /// How this machine mounts the app's two shares -- what the app TYPES,
+    /// not what it serves.  The server needs no edition: `ShareServer`
+    /// answers netfs and 9P on one port and tells them apart by the first
+    /// byte.  But V8's kernel has a netfs client and V10's has netb, which
+    /// runfs puts 9P behind, so the commands that remount a share after a
+    /// resume and drop it before a snapshot belong to the edition.
+    let shares: ShareMount
+
     /// THE EIGHTH EDITION, exactly as the app has always booted it.
     static let v8 = MachineSpec(
         id: "v8",
@@ -118,7 +126,8 @@ struct MachineSpec: Identifiable, Hashable {
         // Unchanged from what the app has always sent.  V8's boot() flushes and
         // waits for the I/O itself, and its autoboot fsck repairs an unclean
         // stop, so there is nothing to add here.
-        shutdown: ["cd /; sync; sync", "/etc/halt"]
+        shutdown: ["cd /; sync; sync", "/etc/halt"],
+        shares: .netfs
     )
 
     /// THE TENTH EDITION. Every line is from the sequence
@@ -178,7 +187,8 @@ struct MachineSpec: Identifiable, Hashable {
         // sleep because V10's sync(2) sets B_ASYNC and returns before the disk
         // has the block (lsys/io/bio.c:692), so the flush needs time it does not
         // wait for -- which is exactly what tools/v10drive.exp's v10_halt does.
-        shutdown: ["cd /; sync", "/etc/umount -a", "sync", "/etc/halt"]
+        shutdown: ["cd /; sync", "/etc/umount -a", "sync", "/etc/halt"],
+        shares: .ninep
     )
 
     static let all: [MachineSpec] = [.v8, .v10]
@@ -213,5 +223,34 @@ struct MachineSpec: Identifiable, Hashable {
         let want = UserDefaults.standard.string(forKey: defaultsKey) ?? v8.id
         if let m = all.first(where: { $0.id == want }), m.isAvailable { return m }
         return v8
+    }
+}
+
+/// The guest's side of a host share.  Both editions dial 10.0.2.2 -- SLiRP's
+/// alias for this process's own loopback -- at the share's fixed port, which
+/// /etc/rc names, and both reach the same `ShareServer`.
+enum ShareMount: Hashable {
+    /// V8: Weinberger's netfs, in the kernel since 1985.  `nmount' is
+    /// gmount(2) and the unique id is the mount's identity, so `nmount -u id'
+    /// releases it without needing the connection (see SessionStore).
+    case netfs
+    /// V10: 9P2000.u, through runfs and /etc/9pfs -- the line /etc/rc runs at
+    /// boot, backgrounded and silenced the same way, because runfs execs the
+    /// file server and never returns.  V10's umount(8) is funmount(2) on the
+    /// mount point, which releases a runfs mount whatever mtab says.
+    case ninep
+
+    func mount(port: UInt16, id: Int, at point: String) -> String {
+        switch self {
+        case .netfs: return "/etc/nmount 10.0.2.2 \(port) \(id) \(point)"
+        case .ninep: return "/etc/runfs \(point) /etc/9pfs 10.0.2.2 \(port) >/dev/null 2>&1 &"
+        }
+    }
+
+    func unmount(id: Int, at point: String) -> String {
+        switch self {
+        case .netfs: return "/etc/nmount -u \(id)"
+        case .ninep: return "/etc/umount \(point)"
+        }
     }
 }
